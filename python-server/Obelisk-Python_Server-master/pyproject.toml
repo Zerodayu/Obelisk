@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "obelisk-etl"
+version = "0.1.0"
+description = "Foundation ETL service for OBELISK - Outcomes-Based Education Management System (placeholder)"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.100.0"
+uvicorn = {extras = ["standard"], version = "^0.22.0"}
+"pydantic" = "^2.6"
+"SQLAlchemy" = "^2.0"
+"alembic" = "^2.0"
+openpyxl = "^3.1"
+pandas = "^2.2"
+orjson = "^3.9"
+structlog = "^23.3"
+"aiofiles" = "^23.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
