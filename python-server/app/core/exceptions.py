@@ -28,3 +28,9 @@ class TransformationError(OBELISKError):
 class LoaderError(OBELISKError):
     pass
 
+
+class QueueOverloadedError(OBELISKError):
+    def __init__(self, message: str = "Job queue is full"):
+        super().__init__(message)
+
+

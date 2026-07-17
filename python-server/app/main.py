@@ -28,22 +28,25 @@ app.include_router(etl_router, prefix="/etl", tags=["etl"])
 app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
 app.include_router(health_router, prefix="/health", tags=["health"])
 
-_worker_task: asyncio.Task | None = None
+_worker_tasks: list[asyncio.Task] = []
 
 @app.on_event("startup")
 async def startup_event():
-    global _worker_task
-    # Start background worker to process queued ETL jobs
-    logger.info("startup", message="Starting background worker")
-    _worker_task = asyncio.create_task(start_worker(job_queue))
+    global _worker_tasks
+    worker_count = max(1, settings.JOB_WORKER_COUNT)
+    logger.info("startup", message="Starting background workers", worker_count=worker_count)
+    _worker_tasks = [
+        asyncio.create_task(start_worker(job_queue, worker_id=index + 1))
+        for index in range(worker_count)
+    ]
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    global _worker_task
-    if _worker_task:
-        _worker_task.cancel()
-        try:
-            await _worker_task
-        except asyncio.CancelledError:
-            logger.info("shutdown", message="Worker task cancelled")
+    global _worker_tasks
+    for task in _worker_tasks:
+        task.cancel()
+
+    if _worker_tasks:
+        await asyncio.gather(*_worker_tasks, return_exceptions=True)
+        logger.info("shutdown", message="Worker tasks cancelled", worker_count=len(_worker_tasks))
 
