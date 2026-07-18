@@ -146,7 +146,13 @@ If template headers are structurally incompatible: `InvalidTemplate`.
 
 ---
 
-## Run locally
+## How to run
+
+### Prerequisites
+
+- Python 3.10+
+- Poetry (for dependency management)
+- A valid class-record Excel file matching the OBELISK template
 
 ### Install dependencies
 
@@ -154,10 +160,97 @@ If template headers are structurally incompatible: `InvalidTemplate`.
 poetry install
 ```
 
-### Start API server
+### Start the API server
 
 ```powershell
 poetry run uvicorn app.main:app --reload
+```
+
+The server will start on `http://localhost:8000`.
+
+### Test ETL pipeline via API
+
+#### 1. Upload a class-record file
+
+```powershell
+curl -X POST "http://localhost:8000/upload" `
+  -F "file=@path\to\your\E-classrecord(LECTURE ONLY).xlsx"
+```
+
+Response includes a job UUID.
+
+#### 2. Check job status and results
+
+```powershell
+curl "http://localhost:8000/jobs/"
+```
+
+Look for the queued/completed job and its output.
+
+### Test ETL pipeline directly (Python)
+
+Create a test script `test_etl.py` in the root:
+
+```python
+import asyncio
+from app.etl.extract.extractor import ExcelExtractor
+from app.etl.transform.transformer import SimpleTransformer
+
+async def main():
+    # Extract from real sample file
+    file_path = "E-classrecord(LECTURE ONLY).xlsx"
+    extractor = ExcelExtractor()
+    header, records = extractor.extract(file_path)
+    
+    print("=== ClassRecordHeader ===")
+    print(f"Course: {header.course_code} / {header.course_title}")
+    print(f"Semester: {header.semester_year}")
+    print(f"Students: {header.no_of_students}")
+    print(f"Threshold: {header.threshold}")
+    print(f"Weights: {header.tla_at_exam_weights}")
+    print()
+    
+    print("=== RawScoreRecord count ===")
+    from collections import Counter
+    groups = Counter((r.grading_period, r.assessment_category) for r in records)
+    for (period, category), count in sorted(groups.items()):
+        print(f"  {period} / {category}: {count}")
+    print()
+    
+    # Transform to CLO attainment
+    transformer = SimpleTransformer()
+    attainments = transformer.transform(header, records)
+    
+    print("=== StudentCLOAttainment count ===")
+    print(f"Total records: {len(attainments)}")
+    print()
+    
+    # Show one student's CLO breakdown
+    if attainments:
+        sample = attainments[0]
+        print(f"Sample: {sample.student_name} / {sample.clo_code}")
+        print(f"  TLA: {sample.tla_pct}")
+        print(f"  AT: {sample.at_pct}")
+        print(f"  EXAM: {sample.exam_pct}")
+        print(f"  OUTPUT: {sample.output_pct}")
+        print(f"  CLO Attainment: {sample.clo_attainment_pct}")
+        print(f"  Met Threshold: {sample.met_threshold}")
+        print(f"  CLO Level: {sample.clo_level}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Run it:
+
+```powershell
+poetry run python test_etl.py
+```
+
+### Health check
+
+```powershell
+curl "http://localhost:8000/health/"
 ```
 
 ---
