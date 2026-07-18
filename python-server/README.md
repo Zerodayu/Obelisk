@@ -1,231 +1,170 @@
 ## OBELISK ETL Foundation
 
-This repository is a clean, async-first FastAPI skeleton for an ETL service used by an Outcomes-Based Education Management System (OBELISK).
+Async-first FastAPI ETL service for OBELISK class-record processing.
 
-It is **not** the final production system yet. Most ETL behavior is placeholder so the team can build safely on top of a scalable architecture.
-
----
-
-## What this service does (currently)
-
-- Accepts Excel uploads.
-- Pushes work into an in-memory async queue.
-- Processes jobs in background workers.
-- Runs placeholder ETL stages (extract -> transform -> load).
-- Exposes endpoints for health and job status.
+This README is updated up to **Step 2 + Step 3** implementation status.
 
 ---
 
-## Request flow (important)
+## What changed in this step window
+
+### Files changed
+
+- `app/etl/extract/extractor.py`
+  - Implemented real Excel extraction using fixed coordinates from the class-record template.
+  - Returns: `tuple[ClassRecordHeader, list[RawScoreRecord]]`.
+  - Added required error handling: `InvalidWorkbook`, `MissingWorksheet`, `InvalidTemplate`.
+  - COVERPAGE fallback now reads only the **immediate right cell** of label rows.
+- `app/etl/transform/transformer.py`
+  - Implemented real transformation to `list[StudentCLOAttainment]`.
+  - Computes category percentages and CLO attainment with weight renormalization when categories are absent.
+  - Applies threshold + CLO level classification.
+  - Emits deterministic `formula_version` hash from threshold + weights.
+  - Raises `TransformationError` for invalid score/weight conditions.
+
+### Files intentionally not changed
+
+- `app/etl/load/loader.py` is still placeholder (`DummyLoader`).
+- No PLO rollup logic was added.
+
+---
+
+## What the service can do now
+
+- Accept uploaded class-record Excel files and queue ETL jobs.
+- Extract real raw score records from template sheets:
+  - `Database (LECTURE-RES-PRAC)`
+  - `Exam (LECTURE ONLY)`
+  - `OUTPUT` (optional/sparse)
+- Compute per-student per-CLO attainment objects (`StudentCLOAttainment`) from extracted records.
+- Handle sparse/unfilled template slots without failing where rules allow.
+
+---
+
+## What it cannot do yet
+
+- No production loader integration yet (`DummyLoader` only).
+- No CLO-to-PLO rollup or PLO analytics in transformer (out of scope by design).
+- Queue is still in-memory only (no persistent job store).
+- Test/demo ETL routes in `app/api/routes/etl.py` are not yet aligned to final extractor/transformer method signatures.
+
+---
+
+## Data contract (share this with web app teammate)
+
+### Input file dependency (what backend relies on)
+
+The extractor is tied to the **class-record workbook layout** and expects these sheets:
+
+- Required sheets:
+  - `COVERPAGE`
+  - `Database (LECTURE-RES-PRAC)`
+  - `Exam (LECTURE ONLY)`
+- Optional sheet:
+  - `OUTPUT`
+- Ignored sheets for ETL input:
+  - `CO-PO Attainment`
+  - `Cohort Consolidated (COURSE)`
+
+If required sheets are missing: `MissingWorksheet`.
+If workbook cannot be opened: `InvalidWorkbook`.
+If template headers are structurally incompatible: `InvalidTemplate`.
+
+### Extract stage output
+
+`ExcelExtractor.extract(file_path)` returns:
+
+- `ClassRecordHeader`
+  - `course_code: str | None`
+  - `course_title: str | None`
+  - `course_type: str`
+  - `section: str | None`
+  - `semester_year: str`
+  - `instructor_name: str | None`
+  - `no_of_students: int`
+  - `threshold: float`
+  - `grading_system: str | None`
+  - `tla_at_exam_weights: dict[str, float]`
+- `list[RawScoreRecord]`
+  - `student_id: str | None`
+  - `student_name: str`
+  - `grading_period: "PRELIM" | "MIDTERM" | "FINAL"`
+  - `assessment_category: "TLA" | "AT" | "EXAM" | "OUTPUT"`
+  - `assessment_no: int`
+  - `clo_code: str`
+  - `activity_name: str | None`
+  - `max_score: float`
+  - `raw_score: float | None`
+
+### Transform stage output
+
+`SimpleTransformer.transform(header, records)` returns `list[StudentCLOAttainment]`:
+
+- Group key: `(student_name, student_id, clo_code)`
+- Category percentages:
+  - `tla_pct`, `at_pct`, `exam_pct`, `output_pct`
+  - Each is `None` when category has no eligible records (`raw_score is None` rows are excluded from numerator and denominator)
+- `clo_attainment_pct`:
+  - Weighted sum from `header.tla_at_exam_weights`
+  - When category pct is `None`, that category is removed and remaining weights are renormalized to sum to `1.0`
+- `met_threshold`: `clo_attainment_pct >= header.threshold`
+- `clo_level`:
+  - `1` if `< 0.5`
+  - `2` if `>= 0.5` and `< threshold`
+  - `3` if `>= threshold`
+- `formula_version`: deterministic short SHA-256-based hash of threshold + sorted weights
+
+### Transform error cases (`TransformationError`)
+
+- Any `raw_score > max_score` (message includes `student_name` and `clo_code`).
+- Missing non-optional category weight when that category is present for the student/CLO.
+  - Current policy: missing `OUTPUT` weight defaults to `0.0` (to support lecture-only templates where OUTPUT is not weighted).
+
+---
+
+## Request flow (current)
 
 ### Upload flow (`POST /upload`)
+
 1. API receives file upload.
-2. `save_upload_file()` writes file to disk (async, chunked, size-limited, atomic write).
-3. `job_queue.enqueue()` creates a queued job with UUID.
-4. Background workers (`start_worker`) pick queued jobs.
-5. Worker runs `run_full_pipeline(extractor, transformer, loader, payload)`.
-6. Job status changes: `queued -> running -> completed/failed`.
-7. Client checks status via `GET /jobs/`.
-
-### Direct ETL testing flow (`POST /etl/*`)
-- `POST /etl/extract`, `POST /etl/transform`, `POST /etl/load`, `POST /etl/pipeline`
-- These routes run placeholder ETL logic directly for debugging/demo.
-
----
-
-## Project structure and what each file does
-
-### `app/main.py`
-- Bootstraps FastAPI app.
-- Configures CORS.
-- Registers routers.
-- Starts and stops background worker pool on app lifecycle events.
-
-### `app/api/routes/`
-
-#### `app/api/routes/upload.py`
-- `upload_file(...)`: receives upload, saves file, enqueues ETL job.
-- Returns:
-  - `202` on accepted upload
-  - `413` if file is too large
-  - `503` if queue is full
-
-#### `app/api/routes/etl.py`
-- Stage test endpoints:
-  - `extract_data(...)`
-  - `transform_data(...)`
-  - `load_data(...)`
-  - `run_pipeline(...)`
-
-#### `app/api/routes/jobs.py`
-- `list_jobs()`: returns current job records from in-memory queue service.
-
-#### `app/api/routes/health.py`
-- `health()`: simple health response.
-
-### `app/core/`
-
-#### `app/core/config.py`
-- `Settings`: central config using Pydantic settings.
-- `settings`: global settings instance.
-- Key env vars:
-  - `DATABASE_URL`
-  - `API_URL`
-  - `UPLOAD_FOLDER`
-  - `MAX_UPLOAD_SIZE`
-  - `UPLOAD_CHUNK_SIZE`
-  - `MAX_CONCURRENT_UPLOAD_WRITES`
-  - `JOB_QUEUE_MAXSIZE`
-  - `JOB_WORKER_COUNT`
-  - `DEBUG`
-
-#### `app/core/logging.py`
-- `configure_logging()`: configures `structlog` JSON logging.
-- `logger`: shared logger object used across layers.
-
-#### `app/core/exceptions.py`
-- Base: `OBELISKError`
-- Domain errors:
-  - `InvalidWorkbook`
-  - `InvalidTemplate`
-  - `MissingWorksheet`
-  - `TransformationError`
-  - `LoaderError`
-  - `QueueOverloadedError`
-
-### `app/database/`
-
-#### `app/database/__init__.py`
-- SQLAlchemy async engine/session setup.
-- `get_session()` dependency for future DB-backed routes/services.
-
-### `app/models/`
-
-#### `app/models/base.py`
-- Defines SQLAlchemy declarative base via registry.
-
-#### `app/models/job.py`
-- `Job` ORM model for persisted jobs (foundation for future DB queue/state).
-- `to_dict()` helper for serialization.
-
-### `app/schemas/`
-
-#### `app/schemas/job.py`
-- Pydantic API schemas:
-  - `JobCreate`
-  - `JobRead`
-
-### `app/services/`
-
-#### `app/services/upload_service.py`
-- `save_upload_file(...)`:
-  - limits concurrent file writes using semaphore
-  - streams file in chunks
-  - enforces max upload size
-  - writes to temporary file then atomically renames
-
-#### `app/services/job_queue.py`
-- `InMemoryJobQueue` service.
-- Core methods:
-  - `enqueue(...)`: create queued job
-  - `get_job(...)`: fetch one job
-  - `list_jobs(...)`: fetch all jobs
-  - `process_next(...)`: run one queued job through ETL pipeline
-  - `queue_stats(...)`: queue usage metrics
-- `job_queue`: singleton queue instance.
-
-### `app/etl/`
-
-#### `app/etl/abstracts.py`
-- Abstract contracts:
-  - `Extractor`
-  - `Transformer`
-  - `Loader`
-- `run_full_pipeline(...)`: orchestration helper for full ETL.
-
-#### `app/etl/extract/extractor.py`
-- `ExcelExtractor.extract(...)`: placeholder extraction step returning mocked data.
-
-#### `app/etl/transform/transformer.py`
-- `SimpleTransformer.transform(...)`: placeholder normalization step.
-
-#### `app/etl/load/loader.py`
-- `DummyLoader.load(...)`: placeholder load step.
-
-### `app/workers/`
-
-#### `app/workers/worker.py`
-- `start_worker(queue, worker_id)`: async worker loop consuming queue jobs.
-
-### `app/utils/`
-
-#### `app/utils/excel.py`
-- Placeholder Excel helper functions:
-  - `list_sheets(...)`
-  - `read_rows(...)`
-  - `validate_headers(...)`
-
-#### `app/utils/types.py`
-- Shared types:
-  - `JobStatus` enum
-  - `JobRecord` dataclass
-
-### `__init__.py` files
-- Most folders include `__init__.py` so Python treats them as packages.
-- This enables imports like `from app.services.job_queue import job_queue`.
+2. `save_upload_file()` writes file to disk (chunked, size-limited, atomic write).
+3. `job_queue.enqueue()` creates queued job with UUID + payload.
+4. Worker picks job and runs ETL pipeline.
+5. Client reads status/result via `GET /jobs/`.
 
 ---
 
 ## API endpoints
 
 - `POST /upload`
-- `POST /etl/extract`
-- `POST /etl/transform`
-- `POST /etl/load`
-- `POST /etl/pipeline`
 - `GET /jobs/`
 - `GET /health/`
+- `POST /etl/extract` (dev/testing)
+- `POST /etl/transform` (dev/testing)
+- `POST /etl/load` (dev/testing)
+- `POST /etl/pipeline` (dev/testing)
 
 ---
 
 ## Run locally
 
-### 1) Install dependencies
+### Install dependencies
 
 ```powershell
 poetry install
 ```
 
-If you are not using Poetry, install equivalent dependencies manually from `pyproject.toml`.
-
-### 2) Start server
+### Start API server
 
 ```powershell
 poetry run uvicorn app.main:app --reload
 ```
 
-or
-
-```powershell
-uvicorn app.main:app --reload
-```
-
 ---
 
-## Current limitations (intentional)
+## Next recommended follow-ups
 
-- Queue is in-memory only (not persistent).
-- ETL logic returns mocked data.
-- No production auth/rate limiting yet.
-- Database model/migrations are scaffolding only.
-
----
-
-## Future build-out
-
-- Implement real Excel parsing and template validation.
-- Add DB-backed job persistence and Alembic migrations.
-- Replace in-memory queue with distributed queue when scaling.
-- Add unit/integration tests and CI checks.
-- Implement 37 OBE forms, CLO/PLO processing, CQI and analytics modules.
+- Align `app/api/routes/etl.py` demo route payloads with the new extractor/transformer signatures.
+- Add unit tests for extractor fixed-coordinate parsing and transformer renormalization/error paths.
+- Replace `DummyLoader` with real persistence/API integration once consumer contract is finalized.
 
