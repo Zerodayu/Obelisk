@@ -157,7 +157,10 @@ If template headers are structurally incompatible: `InvalidTemplate`.
 ### Install dependencies
 
 ```powershell
-poetry install
+1. (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+2. $env:Path += ";$env:APPDATA\Python\Scripts"
+3. poetry --version
+
 ```
 
 ### Start the API server
