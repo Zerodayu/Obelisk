@@ -11,19 +11,17 @@ from app.schemas.class_record import ClassRecordHeader, RawScoreRecord, StudentC
 class SimpleTransformer(Transformer):
     async def transform(
         self,
-        header: Any,
-        records: list[RawScoreRecord] | None = None,
+        extracted: Any,
     ) -> list[StudentCLOAttainment]:
-        if records is None:
-            if (
-                isinstance(header, tuple)
-                and len(header) == 2
-                and isinstance(header[0], ClassRecordHeader)
-                and isinstance(header[1], list)
-            ):
-                header, records = header
-            else:
-                raise TransformationError("transform expects (header, records)")
+        if (
+            isinstance(extracted, tuple)
+            and len(extracted) == 2
+            and isinstance(extracted[0], ClassRecordHeader)
+            and isinstance(extracted[1], list)
+        ):
+            header, records = extracted
+        else:
+            raise TransformationError("transform expects (header, records)")
 
         grouped: dict[tuple[str, str | None, str], list[RawScoreRecord]] = defaultdict(list)
         for record in records:
@@ -135,4 +133,3 @@ class SimpleTransformer(Transformer):
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:12]
-

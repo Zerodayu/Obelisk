@@ -6,10 +6,10 @@ from app.core.logging import logger
 
 class Extractor(ABC):
     @abstractmethod
-    async def extract(self, source: Any) -> Dict[str, Any]:
+    async def extract(self, source: Any) -> Any:
         """Extract data from the provided source (e.g. an uploaded workbook)."""
 
-    async def pipeline(self, source: Any) -> Dict[str, Any]:
+    async def pipeline(self, source: Any) -> Any:
         logger.info("extract_started")
         data = await self.extract(source)
         logger.info("extract_completed")
@@ -18,10 +18,10 @@ class Extractor(ABC):
 
 class Transformer(ABC):
     @abstractmethod
-    async def transform(self, extracted: Dict[str, Any]) -> Dict[str, Any]:
+    async def transform(self, extracted: Any) -> Any:
         """Transform extracted raw data into normalized payloads."""
 
-    async def pipeline(self, extracted: Dict[str, Any]) -> Dict[str, Any]:
+    async def pipeline(self, extracted: Any) -> Any:
         logger.info("transform_started")
         result = await self.transform(extracted)
         logger.info("transform_completed")
@@ -30,10 +30,10 @@ class Transformer(ABC):
 
 class Loader(ABC):
     @abstractmethod
-    async def load(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def load(self, payload: Any) -> Dict[str, Any]:
         """Load normalized payloads to destination (e.g. send to backend API)."""
 
-    async def pipeline(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def pipeline(self, payload: Any) -> Dict[str, Any]:
         logger.info("load_started")
         res = await self.load(payload)
         logger.info("load_completed")
@@ -44,6 +44,7 @@ async def run_full_pipeline(extractor: Extractor, transformer: Transformer, load
     # Orchestrator - simple sequential pipeline
     extracted = await extractor.pipeline(source)
     transformed = await transformer.pipeline(extracted)
-    loaded = await loader.pipeline(transformed)
+    # The transformer only returns the records, so we need to pass the header from the extractor to the loader.
+    header, _ = extracted
+    loaded = await loader.pipeline((header, transformed))
     return {"extracted": extracted, "transformed": transformed, "loaded": loaded}
-
