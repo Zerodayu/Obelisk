@@ -147,8 +147,8 @@ class ExcelExtractor(Extractor):
             tla_at_exam_weights=weights,
         )
 
-    def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | None]]:
-        students: list[dict[str, str | None]] = []
+    def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | int | None]]:
+        students: list[dict[str, str | int | None]] = []
         row = start_row
         while True:
             student_id = self._as_optional_string(sheet[f"A{row}"].value)
@@ -156,14 +156,14 @@ class ExcelExtractor(Extractor):
             if student_id is None and student_name is None:
                 break
             if student_name:
-                students.append({"student_id": student_id, "student_name": student_name})
+                students.append({"student_id": student_id, "student_name": student_name, "row": row})
             row += 1
         return students
 
     def _extract_database_block(
         self,
         sheet: Worksheet,
-        students: list[dict[str, str | None]],
+        students: list[dict[str, str | int | None]],
         grading_period: str,
         columns: list[str],
     ) -> list[RawScoreRecord]:
@@ -179,8 +179,8 @@ class ExcelExtractor(Extractor):
             activity_name = self._as_optional_string(sheet[f"{col}15"].value)
             col_idx = column_index_from_string(col)
 
-            for offset, student in enumerate(students, start=17):
-                raw_score = self._as_optional_float(sheet.cell(row=offset, column=col_idx).value)
+            for student in students:
+                raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
                 records.append(
                     RawScoreRecord(
                         student_id=student["student_id"],
@@ -197,7 +197,7 @@ class ExcelExtractor(Extractor):
         return records
 
     def _extract_exam_sheet(
-        self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | None]]
+        self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | int | None]]
     ) -> list[RawScoreRecord]:
         exam_students = self._read_roster(sheet, start_row=22)
         student_lookup = self._merge_roster_by_name(exam_students, db_students_by_name)
@@ -235,7 +235,7 @@ class ExcelExtractor(Extractor):
     def _extract_exam_columns(
         self,
         sheet: Worksheet,
-        students: list[dict[str, str | None]],
+        students: list[dict[str, str | int | None]],
         grading_period: str,
         columns: list[str],
         activity_name: str,
@@ -249,8 +249,8 @@ class ExcelExtractor(Extractor):
             if clo_code is None:
                 continue
             col_idx = column_index_from_string(col)
-            for row_num, student in enumerate(students, start=22):
-                raw_score = self._as_optional_float(sheet.cell(row=row_num, column=col_idx).value)
+            for student in students:
+                raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
                 records.append(
                     RawScoreRecord(
                         student_id=student["student_id"],
@@ -267,7 +267,7 @@ class ExcelExtractor(Extractor):
         return records
 
     def _extract_output_sheet(
-        self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | None]]
+        self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | int | None]]
     ) -> list[RawScoreRecord]:
         output_students = self._read_roster(sheet, start_row=22)
         students = self._merge_roster_by_name(output_students, db_students_by_name)
@@ -291,8 +291,8 @@ class ExcelExtractor(Extractor):
                 assessment_no += 1
                 activity_name = self._as_optional_string(sheet[f"{col}19"].value)
                 col_idx = column_index_from_string(col)
-                for row_num, student in enumerate(students, start=22):
-                    raw_score = self._as_optional_float(sheet.cell(row=row_num, column=col_idx).value)
+                for student in students:
+                    raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
                     records.append(
                         RawScoreRecord(
                             student_id=student["student_id"],
@@ -310,10 +310,10 @@ class ExcelExtractor(Extractor):
 
     def _merge_roster_by_name(
         self,
-        sheet_students: list[dict[str, str | None]],
-        db_students_by_name: dict[str, dict[str, str | None]],
-    ) -> list[dict[str, str | None]]:
-        merged: list[dict[str, str | None]] = []
+        sheet_students: list[dict[str, str | int | None]],
+        db_students_by_name: dict[str, dict[str, str | int | None]],
+    ) -> list[dict[str, str | int | None]]:
+        merged: list[dict[str, str | int | None]] = []
         for student in sheet_students:
             student_name = student.get("student_name")
             if not student_name:
@@ -321,7 +321,11 @@ class ExcelExtractor(Extractor):
             key = self._normalize_name(student_name)
             db_student = db_students_by_name.get(key)
             student_id = student.get("student_id") or (db_student.get("student_id") if db_student else None)
-            merged.append({"student_id": student_id, "student_name": student_name})
+            merged.append({
+                "student_id": student_id,
+                "student_name": student_name,
+                "row": student.get("row")
+            })
         return merged
 
     def _find_cover_value(self, sheet: Worksheet, label: str) -> str | None:
