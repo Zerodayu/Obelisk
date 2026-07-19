@@ -110,12 +110,41 @@ def main():
     num_attainments = len(attainments)
     print(f"\nFound {num_attainments} attainment records.")
 
-    if num_attainments > 0:
-        print_step("Sample Attainment Record")
-        print_json(attainments[0])
-        print("\nEND-TO-END TEST: PASSED")
-    else:
+    if num_attainments == 0:
         print("ERROR: No attainment records were found in the result.")
+        print("\nEND-TO-END TEST: FAILED")
+        return
+
+    # 5. Call the new recommendation endpoint
+    print_step(f"5. Calling GET /jobs/{job_id}/recommendation")
+    recommendation_url = f"{BASE_URL}/jobs/{job_id}/recommendation"
+    try:
+        rec_response = requests.get(recommendation_url, timeout=10)
+        print(f"GET {recommendation_url} status code: {rec_response.status_code}")
+
+        if rec_response.status_code == 200:
+            rec_data = rec_response.json()
+            print_json(rec_data, title="CQI Recommendation Response")
+
+            # Verification
+            if "gaps" in rec_data and "prompt_used" in rec_data and "[PLACEHOLDER RESPONSE" in rec_data.get("recommendation", ""):
+                print("\nVERIFICATION PASSED: Recommendation response has the correct shape and placeholder content.")
+                print("\nEND-TO-END TEST: PASSED")
+            else:
+                print("\nVERIFICATION FAILED: Recommendation response is missing expected fields or content.")
+                print("\nEND-TO-END TEST: FAILED")
+
+        else:
+            print(f"ERROR: Received status {rec_response.status_code}")
+            try:
+                print_json(rec_response.json(), title="Error Response")
+            except json.JSONDecodeError:
+                print("Could not decode JSON from error response.")
+                print(rec_response.text)
+            print("\nEND-TO-END TEST: FAILED")
+
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR: Request to recommendation endpoint failed: {e}")
         print("\nEND-TO-END TEST: FAILED")
 
 

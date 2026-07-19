@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -13,8 +14,13 @@ class Settings(BaseSettings):
     JOB_WORKER_COUNT: int = Field(4)
     DEBUG: bool = Field(True)
 
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # Webapp-friendly CORS configuration
+    ALLOWED_ORIGINS: List[str] = Field(
+        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        description="Comma-separated list of allowed origins for CORS.",
+    )
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_prefix="OBELISK_")
 
 
 settings = Settings()
-

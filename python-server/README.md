@@ -2,147 +2,92 @@
 
 Async-first FastAPI ETL service for OBELISK class-record processing.
 
-This README is updated up to **Step 2 + Step 3** implementation status.
+This README is updated to include the AI/CQI recommendation endpoint and configurable CORS.
 
 ---
 
-## What changed in this step window
+## What's New
 
-### Files changed
-
-- `app/etl/extract/extractor.py`
-  - Implemented real Excel extraction using fixed coordinates from the class-record template.
-  - Returns: `tuple[ClassRecordHeader, list[RawScoreRecord]]`.
-  - Added required error handling: `InvalidWorkbook`, `MissingWorksheet`, `InvalidTemplate`.
-  - COVERPAGE fallback now reads only the **immediate right cell** of label rows.
-- `app/etl/transform/transformer.py`
-  - Implemented real transformation to `list[StudentCLOAttainment]`.
-  - Computes category percentages and CLO attainment with weight renormalization when categories are absent.
-  - Applies threshold + CLO level classification.
-  - Emits deterministic `formula_version` hash from threshold + weights.
-  - Raises `TransformationError` for invalid score/weight conditions.
-
-### Files intentionally not changed
-
-- `app/etl/load/loader.py` is still placeholder (`DummyLoader`).
-- No PLO rollup logic was added.
+- **AI-Powered CQI Recommendations**: A new endpoint `GET /jobs/{job_id}/recommendation` provides AI-assisted Continuous Quality Improvement suggestions based on student performance gaps. This is currently in a safe, non-production mode using a placeholder response.
+- **Configurable CORS**: The server's Cross-Origin Resource Sharing (CORS) policy is now configurable via environment variables to securely allow requests from the web application frontend.
 
 ---
 
 ## What the service can do now
 
 - Accept uploaded class-record Excel files and queue ETL jobs.
-- Extract real raw score records from template sheets:
-  - `Database (LECTURE-RES-PRAC)`
-  - `Exam (LECTURE ONLY)`
-  - `OUTPUT` (optional/sparse)
-- Compute per-student per-CLO attainment objects (`StudentCLOAttainment`) from extracted records.
-- Handle sparse/unfilled template slots without failing where rules allow.
-
----
-
-## What it cannot do yet
-
-- No production loader integration yet (`DummyLoader` only).
-- No CLO-to-PLO rollup or PLO analytics in transformer (out of scope by design).
-- Queue is still in-memory only (no persistent job store).
-- Test/demo ETL routes in `app/api/routes/etl.py` are not yet aligned to final extractor/transformer method signatures.
+- Extract real raw score records from the template.
+- Compute per-student per-CLO attainment objects (`StudentCLOAttainment`).
+- **On-demand, generate AI-powered CQI recommendations** for completed jobs.
 
 ---
 
 ## Data contract (share this with web app teammate)
 
-### Input file dependency (what backend relies on)
+### Input file dependency
 
 The extractor is tied to the **class-record workbook layout** and expects these sheets:
+- Required: `COVERPAGE`, `Database (LECTURE-RES-PRAC)`, `Exam (LECTURE ONLY)`
+- Optional: `OUTPUT`
 
-- Required sheets:
-  - `COVERPAGE`
-  - `Database (LECTURE-RES-PRAC)`
-  - `Exam (LECTURE ONLY)`
-- Optional sheet:
-  - `OUTPUT`
-- Ignored sheets for ETL input:
-  - `CO-PO Attainment`
-  - `Cohort Consolidated (COURSE)`
+### Final Job Result (`GET /jobs/{job_id}`)
 
-If required sheets are missing: `MissingWorksheet`.
-If workbook cannot be opened: `InvalidWorkbook`.
-If template headers are structurally incompatible: `InvalidTemplate`.
+When a job is `completed`, the `result.loaded` field will contain:
+```json
+{
+  "status": "ok",
+  "received_records": 150,
+  "header": {
+    "course_code": "CS101",
+    "course_title": "Introduction to Computer Science",
+    "section": "A",
+    "threshold": 0.75,
+    "tla_at_exam_weights": {"TLA": 0.4, "AT": 0.2, "EXAM": 0.4}
+    // ... and other header fields
+  },
+  "attainments": [
+    {
+      "student_name": "DOE, JOHN",
+      "clo_code": "CLO1",
+      "clo_attainment_pct": 0.85,
+      "met_threshold": true
+      // ... and other attainment fields
+    }
+  ]
+}
+```
 
-### Extract stage output
+### CQI Recommendation (`GET /jobs/{job_id}/recommendation`)
 
-`ExcelExtractor.extract(file_path)` returns:
-
-- `ClassRecordHeader`
-  - `course_code: str | None`
-  - `course_title: str | None`
-  - `course_type: str`
-  - `section: str | None`
-  - `semester_year: str`
-  - `instructor_name: str | None`
-  - `no_of_students: int`
-  - `threshold: float`
-  - `grading_system: str | None`
-  - `tla_at_exam_weights: dict[str, float]`
-- `list[RawScoreRecord]`
-  - `student_id: str | None`
-  - `student_name: str`
-  - `grading_period: "PRELIM" | "MIDTERM" | "FINAL"`
-  - `assessment_category: "TLA" | "AT" | "EXAM" | "OUTPUT"`
-  - `assessment_no: int`
-  - `clo_code: str`
-  - `activity_name: str | None`
-  - `max_score: float`
-  - `raw_score: float | None`
-
-### Transform stage output
-
-`SimpleTransformer.transform(header, records)` returns `list[StudentCLOAttainment]`:
-
-- Group key: `(student_name, student_id, clo_code)`
-- Category percentages:
-  - `tla_pct`, `at_pct`, `exam_pct`, `output_pct`
-  - Each is `None` when category has no eligible records (`raw_score is None` rows are excluded from numerator and denominator)
-- `clo_attainment_pct`:
-  - Weighted sum from `header.tla_at_exam_weights`
-  - When category pct is `None`, that category is removed and remaining weights are renormalized to sum to `1.0`
-- `met_threshold`: `clo_attainment_pct >= header.threshold`
-- `clo_level`:
-  - `1` if `< 0.5`
-  - `2` if `>= 0.5` and `< threshold`
-  - `3` if `>= threshold`
-- `formula_version`: deterministic short SHA-256-based hash of threshold + sorted weights
-
-### Transform error cases (`TransformationError`)
-
-- Any `raw_score > max_score` (message includes `student_name` and `clo_code`).
-- Missing non-optional category weight when that category is present for the student/CLO.
-  - Current policy: missing `OUTPUT` weight defaults to `0.0` (to support lecture-only templates where OUTPUT is not weighted).
-
----
-
-## Request flow (current)
-
-### Upload flow (`POST /upload`)
-
-1. API receives file upload.
-2. `save_upload_file()` writes file to disk (chunked, size-limited, atomic write).
-3. `job_queue.enqueue()` creates queued job with UUID + payload.
-4. Worker picks job and runs ETL pipeline.
-5. Client reads status/result via `GET /jobs/`.
+For a `completed` job, this endpoint returns a CQI analysis:
+```json
+{
+  "course_code": "CS101",
+  "status": "ok",
+  "gaps": [
+    {
+      "clo_code": "CLO2",
+      "num_students_below_threshold": 2,
+      "total_students": 30,
+      "attainment_values": [0.45, 0.6],
+      "threshold": 0.75
+    }
+  ],
+  "prompt_used": "Course: CS101...",
+  "recommendation": "[PLACEHOLDER RESPONSE...]"
+}
+```
+If a job is not yet complete, this endpoint will return a `409 Conflict`. If no students fell below the threshold, `status` will be `no_gaps_found`.
 
 ---
 
 ## API endpoints
 
-- `POST /upload`
-- `GET /jobs/`
-- `GET /health/`
-- `POST /etl/extract` (dev/testing)
-- `POST /etl/transform` (dev/testing)
-- `POST /etl/load` (dev/testing)
-- `POST /etl/pipeline` (dev/testing)
+- `POST /upload`: Upload a class-record file to start an ETL job.
+- `GET /jobs/`: List all job IDs.
+- `GET /jobs/{job_id}`: Get the detailed status and result of a specific job.
+- `GET /jobs/{job_id}/recommendation`: Get a CQI recommendation for a completed job.
+- `GET /health/`: Health check endpoint.
 
 ---
 
@@ -152,15 +97,27 @@ If template headers are structurally incompatible: `InvalidTemplate`.
 
 - Python 3.10+
 - Poetry (for dependency management)
-- A valid class-record Excel file matching the OBELISK template
 
 ### Install dependencies
 
 ```powershell
-1. (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
-2. $env:Path += ";$env:APPDATA\Python\Scripts"
-3. poetry --version
+poetry install
+```
 
+### Environment Variables (Optional)
+
+Create a `.env` file in the project root to configure the service.
+
+```env
+# .env
+
+# Comma-separated list of allowed origins for CORS
+# Default: "http://localhost:3000,http://127.0.0.1:3000"
+OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://your-webapp-domain.com"
+
+# Number of parallel workers to process jobs
+# Default: 4
+OBELISK_JOB_WORKER_COUNT=4
 ```
 
 ### Start the API server
@@ -168,99 +125,47 @@ If template headers are structurally incompatible: `InvalidTemplate`.
 ```powershell
 poetry run uvicorn app.main:app --reload
 ```
-
 The server will start on `http://localhost:8000`.
 
-### Test ETL pipeline via API
+### Test the full pipeline via API
 
 #### 1. Upload a class-record file
 
 ```powershell
-curl -X POST "http://localhost:8000/upload" `
-  -F "file=@path\to\your\E-classrecord(LECTURE ONLY).xlsx"
+# Using curl
+curl -X POST "http://localhost:8000/upload" -F "file=@path\to\your\E-classrecord(LECTURE ONLY).xlsx"
+
+# Using the test script
+python test_upload_e2e.py
+```
+The response will include a `job_id`.
+
+#### 2. Check job status
+
+Poll `GET http://localhost:8000/jobs/{job_id}` until the status is `completed`.
+
+#### 3. Get CQI Recommendation
+
+Once the job is complete, call the new endpoint:
+```powershell
+curl "http://localhost:8000/jobs/{job_id}/recommendation"
 ```
 
-Response includes a job UUID.
+### Verify CORS Configuration
 
-#### 2. Check job status and results
+To test that the CORS configuration is working correctly for a webapp running on `http://localhost:3000`, use this `curl` command to simulate a browser's preflight request:
 
 ```powershell
-curl "http://localhost:8000/jobs/"
+# On Windows PowerShell, use curl.exe to avoid the alias
+curl.exe -i -X OPTIONS http://localhost:8000/upload -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST"
 ```
 
-Look for the queued/completed job and its output.
-
-### Test ETL pipeline directly (Python)
-
-Create a test script `test_etl.py` in the root:
-
-```python
-import asyncio
-from app.etl.extract.extractor import ExcelExtractor
-from app.etl.transform.transformer import SimpleTransformer
-
-async def main():
-    # Extract from real sample file
-    file_path = "E-classrecord(LECTURE ONLY).xlsx"
-    extractor = ExcelExtractor()
-    header, records = extractor.extract(file_path)
-    
-    print("=== ClassRecordHeader ===")
-    print(f"Course: {header.course_code} / {header.course_title}")
-    print(f"Semester: {header.semester_year}")
-    print(f"Students: {header.no_of_students}")
-    print(f"Threshold: {header.threshold}")
-    print(f"Weights: {header.tla_at_exam_weights}")
-    print()
-    
-    print("=== RawScoreRecord count ===")
-    from collections import Counter
-    groups = Counter((r.grading_period, r.assessment_category) for r in records)
-    for (period, category), count in sorted(groups.items()):
-        print(f"  {period} / {category}: {count}")
-    print()
-    
-    # Transform to CLO attainment
-    transformer = SimpleTransformer()
-    attainments = transformer.transform(header, records)
-    
-    print("=== StudentCLOAttainment count ===")
-    print(f"Total records: {len(attainments)}")
-    print()
-    
-    # Show one student's CLO breakdown
-    if attainments:
-        sample = attainments[0]
-        print(f"Sample: {sample.student_name} / {sample.clo_code}")
-        print(f"  TLA: {sample.tla_pct}")
-        print(f"  AT: {sample.at_pct}")
-        print(f"  EXAM: {sample.exam_pct}")
-        print(f"  OUTPUT: {sample.output_pct}")
-        print(f"  CLO Attainment: {sample.clo_attainment_pct}")
-        print(f"  Met Threshold: {sample.met_threshold}")
-        print(f"  CLO Level: {sample.clo_level}")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-Run it:
-
-```powershell
-poetry run python test_etl.py
-```
-
-### Health check
-
-```powershell
-curl "http://localhost:8000/health/"
-```
+A successful response will include the header `access-control-allow-origin: http://localhost:3000`.
 
 ---
 
 ## Next recommended follow-ups
 
-- Align `app/api/routes/etl.py` demo route payloads with the new extractor/transformer signatures.
-- Add unit tests for extractor fixed-coordinate parsing and transformer renormalization/error paths.
-- Replace `DummyLoader` with real persistence/API integration once consumer contract is finalized.
-
+- Implement the real LLM API call in `app/analytics/cqi_recommender.py` and set `IS_DEBUG_MODE` to `False`.
+- Add unit tests for the analytics module.
+- Replace `DummyLoader` with a real persistence layer.

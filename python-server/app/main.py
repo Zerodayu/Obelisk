@@ -7,26 +7,30 @@ from app.api.routes.upload import router as upload_router
 from app.api.routes.etl import router as etl_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.health import router as health_router
+from app.api.routes.analytics import router as analytics_router
 from app.services.job_queue import job_queue
 from app.workers.worker import start_worker
 
 app = FastAPI(title="OBELISK ETL (placeholder)")
 
+# Configure CORS using settings from config.py
+# This is more secure and flexible than a hardcoded wildcard.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all standard methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 configure_logging()
-logger.info("app_startup", message="Initializing OBELISK ETL application", debug=settings.DEBUG)
+logger.info("app_startup", message="Initializing OBELISK ETL application", debug=settings.DEBUG, allowed_origins=settings.ALLOWED_ORIGINS)
 
 app.include_router(upload_router, prefix="", tags=["upload"])
 app.include_router(etl_router, prefix="/etl", tags=["etl"])
 app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
 app.include_router(health_router, prefix="/health", tags=["health"])
+app.include_router(analytics_router, prefix="", tags=["analytics"])
 
 _worker_tasks: list[asyncio.Task] = []
 
@@ -49,4 +53,3 @@ async def shutdown_event():
     if _worker_tasks:
         await asyncio.gather(*_worker_tasks, return_exceptions=True)
         logger.info("shutdown", message="Worker tasks cancelled", worker_count=len(_worker_tasks))
-
