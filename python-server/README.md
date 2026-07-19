@@ -2,37 +2,27 @@
 
 Async-first FastAPI ETL service for OBELISK class-record processing.
 
-This README is updated to include the AI/CQI recommendation endpoint and configurable CORS.
+This README is updated to reflect the new institutional CLO attainment formula.
 
 ---
 
 ## What's New
 
-- **AI-Powered CQI Recommendations**: A new endpoint `GET /jobs/{job_id}/recommendation` provides AI-assisted Continuous Quality Improvement suggestions based on student performance gaps. This is currently in a safe, non-production mode using a placeholder response.
-- **Configurable CORS**: The server's Cross-Origin Resource Sharing (CORS) policy is now configurable via environment variables to securely allow requests from the web application frontend.
-
----
-
-## What the service can do now
-
-- Accept uploaded class-record Excel files and queue ETL jobs.
-- Extract real raw score records from the template.
-- Compute per-student per-CLO attainment objects (`StudentCLOAttainment`).
-- **On-demand, generate AI-powered CQI recommendations** for completed jobs.
+- **New CLO Attainment Formula**: The core transformation logic has been refactored to use the official institutional formula (Formula 1A from the OBE Assessment Plan manual). This replaces the previous weighted-category calculation with a simple pooling of all raw scores against all maximum scores for a given CLO.
+- **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**, not the per-course threshold from the workbook.
+- **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`) instead of a number.
+- **AI-Powered CQI Recommendations**: A `GET /jobs/{job_id}/recommendation` endpoint provides AI-assisted CQI suggestions based on performance gaps.
+- **Configurable CORS**: The server's CORS policy is configurable via environment variables.
 
 ---
 
 ## Data contract (share this with web app teammate)
 
-### Input file dependency
-
-The extractor is tied to the **class-record workbook layout** and expects these sheets:
-- Required: `COVERPAGE`, `Database (LECTURE-RES-PRAC)`, `Exam (LECTURE ONLY)`
-- Optional: `OUTPUT`
+**IMPORTANT**: The shape of the `StudentCLOAttainment` object in the final JSON result has changed.
 
 ### Final Job Result (`GET /jobs/{job_id}`)
 
-When a job is `completed`, the `result.loaded` field will contain:
+When a job is `completed`, the `result.loaded.attainments` array will contain objects with the following new shape:
 ```json
 {
   "status": "ok",
@@ -41,17 +31,24 @@ When a job is `completed`, the `result.loaded` field will contain:
     "course_code": "CS101",
     "course_title": "Introduction to Computer Science",
     "section": "A",
-    "threshold": 0.75,
-    "tla_at_exam_weights": {"TLA": 0.4, "AT": 0.2, "EXAM": 0.4}
+    "threshold": 0.6, // The course-specific threshold from the file (for display only)
+    "tla_at_exam_weights": null // This is no longer used for calculation
     // ... and other header fields
   },
   "attainments": [
     {
       "student_name": "DOE, JOHN",
       "clo_code": "CLO1",
-      "clo_attainment_pct": 0.85,
-      "met_threshold": true
-      // ... and other attainment fields
+      
+      "tla_pct": 0.88, // Informational breakdown, not used in main calculation
+      "at_pct": 0.90,
+      "exam_pct": 0.80,
+      "output_pct": null,
+
+      "direct_clo_attainment_pct": 0.85, // RENAMED from clo_attainment_pct
+      "met_threshold": true, // NOW compares against fixed 70% institutional threshold
+      "clo_level": "Exceptional", // CHANGED from integer to 4-tier string
+      "formula_version": "..."
     }
   ]
 }
@@ -59,25 +56,7 @@ When a job is `completed`, the `result.loaded` field will contain:
 
 ### CQI Recommendation (`GET /jobs/{job_id}/recommendation`)
 
-For a `completed` job, this endpoint returns a CQI analysis:
-```json
-{
-  "course_code": "CS101",
-  "status": "ok",
-  "gaps": [
-    {
-      "clo_code": "CLO2",
-      "num_students_below_threshold": 2,
-      "total_students": 30,
-      "attainment_values": [0.45, 0.6],
-      "threshold": 0.75
-    }
-  ],
-  "prompt_used": "Course: CS101...",
-  "recommendation": "[PLACEHOLDER RESPONSE...]"
-}
-```
-If a job is not yet complete, this endpoint will return a `409 Conflict`. If no students fell below the threshold, `status` will be `no_gaps_found`.
+This endpoint's output remains the same, but the underlying gap analysis now uses the new `direct_clo_attainment_pct` and the fixed 70% threshold.
 
 ---
 
@@ -114,10 +93,6 @@ Create a `.env` file in the project root to configure the service.
 # Comma-separated list of allowed origins for CORS
 # Default: "http://localhost:3000,http://127.0.0.1:3000"
 OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://your-webapp-domain.com"
-
-# Number of parallel workers to process jobs
-# Default: 4
-OBELISK_JOB_WORKER_COUNT=4
 ```
 
 ### Start the API server
@@ -129,38 +104,11 @@ The server will start on `http://localhost:8000`.
 
 ### Test the full pipeline via API
 
-#### 1. Upload a class-record file
-
+Use the end-to-end test script to upload a file and see the final output with the new formula:
 ```powershell
-# Using curl
-curl -X POST "http://localhost:8000/upload" -F "file=@path\to\your\E-classrecord(LECTURE ONLY).xlsx"
-
-# Using the test script
 python test_upload_e2e.py
 ```
-The response will include a `job_id`.
-
-#### 2. Check job status
-
-Poll `GET http://localhost:8000/jobs/{job_id}` until the status is `completed`.
-
-#### 3. Get CQI Recommendation
-
-Once the job is complete, call the new endpoint:
-```powershell
-curl "http://localhost:8000/jobs/{job_id}/recommendation"
-```
-
-### Verify CORS Configuration
-
-To test that the CORS configuration is working correctly for a webapp running on `http://localhost:3000`, use this `curl` command to simulate a browser's preflight request:
-
-```powershell
-# On Windows PowerShell, use curl.exe to avoid the alias
-curl.exe -i -X OPTIONS http://localhost:8000/upload -H "Origin: http://localhost:3000" -H "Access-Control-Request-Method: POST"
-```
-
-A successful response will include the header `access-control-allow-origin: http://localhost:3000`.
+The script will print the job status and the final JSON result, including the CQI recommendation.
 
 ---
 
