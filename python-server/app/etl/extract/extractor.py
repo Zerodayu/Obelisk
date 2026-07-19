@@ -105,19 +105,15 @@ class ExcelExtractor(Extractor):
         no_of_students = self._as_int(db_sheet["B8"].value)
         threshold = self._as_float(db_sheet["B10"].value)
 
-        d5 = self._as_string(db_sheet["D5"].value)
-        e5 = self._as_string(db_sheet["E5"].value)
-        f5 = self._as_string(db_sheet["F5"].value)
-        d6 = self._as_float(db_sheet["D6"].value)
-        e6 = self._as_float(db_sheet["E6"].value)
-        f6 = self._as_float(db_sheet["F6"].value)
+        # The TLA/AT/EXAM weights are no longer used in the primary calculation,
+        # but we can still extract them for diagnostic purposes.
         weights: dict[str, float] = {}
-        if d5:
-            weights[d5] = d6
-        if e5:
-            weights[e5] = e6
-        if f5:
-            weights[f5] = f6
+        d5 = self._as_string(db_sheet["D5"].value)
+        if d5: weights[d5] = self._as_float(db_sheet["D6"].value)
+        e5 = self._as_string(db_sheet["E5"].value)
+        if e5: weights[e5] = self._as_float(db_sheet["E6"].value)
+        f5 = self._as_string(db_sheet["F5"].value)
+        if f5: weights[f5] = self._as_float(db_sheet["F6"].value)
 
         return ClassRecordHeader(
             course_code=self._coalesce_optional(
@@ -144,7 +140,7 @@ class ExcelExtractor(Extractor):
                 db_sheet["B11"].value,
                 self._find_cover_value(cover_sheet, "GRADING SYSTEM"),
             ),
-            tla_at_exam_weights=weights,
+            tla_at_exam_weights=weights if weights else None,
         )
 
     def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | int | None]]:
@@ -403,4 +399,3 @@ class ExcelExtractor(Extractor):
 
     def _coalesce_optional(self, primary: Any, fallback: Any) -> str | None:
         return self._as_optional_string(primary) or self._as_optional_string(fallback)
-

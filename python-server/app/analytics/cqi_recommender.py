@@ -3,6 +3,7 @@ from typing import List
 
 from app.core.logging import logger
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
+from app.etl.transform.transformer import INSTITUTIONAL_THRESHOLD
 
 # Manual toggle — set to False only once a real LLM API integration is implemented below.
 # True  = use the placeholder response (no real API call, safe for testing/demo)
@@ -26,8 +27,8 @@ def identify_gaps(header: ClassRecordHeader, attainments: List[StudentCLOAttainm
             "clo_code": clo_code,
             "num_students_below_threshold": len(failed_attainments),
             "total_students": len(all_students_for_clo),
-            "attainment_values": [f.clo_attainment_pct for f in failed_attainments],
-            "threshold": header.threshold,
+            "attainment_values": [f.direct_clo_attainment_pct for f in failed_attainments],
+            "threshold": INSTITUTIONAL_THRESHOLD, # Gaps are identified against the institutional threshold
         })
 
     return {"course_code": header.course_code, "gaps": gap_summaries}
@@ -63,8 +64,8 @@ def build_prompt(header: ClassRecordHeader, gap_summary: dict) -> str:
         f"Course: {header.course_code} ({header.course_title})",
         f"Section: {header.section}",
         f"Instructor: {header.instructor_name}",
-        f"The attainment threshold for this course is {header.threshold * 100:.0f}%.",
-        "\nThe following Course Learning Outcomes (CLOs) had students who did not meet this threshold:",
+        f"The institutional attainment threshold for this course is {INSTITUTIONAL_THRESHOLD * 100:.0f}%. The course's own configured threshold was {header.threshold * 100:.0f}%.",
+        "\nThe following Course Learning Outcomes (CLOs) had students who did not meet the institutional threshold:",
     ]
 
     for gap in gaps:
