@@ -140,7 +140,7 @@ class ExcelExtractor(Extractor):
                 db_sheet["B11"].value,
                 self._find_cover_value(cover_sheet, "GRADING SYSTEM"),
             ),
-            tla_at_exam_weights=weights if weights else None,
+            workbook_configured_weights_unused=weights if weights else None,
         )
 
     def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | int | None]]:
