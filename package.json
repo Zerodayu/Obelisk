@@ -1,15 +1,18 @@
 {
   "name": "obelisk",
-  "type": "module",
   "private": true,
-  "workspaces": [
-    "backend"
-  ],
   "scripts": {
     "dev": "bun --filter '*' dev",
     "dev:frontend": "bun --filter frontend dev",
     "dev:backend": "bun --filter backend dev",
     "build": "bun --filter '*' build",
-    "start": "bun --filter '*' start"
-  }
+    "start": "bun --filter '*' start",
+    "add:backend": "bun add --filter backend",
+    "add:frontend": "bun add --filter frontend",
+    "add:both": "bun add --filter backend --filter frontend"
+  },
+  "type": "module",
+  "workspaces": [
+    "backend"
+  ]
 }
