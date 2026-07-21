@@ -1,4 +1,4 @@
-from typing import List, Literal, Optional
+from typing import List, Literal, Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
@@ -12,13 +12,18 @@ class Period(BaseModel):
 
 class CourseSubmission(BaseModel):
     """Represents the data for a single course section."""
-    department: str
-    program: str
+    # These fields represent organizational data that will be looked up by the
+    # webapp backend and included in the payload. They are optional for now
+    # to allow for graceful degradation until that integration is complete.
+    department: Optional[str] = None
+    program: Optional[str] = None
     avp_group: Optional[str] = None
+    
     course_code: str
-    section: str
+    section: Optional[str] = None
     header: ClassRecordHeader
     attainments: List[StudentCLOAttainment]
+    clo_plo_mapping: List[Dict[str, Any]]
 
 
 class InstitutionalSummaryPayload(BaseModel):

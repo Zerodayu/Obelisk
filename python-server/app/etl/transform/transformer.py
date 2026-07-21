@@ -18,13 +18,13 @@ class SimpleTransformer(Transformer):
     ) -> list[StudentCLOAttainment]:
         if (
             isinstance(extracted, tuple)
-            and len(extracted) == 2
+            and len(extracted) == 3
             and isinstance(extracted[0], ClassRecordHeader)
             and isinstance(extracted[1], list)
         ):
-            header, records = extracted
+            header, records, _ = extracted  # clo_plo_mapping is passed through but not used here
         else:
-            raise TransformationError("transform expects (header, records)")
+            raise TransformationError("transform expects (header, records, clo_plo_mapping)")
 
         grouped: dict[tuple[str, str | None, str], list[RawScoreRecord]] = defaultdict(list)
         for record in records:

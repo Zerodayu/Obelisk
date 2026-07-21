@@ -2,75 +2,82 @@
 
 Async-first FastAPI ETL service for OBELISK class-record processing.
 
-This README is updated to reflect the new institutional CLO attainment formula.
+This README is updated to reflect the new institutional CLO attainment formula and PLO rollups from real workbook data.
 
 ---
 
 ## What's New
 
-- **New CLO Attainment Formula**: The core transformation logic has been refactored to use the official institutional formula (Formula 1A from the OBE Assessment Plan manual). This replaces the previous weighted-category calculation with a simple pooling of all raw scores against all maximum scores for a given CLO.
-- **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**, not the per-course threshold from the workbook.
-- **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`) instead of a number.
-- **AI-Powered CQI Recommendations**: A `GET /jobs/{job_id}/recommendation` endpoint provides AI-assisted CQI suggestions based on performance gaps.
+- **New CLO Attainment Formula**: The core transformation logic uses the official institutional formula (Formula 1A) by pooling all raw scores for a CLO.
+- **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook, replacing the previous hardcoded fixture.
+- **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A), using the real mapping data from each file.
+- **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**.
+- **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`).
+- **AI-Powered CQI Recommendations**: Endpoints are available for both per-course and institution-wide AI-assisted CQI summaries.
 - **Configurable CORS**: The server's CORS policy is configurable via environment variables.
 
 ---
 
 ## Data contract (share this with web app teammate)
 
-**IMPORTANT**: The shape of the `StudentCLOAttainment` object in the final JSON result has changed.
+**IMPORTANT**: The shape of the final job result and the institutional summary have changed.
 
 ### Final Job Result (`GET /jobs/{job_id}`)
 
-When a job is `completed`, the `result.loaded.attainments` array will contain objects with the following new shape:
+When a job is `completed`, the `result.loaded` object will now contain a `clo_plo_mapping` field, extracted directly from the workbook:
 ```json
 {
   "status": "ok",
   "received_records": 150,
-  "header": {
-    "course_code": "CS101",
-    "course_title": "Introduction to Computer Science",
-    "section": "A",
-    "threshold": 0.6, // The course-specific threshold from the file (for display only)
-    "tla_at_exam_weights": null // This is no longer used for calculation
-    // ... and other header fields
-  },
-  "attainments": [
-    {
-      "student_name": "DOE, JOHN",
-      "clo_code": "CLO1",
-      
-      "tla_pct": 0.88, // Informational breakdown, not used in main calculation
-      "at_pct": 0.90,
-      "exam_pct": 0.80,
-      "output_pct": null,
-
-      "direct_clo_attainment_pct": 0.85, // RENAMED from clo_attainment_pct
-      "met_threshold": true, // NOW compares against fixed 70% institutional threshold
-      "clo_level": "Exceptional", // CHANGED from integer to 4-tier string
-      "formula_version": "..."
-    }
+  "header": { ... },
+  "attainments": [ ... ],
+  "clo_plo_mapping": [
+    { "clo_code": "CLO1", "plo_code": "PLO1", "correlation_strength": 3 },
+    { "clo_code": "CLO2", "plo_code": "PLO2", "correlation_strength": 2 }
   ]
 }
 ```
 
-### CQI Recommendation (`GET /jobs/{job_id}/recommendation`)
+### Institutional Summary (`POST /analytics/institutional-summary`)
 
-This endpoint's output remains the same, but the underlying gap analysis now uses the new `direct_clo_attainment_pct` and the fixed 70% threshold.
+The payload for this endpoint now requires the `clo_plo_mapping` for each submission. The `plos` section in the response now includes `correlation_strength` instead of the old `ipd_stage`.
+```json
+{
+  "program_summary": {
+    "BS Information Technology": {
+      "total_attainment_records": 300,
+      "clos": { ... },
+      "plos": {
+        "PLO1": {
+          "plo_attainment_direct_only": 0.885,
+          "mapped_clos": [
+            { "clo_code": "CLO1", "attainment_rate": 0.92, "correlation_strength": 3 },
+            { "clo_code": "CLO3", "attainment_rate": 0.85, "correlation_strength": 2 }
+          ]
+        }
+        // ... other PLOs
+      }
+    }
+    // ... other programs
+  }
+}
+```
 
 ---
 
 ## API endpoints
 
 - `POST /upload`: Upload a class-record file to start an ETL job.
-- `GET /jobs/`: List all job IDs.
 - `GET /jobs/{job_id}`: Get the detailed status and result of a specific job.
-- `GET /jobs/{job_id}/recommendation`: Get a CQI recommendation for a completed job.
+- `GET /jobs/{job_id}/recommendation`: Get a CQI recommendation for a single completed job.
+- `POST /analytics/institutional-summary`: Get a high-level CQI summary for the entire institution.
 - `GET /health/`: Health check endpoint.
 
 ---
 
 ## How to run
+
+(This section is unchanged)
 
 ### Prerequisites
 
@@ -104,16 +111,19 @@ The server will start on `http://localhost:8000`.
 
 ### Test the full pipeline via API
 
-Use the end-to-end test script to upload a file and see the final output with the new formula:
+Use the end-to-end test scripts to validate the full functionality:
 ```powershell
+# Test the single-file upload and per-course recommendation
 python test_upload_e2e.py
+
+# Test the multi-file institutional summary and PLO rollup
+python test_institutional_summary_e2e.py
 ```
-The script will print the job status and the final JSON result, including the CQI recommendation.
 
 ---
 
 ## Next recommended follow-ups
 
 - Implement the real LLM API call in `app/analytics/cqi_recommender.py` and set `IS_DEBUG_MODE` to `False`.
-- Add unit tests for the analytics module.
+- Implement credit-unit weighting for PLO attainment (Formula 7B).
 - Replace `DummyLoader` with a real persistence layer.

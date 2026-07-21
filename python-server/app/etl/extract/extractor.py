@@ -1,22 +1,22 @@
 import asyncio
 from pathlib import Path
-from typing import Any
-
+from typing import Any, List, Dict
 from openpyxl import load_workbook
 from openpyxl.utils.cell import column_index_from_string
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet
+from app.core.logging import logger
 from app.etl.abstracts import Extractor
 from app.schemas.class_record import ClassRecordHeader, RawScoreRecord
 
 
 class ExcelExtractor(Extractor):
-    async def extract(self, source: Any) -> tuple[ClassRecordHeader, list[RawScoreRecord]]:
+    async def extract(self, source: Any) -> tuple[ClassRecordHeader, list[RawScoreRecord], list[dict[str, Any]]]:
         file_path = self._resolve_file_path(source)
         return await asyncio.to_thread(self._extract_sync, file_path)
 
-    def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[RawScoreRecord]]:
+    def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[RawScoreRecord], list[dict[str, Any]]]:
         try:
             workbook = load_workbook(file_path, data_only=True)
         except Exception as exc:
@@ -33,57 +33,64 @@ class ExcelExtractor(Extractor):
             self._validate_template(output_sheet, "B18")
 
         header = self._build_header(db_sheet, cover_sheet)
+        clo_plo_mapping = self._extract_clo_plo_mapping(cover_sheet)
 
         db_students = self._read_roster(db_sheet, start_row=17)
         records: list[RawScoreRecord] = []
 
-        records.extend(
-            self._extract_database_block(
-                sheet=db_sheet,
-                students=db_students,
-                grading_period="PRELIM",
-                columns=["D", "E", "F", "G", "H", "I", "J"],
-            )
-        )
-        records.extend(
-            self._extract_database_block(
-                sheet=db_sheet,
-                students=db_students,
-                grading_period="MIDTERM",
-                columns=["AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV"],
-            )
-        )
-        records.extend(
-            self._extract_database_block(
-                sheet=db_sheet,
-                students=db_students,
-                grading_period="FINAL",
-                columns=["BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ"],
-            )
-        )
+        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period="PRELIM", columns=["D", "E", "F", "G", "H", "I", "J"]))
+        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period="MIDTERM", columns=["AJ", "AK", "AL", "AM", "AN", "AO", "AP", "AQ", "AR", "AS", "AT", "AU", "AV"]))
+        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period="FINAL", columns=["BP", "BQ", "BR", "BS", "BT", "BU", "BV", "BW", "BX", "BY", "BZ"]))
 
-        db_students_by_name = {
-            self._normalize_name(student["student_name"]): student
-            for student in db_students
-            if student["student_name"]
-        }
+        db_students_by_name = {self._normalize_name(student["student_name"]): student for student in db_students if student["student_name"]}
         records.extend(self._extract_exam_sheet(exam_sheet, db_students_by_name))
 
         if output_sheet is not None:
             records.extend(self._extract_output_sheet(output_sheet, db_students_by_name))
 
-        return header, records
+        return header, records, clo_plo_mapping
+
+    def _extract_clo_plo_mapping(self, sheet: Worksheet) -> List[Dict[str, Any]]:
+        """Extracts the CLO-PLO correlation mapping table from the COVERPAGE."""
+        try:
+            self._validate_template(sheet, "A26", expected="CLO-PLO")
+        except InvalidTemplate:
+            logger.warning("clo_plo_mapping_not_found", sheet=sheet.title)
+            return []
+
+        mapping = []
+        plo_headers = {}
+        # Read PLO headers from row 26
+        for col_idx in range(2, sheet.max_column + 1):
+            plo_code = self._as_optional_string(sheet.cell(row=26, column=col_idx).value)
+            if not plo_code:
+                break
+            plo_headers[col_idx] = plo_code
+
+        # Read CLO rows starting from row 27
+        for row_idx in range(27, sheet.max_row + 1):
+            clo_code = self._as_optional_string(sheet.cell(row=row_idx, column=1).value)
+            if not clo_code or clo_code.strip().upper() == "AVERAGE":
+                break
+            
+            for col_idx, plo_code in plo_headers.items():
+                correlation = sheet.cell(row=row_idx, column=col_idx).value
+                if correlation is not None and str(correlation).strip() != "":
+                    mapping.append({
+                        "clo_code": clo_code,
+                        "plo_code": plo_code,
+                        "correlation_strength": self._as_int(correlation),
+                    })
+        return mapping
 
     @staticmethod
     def _resolve_file_path(source: Any) -> str:
         if isinstance(source, dict):
             path = source.get("file_path") or source.get("path")
-            if path:
-                return str(path)
+            if path: return str(path)
         if hasattr(source, "file_path"):
             path = getattr(source, "file_path")
-            if path:
-                return str(path)
+            if path: return str(path)
         if isinstance(source, (str, Path)):
             return str(source)
         raise InvalidWorkbook("Invalid workbook source: missing file path")
@@ -94,19 +101,17 @@ class ExcelExtractor(Extractor):
             raise MissingWorksheet(sheet_name)
         return workbook[sheet_name]
 
-    def _validate_template(self, sheet: Worksheet, header_cell: str) -> None:
+    def _validate_template(self, sheet: Worksheet, header_cell: str, expected: str = "STUDENT NAME") -> None:
         header_value = self._normalize_text(sheet[header_cell].value)
-        if header_value != "STUDENT NAME":
-            raise InvalidTemplate(f"Invalid template header at {sheet.title}!{header_cell}")
+        if header_value != expected:
+            raise InvalidTemplate(f"Invalid template header at {sheet.title}!{header_cell} (expected '{expected}')")
 
     def _build_header(self, db_sheet: Worksheet, cover_sheet: Worksheet) -> ClassRecordHeader:
+        # ... (rest of the function is unchanged)
         semester_year = self._as_string(db_sheet["B3"].value)
         course_type = self._as_string(db_sheet["B6"].value)
         no_of_students = self._as_int(db_sheet["B8"].value)
         threshold = self._as_float(db_sheet["B10"].value)
-
-        # The TLA/AT/EXAM weights are no longer used in the primary calculation,
-        # but we can still extract them for diagnostic purposes.
         weights: dict[str, float] = {}
         d5 = self._as_string(db_sheet["D5"].value)
         if d5: weights[d5] = self._as_float(db_sheet["D6"].value)
@@ -114,35 +119,19 @@ class ExcelExtractor(Extractor):
         if e5: weights[e5] = self._as_float(db_sheet["E6"].value)
         f5 = self._as_string(db_sheet["F5"].value)
         if f5: weights[f5] = self._as_float(db_sheet["F6"].value)
-
         return ClassRecordHeader(
-            course_code=self._coalesce_optional(
-                db_sheet["B4"].value,
-                self._find_cover_value(cover_sheet, "Course Code:"),
-            ),
-            course_title=self._coalesce_optional(
-                db_sheet["B5"].value,
-                self._find_cover_value(cover_sheet, "Course Title:"),
-            ),
+            course_code=self._coalesce_optional(db_sheet["B4"].value, self._find_cover_value(cover_sheet, "Course Code:")),
+            course_title=self._coalesce_optional(db_sheet["B5"].value, self._find_cover_value(cover_sheet, "Course Title:")),
             course_type=course_type,
-            section=self._coalesce_optional(
-                db_sheet["B7"].value,
-                self._find_cover_value(cover_sheet, "Section:"),
-            ),
+            section=self._coalesce_optional(db_sheet["B7"].value, self._find_cover_value(cover_sheet, "Section:")),
             semester_year=semester_year,
-            instructor_name=self._coalesce_optional(
-                db_sheet["B9"].value,
-                self._find_cover_value(cover_sheet, "Instructor's Name"),
-            ),
+            instructor_name=self._coalesce_optional(db_sheet["B9"].value, self._find_cover_value(cover_sheet, "Instructor's Name")),
             no_of_students=no_of_students,
             threshold=threshold,
-            grading_system=self._coalesce_optional(
-                db_sheet["B11"].value,
-                self._find_cover_value(cover_sheet, "GRADING SYSTEM"),
-            ),
+            grading_system=self._coalesce_optional(db_sheet["B11"].value, self._find_cover_value(cover_sheet, "GRADING SYSTEM")),
             workbook_configured_weights_unused=weights if weights else None,
         )
-
+    # ... (the rest of the helper methods are unchanged)
     def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | int | None]]:
         students: list[dict[str, str | int | None]] = []
         row = start_row
@@ -337,8 +326,7 @@ class ExcelExtractor(Extractor):
 
     @staticmethod
     def _normalize_label(value: Any) -> str:
-        if value is None:
-            return ""
+        if value is None: return ""
         normalized = str(value).strip().upper()
         if normalized.endswith(":"):
             normalized = normalized[:-1]
@@ -350,14 +338,12 @@ class ExcelExtractor(Extractor):
 
     @staticmethod
     def _normalize_text(value: Any) -> str:
-        if value is None:
-            return ""
+        if value is None: return ""
         return " ".join(str(value).strip().upper().split())
 
     @staticmethod
     def _as_optional_string(value: Any) -> str | None:
-        if value is None:
-            return None
+        if value is None: return None
         text = str(value).strip()
         return text if text else None
 
@@ -367,12 +353,10 @@ class ExcelExtractor(Extractor):
 
     @staticmethod
     def _as_optional_float(value: Any) -> float | None:
-        if value is None:
-            return None
+        if value is None: return None
         if isinstance(value, str):
             stripped = value.strip()
-            if not stripped:
-                return None
+            if not stripped: return None
             value = stripped
         try:
             return float(value)
@@ -385,12 +369,10 @@ class ExcelExtractor(Extractor):
 
     @staticmethod
     def _as_int(value: Any) -> int:
-        if value is None:
-            return 0
+        if value is None: return 0
         if isinstance(value, str):
             stripped = value.strip()
-            if not stripped:
-                return 0
+            if not stripped: return 0
             value = stripped
         try:
             return int(float(value))

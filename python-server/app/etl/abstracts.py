@@ -44,7 +44,11 @@ async def run_full_pipeline(extractor: Extractor, transformer: Transformer, load
     # Orchestrator - simple sequential pipeline
     extracted = await extractor.pipeline(source)
     transformed = await transformer.pipeline(extracted)
-    # The transformer only returns the records, so we need to pass the header from the extractor to the loader.
-    header, _ = extracted
-    loaded = await loader.pipeline((header, transformed))
+    
+    # The extractor now returns (header, records, clo_plo_mapping).
+    # The transformer only returns the attainment records.
+    # We need to pass all three parts to the loader.
+    header, _, clo_plo_mapping = extracted
+    loaded = await loader.pipeline((header, transformed, clo_plo_mapping))
+
     return {"extracted": extracted, "transformed": transformed, "loaded": loaded}

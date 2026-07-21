@@ -54,33 +54,13 @@ Poll until `status` is `"completed"` or `"failed"`.
 {
   "status": "ok",
   "received_records": 15,
-  "header": {
-    "course_code": "string | null",
-    "course_title": "string | null",
-    "course_type": "LECTURE",
-    "section": "string | null",
-    "semester_year": "string",
-    "instructor_name": "string | null",
-    "no_of_students": 3,
-    "threshold": 0.6,
-    "grading_system": "60-40",
-    "workbook_configured_weights_unused": {
-      "TLA": 0.4, "AT": 0.2, "EXAM": 0.4
-    }
-  },
-  "attainments": [
+  "header": { "...same header shape as before..." },
+  "attainments": [ "...same attainment shape as before..." ],
+  "clo_plo_mapping": [
     {
-      "student_id": "string | null",
-      "student_name": "string",
       "clo_code": "CLO1",
-      "tla_pct": 0.3,
-      "at_pct": null,
-      "exam_pct": 0.74,
-      "output_pct": 1.0,
-      "direct_clo_attainment_pct": 0.7058823529411765,
-      "met_threshold": true,
-      "clo_level": "Proficient",
-      "formula_version": "861946172e4a"
+      "plo_code": "PLO1",
+      "correlation_strength": 3
     }
   ]
 }
@@ -89,25 +69,18 @@ Poll until `status` is `"completed"` or `"failed"`.
 **Field notes:**
 - `direct_clo_attainment_pct` is the number that matters — raw scores
   pooled across ALL assessment types for that student+CLO, per the
-  institution's Formula 1A. Not a weighted blend of categories.
-- `tla_pct` / `at_pct` / `exam_pct` / `output_pct` are informational
-  breakdowns only — they do NOT feed into `direct_clo_attainment_pct`.
-  Fine to display, don't use them to recompute anything.
+  institution's Formula 1A.
 - `met_threshold` is checked against a **fixed 70% institutional
-  floor**, NOT the course's own `threshold` value (which is often 60%
-  in practice). Both numbers are returned — `header.threshold` is
-  purely for transparency/display ("course configured at 60%,
-  institutional floor is 70%").
-- `clo_level` is a string: `"Exceptional"` (≥85%) / `"Proficient"`
-  (70–84%) / `"Basic"` (60–69%) / `"Below Basic"` (<60%). Not an int.
-- `workbook_configured_weights_unused` in the header is dead data —
-  extracted from the workbook for diagnostic display only, never used
-  in any calculation. Don't build logic around it.
+  floor**, NOT the course's own `threshold` value.
+- `clo_level` is a 4-tier string: `"Exceptional"`, `"Proficient"`,
+  `"Basic"`, `"Below Basic"`.
+- `clo_plo_mapping` is the **real correlation table** extracted from the
+  `COVERPAGE` of the workbook. This is the source of truth for how this
+  specific course's CLOs map to PLOs.
 
 ### `GET /jobs/{job_id}/recommendation`
 Per-course AI gap analysis (still returns a placeholder — real LLM call
-not wired up yet). Same trust model as below — gate this appropriately
-if it's ever exposed beyond Faculty/Program Head level.
+not wired up yet).
 
 ## Endpoint 2: Institution-wide AI summary — VPAA ONLY
 
@@ -135,46 +108,46 @@ one consolidated payload (Python never queries anything itself):
       "course_code": "...",
       "section": "...",
       "header": { "...same header shape as above..." },
-      "attainments": [ "...same attainment shape as above..." ]
+      "attainments": [ "...same attainment shape as above..." ],
+      "clo_plo_mapping": [ "...same mapping shape as above..." ]
     }
   ]
 }
 ```
 
-Note: `period.type` is intentionally loose (semester vs. year) since
-the client hasn't finalized which granularity applies — don't hardcode
-either assumption on your side yet either.
-
 **Response:**
+The response contains `department_summary`, `program_summary`, and `avp_group_summary`. Each of these contains a `plos` object showing the rolled-up PLO attainment for that scope, computed using the mappings provided in the request.
+
 ```json
 {
   "status": "ok",
   "summary": {
-    "period": { "...": "..." },
-    "department_summary": { "...rollup per department..." },
-    "program_summary": { "...rollup per program..." },
-    "avp_group_summary": { "...rollup per AVP group..." },
-    "worst_performing_clos": [ "...top 5 worst across all levels..." ]
+    "program_summary": {
+      "BSIT": {
+        "clos": { ... },
+        "plos": {
+          "PLO1": {
+            "plo_attainment_direct_only": 0.885,
+            "mapped_clos": [
+              { "clo_code": "CLO1", "attainment_rate": 0.92, "correlation_strength": 3 }
+            ]
+          }
+        }
+      }
+    }
   },
   "prompt_used": "string",
   "recommendation": "AI-generated text (currently a placeholder)"
 }
 ```
 
-**Important:** this endpoint always computes the FULL institution-wide
-picture — VPAA drilling into one AVP group or department in the UI is
-a frontend navigation feature into this same response's
-`department_summary`/`avp_group_summary` breakdowns, NOT a separate
-scoped API call. Don't build a "send me just Health Sciences" request
-mode — it doesn't exist and isn't planned.
-
 ## What's explicitly NOT this service's job
 
 - Persisting any uploaded data or computed results
 - The org-structure reference table (department → AVP group mapping)
 - Auth, sessions, roles, permissions — all webapp-side
-- PLO rollup beyond what's shown above — CLO-to-PLO/PEO mapping
-  structures are a separate, larger concern not yet built
+- PEO rollup (Program Educational Objectives) — this is a higher-level
+  concern not yet built.
 - Populating the ~23 WIN-OBE form templates — this service provides
   the computed numbers; rendering them into form layouts is
   webapp/frontend work
@@ -187,3 +160,5 @@ mode — it doesn't exist and isn't planned.
   clarified with the team
 - Real LLM API integration — both AI endpoints currently return a
   hardcoded placeholder string (`IS_DEBUG_MODE = True`)
+- Credit-unit weighting for PLO attainment (Formula 7B) — currently
+  using unweighted average (Formula 7A).
