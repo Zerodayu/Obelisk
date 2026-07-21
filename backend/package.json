@@ -5,16 +5,15 @@
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"env:encrypt": "bunx dotenvx encrypt -f .env.local",
 		"env:decrypt": "bunx dotenvx decrypt -f .env.local",
-
 		"dev": "dotenvx run -f .env.local -- bun --watch src/index.ts",
 		"start": "bun run src/index.ts",
-
 		"db:push": "dotenvx run -f .env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f .env.local -- bunx prisma generate",
 		"db:studio": "dotenvx run -f .env.local -- bunx prisma studio",
 		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate dev"
 	},
 	"dependencies": {
+		"@better-auth/prisma-adapter": "^1.6.23",
 		"@dotenvx/dotenvx": "^2.15.1",
 		"@neondatabase/serverless": "^1.1.0",
 		"@prisma/adapter-neon": "^7.9.0",
