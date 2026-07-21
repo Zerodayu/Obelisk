@@ -4,12 +4,7 @@
   "scripts": {
     "dev": "bun --filter '*' dev",
     "dev:frontend": "bun --filter frontend dev",
-    "dev:backend": "bun --filter backend dev",
-    "build": "bun --filter '*' build",
-    "start": "bun --filter '*' start",
-    "add:backend": "bun add --cwd backend",
-    "add:frontend": "bun add --cwd frontend",
-    "add:both": "bun add --cwd backend --cwd frontend"
+    "dev:backend": "bun --filter backend dev"
   },
   "type": "module",
   "workspaces": [
