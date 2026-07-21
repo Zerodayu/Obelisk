@@ -1,17 +1,23 @@
 {
-  "name": "backend",
-  "version": "1.0.50",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts"
-  },
-  "dependencies": {
-    "@dotenvx/dotenvx": "^2.15.1",
-    "elysia": "latest"
-  },
-  "devDependencies": {
-    "bun-types": "latest"
-  },
-  "module": "src/index.js"
+	"name": "backend",
+	"version": "1.0.50",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "bun run --watch src/index.ts",
+		"start": "bun run src/index.ts"
+	},
+	"dependencies": {
+		"@dotenvx/dotenvx": "^2.15.1",
+		"@neondatabase/serverless": "^1.1.0",
+		"better-auth": "^1.6.23",
+		"drizzle-orm": "^1.0.0-rc.4",
+		"elysia": "latest",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.5",
+		"bun-types": "latest",
+		"drizzle-kit": "^1.0.0-rc.4"
+	},
+	"module": "src/index.js"
 }
