@@ -124,12 +124,14 @@ The response contains `department_summary`, `program_summary`, and `avp_group_su
   "summary": {
     "program_summary": {
       "BSIT": {
-        "clos": { ... },
+        "clos": {
+          "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 }
+        },
         "plos": {
           "PLO1": {
             "plo_attainment_direct_only": 0.885,
             "mapped_clos": [
-              { "clo_code": "CLO1", "attainment_rate": 0.92, "correlation_strength": 3 }
+              { "clo_code": "CLO1", "mean_attainment_pct": 0.92, "correlation_strength": 3 }
             ]
           }
         }

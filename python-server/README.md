@@ -9,8 +9,8 @@ This README is updated to reflect the new institutional CLO attainment formula a
 ## What's New
 
 - **New CLO Attainment Formula**: The core transformation logic uses the official institutional formula (Formula 1A) by pooling all raw scores for a CLO.
-- **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook, replacing the previous hardcoded fixture.
-- **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A), using the real mapping data from each file.
+- **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook.
+- **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A).
 - **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**.
 - **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`).
 - **AI-Powered CQI Recommendations**: Endpoints are available for both per-course and institution-wide AI-assisted CQI summaries.
@@ -24,7 +24,7 @@ This README is updated to reflect the new institutional CLO attainment formula a
 
 ### Final Job Result (`GET /jobs/{job_id}`)
 
-When a job is `completed`, the `result.loaded` object will now contain a `clo_plo_mapping` field, extracted directly from the workbook:
+The `result.loaded` object will now contain a `clo_plo_mapping` field, extracted directly from the workbook:
 ```json
 {
   "status": "ok",
@@ -40,19 +40,22 @@ When a job is `completed`, the `result.loaded` object will now contain a `clo_pl
 
 ### Institutional Summary (`POST /analytics/institutional-summary`)
 
-The payload for this endpoint now requires the `clo_plo_mapping` for each submission. The `plos` section in the response now includes `correlation_strength` instead of the old `ipd_stage`.
+The `clos` and `plos` objects in the summary response now use `mean_attainment_pct` to more accurately describe the data.
 ```json
 {
   "program_summary": {
     "BS Information Technology": {
       "total_attainment_records": 300,
-      "clos": { ... },
+      "clos": {
+        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 },
+        "CLO3": { "mean_attainment_pct": 0.85, "record_count": 150 }
+      },
       "plos": {
         "PLO1": {
           "plo_attainment_direct_only": 0.885,
           "mapped_clos": [
-            { "clo_code": "CLO1", "attainment_rate": 0.92, "correlation_strength": 3 },
-            { "clo_code": "CLO3", "attainment_rate": 0.85, "correlation_strength": 2 }
+            { "clo_code": "CLO1", "mean_attainment_pct": 0.92, "correlation_strength": 3 },
+            { "clo_code": "CLO3", "mean_attainment_pct": 0.85, "correlation_strength": 2 }
           ]
         }
         // ... other PLOs
@@ -76,8 +79,6 @@ The payload for this endpoint now requires the `clo_plo_mapping` for each submis
 ---
 
 ## How to run
-
-(This section is unchanged)
 
 ### Prerequisites
 
@@ -109,14 +110,28 @@ poetry run uvicorn app.main:app --reload
 ```
 The server will start on `http://localhost:8000`.
 
-### Test the full pipeline via API
+### Testing the Service
 
-Use the end-to-end test scripts to validate the full functionality:
+This project includes several scripts to validate its functionality.
+
+#### Low-Level Validation
+This script tests the `extractor` and `transformer` logic directly without running the web server. It's useful for quickly checking the core data processing.
 ```powershell
-# Test the single-file upload and per-course recommendation
-python test_upload_e2e.py
+python test_validate.py
+```
 
-# Test the multi-file institutional summary and PLO rollup
+#### End-to-End API Tests
+These scripts test the live server and require it to be running (`uvicorn app.main:app --reload`).
+
+**1. Single-File Upload and Per-Course CQI**
+This test validates the entire flow for a single course: uploading a file, polling the job to completion, and fetching the per-course AI recommendation.
+```powershell
+python test_upload_e2e.py
+```
+
+**2. Multi-File Institutional Summary**
+This test validates the institution-wide summary feature. It uploads multiple files to simulate different departments, then assembles and `POST`s the consolidated payload to the analytics endpoint.
+```powershell
 python test_institutional_summary_e2e.py
 ```
 

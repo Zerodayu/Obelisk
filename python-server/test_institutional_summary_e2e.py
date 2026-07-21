@@ -14,25 +14,25 @@ JOB_TIMEOUT_SECONDS = 60
 # --- Test Fixture ---
 # This list simulates the webapp backend looking up organizational data for each
 # submitted class record. These are manually-assigned test stubs that stand in
-# for that future database lookup.
+# for that future database lookup, using the exact names from the org chart.
 CLASS_RECORDS = [
     {
         "file": "E-classrecord_CITE_BSEMC.xlsx",
-        "department": "Computer & Information Technology Education",
+        "department": "CITE",
         "program": "BS Entertainment and Multimedia Computing",
-        "avp_group": "AVP for Engineering and Technology",
+        "avp_group": "AVP for Prof. & Technical Educ.",
     },
     {
         "file": "E-classrecord_COL_ConstiLaw.xlsx",
-        "department": "College of Law",
+        "department": "COL",
         "program": "Juris Doctor",
-        "avp_group": "AVP for Professional Schools",
+        "avp_group": "AVP for Legal Education",
     },
     {
         "file": "E-classrecord_COM_Anatomy.xlsx",
-        "department": "College of Medicine",
+        "department": "COM",
         "program": "Doctor of Medicine",
-        "avp_group": "AVP for Health Sciences",
+        "avp_group": "AVP for Health Sciences Educ.",
     },
 ]
 

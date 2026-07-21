@@ -19,7 +19,7 @@ class CourseSubmission(BaseModel):
     program: Optional[str] = None
     avp_group: Optional[str] = None
     
-    course_code: str
+    course_code: Optional[str] = None
     section: Optional[str] = None
     header: ClassRecordHeader
     attainments: List[StudentCLOAttainment]

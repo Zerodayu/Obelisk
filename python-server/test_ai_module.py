@@ -36,8 +36,10 @@ async def main():
     extractor = ExcelExtractor()
     transformer = SimpleTransformer()
 
-    header, records = await extractor.extract(FILE_PATH)
-    attainments = await transformer.transform((header, records))
+    # Unpack the new 3-tuple return value
+    header, records, clo_plo_mapping = await extractor.extract(FILE_PATH)
+    # Pass the full 3-tuple to the transformer
+    attainments = await transformer.transform((header, records, clo_plo_mapping))
 
     print(f"Successfully extracted header for course: {header.course_code}")
     print(f"Successfully transformed {len(attainments)} attainment records.")
@@ -59,8 +61,10 @@ async def main():
         print("VERIFICATION PASSED: No real student names found in the output.")
 
     # Verify that the placeholder response is present
-    if "[PLACEHOLDER RESPONSE" in cqi_result.get("recommendation", ""):
+    if cqi_result and "[PLACEHOLDER RESPONSE" in cqi_result.get("recommendation", ""):
         print("VERIFICATION PASSED: LLM call was correctly stubbed.")
+    elif cqi_result and cqi_result.get("status") == "no_gaps_found":
+        print("VERIFICATION PASSED: No gaps found, so LLM was not called (correct).")
     else:
         print("VERIFICATION FAILED: Placeholder response was not found.")
         
