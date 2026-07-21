@@ -6,7 +6,7 @@ import requests
 
 # --- Configuration ---
 BASE_URL = "http://localhost:8000"
-FILE_PATH = Path(__file__).parent / "E-classrecord(LECTURE ONLY).xlsx"
+FILE_PATH = Path(__file__).parent / "E-classrecord_SYNTHETIC_12students.xlsx" #TO test the system, run this and replace the excel file here
 POLL_INTERVAL_SECONDS = 1
 TIMEOUT_SECONDS = 30
 
