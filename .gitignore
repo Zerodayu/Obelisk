@@ -12,6 +12,9 @@
 */node_modules
 */.pnp
 *.pnp.js
+/node_modules
+/.pnp
+.pnp.js
 
 # testing
 */coverage
