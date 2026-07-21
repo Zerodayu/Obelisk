@@ -1,0 +1,13 @@
+model ReportExport {
+  id               String       @id
+  formSubmissionId String?      @map("form_submission_id")
+  exportedByUserId String?      @map("exported_by_user_id")
+  format           ExportFormat
+  fileUrl          String       @map("file_url")
+  exportedAt       DateTime     @default(now()) @map("exported_at")
+
+  formSubmission FormSubmission? @relation(fields: [formSubmissionId], references: [id], onDelete: Cascade)
+  exportedBy     user?           @relation("Exporter", fields: [exportedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("report_export")
+}

@@ -1,0 +1,50 @@
+model AuditLog {
+  id              String   @id
+  userId          String?  @map("user_id")
+  action          String
+  moduleAffected  String   @map("module_affected")
+  targetRecordId  String?  @map("target_record_id")
+  details         Json     @default("{}")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user user? @relation("AuditUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
+
+model AtRiskFlag {
+  id              String   @id
+  studentId       String   @map("student_id")
+  cloAttainmentId String?  @map("clo_attainment_id")
+  reason          String
+  flaggedAt       DateTime @default(now()) @map("flagged_at")
+
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  cloAttainment CloAttainment? @relation(fields: [cloAttainmentId], references: [id], onDelete: Cascade)
+
+  @@map("at_risk_flag")
+}
+
+model AiRecommendation {
+  id                  String               @id
+  programId           String?              @map("program_id")
+  termId              String?              @map("term_id")
+  ploId               String?              @map("plo_id")
+  summary             String
+  recommendationText  String               @map("recommendation_text")
+  sourceDataSnapshot  Json                 @default("{}") @map("source_data_snapshot")
+  status              RecommendationStatus  @default(pending_review)
+  reviewedByUserId    String?              @map("reviewed_by_user_id")
+  reviewedAt          DateTime?            @map("reviewed_at")
+  generatedAt         DateTime             @default(now()) @map("generated_at")
+
+  program     Program? @relation(fields: [programId], references: [id], onDelete: Cascade)
+  term        AcademicTerm? @relation(fields: [termId], references: [id], onDelete: Cascade)
+  plo         Plo?      @relation(fields: [ploId], references: [id], onDelete: SetNull)
+  reviewedBy  user?     @relation("Reviewer", fields: [reviewedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("ai_recommendation")
+}

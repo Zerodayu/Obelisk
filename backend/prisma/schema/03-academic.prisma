@@ -1,0 +1,118 @@
+model Department {
+  id        String   @id
+  name      String
+  code      String   @unique
+  deanId    String?  @map("dean_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  dean     user?     @relation("Dean", fields: [deanId], references: [id])
+  users    user[]
+  programs Program[]
+
+  @@map("department")
+}
+
+model Program {
+  id             String   @id
+  departmentId   String   @map("department_id")
+  name           String
+  code           String   @unique
+  programChairId String?  @map("program_chair_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  department        Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  programChair      user?              @relation("ProgramChair", fields: [programChairId], references: [id])
+  users             user[]
+  courses           Course[]
+  students          Student[]
+  plos              Plo[]
+  peos              Peo[]
+  formSubmissions   FormSubmission[]
+  ploAttainments    PloAttainment[]
+  aiRecommendations AiRecommendation[]
+
+  @@map("program")
+}
+
+model AcademicTerm {
+  id         String    @id
+  schoolYear String    @map("school_year")
+  semester   String
+  isActive   Boolean   @default(false) @map("is_active")
+  startDate  DateTime? @map("start_date")
+  endDate    DateTime? @map("end_date")
+
+  classSections     ClassSection[]
+  formSubmissions   FormSubmission[]
+  ploAttainments    PloAttainment[]
+  aiRecommendations AiRecommendation[]
+
+  @@unique([schoolYear, semester])
+  @@map("academic_term")
+}
+
+model Course {
+  id        String   @id
+  programId String   @map("program_id")
+  code      String
+  title     String
+  units     Decimal? @db.Decimal(3, 1)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  program       Program        @relation(fields: [programId], references: [id], onDelete: Cascade)
+  classSections ClassSection[]
+  clos          Clo[]
+
+  @@unique([programId, code])
+  @@map("course")
+}
+
+model ClassSection {
+  id          String   @id
+  courseId    String   @map("course_id")
+  termId      String   @map("term_id")
+  facultyId   String?  @map("faculty_id")
+  sectionCode String   @map("section_code")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  term            AcademicTerm     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  faculty         user?            @relation("Faculty", fields: [facultyId], references: [id], onDelete: SetNull)
+  enrollments     Enrollment[]
+  assessmentItems AssessmentItem[]
+  cloAttainments  CloAttainment[]
+  formSubmissions FormSubmission[]
+
+  @@unique([courseId, termId, sectionCode])
+  @@map("class_section")
+}
+
+model Student {
+  id            String @id
+  studentNumber String @unique @map("student_number")
+  programId     String @map("program_id")
+  yearLevel     Int?   @map("year_level")
+  firstName     String @map("first_name")
+  lastName      String @map("last_name")
+  anonymizedId  String @unique @map("anonymized_id")
+
+  program        Program         @relation(fields: [programId], references: [id], onDelete: Restrict)
+  enrollments    Enrollment[]
+  studentScores  StudentScore[]
+  cloAttainments CloAttainment[]
+  atRiskFlags    AtRiskFlag[]
+
+  @@map("student")
+}
+
+model Enrollment {
+  id             String @id
+  studentId      String @map("student_id")
+  classSectionId String @map("class_section_id")
+
+  student      Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classSection ClassSection @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classSectionId])
+  @@map("enrollment")
+}

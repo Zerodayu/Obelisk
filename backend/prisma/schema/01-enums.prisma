@@ -1,0 +1,47 @@
+enum UserRole {
+  faculty
+  program_chair
+  dean
+  aqau
+  vpaa
+  system_admin
+}
+
+enum AssessmentType {
+  direct
+  indirect
+}
+
+enum SubmissionStatus {
+  draft
+  submitted
+  returned
+  approved
+  archived
+}
+
+enum ApprovalDecision {
+  pending
+  approved
+  returned
+}
+
+enum ApproverRole {
+  program_chair
+  dean
+  aqau
+  vpaa
+}
+
+enum RecommendationStatus {
+  pending_review
+  acknowledged
+  actioned
+  dismissed
+}
+
+enum ExportFormat {
+  pdf
+  excel
+  word
+}
