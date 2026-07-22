@@ -1,0 +1,30 @@
+model AssessmentItem {
+  id             String         @id
+  classSectionId String         @map("class_section_id")
+  cloId          String         @map("clo_id")
+  type           AssessmentType
+  title          String
+  maxScore       Decimal        @db.Decimal(7, 2) @map("max_score")
+  weightPct      Decimal        @db.Decimal(5, 2) @map("weight_pct")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  classSection  ClassSection   @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  clo           Clo            @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  studentScores StudentScore[]
+
+  @@map("assessment_item")
+}
+
+model StudentScore {
+  id               String   @id
+  assessmentItemId String   @map("assessment_item_id")
+  studentId        String   @map("student_id")
+  rawScore         Decimal  @db.Decimal(7, 2) @map("raw_score")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+
+  assessmentItem AssessmentItem @relation(fields: [assessmentItemId], references: [id], onDelete: Cascade)
+  student        Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentItemId, studentId])
+  @@map("student_score")
+}

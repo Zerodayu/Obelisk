@@ -1,0 +1,66 @@
+model Clo {
+  id          String @id
+  courseId    String @map("course_id")
+  code        String
+  description String
+
+  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cloToPloMaps  CloToPloMap[]
+  assessmentItems AssessmentItem[]
+  cloAttainments CloAttainment[]
+
+  @@map("clo")
+}
+
+model Plo {
+  id                  String  @id
+  programId           String  @map("program_id")
+  code                String
+  description         String
+  targetAttainmentPct Decimal @default("70.00") @db.Decimal(5, 2) @map("target_attainment_pct")
+
+  program       Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
+  cloToPloMaps  CloToPloMap[]
+  ploToPeoMaps  PloToPeoMap[]
+  ploAttainments PloAttainment[]
+  aiRecommendations AiRecommendation[]
+
+  @@map("plo")
+}
+
+model Peo {
+  id          String @id
+  programId   String @map("program_id")
+  code        String
+  description String
+
+  program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
+  ploToPeoMaps PloToPeoMap[]
+
+  @@map("peo")
+}
+
+model CloToPloMap {
+  id     String  @id
+  cloId  String  @map("clo_id")
+  ploId  String  @map("plo_id")
+  weight Decimal @default("1.000") @db.Decimal(4, 3)
+
+  clo Clo @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  plo Plo @relation(fields: [ploId], references: [id], onDelete: Cascade)
+
+  @@unique([cloId, ploId])
+  @@map("clo_to_plo_map")
+}
+
+model PloToPeoMap {
+  id    String @id
+  ploId String @map("plo_id")
+  peoId String @map("peo_id")
+
+  plo Plo @relation(fields: [ploId], references: [id], onDelete: Cascade)
+  peo Peo @relation(fields: [peoId], references: [id], onDelete: Cascade)
+
+  @@unique([ploId, peoId])
+  @@map("plo_to_peo_map")
+}
