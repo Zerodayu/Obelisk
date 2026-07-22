@@ -36,6 +36,10 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
             plo_data[mapping["plo"]].append({
                 "clo_code": clo_code,
                 "mean_attainment_pct": clo_stats["mean_attainment_pct"],
+                # Correlation strength (1-3 scale) is a real weighting factor used in
+                # cross-course PLO merging (client-clarified 'Formula 7C'), not the
+                # unweighted Formula 7A average currently implemented. This field is
+                # not yet used as a weight anywhere in the code.
                 "correlation_strength": mapping["strength"],
             })
 
@@ -43,6 +47,10 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
     for plo_code, mapped_clos in plo_data.items():
         if not mapped_clos:
             continue
+        
+        # The current single-course PLO computation (Formula 7A, unweighted) is still
+        # correct and unaffected by the note on correlation_strength. A follow-up
+        # change will implement the actual weighted cross-course merge.
         avg_attainment = sum(c["mean_attainment_pct"] for c in mapped_clos) / len(mapped_clos)
         plo_attainment[plo_code] = {
             "plo_attainment_direct_only": avg_attainment,

@@ -37,6 +37,7 @@ The `result.loaded` object will now contain a `clo_plo_mapping` field, extracted
   ]
 }
 ```
+**Note on `correlation_strength`**: This is a real weighting factor (1-3 scale) intended for cross-course PLO merging (Formula 7C). The current PLO computation (Formula 7A) is an unweighted average and does not yet use this field as a weight.
 
 ### Institutional Summary (`POST /analytics/institutional-summary`)
 
@@ -79,6 +80,8 @@ The `clos` and `plos` objects in the summary response now use `mean_attainment_p
 ---
 
 ## How to run
+
+(This section is unchanged)
 
 ### Prerequisites
 
@@ -140,5 +143,6 @@ python test_institutional_summary_e2e.py
 ## Next recommended follow-ups
 
 - Implement the real LLM API call in `app/analytics/cqi_recommender.py` and set `IS_DEBUG_MODE` to `False`.
+- Implement weighted cross-course PLO merging (Formula 7C) using `correlation_strength`.
 - Implement credit-unit weighting for PLO attainment (Formula 7B).
 - Replace `DummyLoader` with a real persistence layer.

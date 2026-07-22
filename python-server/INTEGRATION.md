@@ -75,8 +75,11 @@ Poll until `status` is `"completed"` or `"failed"`.
 - `clo_level` is a 4-tier string: `"Exceptional"`, `"Proficient"`,
   `"Basic"`, `"Below Basic"`.
 - `clo_plo_mapping` is the **real correlation table** extracted from the
-  `COVERPAGE` of the workbook. This is the source of truth for how this
-  specific course's CLOs map to PLOs.
+  `COVERPAGE` of the workbook.
+- `correlation_strength` (1-3 scale) is a real weighting factor used in
+  cross-course PLO merging (client-clarified 'Formula 7C'). The current
+  single-course PLO computation (Formula 7A, unweighted) is still
+  correct and does not use this field as a weight yet.
 
 **Composite score — interim behavior.** This service currently does not compute or return a composite (Direct + Indirect) score — only `direct_clo_attainment_pct` — because indirect survey data (F12 CLO Perception Survey, F17 Exit Survey) doesn't exist yet; there is no ingestion pipeline for it on either side. Until that pipeline is built, the backend is responsible for treating `composite_score_pct = direct_clo_attainment_pct` when populating `clo_attainment`/`plo_attainment` (both currently have `composite_score_pct` as NOT NULL, with no field for it in this service's response). `indirect_score_pct` should remain null until real survey data exists. This is a documented interim rule, not a permanent design decision — it must be revisited once F12/F17 ingestion is built, on whichever side that ends up living.
 
