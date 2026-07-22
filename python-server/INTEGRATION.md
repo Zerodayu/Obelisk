@@ -78,6 +78,8 @@ Poll until `status` is `"completed"` or `"failed"`.
   `COVERPAGE` of the workbook. This is the source of truth for how this
   specific course's CLOs map to PLOs.
 
+**Composite score — interim behavior.** This service currently does not compute or return a composite (Direct + Indirect) score — only `direct_clo_attainment_pct` — because indirect survey data (F12 CLO Perception Survey, F17 Exit Survey) doesn't exist yet; there is no ingestion pipeline for it on either side. Until that pipeline is built, the backend is responsible for treating `composite_score_pct = direct_clo_attainment_pct` when populating `clo_attainment`/`plo_attainment` (both currently have `composite_score_pct` as NOT NULL, with no field for it in this service's response). `indirect_score_pct` should remain null until real survey data exists. This is a documented interim rule, not a permanent design decision — it must be revisited once F12/F17 ingestion is built, on whichever side that ends up living.
+
 ### `GET /jobs/{job_id}/recommendation`
 Per-course AI gap analysis (still returns a placeholder — real LLM call
 not wired up yet).
@@ -150,9 +152,7 @@ The response contains `department_summary`, `program_summary`, and `avp_group_su
 - Auth, sessions, roles, permissions — all webapp-side
 - PEO rollup (Program Educational Objectives) — this is a higher-level
   concern not yet built.
-- Populating the ~23 WIN-OBE form templates — this service provides
-  the computed numbers; rendering them into form layouts is
-  webapp/frontend work
+- Populating the WIN-OBE form templates (form count currently unconfirmed — see Known open items below) — this service provides the computed numbers; rendering them into form layouts is webapp/frontend work
 
 ## Known open items (not resolved yet, don't build around them)
 
@@ -164,3 +164,5 @@ The response contains `department_summary`, `program_summary`, and `avp_group_su
   hardcoded placeholder string (`IS_DEBUG_MODE = True`)
 - Credit-unit weighting for PLO attainment (Formula 7B) — currently
   using unweighted average (Formula 7A).
+- Total WIN-OBE form count is unresolved — 23 confirmed via internal process documentation, 28 per the official assessment plan, 37 per capstone requirements. Do not seed `form_type` against any of these counts as final until confirmed with the client.
+- Composite Attainment (Formula 13A/13B) may not be buildable this term — depends entirely on whether F12/F17 survey data will exist and who's responsible for collecting it. This is the single highest-priority open question, pending a client meeting. Don't build indirect-score ingestion on either side until this is answered.
