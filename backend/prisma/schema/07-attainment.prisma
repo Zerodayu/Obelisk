@@ -1,11 +1,11 @@
 model ComputationRun {
-  id               String   @id
+  id                String   @id
   triggeredByUserId String?  @map("triggered_by_user_id")
-  scope            String
-  formulaVersion   String   @default("70_30_v1") @map("formula_version")
-  directWeight     Decimal  @default("0.70") @db.Decimal(3, 2) @map("direct_weight")
-  indirectWeight   Decimal  @default("0.30") @db.Decimal(3, 2) @map("indirect_weight")
-  runAt            DateTime @default(now()) @map("run_at")
+  scope             String
+  formulaVersion    String   @default("70_30_v1") @map("formula_version")
+  directWeight      Decimal  @default("0.70") @map("direct_weight") @db.Decimal(3, 2)
+  indirectWeight    Decimal  @default("0.30") @map("indirect_weight") @db.Decimal(3, 2)
+  runAt             DateTime @default(now()) @map("run_at")
 
   triggeredBy    user?           @relation("TriggeredBy", fields: [triggeredByUserId], references: [id], onDelete: SetNull)
   cloAttainments CloAttainment[]
@@ -15,21 +15,23 @@ model ComputationRun {
 }
 
 model CloAttainment {
-  id                 String  @id
-  classSectionId     String  @map("class_section_id")
-  cloId              String  @map("clo_id")
-  studentId          String  @map("student_id")
-  directScorePct     Decimal? @db.Decimal(5, 2) @map("direct_score_pct")
-  indirectScorePct   Decimal? @db.Decimal(5, 2) @map("indirect_score_pct")
-  compositeScorePct  Decimal  @db.Decimal(5, 2) @map("composite_score_pct")
-  isBelowThreshold   Boolean  @default(false) @map("is_below_threshold")
-  computationRunId   String   @map("computation_run_id")
+  id                String   @id
+  classSectionId    String   @map("class_section_id")
+  cloId             String   @map("clo_id")
+  studentId         String   @map("student_id")
+  directScorePct    Decimal? @map("direct_score_pct") @db.Decimal(5, 2)
+  indirectScorePct  Decimal? @map("indirect_score_pct") @db.Decimal(5, 2)
+  compositeScorePct Decimal  @map("composite_score_pct") @db.Decimal(5, 2)
+  isBelowThreshold  Boolean  @default(false) @map("is_below_threshold")
+  computationRunId  String   @map("computation_run_id")
+  formSubmissionId  String?  @map("form_submission_id")
 
-  classSection    ClassSection    @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
-  clo             Clo             @relation(fields: [cloId], references: [id], onDelete: Cascade)
-  student         Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  computationRun  ComputationRun  @relation(fields: [computationRunId], references: [id], onDelete: Cascade)
-  atRiskFlags     AtRiskFlag[]
+  classSection   ClassSection    @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  clo            Clo             @relation(fields: [cloId], references: [id], onDelete: Cascade)
+  student        Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  computationRun ComputationRun  @relation(fields: [computationRunId], references: [id], onDelete: Cascade)
+  formSubmission FormSubmission? @relation(fields: [formSubmissionId], references: [id], onDelete: SetNull)
+  atRiskFlags    AtRiskFlag[]
 
   @@unique([classSectionId, cloId, studentId, computationRunId])
   @@index([isBelowThreshold])
@@ -41,14 +43,16 @@ model PloAttainment {
   ploId                    String  @map("plo_id")
   programId                String  @map("program_id")
   termId                   String  @map("term_id")
-  attainedPct              Decimal @db.Decimal(5, 2) @map("attained_pct")
+  attainedPct              Decimal @map("attained_pct") @db.Decimal(5, 2)
   studentsBelowTargetCount Int     @default(0) @map("students_below_target_count")
   computationRunId         String  @map("computation_run_id")
+  formSubmissionId         String? @map("form_submission_id")
 
-  plo             Plo             @relation(fields: [ploId], references: [id], onDelete: Cascade)
-  program         Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
-  term            AcademicTerm    @relation(fields: [termId], references: [id], onDelete: Cascade)
-  computationRun  ComputationRun  @relation(fields: [computationRunId], references: [id], onDelete: Cascade)
+  plo            Plo             @relation(fields: [ploId], references: [id], onDelete: Cascade)
+  program        Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  term           AcademicTerm    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  computationRun ComputationRun  @relation(fields: [computationRunId], references: [id], onDelete: Cascade)
+  formSubmission FormSubmission? @relation(fields: [formSubmissionId], references: [id], onDelete: SetNull)
 
   @@unique([ploId, programId, termId, computationRunId])
   @@map("plo_attainment")

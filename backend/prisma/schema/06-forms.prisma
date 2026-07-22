@@ -23,27 +23,29 @@ model FormSubmission {
   createdAt           DateTime         @default(now()) @map("created_at")
   updatedAt           DateTime         @updatedAt @map("updated_at")
 
-  formType        FormType      @relation(fields: [formTypeId], references: [id], onDelete: Restrict)
-  classSection    ClassSection? @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
-  program         Program?      @relation(fields: [programId], references: [id], onDelete: Cascade)
-  term            AcademicTerm  @relation(fields: [termId], references: [id], onDelete: Cascade)
-  submittedBy     user?         @relation("Submitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
-  approvalSteps   ApprovalStep[]
-  reportExports   ReportExport[]
+  formType       FormType        @relation(fields: [formTypeId], references: [id], onDelete: Restrict)
+  classSection   ClassSection?   @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  program        Program?        @relation(fields: [programId], references: [id], onDelete: Cascade)
+  term           AcademicTerm    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  submittedBy    user?           @relation("Submitter", fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  approvalSteps  ApprovalStep[]
+  reportExports  ReportExport[]
+  cloAttainments CloAttainment[]
+  ploAttainments PloAttainment[]
 
   @@index([status])
   @@map("form_submission")
 }
 
 model ApprovalStep {
-  id               String          @id
-  formSubmissionId String          @map("form_submission_id")
-  approverRole     ApproverRole    @map("approver_role")
-  sequenceNo       Int             @map("sequence_no")
-  approverUserId   String?         @map("approver_user_id")
+  id               String           @id
+  formSubmissionId String           @map("form_submission_id")
+  approverRole     ApproverRole     @map("approver_role")
+  sequenceNo       Int              @map("sequence_no")
+  approverUserId   String?          @map("approver_user_id")
   decision         ApprovalDecision @default(pending)
   comment          String?
-  decidedAt        DateTime?       @map("decided_at")
+  decidedAt        DateTime?        @map("decided_at")
 
   formSubmission FormSubmission @relation(fields: [formSubmissionId], references: [id], onDelete: Cascade)
   approver       user?          @relation("Approver", fields: [approverUserId], references: [id], onDelete: SetNull)
