@@ -121,7 +121,7 @@ one consolidated payload (Python never queries anything itself):
 ```
 
 **Response:**
-The response contains `department_summary`, `program_summary`, and `avp_group_summary`. Each of these contains a `plos` object showing the rolled-up PLO attainment for that scope, computed using the mappings provided in the request.
+The response contains `department_summary`, `program_summary`, and `avp_group_summary`. The `program_summary` now includes a new top-level average.
 
 ```json
 {
@@ -129,6 +129,7 @@ The response contains `department_summary`, `program_summary`, and `avp_group_su
   "summary": {
     "program_summary": {
       "BSIT": {
+        "program_plo_average": 0.85,
         "clos": {
           "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 }
         },

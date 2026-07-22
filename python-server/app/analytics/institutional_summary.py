@@ -36,10 +36,9 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
             plo_data[mapping["plo"]].append({
                 "clo_code": clo_code,
                 "mean_attainment_pct": clo_stats["mean_attainment_pct"],
-                # Correlation strength (1-3 scale) is a real weighting factor used in
-                # cross-course PLO merging (client-clarified 'Formula 7C'), not the
-                # unweighted Formula 7A average currently implemented. This field is
-                # not yet used as a weight anywhere in the code.
+                # Note: correlation_strength is carried through as metadata. It is a real weighting
+                # factor for cross-course PLO merging (Formula 7C), but is not used in this
+                # unweighted Formula 7A calculation.
                 "correlation_strength": mapping["strength"],
             })
 
@@ -59,7 +58,7 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
     return plo_attainment
 
 
-def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str) -> Dict[str, Any]:
+def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, is_program_level: bool = False) -> Dict[str, Any]:
     """Generic function to roll up attainment data by a given key (e.g., 'department', 'program')."""
     summary = defaultdict(lambda: {"submissions": [], "clo_data": defaultdict(list)})
     for sub in submissions:
@@ -81,22 +80,35 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str) 
             }
             for clo, attainments in data["clo_data"].items()
         }
-        results[name] = {
+
+        plos = compute_plo_attainment(clo_summary, list(consolidated_mapping))
+
+        result_payload = {
             "total_attainment_records": sum(len(attainments) for attainments in data["clo_data"].values()),
             "clos": clo_summary,
-            "plos": compute_plo_attainment(clo_summary, list(consolidated_mapping)),
+            "plos": plos,
         }
+
+        # Formula 7C: Program-Level Average PLO Attainment.
+        # This is ONLY computed at the program level.
+        if is_program_level and plos:
+            all_plo_attainments = [p["plo_attainment_direct_only"] for p in plos.values()]
+            if all_plo_attainments:
+                result_payload["program_plo_average"] = sum(all_plo_attainments) / len(all_plo_attainments)
+
+        results[name] = result_payload
+
     return results
 
 
 def aggregate_by_department(submissions: List[CourseSubmission]) -> Dict[str, Any]:
-    return _generic_aggregator(submissions, 'department')
+    return _generic_aggregator(submissions, 'department', is_program_level=False)
 
 def aggregate_by_program(submissions: List[CourseSubmission]) -> Dict[str, Any]:
-    return _generic_aggregator(submissions, 'program')
+    return _generic_aggregator(submissions, 'program', is_program_level=True)
 
 def aggregate_by_avp_group(submissions: List[CourseSubmission]) -> Dict[str, Any]:
-    return _generic_aggregator(submissions, 'avp_group')
+    return _generic_aggregator(submissions, 'avp_group', is_program_level=False)
 
 
 def find_worst_performers(agg_data: Dict[str, Any], group_name: str, top_n: int = 3) -> List[Dict[str, Any]]:

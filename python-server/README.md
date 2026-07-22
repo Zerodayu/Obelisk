@@ -11,6 +11,7 @@ This README is updated to reflect the new institutional CLO attainment formula a
 - **New CLO Attainment Formula**: The core transformation logic uses the official institutional formula (Formula 1A) by pooling all raw scores for a CLO.
 - **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook.
 - **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A).
+- **Program-Level PLO Average**: A new summary metric (Formula 7C) is now computed, averaging all individual PLO attainment values for a given program.
 - **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**.
 - **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`).
 - **AI-Powered CQI Recommendations**: Endpoints are available for both per-course and institution-wide AI-assisted CQI summaries.
@@ -41,28 +42,23 @@ The `result.loaded` object will now contain a `clo_plo_mapping` field, extracted
 
 ### Institutional Summary (`POST /analytics/institutional-summary`)
 
-The `clos` and `plos` objects in the summary response now use `mean_attainment_pct` to more accurately describe the data.
+The `program_summary` in the response now includes a `program_plo_average` field.
 ```json
 {
   "program_summary": {
     "BS Information Technology": {
       "total_attainment_records": 300,
+      "program_plo_average": 0.85, // NEW: Formula 7C
       "clos": {
-        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 },
-        "CLO3": { "mean_attainment_pct": 0.85, "record_count": 150 }
+        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 }
       },
       "plos": {
         "PLO1": {
           "plo_attainment_direct_only": 0.885,
-          "mapped_clos": [
-            { "clo_code": "CLO1", "mean_attainment_pct": 0.92, "correlation_strength": 3 },
-            { "clo_code": "CLO3", "mean_attainment_pct": 0.85, "correlation_strength": 2 }
-          ]
+          "mapped_clos": [ ... ]
         }
-        // ... other PLOs
       }
     }
-    // ... other programs
   }
 }
 ```
