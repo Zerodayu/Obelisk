@@ -50,13 +50,13 @@ The API will be available at `http://localhost:8000`.
 
 ### Running Tests
 
-The project includes several test scripts to validate its functionality. **The server must be running** for the end-to-end tests.
+The project includes several scripts in the `testing_modules/` directory to validate its functionality.
 
-| Script | Purpose | How to Run |
+| Script | Purpose | How to Run (from project root) |
 | :--- | :--- | :--- |
-| `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. Useful for quickly checking the core data processing formulas. | `python test_validate.py` |
-| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course: `POST /upload`, polls `GET /jobs/{job_id}`, and fetches the per-course AI recommendation. | `python test_upload_e2e.py` |
-| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint. It uploads multiple files, waits for them to complete, then assembles and `POST`s the consolidated payload. | `python test_institutional_summary_e2e.py` |
+| `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. | `python testing_modules/test_validate.py` |
+| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course. Requires the server to be running. | `python testing_modules/test_upload_e2e.py` |
+| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint. Requires the server to be running. | `python testing_modules/test_institutional_summary_e2e.py` |
 
 ---
 
@@ -69,3 +69,9 @@ The project includes several test scripts to validate its functionality. **The s
 | `GET` | `/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
 | `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and recommendation. |
 | `GET` | `/health` | A simple health check endpoint. |
+
+---
+
+## 5. Known Limitations and Deferred Items
+
+For a detailed list of known implementation gaps, trade-offs, and unresolved client questions, please see [**KNOWN_LIMITATIONS.md**](documentations/KNOWN_LIMITATIONS.md).
