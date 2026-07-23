@@ -349,7 +349,7 @@ export type userScalarWhereWithAggregatesInput = {
 }
 
 export type userCreateInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -375,7 +375,7 @@ export type userCreateInput = {
 }
 
 export type userUncheckedCreateInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -453,7 +453,7 @@ export type userUncheckedUpdateInput = {
 }
 
 export type userCreateManyInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -837,7 +837,7 @@ export type userUpdateOneWithoutReportExportsNestedInput = {
 }
 
 export type userCreateWithoutSessionsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -862,7 +862,7 @@ export type userCreateWithoutSessionsInput = {
 }
 
 export type userUncheckedCreateWithoutSessionsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -953,7 +953,7 @@ export type userUncheckedUpdateWithoutSessionsInput = {
 }
 
 export type userCreateWithoutAccountsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -978,7 +978,7 @@ export type userCreateWithoutAccountsInput = {
 }
 
 export type userUncheckedCreateWithoutAccountsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1069,7 +1069,7 @@ export type userUncheckedUpdateWithoutAccountsInput = {
 }
 
 export type userCreateWithoutDepartmentsAsDeanInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1094,7 +1094,7 @@ export type userCreateWithoutDepartmentsAsDeanInput = {
 }
 
 export type userUncheckedCreateWithoutDepartmentsAsDeanInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1124,7 +1124,7 @@ export type userCreateOrConnectWithoutDepartmentsAsDeanInput = {
 }
 
 export type userCreateWithoutDepartmentInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1149,7 +1149,7 @@ export type userCreateWithoutDepartmentInput = {
 }
 
 export type userUncheckedCreateWithoutDepartmentInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1279,7 +1279,7 @@ export type userScalarWhereInput = {
 }
 
 export type userCreateWithoutProgramsAsChairInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1304,7 +1304,7 @@ export type userCreateWithoutProgramsAsChairInput = {
 }
 
 export type userUncheckedCreateWithoutProgramsAsChairInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1334,7 +1334,7 @@ export type userCreateOrConnectWithoutProgramsAsChairInput = {
 }
 
 export type userCreateWithoutProgramInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1359,7 +1359,7 @@ export type userCreateWithoutProgramInput = {
 }
 
 export type userUncheckedCreateWithoutProgramInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1471,7 +1471,7 @@ export type userUpdateManyWithWhereWithoutProgramInput = {
 }
 
 export type userCreateWithoutClassSectionsAsFacultyInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1496,7 +1496,7 @@ export type userCreateWithoutClassSectionsAsFacultyInput = {
 }
 
 export type userUncheckedCreateWithoutClassSectionsAsFacultyInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1587,7 +1587,7 @@ export type userUncheckedUpdateWithoutClassSectionsAsFacultyInput = {
 }
 
 export type userCreateWithoutFormSubmissionsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1612,7 +1612,7 @@ export type userCreateWithoutFormSubmissionsInput = {
 }
 
 export type userUncheckedCreateWithoutFormSubmissionsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1703,7 +1703,7 @@ export type userUncheckedUpdateWithoutFormSubmissionsInput = {
 }
 
 export type userCreateWithoutApprovalStepsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1728,7 +1728,7 @@ export type userCreateWithoutApprovalStepsInput = {
 }
 
 export type userUncheckedCreateWithoutApprovalStepsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1819,7 +1819,7 @@ export type userUncheckedUpdateWithoutApprovalStepsInput = {
 }
 
 export type userCreateWithoutComputationRunsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1844,7 +1844,7 @@ export type userCreateWithoutComputationRunsInput = {
 }
 
 export type userUncheckedCreateWithoutComputationRunsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1935,7 +1935,7 @@ export type userUncheckedUpdateWithoutComputationRunsInput = {
 }
 
 export type userCreateWithoutAuditLogsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -1960,7 +1960,7 @@ export type userCreateWithoutAuditLogsInput = {
 }
 
 export type userUncheckedCreateWithoutAuditLogsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2051,7 +2051,7 @@ export type userUncheckedUpdateWithoutAuditLogsInput = {
 }
 
 export type userCreateWithoutAiRecommendationsReviewedInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2076,7 +2076,7 @@ export type userCreateWithoutAiRecommendationsReviewedInput = {
 }
 
 export type userUncheckedCreateWithoutAiRecommendationsReviewedInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2167,7 +2167,7 @@ export type userUncheckedUpdateWithoutAiRecommendationsReviewedInput = {
 }
 
 export type userCreateWithoutReportExportsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2192,7 +2192,7 @@ export type userCreateWithoutReportExportsInput = {
 }
 
 export type userUncheckedCreateWithoutReportExportsInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2283,7 +2283,7 @@ export type userUncheckedUpdateWithoutReportExportsInput = {
 }
 
 export type userCreateManyDepartmentInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean
@@ -2361,7 +2361,7 @@ export type userUncheckedUpdateManyWithoutDepartmentInput = {
 }
 
 export type userCreateManyProgramInput = {
-  id: string
+  id?: string
   name: string
   email: string
   emailVerified?: boolean

@@ -265,7 +265,7 @@ export type sessionScalarWhereWithAggregatesInput = {
 }
 
 export type sessionCreateInput = {
-  id: string
+  id?: string
   token: string
   expiresAt: Date | string
   ipAddress?: string | null
@@ -276,7 +276,7 @@ export type sessionCreateInput = {
 }
 
 export type sessionUncheckedCreateInput = {
-  id: string
+  id?: string
   userId: string
   token: string
   expiresAt: Date | string
@@ -309,7 +309,7 @@ export type sessionUncheckedUpdateInput = {
 }
 
 export type sessionCreateManyInput = {
-  id: string
+  id?: string
   userId: string
   token: string
   expiresAt: Date | string
@@ -426,7 +426,7 @@ export type sessionUncheckedUpdateManyWithoutUserNestedInput = {
 }
 
 export type sessionCreateWithoutUserInput = {
-  id: string
+  id?: string
   token: string
   expiresAt: Date | string
   ipAddress?: string | null
@@ -436,7 +436,7 @@ export type sessionCreateWithoutUserInput = {
 }
 
 export type sessionUncheckedCreateWithoutUserInput = {
-  id: string
+  id?: string
   token: string
   expiresAt: Date | string
   ipAddress?: string | null
@@ -486,7 +486,7 @@ export type sessionScalarWhereInput = {
 }
 
 export type sessionCreateManyUserInput = {
-  id: string
+  id?: string
   token: string
   expiresAt: Date | string
   ipAddress?: string | null
