@@ -10,6 +10,7 @@
 */
 
 export const UserRole = {
+  user: 'user',
   faculty: 'faculty',
   program_chair: 'program_chair',
   dean: 'dean',

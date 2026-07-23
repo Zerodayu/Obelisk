@@ -8,7 +8,7 @@ model user {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // --- Institutional extensions ---
-  role         UserRole @default(faculty)
+  role         UserRole @default(user)
   employeeId   String?  @unique @map("employee_id")
   programId    String?  @map("program_id")
   departmentId String?  @map("department_id")
