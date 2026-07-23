@@ -1,5 +1,5 @@
 model user {
-  id            String   @id
+  id            String   @id @default(cuid())
   name          String
   email         String   @unique
   emailVerified Boolean  @default(false) @map("email_verified")
@@ -35,7 +35,7 @@ model user {
 }
 
 model session {
-  id        String   @id
+  id        String   @id @default(cuid())
   userId    String   @map("user_id")
   token     String   @unique
   expiresAt DateTime @map("expires_at")
@@ -50,7 +50,7 @@ model session {
 }
 
 model account {
-  id                    String    @id
+  id                    String    @id @default(cuid())
   userId                String    @map("user_id")
   accountId             String    @map("account_id")
   providerId            String    @map("provider_id")
@@ -70,7 +70,7 @@ model account {
 }
 
 model verification {
-  id         String   @id
+  id         String   @id @default(cuid())
   identifier String
   value      String
   expiresAt  DateTime @map("expires_at")
