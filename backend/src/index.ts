@@ -2,6 +2,7 @@ import cors from "@elysia/cors";
 import openapi from "@elysia/openapi";
 import { env } from "@utils/env";
 import { Elysia } from "elysia";
+import { apiRoutesV1 } from "./routes";
 
 const app = new Elysia()
 	.use(
@@ -24,6 +25,7 @@ const app = new Elysia()
 		}),
 	)
 	.get("/", () => "hello elysia", { detail: { hide: true } })
+	.use(apiRoutesV1)
 	.listen(3000);
 
 console.log(
