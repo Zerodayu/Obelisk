@@ -9,10 +9,11 @@ from app.core.logging import logger
 router = APIRouter()
 
 
-@router.get("/jobs/{job_id}/recommendation")
+@router.get("/jobs/{job_id}/recommendation", summary="Get Per-Course CQI Recommendation")
 async def get_cqi_recommendation(job_id: str):
     """
     Generates a CQI recommendation for a single, completed ETL job.
+    This provides a granular, course-level analysis of performance gaps.
     """
     logger.info("api_get_recommendation", job_id=job_id)
     
@@ -27,7 +28,6 @@ async def get_cqi_recommendation(job_id: str):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_message)
 
     try:
-        # The job result is stored as serialized dicts, so we need to reconstruct the Pydantic models.
         loaded_result = job["result"]["loaded"]
         header = ClassRecordHeader(**loaded_result["header"])
         attainments = [StudentCLOAttainment(**record) for record in loaded_result["attainments"]]
@@ -49,11 +49,11 @@ async def get_cqi_recommendation(job_id: str):
         )
 
 
-@router.post("/analytics/institutional-summary")
+@router.post("/analytics/institutional-summary", summary="Get Institution-Wide CQI Summary")
 async def get_institutional_summary(payload: InstitutionalSummaryPayload):
     """
     Accepts a consolidated payload of multiple course results and generates
-    a high-level, institution-wide CQI summary.
+    a high-level, institution-wide CQI summary and AI recommendation.
 
     This endpoint operates under the assumption that it is called by a trusted
     backend service (e.g., the main web application). It does not perform

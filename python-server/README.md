@@ -1,98 +1,71 @@
-## OBELISK ETL Foundation
+# OBELISK ETL & Analytics Service
 
-Async-first FastAPI ETL service for OBELISK class-record processing.
+This repository contains the OBELISK ETL & Analytics Service, a pure-compute Python microservice built with FastAPI. It serves as the core data processing engine for the OBELISK Outcomes-Based Education (OBE) system.
 
-This README is updated to reflect the new institutional CLO attainment formula and PLO rollups from real workbook data.
+## 1. What This Service Is
 
----
+This service has two primary responsibilities:
 
-## What's New
-
-- **New CLO Attainment Formula**: The core transformation logic uses the official institutional formula (Formula 1A) by pooling all raw scores for a CLO.
-- **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook.
-- **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A).
-- **Program-Level PLO Average**: A new summary metric (Formula 7C) is now computed, averaging all individual PLO attainment values for a given program.
-- **Data Completeness Checks**: The service now calculates and returns data completeness percentages for both CLOs (Rule 1) and PLOs (Rule 3), providing context on data quality without blocking computation.
-- **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**.
-- **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`).
-- **AI-Powered CQI Recommendations**: Endpoints are available for both per-course and institution-wide AI-assisted CQI summaries.
-- **Configurable CORS**: The server's CORS policy is configurable via environment variables.
+1.  **Per-Course ETL**: It receives a single, instructor-filled class-record Excel workbook, validates it, and runs an Extract, Transform, Load (ETL) pipeline. This process computes the Direct CLO (Course Learning Outcome) Attainment for every student based on institutional formulas.
+2.  **Institutional Analytics**: It accepts a consolidated payload containing the results of multiple course submissions from the main web application. It then performs higher-level aggregations, rolling up CLO attainment to the PLO (Program Learning Outcome) level for different organizational units (Program, Department, AVP Group) and generates AI-powered summaries for institutional quality improvement.
 
 ---
 
-## Data contract (share this with web app teammate)
+## 2. Architectural Boundary (IMPORTANT)
 
-**IMPORTANT**: The shape of the final job result and the institutional summary have changed.
+This service is intentionally designed with a strict architectural boundary that **must** be understood by any consuming application (e.g., the main webapp backend).
 
-### Final Job Result (`GET /jobs/{job_id}`)
+-   **No Database Access**: This service **never** connects to a database. It is a stateless compute engine. All data is received via HTTP requests, and all results are returned as JSON in the HTTP response. The job queue is in-memory and is wiped on every server restart. The calling application is solely responsible for all data persistence.
 
-The `attainments` objects in the `result.loaded` array now include data completeness fields:
-```json
-{
-  "attainments": [
-    {
-      "student_name": "DOE, JOHN",
-      "clo_code": "CLO1",
-      "direct_clo_attainment_pct": 0.85,
-      "is_record_complete": true, // NEW: true if student has scores in PRELIM, MIDTERM, and FINAL
-      "section_completeness_pct": 0.95, // NEW: % of students in the section with complete records for this CLO
-      "rule1_met": true, // NEW: true if section_completeness_pct >= 60%
-      // ... and other fields
-    }
-  ],
-  "clo_plo_mapping": [ ... ]
-}
+-   **No Authentication/Authorization**: This service has **no concept of users, roles, or permissions**. It trusts every API call it receives. The calling application (the webapp backend) **MUST** perform all necessary authentication and authorization checks *before* calling any endpoint on this service. This is especially critical for the `POST /analytics/institutional-summary` endpoint, which should only be accessible to authorized roles like the VPAA.
+
+---
+
+## 3. Quickstart
+
+### Prerequisites
+
+-   Python 3.10+
+-   Poetry for dependency management
+
+### Installation
+
+1.  Install project dependencies:
+    ```sh
+    poetry install
+    ```
+2.  (Optional) Create a `.env` file in the project root to configure CORS origins for your webapp's frontend. See `app/core/config.py` for details.
+    ```env
+    # .env
+    OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+    ```
+
+### Running the Server
+
+Start the development server with auto-reload:
+```sh
+poetry run uvicorn app.main:app --reload
 ```
+The API will be available at `http://localhost:8000`.
 
-### Institutional Summary (`POST /analytics/institutional-summary`)
+### Running Tests
 
-The `plos` object in the summary response now includes data completeness fields:
-```json
-{
-  "program_summary": {
-    "BS Information Technology": {
-      "program_plo_average": 0.85,
-      "clos": {
-        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150, "rule1_met": true }
-      },
-      "plos": {
-        "PLO1": {
-          "plo_attainment_direct_only": 0.885,
-          "plo_completeness_pct": 1.0, // NEW: % of mapped CLOs that met Rule 1
-          "plo_rule3_met": true, // NEW: true if plo_completeness_pct >= 60%
-          "mapped_clos": [ ... ]
-        }
-      }
-    }
-  }
-}
-```
+The project includes several test scripts to validate its functionality. **The server must be running** for the end-to-end tests.
+
+| Script | Purpose | How to Run |
+| :--- | :--- | :--- |
+| `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. Useful for quickly checking the core data processing formulas. | `python test_validate.py` |
+| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course: `POST /upload`, polls `GET /jobs/{job_id}`, and fetches the per-course AI recommendation. | `python test_upload_e2e.py` |
+| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint. It uploads multiple files, waits for them to complete, then assembles and `POST`s the consolidated payload. | `python test_institutional_summary_e2e.py` |
 
 ---
 
-## API endpoints
+## 4. API Endpoint Reference
 
-- `POST /upload`: Upload a class-record file to start an ETL job.
-- `GET /jobs/{job_id}`: Get the detailed status and result of a specific job.
-- `GET /jobs/{job_id}/recommendation`: Get a CQI recommendation for a single completed job.
-- `POST /analytics/institutional-summary`: Get a high-level CQI summary for the entire institution.
-- `GET /health/`: Health check endpoint.
-
----
-
-## How to run
-(This section is unchanged)
-
----
-
-## Testing the Service
-(This section is unchanged)
-
----
-
-## Next recommended follow-ups
-
-- Implement the real LLM API call in `app/analytics/cqi_recommender.py` and set `IS_DEBUG_MODE` to `False`.
-- Implement weighted cross-course PLO merging (Formula 7C) using `correlation_strength`.
-- Implement credit-unit weighting for PLO attainment (Formula 7B).
-- Replace `DummyLoader` with a real persistence layer.
+| Method | Path | Purpose |
+| :--- | :--- | :--- |
+| `POST` | `/upload` | Upload a class-record `.xlsx` file to start a new ETL job. |
+| `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
+| `GET` | `/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
+| `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and recommendation. |
+| `GET` | `/health` | A simple health check endpoint. |

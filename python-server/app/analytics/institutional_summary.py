@@ -8,8 +8,8 @@ from app.schemas.institutional_summary import InstitutionalSummaryPayload, Cours
 
 def _calculate_mean_attainment_pct(attainments: List[Dict[str, Any]]) -> float:
     """
-    Helper to calculate the average of all individual direct_clo_attainment_pct values
-    for a given group of records, per Formula 2A.
+    Calculates the average of all individual direct_clo_attainment_pct values
+    for a given group of records. Implements Formula 2A.
     """
     if not attainments:
         return 0.0
@@ -20,7 +20,7 @@ def _calculate_mean_attainment_pct(attainments: List[Dict[str, Any]]) -> float:
 
 def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Computes PLO attainment by averaging the attainment rates of mapped CLOs (Formula 7A)
+    Computes per-PLO attainment by averaging mapped CLO attainments (Formula 7A)
     and checks for data completeness (Rule 3).
     """
     map_lookup = defaultdict(list)
@@ -38,7 +38,7 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
                 "clo_code": clo_code,
                 "mean_attainment_pct": clo_stats["mean_attainment_pct"],
                 "correlation_strength": mapping["strength"],
-                "rule1_met": clo_stats.get("rule1_met", False) # Carry through Rule 1 status
+                "rule1_met": clo_stats.get("rule1_met", False)
             })
 
     plo_attainment = {}
@@ -48,7 +48,6 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
         
         avg_attainment = sum(c["mean_attainment_pct"] for c in mapped_clos) / len(mapped_clos)
         
-        # Rule 3: A PLO may be computed if at least 60% of its mapped CLOs met Rule 1.
         complete_clo_count = sum(1 for c in mapped_clos if c["rule1_met"])
         plo_completeness_pct = complete_clo_count / len(mapped_clos) if mapped_clos else 0.0
         
@@ -62,7 +61,10 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
 
 
 def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, is_program_level: bool = False) -> Dict[str, Any]:
-    """Generic function to roll up attainment data by a given key (e.g., 'department', 'program')."""
+    """
+    Rolls up attainment data by a given key (e.g., 'department', 'program'),
+    calculating CLO means, PLO rollups, and program-level averages.
+    """
     summary = defaultdict(lambda: {"submissions": [], "clo_data": defaultdict(list)})
     for sub in submissions:
         group_name = getattr(sub, group_by_key)
@@ -78,7 +80,6 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
         
         clo_summary = {}
         for clo, attainments in data["clo_data"].items():
-            # Get the rule1_met status from the first record (it's the same for all students in that CLO)
             rule1_met_status = attainments[0].get("rule1_met", False) if attainments else False
             clo_summary[clo] = {
                 "mean_attainment_pct": _calculate_mean_attainment_pct(attainments),
@@ -105,17 +106,20 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
 
 
 def aggregate_by_department(submissions: List[CourseSubmission]) -> Dict[str, Any]:
+    """Aggregates attainment data for all submissions, grouped by department."""
     return _generic_aggregator(submissions, 'department', is_program_level=False)
 
 def aggregate_by_program(submissions: List[CourseSubmission]) -> Dict[str, Any]:
+    """Aggregates attainment data for all submissions, grouped by program."""
     return _generic_aggregator(submissions, 'program', is_program_level=True)
 
 def aggregate_by_avp_group(submissions: List[CourseSubmission]) -> Dict[str, Any]:
+    """Aggregates attainment data for all submissions, grouped by AVP group."""
     return _generic_aggregator(submissions, 'avp_group', is_program_level=False)
 
 
 def find_worst_performers(agg_data: Dict[str, Any], group_name: str, top_n: int = 3) -> List[Dict[str, Any]]:
-    # ... (function is unchanged)
+    """Identifies the CLOs with the lowest mean attainment across a given aggregation level."""
     all_clos = []
     for key, data in agg_data.items():
         for clo_code, clo_data in data.get("clos", {}).items():
@@ -130,7 +134,7 @@ def find_worst_performers(agg_data: Dict[str, Any], group_name: str, top_n: int 
 
 
 def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Dict[str, Any]) -> str:
-    # ... (function is unchanged)
+    """Builds a text prompt for an LLM to generate an institution-wide CQI summary."""
     period_label = payload.period.label
     worst_performers = summary.get("worst_performing_clos", [])
     prompt_lines = [
@@ -157,7 +161,10 @@ def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Di
 
 
 async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
-    # ... (function is mostly unchanged)
+    """
+    Orchestrates the full institutional summary generation process: anonymization,
+    aggregation at all levels, identification of worst performers, and LLM prompt generation.
+    """
     for submission in payload.submissions:
         submission.attainments = anonymize_students(submission.attainments)
     
