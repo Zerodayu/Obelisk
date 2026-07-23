@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List, Dict, Any
 
 from app.analytics.cqi_recommender import anonymize_students, call_llm_api, IS_DEBUG_MODE
-from app.etl.transform.transformer import INSTITUTIONAL_THRESHOLD
+from app.etl.transform.transformer import INSTITUTIONAL_THRESHOLD, COMPLETENESS_THRESHOLD
 from app.schemas.institutional_summary import InstitutionalSummaryPayload, CourseSubmission
 
 
@@ -20,7 +20,8 @@ def _calculate_mean_attainment_pct(attainments: List[Dict[str, Any]]) -> float:
 
 def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Computes PLO attainment by averaging the attainment rates of mapped CLOs (Formula 7A).
+    Computes PLO attainment by averaging the attainment rates of mapped CLOs (Formula 7A)
+    and checks for data completeness (Rule 3).
     """
     map_lookup = defaultdict(list)
     for item in clo_plo_map:
@@ -36,10 +37,8 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
             plo_data[mapping["plo"]].append({
                 "clo_code": clo_code,
                 "mean_attainment_pct": clo_stats["mean_attainment_pct"],
-                # Note: correlation_strength is carried through as metadata. It is a real weighting
-                # factor for cross-course PLO merging (Formula 7C), but is not used in this
-                # unweighted Formula 7A calculation.
                 "correlation_strength": mapping["strength"],
+                "rule1_met": clo_stats.get("rule1_met", False) # Carry through Rule 1 status
             })
 
     plo_attainment = {}
@@ -47,12 +46,16 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
         if not mapped_clos:
             continue
         
-        # The current single-course PLO computation (Formula 7A, unweighted) is still
-        # correct and unaffected by the note on correlation_strength. A follow-up
-        # change will implement the actual weighted cross-course merge.
         avg_attainment = sum(c["mean_attainment_pct"] for c in mapped_clos) / len(mapped_clos)
+        
+        # Rule 3: A PLO may be computed if at least 60% of its mapped CLOs met Rule 1.
+        complete_clo_count = sum(1 for c in mapped_clos if c["rule1_met"])
+        plo_completeness_pct = complete_clo_count / len(mapped_clos) if mapped_clos else 0.0
+        
         plo_attainment[plo_code] = {
             "plo_attainment_direct_only": avg_attainment,
+            "plo_completeness_pct": plo_completeness_pct,
+            "plo_rule3_met": plo_completeness_pct >= COMPLETENESS_THRESHOLD,
             "mapped_clos": mapped_clos,
         }
     return plo_attainment
@@ -73,31 +76,31 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
     for name, data in summary.items():
         consolidated_mapping = {f"{m['clo_code']}_{m['plo_code']}": m for sub in data["submissions"] for m in sub.clo_plo_mapping}.values()
         
-        clo_summary = {
-            clo: {
+        clo_summary = {}
+        for clo, attainments in data["clo_data"].items():
+            # Get the rule1_met status from the first record (it's the same for all students in that CLO)
+            rule1_met_status = attainments[0].get("rule1_met", False) if attainments else False
+            clo_summary[clo] = {
                 "mean_attainment_pct": _calculate_mean_attainment_pct(attainments),
                 "record_count": len(attainments),
+                "rule1_met": rule1_met_status,
             }
-            for clo, attainments in data["clo_data"].items()
-        }
 
         plos = compute_plo_attainment(clo_summary, list(consolidated_mapping))
-
+        
         result_payload = {
             "total_attainment_records": sum(len(attainments) for attainments in data["clo_data"].values()),
             "clos": clo_summary,
             "plos": plos,
         }
 
-        # Formula 7C: Program-Level Average PLO Attainment.
-        # This is ONLY computed at the program level.
         if is_program_level and plos:
             all_plo_attainments = [p["plo_attainment_direct_only"] for p in plos.values()]
             if all_plo_attainments:
                 result_payload["program_plo_average"] = sum(all_plo_attainments) / len(all_plo_attainments)
 
         results[name] = result_payload
-
+        
     return results
 
 
@@ -112,6 +115,7 @@ def aggregate_by_avp_group(submissions: List[CourseSubmission]) -> Dict[str, Any
 
 
 def find_worst_performers(agg_data: Dict[str, Any], group_name: str, top_n: int = 3) -> List[Dict[str, Any]]:
+    # ... (function is unchanged)
     all_clos = []
     for key, data in agg_data.items():
         for clo_code, clo_data in data.get("clos", {}).items():
@@ -126,6 +130,7 @@ def find_worst_performers(agg_data: Dict[str, Any], group_name: str, top_n: int 
 
 
 def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Dict[str, Any]) -> str:
+    # ... (function is unchanged)
     period_label = payload.period.label
     worst_performers = summary.get("worst_performing_clos", [])
     prompt_lines = [
@@ -152,6 +157,7 @@ def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Di
 
 
 async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
+    # ... (function is mostly unchanged)
     for submission in payload.submissions:
         submission.attainments = anonymize_students(submission.attainments)
     

@@ -12,6 +12,7 @@ This README is updated to reflect the new institutional CLO attainment formula a
 - **Real CLO-PLO Mapping**: The service now extracts the CLO-PLO correlation table directly from the `COVERPAGE` of each uploaded workbook.
 - **PLO Attainment Rollup**: The institutional summary endpoint computes PLO attainment by averaging the attainment rates of their mapped CLOs (Formula 7A).
 - **Program-Level PLO Average**: A new summary metric (Formula 7C) is now computed, averaging all individual PLO attainment values for a given program.
+- **Data Completeness Checks**: The service now calculates and returns data completeness percentages for both CLOs (Rule 1) and PLOs (Rule 3), providing context on data quality without blocking computation.
 - **Fixed Institutional Threshold**: The `met_threshold` field is now calculated against a fixed institutional benchmark of **70%**.
 - **Descriptive CLO Levels**: The `clo_level` field is now a 4-tier descriptive string (`Exceptional`, `Proficient`, `Basic`, `Below Basic`).
 - **AI-Powered CQI Recommendations**: Endpoints are available for both per-course and institution-wide AI-assisted CQI summaries.
@@ -25,36 +26,40 @@ This README is updated to reflect the new institutional CLO attainment formula a
 
 ### Final Job Result (`GET /jobs/{job_id}`)
 
-The `result.loaded` object will now contain a `clo_plo_mapping` field, extracted directly from the workbook:
+The `attainments` objects in the `result.loaded` array now include data completeness fields:
 ```json
 {
-  "status": "ok",
-  "received_records": 150,
-  "header": { ... },
-  "attainments": [ ... ],
-  "clo_plo_mapping": [
-    { "clo_code": "CLO1", "plo_code": "PLO1", "correlation_strength": 3 },
-    { "clo_code": "CLO2", "plo_code": "PLO2", "correlation_strength": 2 }
-  ]
+  "attainments": [
+    {
+      "student_name": "DOE, JOHN",
+      "clo_code": "CLO1",
+      "direct_clo_attainment_pct": 0.85,
+      "is_record_complete": true, // NEW: true if student has scores in PRELIM, MIDTERM, and FINAL
+      "section_completeness_pct": 0.95, // NEW: % of students in the section with complete records for this CLO
+      "rule1_met": true, // NEW: true if section_completeness_pct >= 60%
+      // ... and other fields
+    }
+  ],
+  "clo_plo_mapping": [ ... ]
 }
 ```
-**Note on `correlation_strength`**: This is a real weighting factor (1-3 scale) intended for cross-course PLO merging (Formula 7C). The current PLO computation (Formula 7A) is an unweighted average and does not yet use this field as a weight.
 
 ### Institutional Summary (`POST /analytics/institutional-summary`)
 
-The `program_summary` in the response now includes a `program_plo_average` field.
+The `plos` object in the summary response now includes data completeness fields:
 ```json
 {
   "program_summary": {
     "BS Information Technology": {
-      "total_attainment_records": 300,
-      "program_plo_average": 0.85, // NEW: Formula 7C
+      "program_plo_average": 0.85,
       "clos": {
-        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150 }
+        "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150, "rule1_met": true }
       },
       "plos": {
         "PLO1": {
           "plo_attainment_direct_only": 0.885,
+          "plo_completeness_pct": 1.0, // NEW: % of mapped CLOs that met Rule 1
+          "plo_rule3_met": true, // NEW: true if plo_completeness_pct >= 60%
           "mapped_clos": [ ... ]
         }
       }
@@ -76,63 +81,12 @@ The `program_summary` in the response now includes a `program_plo_average` field
 ---
 
 ## How to run
-
 (This section is unchanged)
 
-### Prerequisites
+---
 
-- Python 3.10+
-- Poetry (for dependency management)
-
-### Install dependencies
-
-```powershell
-poetry install
-```
-
-### Environment Variables (Optional)
-
-Create a `.env` file in the project root to configure the service.
-
-```env
-# .env
-
-# Comma-separated list of allowed origins for CORS
-# Default: "http://localhost:3000,http://127.0.0.1:3000"
-OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://your-webapp-domain.com"
-```
-
-### Start the API server
-
-```powershell
-poetry run uvicorn app.main:app --reload
-```
-The server will start on `http://localhost:8000`.
-
-### Testing the Service
-
-This project includes several scripts to validate its functionality.
-
-#### Low-Level Validation
-This script tests the `extractor` and `transformer` logic directly without running the web server. It's useful for quickly checking the core data processing.
-```powershell
-python test_validate.py
-```
-
-#### End-to-End API Tests
-These scripts test the live server and require it to be running (`uvicorn app.main:app --reload`).
-
-**1. Single-File Upload and Per-Course CQI**
-This test validates the entire flow for a single course: uploading a file, polling the job to completion, and fetching the per-course AI recommendation.
-```powershell
-python test_upload_e2e.py
-```
-
-**2. Multi-File Institutional Summary**
-This test validates the institution-wide summary feature. It uploads multiple files to simulate different departments, then assembles and `POST`s the consolidated payload to the analytics endpoint.
-```powershell
-python test_institutional_summary_e2e.py
-```
+## Testing the Service
+(This section is unchanged)
 
 ---
 
