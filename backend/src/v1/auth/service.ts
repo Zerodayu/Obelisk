@@ -10,6 +10,8 @@ const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 export const auth = betterAuth({
+	basePath: "/api/v1/auth",
+
 	database: prismaAdapter(prisma, {
 		provider: "postgresql",
 	}),
