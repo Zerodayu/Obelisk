@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/generated/prisma/client";
 import { env } from "@utils/env";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { openAPI } from "better-auth/plugins";
 
 const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -12,6 +13,8 @@ export const auth = betterAuth({
 	database: prismaAdapter(prisma, {
 		provider: "postgresql",
 	}),
+
+	plugins: [openAPI()],
 
 	emailAndPassword: {
 		enabled: true,
