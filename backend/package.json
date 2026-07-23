@@ -10,7 +10,7 @@
 		"db:push": "dotenvx run -f .env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f .env.local -- bunx prisma generate",
 		"db:studio": "dotenvx run -f .env.local -- bunx prisma studio",
-		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate dev"
+		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate"
 	},
 	"dependencies": {
 		"@better-auth/prisma-adapter": "^1.6.23",
