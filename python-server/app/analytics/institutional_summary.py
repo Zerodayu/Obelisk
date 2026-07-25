@@ -160,10 +160,10 @@ def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Di
     return "\n".join(prompt_lines)
 
 
-async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
+def compute_summary_only(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
     """
-    Orchestrates the full institutional summary generation process: anonymization,
-    aggregation at all levels, identification of worst performers, and LLM prompt generation.
+    Performs all data aggregation and analysis for an institutional summary
+    without making any external AI/LLM calls.
     """
     for submission in payload.submissions:
         submission.attainments = anonymize_students(submission.attainments)
@@ -185,7 +185,15 @@ async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -
         "avp_group_summary": avp_group_summary,
         "worst_performing_clos": all_worst[:5],
     }
-    
+    return summary
+
+
+async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
+    """
+    Generates a full institutional summary, including data aggregation and
+    an AI-powered recommendation.
+    """
+    summary = compute_summary_only(payload)
     prompt = build_institutional_prompt(payload, summary)
     llm_response = await call_llm_api(prompt)
 

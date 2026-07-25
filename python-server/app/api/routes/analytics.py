@@ -1,12 +1,12 @@
 from fastapi import APIRouter, HTTPException, status
 from app.services.job_queue import job_queue
 from app.analytics.cqi_recommender import generate_cqi_recommendation
-from app.analytics.institutional_summary import generate_institutional_summary
+from app.analytics.institutional_summary import generate_institutional_summary, compute_summary_only
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
 from app.schemas.institutional_summary import InstitutionalSummaryPayload
 from app.core.logging import logger
 
-router = APIRouter()
+router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
 @router.get("/jobs/{job_id}/recommendation", summary="Get Per-Course CQI Recommendation")
@@ -49,11 +49,34 @@ async def get_cqi_recommendation(job_id: str):
         )
 
 
-@router.post("/analytics/institutional-summary", summary="Get Institution-Wide CQI Summary")
+@router.post("/summary", summary="Get Institutional Rollup Numbers")
+async def get_summary_only(payload: InstitutionalSummaryPayload):
+    """
+    Accepts a consolidated payload and returns pure data rollups (by department,
+    program, etc.) without any AI/LLM-generated recommendation.
+
+    This endpoint is safe for any role to call, as it never triggers an AI call.
+    The scope of the returned data (e.g., a single department vs. the whole
+    institution) depends entirely on the `submissions` provided in the payload,
+    which is controlled by the calling webapp.
+    """
+    logger.info("api_get_summary_only", period=payload.period.label, submission_count=len(payload.submissions))
+    try:
+        summary = compute_summary_only(payload)
+        return summary
+    except Exception as e:
+        logger.error("summary_only_error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred while generating the summary: {e}",
+        )
+
+
+@router.post("/institutional-summary", summary="Get Full Institution-Wide CQI Summary (VPAA Only)")
 async def get_institutional_summary(payload: InstitutionalSummaryPayload):
     """
     Accepts a consolidated payload of multiple course results and generates
-    a high-level, institution-wide CQI summary and AI recommendation.
+    a high-level, institution-wide CQI summary and an AI recommendation.
 
     This endpoint operates under the assumption that it is called by a trusted
     backend service (e.g., the main web application). It does not perform

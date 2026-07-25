@@ -11,35 +11,17 @@ that will not change without a real conversation first:
 1. **No database access.** This service never reads from or writes to
    the database. It receives data via HTTP request body, computes
    something, and returns JSON. Nothing is persisted here — the job
-   queue is in-memory only and is wiped on every restart. If you need
-   historical data (past uploads, trend analysis, org structure), that
-   lives in your database, not here.
+   queue is in-memory only and is wiped on every restart.
 
 2. **No authentication or authorization.** This service trusts every
-   request it receives. It does not know about user accounts, roles,
-   or sessions. **The webapp backend is responsible for verifying who
+   request it receives. The webapp backend is responsible for verifying
    the requester is and what they're allowed to see BEFORE calling this
-   service.** This matters most for the institutional-summary endpoint
-   below — see the warning there.
-
-## Role → data scope mapping
-
-Per the JMCFI org chart, access is hierarchical. The webapp decides
-what data to send Python based on the requester's role — Python never
-sees or reasons about roles itself.
-
-| Role | Sees |
-|---|---|
-| Faculty | one course/section |
-| Program Head | one program |
-| Dean | one department |
-| AVP | one AVP group (cluster of departments — see org chart) |
-| VPAA | whole institution — **only role allowed to trigger AI analysis** |
+   service.
 
 ## Endpoint 1: Per-course upload & attainment
 
 ### `POST /upload`
-Upload one class-record `.xlsx` file (multipart/form-data, field name `file`).
+Upload one class-record `.xlsx` file.
 
 **Response (202):**
 ```json
@@ -47,89 +29,68 @@ Upload one class-record `.xlsx` file (multipart/form-data, field name `file`).
 ```
 
 ### `GET /jobs/{job_id}`
-Poll until `status` is `"completed"` or `"failed"`.
+Poll until `status` is `"completed"` or `"failed"`. The `result.loaded` object contains all computed data for one course section.
 
-**Response, when completed, `result.loaded` shape:**
-The `attainments` array now includes completeness fields.
-```json
-{
-  "status": "ok",
-  "received_records": 15,
-  "header": { "...same header shape as before..." },
-  "attainments": [
-    {
-      "student_id": "string | null",
-      "student_name": "string",
-      "clo_code": "CLO1",
-      "direct_clo_attainment_pct": 0.705,
-      "is_record_complete": true,
-      "section_completeness_pct": 0.95,
-      "rule1_met": true
-    }
-  ],
-  "clo_plo_mapping": [ ... ]
-}
-```
+### `GET /analytics/jobs/{job_id}/recommendation`
+Per-course AI gap analysis (VPAA-only, currently returns a placeholder).
 
-**Field notes:**
-- `is_record_complete` (Rule 1) is true if a student has scores for a given CLO in all three periods (Prelim, Midterm, Final).
-- `section_completeness_pct` is the percentage of students in the course who have a complete record for that CLO.
-- `rule1_met` is true if `section_completeness_pct` is >= 60%.
+---
 
-### `GET /jobs/{job_id}/recommendation`
-Per-course AI gap analysis.
+## Endpoint 2: Institutional & Program-Level Analytics
 
-## Endpoint 2: Institution-wide AI summary — VPAA ONLY
+This group of endpoints accepts a consolidated payload of multiple course submissions to perform higher-level analysis.
 
-### `POST /analytics/institutional-summary`
+### `POST /analytics/summary` (For Dean, Program Head, AVP dashboards)
 
-> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this.
+> ✅ **This endpoint is safe for any role.** It performs pure data aggregation and **never** triggers an AI/LLM call.
 
 **Request body:**
-The `submissions` payload must now include the `attainments` objects with their new completeness fields.
-
-**Response:**
-The `plos` object in the summary now includes completeness fields.
+The webapp sends a payload containing a list of course submissions. The scope of the data (e.g., one department's courses vs. the whole institution) is determined by what the webapp chooses to include in the `submissions` list based on the user's role.
 ```json
 {
-  "status": "ok",
-  "summary": {
-    "program_summary": {
-      "BSIT": {
-        "program_plo_average": 0.85,
-        "clos": {
-          "CLO1": { "mean_attainment_pct": 0.92, "record_count": 150, "rule1_met": true }
-        },
-        "plos": {
-          "PLO1": {
-            "plo_attainment_direct_only": 0.885,
-            "plo_completeness_pct": 1.0,
-            "plo_rule3_met": true,
-            "mapped_clos": [ ... ]
-          }
-        }
-      }
+  "period": { "type": "semester", "label": "SY 2024-2025, 2nd Sem" },
+  "submissions": [
+    {
+      "department": "CITE",
+      "program": "BSIT",
+      "header": { ... },
+      "attainments": [ ... ],
+      "clo_plo_mapping": [ ... ]
     }
-  },
-  "prompt_used": "string",
-  "recommendation": "AI-generated text (currently a placeholder)"
+  ]
 }
 ```
-**Field notes:**
-- `plo_completeness_pct` (Rule 3) is the percentage of a PLO's mapped CLOs that met the Rule 1 completeness standard.
-- `plo_rule3_met` is true if `plo_completeness_pct` is >= 60%.
 
-## What's explicitly NOT this service's job
-- Persisting any uploaded data or computed results
-- The org-structure reference table (department → AVP group mapping)
-- Auth, sessions, roles, permissions — all webapp-side
-- PEO rollup (Program Educational Objectives) — this is a higher-level
-  concern not yet built.
-- Populating the WIN-OBE form templates (form count currently unconfirmed — see Known open items below) — this service provides the computed numbers; rendering them into form layouts is webapp/frontend work
+**Response:**
+Returns a dictionary containing the rolled-up data summaries.
+```json
+{
+  "period": { ... },
+  "department_summary": { ... },
+  "program_summary": { ... },
+  "avp_group_summary": { ... },
+  "worst_performing_clos": [ ... ]
+}
+```
 
+### `POST /analytics/institutional-summary` (VPAA ONLY)
+
+> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It always triggers an AI/LLM call.
+
+**Request body:**
+Same as `/analytics/summary`, but the webapp should always send the full set of institutional data.
+
+**Response:**
+Returns the same summary object as `/analytics/summary`, but with three additional fields for the AI-generated analysis.
+```json
+{
+  "summary": { ... },
+  "status": "ok",
+  "prompt_used": "The full text prompt sent to the LLM...",
+  "recommendation": "The AI-generated text response..."
+}
+```
+
+---
 ## Known open items
-
-- **Form F18 Naming Conflict**: Form F18 is labeled "Portfolio Assessment Record" in the OBE Assessment Plan, but is used for CQI steps (Root Cause Analysis, Action Plan, Implementation) in workflow documents. A newer formula reference uses F23 for the CQI Action Plan specifically. This is pending client clarification.
-- **AQAU Access Level**: It is still undefined whether the AQAU role should have the same access to the AI-generated institutional summary as the VPAA, or a different view.
-- **Rule 1 Interpretive Gap**: The data completeness check (Rule 1) will flag a CLO as incomplete if it is not assessed in all three grading periods, even if this is by design. This can affect the display of completeness percentages and is pending client clarification.
-- **Portfolio Assessment Track**: It has not yet been confirmed if any current programs use a portfolio-based assessment track instead of an exam-based one, which would require different handling per §3.4 of the OBE Assessment Plan.
+(This section is unchanged)
