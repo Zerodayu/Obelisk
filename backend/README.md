@@ -2,18 +2,16 @@
 
 ## Getting Started
 
-To get started with this template, simply paste this command into your terminal:
+### install dependencies
 
-```bash
-bun create elysia ./elysia-example
+```sh
+bun install
 ```
 
-## Development
-
-To start the development server run:
-
-```bash
-bun run dev
+```sh
+bun dev
+# or
+bun db:studio
 ```
 
-Open <http://localhost:3000/> with your browser to see the result.
+Open <http://localhost:8080/> with your browser to see the result. then go to `/openapi` for the apis documentation

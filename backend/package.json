@@ -10,11 +10,13 @@
 		"db:push": "dotenvx run -f .env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f .env.local -- bunx prisma generate",
 		"db:studio": "dotenvx run -f .env.local -- bunx prisma studio",
-		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate dev"
+		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate"
 	},
 	"dependencies": {
 		"@better-auth/prisma-adapter": "^1.6.23",
 		"@dotenvx/dotenvx": "^2.15.1",
+		"@elysia/cors": "^1.4.2",
+		"@elysia/openapi": "^1.4.15",
 		"@neondatabase/serverless": "^1.1.0",
 		"@prisma/adapter-neon": "^7.9.0",
 		"@prisma/client": "^7.9.0",
@@ -25,6 +27,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.5.5",
 		"bun-types": "latest",
+		"openapi-types": "^12.1.3",
 		"prisma": "^7.9.0"
 	},
 	"module": "src/index.js"
