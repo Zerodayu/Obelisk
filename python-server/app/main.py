@@ -14,13 +14,12 @@ from app.workers.worker import start_worker
 app = FastAPI(title="OBELISK ETL (placeholder)")
 
 # Configure CORS using settings from config.py
-# This is more secure and flexible than a hardcoded wildcard.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all standard methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 configure_logging()
@@ -30,7 +29,7 @@ app.include_router(upload_router, prefix="", tags=["upload"])
 app.include_router(etl_router, prefix="/etl", tags=["etl"])
 app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
 app.include_router(health_router, prefix="/health", tags=["health"])
-app.include_router(analytics_router, prefix="", tags=["analytics"])
+app.include_router(analytics_router, prefix="/analytics", tags=["analytics"]) # Correct prefix is here
 
 _worker_tasks: list[asyncio.Task] = []
 

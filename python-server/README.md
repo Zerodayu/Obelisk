@@ -23,32 +23,60 @@ This service is intentionally designed with a strict architectural boundary that
 
 ## 3. Quickstart
 
-### Prerequisites
+There are two ways to run the service: locally with Poetry for development, or with Docker for production or easy deployment.
 
--   Python 3.10+
--   Poetry for dependency management
+### Option A: Running with Docker (Recommended)
 
-### Installation
+This is the simplest way to run the service without managing Python environments.
 
-1.  Install project dependencies:
+**Prerequisites:**
+-   Docker Desktop installed and running.
+
+**Instructions:**
+
+1.  **Build the Docker image:**
+    Open a terminal in the project root and run:
+    ```sh
+    docker build -t obelisk-etl .
+    ```
+
+2.  **Run the Docker container:**
+    ```sh
+    docker run -p 8000:8000 obelisk-etl
+    ```
+
+The API will be available at `http://localhost:8000`.
+
+### Option B: Running Locally with Poetry
+
+This method is ideal for active development.
+
+**Prerequisites:**
+-   Python 3.11+
+-   Poetry
+
+**Instructions:**
+
+1.  **Install dependencies:**
     ```sh
     poetry install
     ```
-2.  (Optional) Create a `.env` file in the project root to configure CORS origins for your webapp's frontend. See `app/core/config.py` for details.
+
+2.  **(Optional) Configure Environment:**
+    Create a `.env` file in the project root to configure CORS origins.
     ```env
     # .env
     OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
     ```
 
-### Running the Server
+3.  **Start the development server:**
+    ```sh
+    poetry run uvicorn app.main:app --reload
+    ```
 
-Start the development server with auto-reload:
-```sh
-poetry run uvicorn app.main:app --reload
-```
-The API will be available at `http://localhost:8000`.
+---
 
-### Running Tests
+## 4. Testing the Service
 
 The project includes several scripts in the `testing_modules/` directory to validate its functionality.
 
@@ -60,18 +88,19 @@ The project includes several scripts in the `testing_modules/` directory to vali
 
 ---
 
-## 4. API Endpoint Reference
+## 5. API Endpoint Reference
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | `POST` | `/upload` | Upload a class-record `.xlsx` file to start a new ETL job. |
 | `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
-| `GET` | `/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
-| `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and recommendation. |
+| `GET` | `/analytics/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
+| `POST` | `/analytics/summary` | Get pure data rollups for a given set of course submissions. |
+| `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and AI recommendation. |
 | `GET` | `/health` | A simple health check endpoint. |
 
 ---
 
-## 5. Known Limitations and Deferred Items
+## 6. Known Limitations and Deferred Items
 
-For a detailed list of known implementation gaps, trade-offs, and unresolved client questions, please see [**KNOWN_LIMITATIONS.md**](documentations/KNOWN_LIMITATIONS.md).
+For a detailed list of known implementation gaps, trade-offs, and unresolved client questions, please see [**documentations/KNOWN_LIMITATIONS.md**](./documentations/KNOWN_LIMITATIONS.md).

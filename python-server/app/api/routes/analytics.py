@@ -6,7 +6,8 @@ from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
 from app.schemas.institutional_summary import InstitutionalSummaryPayload
 from app.core.logging import logger
 
-router = APIRouter(prefix="/analytics", tags=["analytics"])
+# The prefix is now defined in app/main.py where the router is included.
+router = APIRouter(tags=["analytics"])
 
 
 @router.get("/jobs/{job_id}/recommendation", summary="Get Per-Course CQI Recommendation")
@@ -54,11 +55,6 @@ async def get_summary_only(payload: InstitutionalSummaryPayload):
     """
     Accepts a consolidated payload and returns pure data rollups (by department,
     program, etc.) without any AI/LLM-generated recommendation.
-
-    This endpoint is safe for any role to call, as it never triggers an AI call.
-    The scope of the returned data (e.g., a single department vs. the whole
-    institution) depends entirely on the `submissions` provided in the payload,
-    which is controlled by the calling webapp.
     """
     logger.info("api_get_summary_only", period=payload.period.label, submission_count=len(payload.submissions))
     try:
@@ -77,12 +73,6 @@ async def get_institutional_summary(payload: InstitutionalSummaryPayload):
     """
     Accepts a consolidated payload of multiple course results and generates
     a high-level, institution-wide CQI summary and an AI recommendation.
-
-    This endpoint operates under the assumption that it is called by a trusted
-    backend service (e.g., the main web application). It does not perform
-    any user authentication or authorization. The calling service is responsible
-    for ensuring the user has the appropriate permissions (e.g., VPAA)
-    before forwarding the request.
     """
     logger.info("api_get_institutional_summary", period=payload.period.label, submission_count=len(payload.submissions))
     try:

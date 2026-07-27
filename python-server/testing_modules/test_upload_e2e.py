@@ -122,8 +122,8 @@ def main():
         return
 
     # 5. Call the new recommendation endpoint
-    print_step(f"5. Calling GET /jobs/{job_id}/recommendation")
-    recommendation_url = f"{BASE_URL}/jobs/{job_id}/recommendation"
+    print_step(f"5. Calling GET /analytics/jobs/{job_id}/recommendation")
+    recommendation_url = f"{BASE_URL}/analytics/jobs/{job_id}/recommendation"
     try:
         rec_response = requests.get(recommendation_url, timeout=10)
         print(f"GET {recommendation_url} status code: {rec_response.status_code}")

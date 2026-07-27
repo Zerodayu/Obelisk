@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import Any, List, Dict
 from openpyxl import load_workbook
+from openpyxl.utils.cell import column_index_from_string
 from openpyxl.worksheet.worksheet import Worksheet
 
 from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet
