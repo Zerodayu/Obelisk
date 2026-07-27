@@ -29,7 +29,49 @@ Upload one class-record `.xlsx` file.
 ```
 
 ### `GET /jobs/{job_id}`
-Poll until `status` is `"completed"` or `"failed"`. The `result.loaded` object contains all computed data for one course section.
+Poll until `status` is `"completed"` or `"failed"`.
+
+**If `status` is `"completed"`:**
+The `result.loaded` object contains all computed data for the course.
+
+**If `status` is `"failed"`:**
+The `error` field will contain a structured JSON object with details about the failure. The webapp should parse this object to display a user-friendly error message.
+
+**Example Structured Error (`MissingWorksheet`):**
+```json
+{
+  "error_type": "MissingWorksheet",
+  "message": "Missing required worksheet: 'Database (LECTURE-RES-PRAC)'.",
+  "details": {
+    "expected_sheet_name": "Database (LECTURE-RES-PRAC)",
+    "available_sheets": [
+      "COVERPAGE",
+      "Exam (LECTURE ONLY)",
+      "OUTPUT"
+    ]
+  }
+}
+```
+
+**Example Structured Error (`InvalidTemplate`):**
+```json
+{
+  "error_type": "InvalidTemplate",
+  "message": "Invalid template in sheet 'Database (LECTURE-RES-PRAC)': Cell B12 did not match.",
+  "details": {
+    "sheet_name": "Database (LECTURE-RES-PRAC)",
+    "cell": "B12",
+    "expected_value": "STUDENT NAME",
+    "found_value": "STUDENT ID"
+  }
+}
+```
+
+**Other possible `error_type` values:**
+- `InvalidWorkbook`: The file could not be opened or read as an Excel file.
+- `TransformationError`: An error occurred during data computation (e.g., a raw score was higher than a max score).
+- `QueueOverloadedError`: The server is at maximum capacity and cannot process new files.
+- `UnexpectedError`: A generic server error occurred.
 
 ### `GET /analytics/jobs/{job_id}/recommendation`
 Per-course AI gap analysis (VPAA-only, currently returns a placeholder).
@@ -93,4 +135,7 @@ Returns the same summary object as `/analytics/summary`, but with three addition
 
 ---
 ## Known open items
-(This section is unchanged)
+- **Form F18 Naming Conflict**: Form F18 is labeled "Portfolio Assessment Record" in the OBE Assessment Plan, but is used for CQI steps (Root Cause Analysis, Action Plan, Implementation) in workflow documents. A newer formula reference uses F23 for the CQI Action Plan specifically. This is pending client clarification.
+- **AQAU Access Level**: It is still undefined whether the AQAU role should have the same access to the AI-generated institutional summary as the VPAA, or a different view.
+- **Rule 1 Interpretive Gap**: The data completeness check (Rule 1) will flag a CLO as incomplete if it is not assessed in all three grading periods, even if this is by design. This can affect the display of completeness percentages and is pending client clarification.
+- **Portfolio Assessment Track**: It has not yet been confirmed if any current programs use a portfolio-based assessment track instead of an exam-based one, which would require different handling per §3.4 of the OBE Assessment Plan.
