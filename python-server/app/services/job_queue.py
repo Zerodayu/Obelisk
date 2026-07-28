@@ -49,6 +49,9 @@ class InMemoryJobQueue:
     async def list_job_ids(self) -> List[str]:
         return list(self._jobs.keys())
 
+    async def list_jobs(self) -> List[Dict[str, Any]]:
+        return list(self._jobs.values())
+
     async def _set_status(self, job_id: str, status: JobStatus):
         job = self._jobs.get(job_id)
         if job:

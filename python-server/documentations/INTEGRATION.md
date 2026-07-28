@@ -28,11 +28,32 @@ Upload one class-record `.xlsx` file.
 { "job_id": "uuid-string", "status": "queued" }
 ```
 
+### `GET /jobs`
+Returns a list of all job objects currently in memory.
+
 ### `GET /jobs/{job_id}`
 Poll until `status` is `"completed"` or `"failed"`.
 
-**If `status` is `"completed"`:**
-The `result.loaded` object contains all computed data for the course.
+**Response (200):**
+A single job object with the following structure:
+```json
+{
+  "job_id": "uuid-string",
+  "type": "etl",
+  "status": "completed",
+  "payload": { "file_path": "...", "original_filename": "..." },
+  "created_at": "2023-10-27T10:00:00.000Z",
+  "updated_at": "2023-10-27T10:00:05.000Z",
+  "error": null,
+  "result": {
+    "loaded": {
+      "header": { ... },
+      "attainments": [ ... ],
+      "clo_plo_mapping": [ ... ]
+    }
+  }
+}
+```
 
 **If `status` is `"failed"`:**
 The `error` field will contain a structured JSON object with details about the failure. The webapp should parse this object to display a user-friendly error message.
@@ -53,26 +74,6 @@ The `error` field will contain a structured JSON object with details about the f
 }
 ```
 
-**Example Structured Error (`InvalidTemplate`):**
-```json
-{
-  "error_type": "InvalidTemplate",
-  "message": "Invalid template in sheet 'Database (LECTURE-RES-PRAC)': Cell B12 did not match.",
-  "details": {
-    "sheet_name": "Database (LECTURE-RES-PRAC)",
-    "cell": "B12",
-    "expected_value": "STUDENT NAME",
-    "found_value": "STUDENT ID"
-  }
-}
-```
-
-**Other possible `error_type` values:**
-- `InvalidWorkbook`: The file could not be opened or read as an Excel file.
-- `TransformationError`: An error occurred during data computation (e.g., a raw score was higher than a max score).
-- `QueueOverloadedError`: The server is at maximum capacity and cannot process new files.
-- `UnexpectedError`: A generic server error occurred.
-
 ### `GET /analytics/jobs/{job_id}/recommendation`
 Per-course AI gap analysis (VPAA-only, currently returns a placeholder).
 
@@ -87,7 +88,6 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 > ✅ **This endpoint is safe for any role.** It performs pure data aggregation and **never** triggers an AI/LLM call.
 
 **Request body:**
-The webapp sends a payload containing a list of course submissions. The scope of the data (e.g., one department's courses vs. the whole institution) is determined by what the webapp chooses to include in the `submissions` list based on the user's role.
 ```json
 {
   "period": { "type": "semester", "label": "SY 2024-2025, 2nd Sem" },
@@ -104,7 +104,6 @@ The webapp sends a payload containing a list of course submissions. The scope of
 ```
 
 **Response:**
-Returns a dictionary containing the rolled-up data summaries.
 ```json
 {
   "period": { ... },
@@ -123,7 +122,6 @@ Returns a dictionary containing the rolled-up data summaries.
 Same as `/analytics/summary`, but the webapp should always send the full set of institutional data.
 
 **Response:**
-Returns the same summary object as `/analytics/summary`, but with three additional fields for the AI-generated analysis.
 ```json
 {
   "summary": { ... },
@@ -132,7 +130,6 @@ Returns the same summary object as `/analytics/summary`, but with three addition
   "recommendation": "The AI-generated text response..."
 }
 ```
-
 ---
 ## Known open items
 - **Form F18 Naming Conflict**: Form F18 is labeled "Portfolio Assessment Record" in the OBE Assessment Plan, but is used for CQI steps (Root Cause Analysis, Action Plan, Implementation) in workflow documents. A newer formula reference uses F23 for the CQI Action Plan specifically. This is pending client clarification.
