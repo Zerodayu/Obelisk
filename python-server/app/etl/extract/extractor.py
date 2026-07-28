@@ -35,10 +35,10 @@ class ExcelExtractor(Extractor):
         cover_sheet = self._require_sheet(workbook, etl_const.SheetNames.COVERPAGE)
         output_sheet = workbook[etl_const.SheetNames.OUTPUT] if etl_const.SheetNames.OUTPUT in workbook.sheetnames else None
 
-        self._validate_template(db_sheet, "B12")
-        self._validate_template(exam_sheet, "B18")
+        self._validate_template(db_sheet, etl_const.TemplateValidation.DATABASE_STUDENT_NAME_CELL)
+        self._validate_template(exam_sheet, etl_const.TemplateValidation.EXAM_OUTPUT_STUDENT_NAME_CELL)
         if output_sheet is not None:
-            self._validate_template(output_sheet, "B18")
+            self._validate_template(output_sheet, etl_const.TemplateValidation.EXAM_OUTPUT_STUDENT_NAME_CELL)
 
         header = self._build_header(db_sheet, cover_sheet)
         clo_plo_mapping = self._extract_clo_plo_mapping(cover_sheet)
@@ -70,13 +70,13 @@ class ExcelExtractor(Extractor):
         
         mapping = []
         plo_headers = {}
-        for col_idx in range(2, sheet.max_column + 1):
+        for col_idx in range(etl_const.CloPlo.PLO_START_COL, sheet.max_column + 1):
             plo_code = self._as_optional_string(sheet.cell(row=etl_const.CloPlo.PLO_HEADER_ROW, column=col_idx).value)
             if not plo_code: break
             plo_headers[col_idx] = plo_code
         
         for row_idx in range(etl_const.CloPlo.FIRST_CLO_ROW, sheet.max_row + 1):
-            clo_code = self._as_optional_string(sheet.cell(row=row_idx, column=1).value)
+            clo_code = self._as_optional_string(sheet.cell(row=row_idx, column=etl_const.CloPlo.CLO_CODE_COL).value)
             if not clo_code or clo_code.strip().upper() == etl_const.CloPlo.END_OF_TABLE_SENTINEL: break
             for col_idx, plo_code in plo_headers.items():
                 correlation = sheet.cell(row=row_idx, column=col_idx).value
@@ -105,7 +105,7 @@ class ExcelExtractor(Extractor):
             raise MissingWorksheet(expected_sheet_name=sheet_name, available_sheets=list(workbook.sheetnames))
         return workbook[sheet_name]
 
-    def _validate_template(self, sheet: Worksheet, header_cell: str, expected: str = "STUDENT NAME") -> None:
+    def _validate_template(self, sheet: Worksheet, header_cell: str, expected: str = etl_const.TemplateValidation.DEFAULT_EXPECTED_VALUE) -> None:
         """Checks for a specific header value in a cell to validate the template version."""
         header_value = self._normalize_text(sheet[header_cell].value)
         if header_value != expected:
@@ -126,15 +126,15 @@ class ExcelExtractor(Extractor):
         if f5: weights[f5] = self._as_float(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_3_VALUE].value)
         
         return ClassRecordHeader(
-            course_code=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_CODE].value, self._find_cover_value(cover_sheet, "Course Code:")),
-            course_title=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_TITLE].value, self._find_cover_value(cover_sheet, "Course Title:")),
+            course_code=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_CODE].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.COURSE_CODE)),
+            course_title=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_TITLE].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.COURSE_TITLE)),
             course_type=course_type,
-            section=self._coalesce_optional(db_sheet[etl_const.HeaderData.SECTION].value, self._find_cover_value(cover_sheet, "Section:")),
+            section=self._coalesce_optional(db_sheet[etl_const.HeaderData.SECTION].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.SECTION)),
             semester_year=semester_year,
-            instructor_name=self._coalesce_optional(db_sheet[etl_const.HeaderData.INSTRUCTOR_NAME].value, self._find_cover_value(cover_sheet, "Instructor's Name")),
+            instructor_name=self._coalesce_optional(db_sheet[etl_const.HeaderData.INSTRUCTOR_NAME].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.INSTRUCTOR_NAME)),
             no_of_students=no_of_students,
             threshold=threshold,
-            grading_system=self._coalesce_optional(db_sheet[etl_const.HeaderData.GRADING_SYSTEM].value, self._find_cover_value(cover_sheet, "GRADING SYSTEM")),
+            grading_system=self._coalesce_optional(db_sheet[etl_const.HeaderData.GRADING_SYSTEM].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.GRADING_SYSTEM)),
             workbook_configured_weights_unused=weights if weights else None,
         )
 
@@ -142,8 +142,8 @@ class ExcelExtractor(Extractor):
         students: list[dict[str, str | int | None]] = []
         row = start_row
         while True:
-            student_id = self._as_optional_string(sheet[f"A{row}"].value)
-            student_name = self._as_optional_string(sheet[f"B{row}"].value)
+            student_id = self._as_optional_string(sheet[f"{etl_const.Roster.STUDENT_ID_COL}{row}"].value)
+            student_name = self._as_optional_string(sheet[f"{etl_const.Roster.STUDENT_NAME_COL}{row}"].value)
             if not student_id and not student_name:
                 break
             if student_name:
@@ -173,9 +173,9 @@ class ExcelExtractor(Extractor):
         student_lookup = self._merge_roster_by_name(exam_students, db_students_by_name)
         records: list[RawScoreRecord] = []
         
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.PRELIM, columns=etl_const.ExamSheet.PRELIM_COLS, activity_name="Prelim Exam"))
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.MIDTERM, columns=etl_const.ExamSheet.MIDTERM_COLS, activity_name="Midterm Exam"))
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.FINAL, columns=etl_const.ExamSheet.FINAL_COLS, activity_name="Final Exam"))
+        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.PRELIM, columns=etl_const.ExamSheet.PRELIM_COLS, activity_name=etl_const.AssessmentNames.PRELIM_EXAM))
+        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.MIDTERM, columns=etl_const.ExamSheet.MIDTERM_COLS, activity_name=etl_const.AssessmentNames.MIDTERM_EXAM))
+        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.FINAL, columns=etl_const.ExamSheet.FINAL_COLS, activity_name=etl_const.AssessmentNames.FINAL_EXAM))
         
         return records
 
@@ -191,7 +191,7 @@ class ExcelExtractor(Extractor):
             col_idx = column_index_from_string(col)
             for student in students:
                 raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
-                records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=grading_period, assessment_category="EXAM", assessment_no=idx, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
+                records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=grading_period, assessment_category=etl_const.AssessmentCategory.EXAM, assessment_no=idx, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
         return records
 
     def _extract_output_sheet(self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | int | None]]) -> list[RawScoreRecord]:
@@ -220,7 +220,7 @@ class ExcelExtractor(Extractor):
                 
                 for student in students:
                     raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
-                    records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=period, assessment_category="OUTPUT", assessment_no=assessment_no, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
+                    records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=period, assessment_category=etl_const.AssessmentCategory.OUTPUT, assessment_no=assessment_no, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
         return records
 
     def _merge_roster_by_name(self, sheet_students: list[dict[str, str | int | None]], db_students_by_name: dict[str, dict[str, str | int | None]]) -> list[dict[str, str | int | None]]:
