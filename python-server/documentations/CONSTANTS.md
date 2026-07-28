@@ -1,19 +1,23 @@
 # OBELISK ETL Service - Constants Reference
 
-This document provides a reference for the constants defined in `app/etl/etl_const.py`. These constants are critical for the correct parsing of the JMCFI class record Excel workbooks. They map directly to specific cells, rows, columns, and string values within the template files.
+This document provides a reference for the constants defined in `app/etl/etl_const.py`. These constants are critical for the correct parsing of the JMCFI class record Excel workbooks and for the internal logic of the transformation process.
 
 ---
 
 ## 1. File Structure
 
-All constants are centralized in `app/etl/etl_const.py`. They are organized into classes that group them by function or location within the Excel workbook.
+All constants are centralized in `app/etl/etl_const.py`. They are organized into classes that group them by function.
+
+-   **Core Identifiers**: `SheetNames`, `GradingPeriod`, `AssessmentCategory`
+-   **Extraction Constants**: `CoverPageLabels`, `AssessmentNames`, `HeaderData`, `Roster`, `DatabaseSheet`, `ExamSheet`, `OutputSheet`, `CloPlo`, `TemplateValidation`
+-   **Transformation Constants**: `Transformation` (and its inner classes)
 
 ---
 
-## 2. Core Constants
+## 2. Core Identifiers
 
 ### `SheetNames`
-This class contains the exact string names of the worksheets the ETL process expects to find. If a sheet is renamed in the template, this class must be updated.
+Contains the exact string names of the worksheets the ETL process expects to find.
 
 -   `DATABASE`: "Database (LECTURE-RES-PRAC)"
 -   `EXAM`: "Exam (LECTURE ONLY)"
@@ -21,92 +25,102 @@ This class contains the exact string names of the worksheets the ETL process exp
 -   `OUTPUT`: "OUTPUT"
 
 ### `GradingPeriod`
-Standardized strings for the three grading periods. These are used to categorize records during both extraction and transformation.
+Standardized strings for the three grading periods.
 
--   `PRELIM`: "PRELIM"
--   `MIDTERM`: "MIDTERM"
--   `FINAL`: "FINAL"
+-   `PRELIM`, `MIDTERM`, `FINAL`
 
 ### `AssessmentCategory`
-Standardized strings for the main assessment categories. These are used in the transformation and analytics stages.
+Standardized strings for the main assessment categories.
 
--   `TLA`: "TLA" (Teaching/Learning Activity)
--   `AT`: "AT" (Assessment Task)
--   `EXAM`: "EXAM"
--   `OUTPUT`: "OUTPUT"
+-   `TLA`, `AT`, `EXAM`, `OUTPUT`
 
 ---
 
-## 3. Cell and Row/Column Mappings
+## 3. Extraction Constants
 
-These constants pinpoint where specific data lives within the various worksheets.
+These constants map directly to specific cells, rows, columns, and string values within the Excel template files.
+
+### `CoverPageLabels`
+Standardized labels for values sought on the `COVERPAGE` sheet. The ETL searches for these labels and takes the value from the adjacent cell.
+
+-   `COURSE_CODE`, `COURSE_TITLE`, `SECTION`, `INSTRUCTOR_NAME`, `GRADING_SYSTEM`
+
+### `AssessmentNames`
+Standardized names for specific, recurring assessments.
+
+-   `PRELIM_EXAM`, `MIDTERM_EXAM`, `FINAL_EXAM`
 
 ### `HeaderData` (in `Database` sheet)
-This class maps cell addresses in the `Database` sheet to the core metadata of the class record.
+Maps cell addresses in the `Database` sheet to the core metadata of the class record.
 
 | Constant | Cell | Description |
 | :--- | :--- | :--- |
-| `SEMESTER_YEAR` | `B3` | The semester and school year (e.g., "1st Semester, SY 2023-2024"). |
-| `COURSE_CODE` | `B4` | The course code (e.g., "CS 101"). |
-| `COURSE_TITLE` | `B5` | The full title of the course. |
-| `COURSE_TYPE` | `B6` | The course type (e.g., "LEC"). |
-| `SECTION` | `B7` | The section name (e.g., "BSCS-3A"). |
-| `NO_OF_STUDENTS` | `B8` | The number of registered students. |
-| `INSTRUCTOR_NAME` | `B9` | The name of the instructor. |
-| `THRESHOLD` | `B10` | The passing threshold percentage for the course. |
-| `GRADING_SYSTEM` | `B11` | The grading system description (e.g., "Base 40"). |
+| `SEMESTER_YEAR` | `B3` | The semester and school year. |
+| `COURSE_CODE` | `B4` | The course code. |
+| `COURSE_TITLE`| `B5` | The full title of the course. |
+| ... | ... | ... |
 
 ### `Roster`
-This class defines the starting rows for the student lists in different sheets.
+Defines the starting rows and column letters for student lists.
 
 | Constant | Value | Sheet(s) | Description |
 | :--- | :--- | :--- | :--- |
-| `DATABASE_START_ROW` | `17` | `Database` | The first student's data begins on row 17. Rows 1-16 are the header. |
-| `EXAM_AND_OUTPUT_START_ROW` | `22` | `Exam`, `Output` | The first student's data begins on row 22. Rows 1-21 are headers. |
+| `DATABASE_START_ROW` | `17` | `Database` | The first student's data begins on row 17. |
+| `EXAM_AND_OUTPUT_START_ROW` | `22` | `Exam`, `Output` | The first student's data begins on row 22. |
+| `STUDENT_ID_COL` | `"A"` | All | The column containing the student's ID number. |
+| `STUDENT_NAME_COL` | `"B"` | All | The column containing the student's full name. |
 
-### `DatabaseSheet`
-Constants for the assessment columns in the `Database` sheet.
+### `DatabaseSheet`, `ExamSheet`, `OutputSheet`
+These classes define the row numbers for key metadata and the column letters for assessment blocks in their respective sheets.
 
-| Constant | Value | Description |
-| :--- | :--- | :--- |
-| `ASSESSMENT_CATEGORY_ROW` | `12` | This row contains the category of the assessment (e.g., "Quiz", "Assignment"). |
-| `ASSESSMENT_NO_ROW` | `13` | This row contains the number of the assessment (e.g., 1, 2). |
-| `CLO_CODE_ROW` | `14` | This row contains the CLO code mapped to the assessment (e.g., "CLO1"). |
-| `ACTIVITY_NAME_ROW` | `15` | This row contains the specific name of the activity. |
-| `MAX_SCORE_ROW` | `16` | This row contains the maximum possible score for the assessment. |
-| `PRELIM_COLS` | `["D", ...]` | The list of column letters for the Prelim grading period. |
-| `MIDTERM_COLS` | `["AJ", ...]` | The list of column letters for the Midterm grading period. |
-| `FINAL_COLS` | `["BP", ...]` | The list of column letters for the Final grading period. |
-
-### `ExamSheet` & `OutputSheet`
-Similar to `DatabaseSheet`, these define the row numbers for key metadata in the `Exam` and `Output` sheets.
-
--   **`CLO_CODE_ROW`**: Row `20`
--   **`MAX_SCORE_ROW`**: Row `21`
--   **`ACTIVITY_NAME_ROW`** (Output only): Row `19`
+-   **`CLO_CODE_ROW`**: The row containing the CLO code mapped to an assessment.
+-   **`MAX_SCORE_ROW`**: The row containing the maximum possible score.
 -   **`*_COLS`**: Lists of column letters for each grading period.
 
 ### `CloPlo` (in `COVERPAGE` sheet)
-Constants for locating the CLO-PLO mapping table.
+Constants for locating and parsing the CLO-PLO mapping table.
 
 | Constant | Value | Description |
 | :--- | :--- | :--- |
 | `TABLE_HEADER_CELL` | `A26` | The cell that must contain the text "CLO-PLO". |
-| `TABLE_HEADER_VALUE` | `"CLO-PLO"` | The expected value of the header cell. |
-| `PLO_HEADER_ROW` | `26` | The row containing the PLO code headers (e.g., "PLO1", "PLO2"). |
+| `PLO_HEADER_ROW` | `26` | The row containing the PLO code headers (e.g., "PLO1"). |
 | `FIRST_CLO_ROW` | `27` | The first row containing a CLO and its correlation values. |
-| `END_OF_TABLE_SENTINEL` | `"AVERAGE"` | The string in column A that marks the end of the table data. |
+| `CLO_CODE_COL` | `1` | The column number containing the CLO codes. |
+| `PLO_START_COL` | `2` | The first column number containing PLO data. |
+| `END_OF_TABLE_SENTINEL` | `"AVERAGE"` | The string in the CLO column that marks the end of the table. |
+
+### `TemplateValidation`
+Constants used to validate that the correct template version is being used.
+
+| Constant | Value | Description |
+| :--- | :--- | :--- |
+| `DEFAULT_EXPECTED_VALUE` | `"STUDENT NAME"` | The default header text to check for. |
+| `DATABASE_STUDENT_NAME_CELL` | `B12` | The cell in the `Database` sheet that must contain the student name header. |
+| `EXAM_OUTPUT_STUDENT_NAME_CELL` | `B18` | The cell in the `Exam` and `Output` sheets for the student name header. |
 
 ---
 
-## 4. Transformation and Analytics Constants
+## 4. Transformation Constants
 
 ### `Transformation`
-This class holds constants that govern the logic of the transformation and analytics steps. These are based on institutional policy, not the Excel template structure.
+This class holds constants that govern the internal logic of the transformation and analytics steps.
 
 | Constant | Value | Source | Description |
 | :--- | :--- | :--- | :--- |
-| `INSTITUTIONAL_THRESHOLD` | `0.70` | FR-03, FR-12, FR-20 | The fixed 70% benchmark for determining if a student has "met" a CLO's attainment threshold. |
-| `COMPLETENESS_THRESHOLD` | `0.60` | WIN-OBE Plan §3.6 | The minimum percentage of students (60%) who must have a complete record for a CLO or PLO for it to be considered valid for section-level analysis. |
-| `CLO_LEVEL_*_MIN` | `0.85`, `0.70`, `0.60` | WIN-OBE Plan §3.1.1 | The minimum attainment percentages for the "Exceptional", "Proficient", and "Basic" performance levels, respectively. |
-| `FORMULA_VERSION_ID` | `"direct_attainment_v1"` | Internal | A string identifier that is hashed to create a fingerprint for the calculation logic used. It changes only when the formulas themselves are updated. |
+| `INSTITUTIONAL_THRESHOLD` | `0.70` | FR-03 | The fixed 70% benchmark for `met_threshold`. |
+| `COMPLETENESS_THRESHOLD` | `0.60` | Plan §3.6 | The 60% benchmark for `rule1_met` and `plo_rule3_met`. |
+| `CLO_LEVEL_*_MIN` | `0.85`, `0.70`, `0.60` | Plan §3.1.1 | Minimum attainment for "Exceptional", "Proficient", and "Basic" levels. |
+| `FORMULA_VERSION_ID` | `"direct_..._v1"` | Internal | A string identifier for the calculation logic version. |
+| `FORMULA_VERSION_HASH_LENGTH` | `12` | Internal | The desired length of the final formula hash. |
+
+#### `Transformation.CloLevels`
+Contains the standardized descriptive labels for the four CLO attainment levels.
+- `EXCEPTIONAL`, `PROFICIENT`, `BASIC`, `BELOW_BASIC`
+
+#### `Transformation.FormulaKeys`
+Contains the standardized dictionary keys used to build the JSON payload for the formula version hash.
+- `ID`, `INSTITUTIONAL_THRESHOLD`, `COMPLETENESS_THRESHOLD`
+
+#### `Transformation.IntermediateKeys`
+Contains the standardized dictionary keys used for the intermediate data structures passed between transformation steps. This ensures consistency within the `SimpleTransformer` class.
+- `STUDENT_ID`, `STUDENT_NAME`, `CLO_CODE`, `DIRECT_CLO_ATTAINMENT_PCT`, etc.
