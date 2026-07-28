@@ -15,7 +15,8 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.etl.extract.extractor import ExcelExtractor
-from app.etl.transform.transformer import SimpleTransformer, INSTITUTIONAL_THRESHOLD
+from app.etl.transform.transformer import SimpleTransformer
+from app.etl import etl_const
 
 # Define the path to the templates directory relative to the project root
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
@@ -117,7 +118,7 @@ async def step2_validate_transform(header, records, clo_plo_mapping):
     print(f"Student ID: {selected.student_id}")
     print(f"CLO Code: {selected.clo_code}")
     print(f"Direct CLO Attainment %: {selected.direct_clo_attainment_pct:.2%}")
-    print(f"Met Threshold (at {INSTITUTIONAL_THRESHOLD:.0%}): {selected.met_threshold}")
+    print(f"Met Threshold (at {etl_const.Transformation.INSTITUTIONAL_THRESHOLD:.0%}): {selected.met_threshold}")
     print(f"CLO Level: {selected.clo_level}")
     
     return selected
@@ -163,7 +164,7 @@ def step4_compare_values(student, sheet_attainment, sheet_cell):
         print(f"\n  Student: {student.student_name}")
         print(f"  CLO Code: {student.clo_code}")
         print(f"  Computed Direct CLO Attainment: {student.direct_clo_attainment_pct:.4f} ({student.direct_clo_attainment_pct*100:.2f}%)")
-        print(f"  Met Threshold (@ {INSTITUTIONAL_THRESHOLD:.0%}): {student.met_threshold}")
+        print(f"  Met Threshold (@ {etl_const.Transformation.INSTITUTIONAL_THRESHOLD:.0%}): {student.met_threshold}")
         print(f"  CLO Level: {student.clo_level}")
         return
 

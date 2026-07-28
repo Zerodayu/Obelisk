@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import List, Dict, Any
 
 from app.analytics.cqi_recommender import anonymize_students, call_llm_api, IS_DEBUG_MODE
-from app.etl.transform.transformer import INSTITUTIONAL_THRESHOLD, COMPLETENESS_THRESHOLD
+from app.etl import etl_const
 from app.schemas.institutional_summary import InstitutionalSummaryPayload, CourseSubmission
 
 
@@ -54,7 +54,7 @@ def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[s
         plo_attainment[plo_code] = {
             "plo_attainment_direct_only": avg_attainment,
             "plo_completeness_pct": plo_completeness_pct,
-            "plo_rule3_met": plo_completeness_pct >= COMPLETENESS_THRESHOLD,
+            "plo_rule3_met": plo_completeness_pct >= etl_const.Transformation.COMPLETENESS_THRESHOLD,
             "mapped_clos": mapped_clos,
         }
     return plo_attainment
@@ -139,7 +139,7 @@ def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Di
     worst_performers = summary.get("worst_performing_clos", [])
     prompt_lines = [
         f"Institution-Wide Performance Summary for {period_label}",
-        f"The institutional attainment threshold is {INSTITUTIONAL_THRESHOLD * 100:.0f}%.",
+        f"The institutional attainment threshold is {etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100:.0f}%.",
         "\nAnalysis of performance gaps has identified the following areas as the most critical challenges across all levels of the institution:",
     ]
     if not worst_performers:
