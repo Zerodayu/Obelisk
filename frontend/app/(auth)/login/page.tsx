@@ -15,7 +15,11 @@ const SignIn = () => (
         </h1>
 
         <div className="mt-10">
-          <Button className="w-full" size="lg" type="button">
+          <Button
+            className="w-full hover:cursor-pointer"
+            size="lg"
+            type="button"
+          >
             <GoogleLogo className="mr-2 size-4" />
             Continue with Google
           </Button>

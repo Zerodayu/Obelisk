@@ -78,7 +78,7 @@ export const LoginForm = () => {
           )}
         />
       </div>
-      <Button className="mt-6 w-full" size="lg">
+      <Button className="mt-6 w-full hover:cursor-pointer" size="lg">
         <Mail className="mr-2" />
         Continue with Email
       </Button>
