@@ -8,10 +8,17 @@ import {
   type FileUploadVariant,
 } from "@/components/motion/file-upload";
 
+const ALLOWED_EXTENSIONS = [".csv", ".tsv", ".xls", ".xlsx"];
+const ALLOWED_MIME = [
+  "text/csv",
+  "text/tab-separated-values",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
 const initialItems: FileUploadItem[] = [
   {
-    id: "brand-assets",
-    name: "brand-assets.zip",
+    id: "class-record",
+    name: "class-record.xlsx",
     size: 18_400_000,
     type: "application/zip",
     progress: 100,
@@ -19,7 +26,7 @@ const initialItems: FileUploadItem[] = [
   },
   {
     id: "release-video",
-    name: "release-cut.mov",
+    name: "release-cut.csv",
     size: 84_200_000,
     type: "video/quicktime",
     progress: 58,
@@ -27,7 +34,7 @@ const initialItems: FileUploadItem[] = [
   },
   {
     id: "contracts",
-    name: "vendor-contract.pdf",
+    name: "vendor-contract.tsv",
     size: 2_800_000,
     type: "application/pdf",
     progress: 32,
@@ -93,6 +100,11 @@ export default function FileUploadPreview() {
     [stopUpload],
   );
 
+  function isValidFile(file: File) {
+    const ext = `.${file.name.split(".").pop()?.toLowerCase() ?? ""}`;
+    return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME.includes(file.type);
+  }
+
   useEffect(() => {
     startUpload("release-video");
 
@@ -156,6 +168,8 @@ export default function FileUploadPreview() {
           </div>
 
           <FileUpload
+            accept=".csv,.tsv,.xls,.xlsx"
+            validateFile={isValidFile}
             value={items}
             variant={variant}
             onValueChange={setItems}
@@ -172,7 +186,11 @@ export default function FileUploadPreview() {
                 ? "Drop files to upload"
                 : "Drop release files"
             }
-            description="PDF, images, video or zipped assets"
+            description={
+              variant === "centered"
+                ? "CSV, Excel, or TSV files"
+                : "Upload faculty data"
+            }
           />
         </div>
       </div>

@@ -56,6 +56,7 @@ export interface FileUploadProps {
   onFilesAdded?: (items: FileUploadItem[], files: File[]) => void;
   onRemove?: (item: FileUploadItem) => void;
   onRetry?: (item: FileUploadItem) => void;
+  validateFile?: (file: File) => boolean;
   accept?: string;
   multiple?: boolean;
   maxFiles?: number;
@@ -389,6 +390,7 @@ export function FileUpload({
   onFilesAdded,
   onRemove,
   onRetry,
+  validateFile,
   accept,
   multiple = true,
   maxFiles,
@@ -422,11 +424,17 @@ export function FileUpload({
     (incomingFiles: File[]) => {
       if (disabled || incomingFiles.length === 0) return;
 
+      const allowedFiles = validateFile
+        ? incomingFiles.filter(validateFile)
+        : incomingFiles;
+
+      if (allowedFiles.length === 0) return;
+
       const remainingSlots =
-        maxFiles === undefined ? incomingFiles.length : maxFiles - items.length;
+        maxFiles === undefined ? allowedFiles.length : maxFiles - items.length;
       if (remainingSlots <= 0) return;
 
-      const files = incomingFiles.slice(
+      const files = allowedFiles.slice(
         0,
         multiple ? remainingSlots : Math.min(1, remainingSlots),
       );
@@ -437,7 +445,7 @@ export function FileUpload({
       commit([...items, ...added]);
       onFilesAdded?.(added, files);
     },
-    [commit, disabled, items, maxFiles, multiple, onFilesAdded],
+    [commit, disabled, items, maxFiles, multiple, onFilesAdded, validateFile],
   );
 
   const removeItem = useCallback(
