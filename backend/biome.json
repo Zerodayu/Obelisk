@@ -6,7 +6,14 @@
 		"useIgnoreFile": false
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": [
+			"**",
+			"!.agents",
+			"!node_modules",
+			"!prisma/generated",
+			"!skills-lock.json"
+		]
 	},
 	"formatter": {
 		"enabled": true,
