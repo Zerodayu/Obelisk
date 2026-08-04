@@ -1,13 +1,8 @@
 // If your Prisma file is located elsewhere, you can change the path
-import { PrismaNeon } from "@prisma/adapter-neon";
-import { PrismaClient } from "@prisma/generated/prisma/client";
-import { env } from "@utils/env";
+import { prisma } from "@lib/prisma";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { openAPI } from "better-auth/plugins";
-
-const adapter = new PrismaNeon({ connectionString: env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
 
 export const auth = betterAuth({
 	basePath: "/api/v1/auth",
