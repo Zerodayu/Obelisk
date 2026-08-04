@@ -86,8 +86,9 @@ institutional_review      -> Institutional Management Review Records
 
 ## Build Priority
 
-When implementing forms incrementally, follow this order (rationale in `SYSTEM-DESIGN.md`):
+**Backend-first strategy:** the whole backend is built and stabilized before any frontend work resumes (frontend work is consolidated in `../roadmap.md` under a deferred section). When implementing forms incrementally, follow this order (rationale in `SYSTEM-DESIGN.md`):
 
+0. **Foundation/stabilization** — `tsconfig` fix (moduleResolution `bundler`), `typecheck`/`lint`/`test` scripts, bun:test harness, shared validators (≥70% floor, `direct×0.70 + indirect×0.30`, 6-category root-cause enum), `forms` module, python-server ingest client.
 1. `clo_raw_data` (per-student raw data entry — everything rolls up from here)
 2. `course_assessment_report` (CAR — the term-level hub)
 3. `clo_attainment_summary` → `plo_attainment_summary` → `cohort_tracking` (roll-up chain)
@@ -95,6 +96,9 @@ When implementing forms incrementally, follow this order (rationale in `SYSTEM-D
 5. `curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget` (PLAN-phase setup)
 6. `mid_cycle_attainment`, `resource_monitoring`, `peer_observation`, `exhibition_feedback`, `clo_perception_survey`, `student_exit_survey`, `portfolio_assessment_record`, `capstone_panel_evaluation` (supporting DO/CHECK instruments)
 7. `alumni_tracer`, `employer_satisfaction_survey`, `annual_program_report`, `systemic_gap_report`, `capa_plan`, `portfolio_roadmap`, `institutional_review` (periodic/escalation/institutional — lowest MVP urgency)
+8. Graduation-cluster archival pipeline (after PEO attainment capture)
+
+Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on Neon reachability), with lint and typecheck green.
 
 ## System Design Documentation
 

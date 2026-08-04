@@ -7,18 +7,25 @@
 
 Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Update the box when a task is truly done (including verification).
 
+**Build strategy: backend-first.** The entire backend (all form phases, incl. tests/lint/typecheck green) is stabilized before **any** frontend work resumes. Frontend work is consolidated in a single deferred section at the bottom and does not start until the backend is stable. DB-dependent work (migration apply, integration tests) is blocked while Neon is unreachable (P1001) and proceeds as soon as it is.
+
 ---
 
-## Phase 0 — Glue & Shared Infrastructure
+## Phase 0 — Backend Foundation & Stabilization
 
-Goal: build the reusable plumbing all phases depend on.
+Goal: make the backend buildable, testable, and lint-clean, then stand up the shared plumbing all phases depend on.
 
+- [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports, archive) — validated, client generated
+- [x] better-auth (email/password, sessions), `/auth/me`, OpenAPI
+- [ ] **Fix `tsconfig.json`** — `moduleResolution: "node"` maps to removed `node10` (TS5108); set to `bundler` so `bunx tsc --noEmit` passes
+- [ ] **Add quality scripts** to `package.json` — `typecheck`, `lint` (biome), `test` (bun:test); all three green on baseline
+- [ ] **bun:test harness** — unit tests for services/validators (no DB); integration tests against dev DB gated on Neon reachability
+- [ ] Apply archival migration to DB (once `ep-delicate-water...neon.tech` reachable)
 - [ ] **Backend: forms module** — `FormSubmission`/`ApprovalStep` CRUD + submit/approve lifecycle (status machine: draft → submitted → returned → approved → archived)
 - [ ] **Backend: python-server ingest client** — `POST /upload` → poll `GET /jobs/{job_id}`, structured error mapping (`error_type`/`details`)
-- [ ] **Backend: shared validators** — ≥70% floor, direct×70% + indirect×30% constants
-- [ ] **Frontend: `lib/api.ts`** API client (cookie credentials, typed responses, `auth/me`)
-- [ ] **Frontend: role-gated app shell** — layout + nav filtered by `role` (build on existing dashboard shell)
-- [ ] **Frontend: `components/obe/` primitives** — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table
+- [ ] **Backend: shared validators** — ≥70% floor, `direct×0.70 + indirect×0.30` constants, 6-category root-cause enum, retention classes
+
+**Exit gate for Phase 0:** `bun run typecheck`, `bun run lint`, and `bun test` all pass; forms module + ingest client + validators exist behind `api/v1`.
 
 ---
 
@@ -30,9 +37,8 @@ The foundational data-capture form; exercises the full 3-service integration.
 - [ ] **Backend: persist ETL output** — `AssessmentItem` / `StudentScore` / `CloAttainment` + `ComputationRun` (formula version/weights recorded)
 - [ ] **Backend: at-risk auto-flag** — any CLO <70% → `AtRiskFlag` (computed, no manual entry)
 - [ ] **Backend: manual edit + CSV re-import** for per-student scores
-- [ ] **Frontend: raw-data entry screen** (`/forms/clo-raw-data`) with per-student table
-- [ ] **Frontend: import UX** — reuse `faculty` upload preview, show job progress + structured errors
-- [ ] **Exit check:** an uploaded class record produces correct per-student attainment in the UI
+- [ ] **Tests:** unit (validators, at-risk computation) + integration (upload → persist → rollup) when DB reachable
+- [ ] **Exit check:** an uploaded class record produces correct per-student attainment via the API
 
 ---
 
@@ -43,7 +49,7 @@ The term-level hub that consolidates a term's data.
 - [ ] **Backend: CAR service** — parts 1–7, auto-populate Part 3 from stored attainment (no re-entry)
 - [ ] **Backend: assessment-type breakdown** (2.1–2.4) + weighted CLO avg
 - [ ] **Backend: at-risk watchlist** (Part 4) + **CQI entries** (Part 5) → feeds gap analysis/CQI
-- [ ] **Frontend: CAR screen** with 7 parts, computed cells read-only
+- [ ] **Tests:** CAR generation from Phase 1 data (no manual re-entry); watchlist/CQI wiring
 - [ ] **Exit check:** CAR generates from Phase 1 data without manual re-entry
 
 ---
@@ -55,7 +61,7 @@ The term-level hub that consolidates a term's data.
 - [ ] **Backend: `clo_attainment_summary`** — full-term CLO attainment by cohort (reusable year block ×4)
 - [ ] **Backend: `plo_attainment_summary`** — aggregate CARs via python-server `/analytics/summary`, persist into `PloAttainment`
 - [ ] **Backend: `cohort_tracking`** — longitudinal tracking (permanent retention, strict audit trail), trend + CQI-triggered flags
-- [ ] **Frontend: roll-up screens** (`/forms/attainment/...`) + dashboard KPI cards/charts
+- [ ] **Tests:** rollup correctness (CLO → PLO → cohort), audit-trail writes
 - [ ] **Exit check:** program-level PLO attainment visible end-to-end from uploaded records
 
 ---
@@ -68,7 +74,7 @@ The term-level hub that consolidates a term's data.
 - [ ] **Backend: `cqi_action_plan`** — stateful two-phase lifecycle (planned → tracked-to-completion)
 - [ ] **Backend: `closing_the_loop`** — CTL report with **hard-computed loop status** (CLOSED only if 5 conditions met)
 - [ ] **Backend: `annual_program_report` validation gate** — blocked if `cohort_tracking` absent
-- [ ] **Frontend: CQI screens** (`/forms/cqi/...`)
+- [ ] **Tests:** 5-condition CLOSED computation; APAR gate; gap → plan → loop trace
 - [ ] **Exit check:** a gap traced from analysis → CQI plan → loop closure with computed status
 
 ---
@@ -79,6 +85,7 @@ The term-level hub that consolidates a term's data.
 - [ ] **`assessment_calendar`** — pre-seeded editable calendar (non-deletable template rows)
 - [ ] **`target_setting_matrix`** — per-year targets, ≥70% hard floor + rationale
 - [ ] **`assessment_budget`** — 12 fixed line items by PDCA phase, computed totals
+- [ ] **Tests:** ≥70% floor validation, coverage check, calendar row protection
 
 ---
 
@@ -96,19 +103,22 @@ The term-level hub that consolidates a term's data.
 ### Periodic / institutional (lowest MVP urgency)
 
 - [ ] `alumni_tracer` + `employer_satisfaction_survey` — biennial surveys → **PEO attainment evidence** + feed composite (Direct×70% + Indirect×30%)
-- [ ] `annual_program_report` (APAR) — dashboard KPIs, mandatory attachments
+- [ ] `annual_program_report` (APAR) — dashboard KPIs, mandatory attachments, cohort_tracking gate
 - [ ] `systemic_gap_report` — trigger: 3 consecutive NOT-MET, due trigger + 30 days
 - [ ] `capa_plan` — actions/milestones, AQAU progress monitoring
 - [ ] `institutional_review` — program APAR review, institutional CQI completion rate
 - [ ] `portfolio_roadmap` — 4-year roadmap + rubric standards (portfolio programs)
 
+- [ ] **Tests:** divergence flags, PEO evidence capture into `PeoAttainment`, systemic-gap trigger
+
 ---
 
 ## Phase 7 — Graduation-Cluster Archival (compiled, read-only)
 
-Purpose: compile finished cohorts into compact, permanent, read-only snapshots to reclaim space while keeping data viewable. Clustering keyed by **actual graduation term** (protects transferees + irregular students). **Runs AFTER PEO attainment is captured** — the compiled snapshot must include the cohort's PEO evidence from the biennial alumni/employer surveys (Phase 6) before granular data is purged. Schema is done; pipeline + viewer pending (post PEO data capture).
+Purpose: compile finished cohorts into compact, permanent, read-only snapshots to reclaim space while keeping data viewable. Clustering keyed by **actual graduation term** (protects transferees + irregular students). **Runs AFTER PEO attainment is captured** — the compiled snapshot must include the cohort's PEO evidence from the biennial alumni/employer surveys (Phase 6) before granular data is purged. Schema is done; pipeline pending (post PEO data capture).
 
 ### Schema (done)
+
 - [x] `StudentStatus` + `GraduationClusterStatus` enums
 - [x] `GraduationCluster` model (per program × graduation term; open → compiling → archived) + `peoAttainmentCapturedAt` gate
 - [x] `GraduationClusterEntry` (write-once read-only snapshot + `peoAttainment` snapshot column + detail-artifact URL + purge audit)
@@ -118,14 +128,40 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [ ] Apply migration to DB (once `ep-delicate-water...neon.tech` reachable)
 
 ### Pipeline (backend `archival-service`)
+
 - [ ] Auto-create cluster at AY end (graduates + transferred_out/withdrawn candidates)
-- [ ] Confirm to compile (aqau / system_admin only) — `open → compiling → archived`
+- [ ] Confirm to compile (aqau / system_admin only) — `open → compiling → archived`, gated on `peoAttainmentCapturedAt`
 - [ ] Compile per-student snapshot into `compiledData` — **including PEO attainment (alumni/employer survey results)**
 - [ ] Export full detail artifact (`detailArtifactUrl`; storage provider TBD)
 - [ ] Purge granular hot rows (StudentScore, per-student CloAttainment, AtRiskFlag) — keep PloAttainment/enrollments
 - [ ] Read-only enforcement: GET-only endpoints + audit log; optional DB write-block trigger
+- [ ] **Tests:** write-once enforcement, purge audit, PEO gate
 
-### Viewer (frontend)
+---
+
+## Frontend (deferred — starts only after backend is stable)
+
+> All frontend work is consolidated here and does **not** begin until the backend phases (0–7) are stable (typecheck + lint + tests green, DB migration applied). Carried forward from the original interleaved plan.
+
+### Already built
+
+- [x] App shell, theme, sidebar, login
+- [x] File-upload preview (`faculty` page)
+
+### Shared infrastructure
+
+- [ ] `lib/api.ts` API client (cookie credentials, typed responses, `auth/me`)
+- [ ] Role-gated app shell — layout + nav filtered by `role`
+- [ ] `components/obe/` primitives — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table
+
+### Form screens (mirror backend phases)
+
+- [ ] `clo_raw_data` entry screen (`/forms/clo-raw-data`) + import UX (job progress, structured errors)
+- [ ] CAR screen (`/forms/course-assessment-report`) — 7 parts, computed cells read-only
+- [ ] Roll-up screens (`/forms/attainment/...`) + dashboard KPI cards/charts
+- [ ] CQI screens (`/forms/cqi/...`)
+- [ ] PLAN setup screens (`curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget`)
+- [ ] Supporting/periodic/institutional screens (Phase 6 forms)
 - [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin)
 - [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down
 
@@ -143,19 +179,21 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [ ] Indirect (30%) attainment pipeline (needs survey data)
 - [ ] Persistent job queue (currently in-memory)
 
-### backend (Elysia + Prisma)
+### backend (Elysia + Prisma) — **active focus**
 
-- [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports)
+- [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports, archive)
 - [x] better-auth (email/password, sessions), `/auth/me`, OpenAPI
+- [~] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators)
 - [ ] Feature routes (all forms) — see Phases 1–6
 - [ ] Approval workflow on `FormSubmission`/`ApprovalStep`
+- [ ] Archival pipeline — see Phase 7
 
-### frontend (Next.js 16)
+### frontend (Next.js 16) — **deferred until backend stable**
 
 - [x] App shell, theme, sidebar, login
 - [x] File-upload preview (`faculty` page)
 - [ ] API client layer + role-gated routing
-- [ ] OBE form components + wired form screens (see Phases 1–6)
+- [ ] OBE form components + wired form screens (see deferred Frontend section)
 
 ---
 
@@ -164,3 +202,5 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - Forms without a defined field structure (referenced-but-not-developed in the manual) — **no code assigned**, confirm scope before designing.
 - `F##` manual IDs are provisional — use form **titles / stable snake_case codes** everywhere.
 - `python-server` database/auth scaffolding (`app/database`, `app/models`) is unused — pending removal decision.
+- **DB blocker:** Neon (`ep-delicate-water-azqj15d0-pooler...neon.tech`) unreachable (P1001). Migration apply + DB integration tests blocked until reachable; unit tests/lint/typecheck proceed now.
+- **Archival storage:** object-storage provider for `detailArtifactUrl` TBD (S3/MinIO/local in dev; `ARCHIVE_STORAGE_URL`).
