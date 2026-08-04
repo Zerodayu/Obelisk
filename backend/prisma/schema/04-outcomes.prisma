@@ -4,10 +4,10 @@ model Clo {
   code        String
   description String
 
-  course        Course          @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  cloToPloMaps  CloToPloMap[]
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  cloToPloMaps    CloToPloMap[]
   assessmentItems AssessmentItem[]
-  cloAttainments CloAttainment[]
+  cloAttainments  CloAttainment[]
 
   @@map("clo")
 }
@@ -17,12 +17,12 @@ model Plo {
   programId           String  @map("program_id")
   code                String
   description         String
-  targetAttainmentPct Decimal @default("70.00") @db.Decimal(5, 2) @map("target_attainment_pct")
+  targetAttainmentPct Decimal @default("70.00") @map("target_attainment_pct") @db.Decimal(5, 2)
 
-  program       Program       @relation(fields: [programId], references: [id], onDelete: Cascade)
-  cloToPloMaps  CloToPloMap[]
-  ploToPeoMaps  PloToPeoMap[]
-  ploAttainments PloAttainment[]
+  program           Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  cloToPloMaps      CloToPloMap[]
+  ploToPeoMaps      PloToPeoMap[]
+  ploAttainments    PloAttainment[]
   aiRecommendations AiRecommendation[]
 
   @@map("plo")

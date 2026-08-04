@@ -4,8 +4,8 @@ model AssessmentItem {
   cloId          String         @map("clo_id")
   type           AssessmentType
   title          String
-  maxScore       Decimal        @db.Decimal(7, 2) @map("max_score")
-  weightPct      Decimal        @db.Decimal(5, 2) @map("weight_pct")
+  maxScore       Decimal        @map("max_score") @db.Decimal(7, 2)
+  weightPct      Decimal        @map("weight_pct") @db.Decimal(5, 2)
   createdAt      DateTime       @default(now()) @map("created_at")
 
   classSection  ClassSection   @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
@@ -19,7 +19,7 @@ model StudentScore {
   id               String   @id
   assessmentItemId String   @map("assessment_item_id")
   studentId        String   @map("student_id")
-  rawScore         Decimal  @db.Decimal(7, 2) @map("raw_score")
+  rawScore         Decimal  @map("raw_score") @db.Decimal(7, 2)
   uploadedAt       DateTime @default(now()) @map("uploaded_at")
 
   assessmentItem AssessmentItem @relation(fields: [assessmentItemId], references: [id], onDelete: Cascade)

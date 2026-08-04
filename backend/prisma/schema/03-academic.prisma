@@ -27,10 +27,10 @@ model Program {
   students           Student[]
   plos               Plo[]
   peos               Peo[]
-  formSubmissions   FormSubmission[]
-  ploAttainments    PloAttainment[]
-  peoAttainments    PeoAttainment[]
-  aiRecommendations AiRecommendation[]
+  formSubmissions    FormSubmission[]
+  ploAttainments     PloAttainment[]
+  peoAttainments     PeoAttainment[]
+  aiRecommendations  AiRecommendation[]
   graduationClusters GraduationCluster[]
 
   @@map("program")
@@ -44,11 +44,11 @@ model AcademicTerm {
   startDate  DateTime? @map("start_date")
   endDate    DateTime? @map("end_date")
 
-  classSections     ClassSection[]
-  formSubmissions   FormSubmission[]
-  ploAttainments    PloAttainment[]
-  peoAttainments    PeoAttainment[]
-  aiRecommendations AiRecommendation[]
+  classSections      ClassSection[]
+  formSubmissions    FormSubmission[]
+  ploAttainments     PloAttainment[]
+  peoAttainments     PeoAttainment[]
+  aiRecommendations  AiRecommendation[]
   graduationClusters GraduationCluster[] @relation("GraduationClusterTerm")
   studentsGraduated  Student[]           @relation("StudentGraduationTerm")
 
