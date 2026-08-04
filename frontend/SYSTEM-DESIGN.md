@@ -83,12 +83,13 @@ User edits form ──> react-hook-form + Zod (client validation mirrors backend
 ### 4.2 Class-record import (clo_raw_data)
 
 ```
-CSV/TSV/XLS/XLSX ──> faculty page upload (FileUpload, validation) 
-   ──> backend ingest ──> python-server (spreadsheet parser)
+CSV/TSV/XLS/XLSX ──> faculty page upload (FileUpload, validation)
+   ──> backend ingest (auth + persistence)
+   ──> python-server (pure-compute ETL: Formula 1A direct attainment; see ../python-server/SYSTEM-DESIGN.md)
    ──> StudentScore / AssessmentItem rows ──> per-student raw-data form
 ```
 
-Mimics the existing `app/faculty/page.tsx` upload UX (`components/motion/file-upload.tsx`).
+The frontend calls the **backend only**. The backend forwards the file to the `python-server` ETL service (the pure-compute owner of spreadsheet formulas) and persists the returned attainment. Do not call python-server (`:8000`) directly from the browser. Mimics the existing `app/faculty/page.tsx` upload UX (`components/motion/file-upload.tsx`).
 
 ### 4.3 Rollups & dashboards
 

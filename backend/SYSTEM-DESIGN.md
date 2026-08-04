@@ -189,7 +189,9 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 ## 8. External Services
 
-- **`python-server/`** (separate service, out of scope of this backend) — parses faculty class-record spreadsheets (CSV/TSV/XLS/XLSX) into data that seeds `clo_raw_data` per-student scores. Integrate via an internal ingest endpoint; see `frontend/SYSTEM-DESIGN.md` import flow.
+- **`python-server/`** — the authoritative pure-compute engine for spreadsheet-derived attainment (FastAPI, port 8000; no DB, no auth). It parses class-record `.xlsx` (Formula 1A direct CLO attainment, 4-tier levels, Rule-1 completeness) and provides program/department/AVP rollups (Formulas 2A/7A/7C) + AI CQI recommendations. Docs: `../python-server/AGENTS.md`, `../python-server/SYSTEM-DESIGN.md`, `../python-server/documentations/INTEGRATION.md`.
+
+  **Ownership boundary (see `python-server/SYSTEM-DESIGN.md` §7):** this backend is the **sole persister** — it stores python-server's results into `CloAttainment`/`PloAttainment`/`ComputationRun` (recording formula version/weights) and performs all auth/RBAC, approvals, form lifecycle, audit, exports. It must **not** re-implement Formula 1A or the rollups. It calls python-server via `POST /upload` → poll `GET /jobs/{job_id}` → `POST /analytics/*`, storing returned `StudentCLOAttainment` records to seed `clo_raw_data` / CAR. Frontend import flow: see `frontend/SYSTEM-DESIGN.md` §4.2.
 
 ## 9. Deferred / Open Questions
 
