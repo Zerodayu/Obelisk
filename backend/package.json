@@ -2,7 +2,10 @@
 	"name": "backend",
 	"version": "1.0.50",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
+		"test": "bun test",
+		"test:integration": "bun test -- test/integration",
+		"typecheck": "bunx tsc --noEmit",
+		"lint": "bunx biome check",
 		"env:encrypt": "bunx dotenvx encrypt -f .env.local",
 		"env:decrypt": "bunx dotenvx decrypt -f .env.local",
 		"dev": "dotenvx run -f .env.local -- bun --watch src/index.ts",
