@@ -7,7 +7,7 @@
 
 Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Update the box when a task is truly done (including verification).
 
-**Build strategy: backend-first.** The entire backend (all form phases, incl. tests/lint/typecheck green) is stabilized before **any** frontend work resumes. Frontend work is consolidated in a single deferred section at the bottom and does not start until the backend is stable. DB-dependent work (migration apply, integration tests) is blocked while Neon is unreachable (P1001) and proceeds as soon as it is.
+**Build strategy: backend-first.** The entire backend (all form phases, incl. tests/lint/typecheck green) is stabilized before **any** frontend work resumes. Frontend work is consolidated in a single deferred section at the bottom and does not start until the backend is stable. **Phase 0 is complete** (tsconfig, scripts, test harness, validators, forms module, ingest client, archival migration applied); Phases 1–7 proceed backend-only.
 
 ---
 
@@ -17,13 +17,13 @@ Goal: make the backend buildable, testable, and lint-clean, then stand up the sh
 
 - [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports, archive) — validated, client generated
 - [x] better-auth (email/password, sessions), `/auth/me`, OpenAPI
-- [ ] **Fix `tsconfig.json`** — `moduleResolution: "node"` maps to removed `node10` (TS5108); set to `bundler` so `bunx tsc --noEmit` passes
-- [ ] **Add quality scripts** to `package.json` — `typecheck`, `lint` (biome), `test` (bun:test); all three green on baseline
-- [ ] **bun:test harness** — unit tests for services/validators (no DB); integration tests against dev DB gated on Neon reachability
-- [ ] Apply archival migration to DB (once `ep-delicate-water...neon.tech` reachable)
-- [ ] **Backend: forms module** — `FormSubmission`/`ApprovalStep` CRUD + submit/approve lifecycle (status machine: draft → submitted → returned → approved → archived)
-- [ ] **Backend: python-server ingest client** — `POST /upload` → poll `GET /jobs/{job_id}`, structured error mapping (`error_type`/`details`)
-- [ ] **Backend: shared validators** — ≥70% floor, `direct×0.70 + indirect×0.30` constants, 6-category root-cause enum, retention classes
+- [x] **Fix `tsconfig.json`** — `moduleResolution: "node"` maps to removed `node10` (TS5108); set to `bundler` so `bunx tsc --noEmit` passes
+- [x] **Add quality scripts** to `package.json` — `typecheck`, `lint` (biome), `test` (bun:test); all three green on baseline
+- [x] **bun:test harness** — unit tests for services/validators (no DB); integration tests against dev DB gated on Neon reachability
+- [x] Apply archival migration to DB (Neon reachable — applied, `migrate status` up to date)
+- [x] **Backend: forms module** — `FormSubmission`/`ApprovalStep` CRUD + submit/approve lifecycle (status machine: draft → submitted → returned → approved → archived)
+- [x] **Backend: python-server ingest client** — `POST /upload` → poll `GET /jobs/{job_id}`, structured error mapping (`error_type`/`details`)
+- [x] **Backend: shared validators** — ≥70% floor, `direct×0.70 + indirect×0.30` constants, 6-category root-cause enum, retention classes
 
 **Exit gate for Phase 0:** `bun run typecheck`, `bun run lint`, and `bun test` all pass; forms module + ingest client + validators exist behind `api/v1`.
 
@@ -124,8 +124,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] `GraduationClusterEntry` (write-once read-only snapshot + `peoAttainment` snapshot column + detail-artifact URL + purge audit)
 - [x] `Student` fields (`studentStatus`, `graduationTermId`, `graduationClusterId`) + relations
 - [x] `PeoAttainment` model (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`) — PEO capture records feeding the snapshot
-- [x] Migration SQL written (`20260805000000_add_graduation_cluster_archival`) — **apply blocked, DB offline**
-- [ ] Apply migration to DB (once `ep-delicate-water...neon.tech` reachable)
+- [x] Migration SQL written (`20260805000000_add_graduation_cluster_archival`) — applied to DB
 
 ### Pipeline (backend `archival-service`)
 
@@ -183,9 +182,9 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 - [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports, archive)
 - [x] better-auth (email/password, sessions), `/auth/me`, OpenAPI
-- [~] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators)
+- [x] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators, forms module, ingest client)
 - [ ] Feature routes (all forms) — see Phases 1–6
-- [ ] Approval workflow on `FormSubmission`/`ApprovalStep`
+- [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
 - [ ] Archival pipeline — see Phase 7
 
 ### frontend (Next.js 16) — **deferred until backend stable**
@@ -202,5 +201,5 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - Forms without a defined field structure (referenced-but-not-developed in the manual) — **no code assigned**, confirm scope before designing.
 - `F##` manual IDs are provisional — use form **titles / stable snake_case codes** everywhere.
 - `python-server` database/auth scaffolding (`app/database`, `app/models`) is unused — pending removal decision.
-- **DB blocker:** Neon (`ep-delicate-water-azqj15d0-pooler...neon.tech`) unreachable (P1001). Migration apply + DB integration tests blocked until reachable; unit tests/lint/typecheck proceed now.
+- **DB blocker (resolved):** Neon (`ep-delicate-water-azqj15d0-pooler...neon.tech`) is reachable; archival migration applied and DB integration tests run in the suite. Monitor for future outages.
 - **Archival storage:** object-storage provider for `detailArtifactUrl` TBD (S3/MinIO/local in dev; `ARCHIVE_STORAGE_URL`).

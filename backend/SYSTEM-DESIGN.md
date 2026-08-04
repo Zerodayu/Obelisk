@@ -1,13 +1,14 @@
 # Obelisk Backend — System Design
 
 > **Product:** Obelisk — Outcomes-Based Educational Learning and Intelligent System Kit for Jose Maria College Foundation, Inc. (JMCFI)
-> **Status:** Backend-first build in progress — auth infra + full relational schema exist; Phase 0 stabilization (tsconfig/scripts/test harness/validators, forms module, ingest client) is the active focus. **Frontend work is deferred until the backend is stable** (see `../roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
+> **Status:** Backend-first build in progress — **Phase 0 foundation/stabilization complete** (typecheck/lint/bun:test green; forms module, python-server ingest client, and shared validators shipped behind `api/v1`; archival migration applied). Feature phases (1–7) build on this. **Frontend work is deferred until the backend is stable** (see `../roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
 
 ---
 
 ## 1. Architecture & Runtime
 
 - **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (email/password, cookie sessions). **Validation:** Elysia `t` (backend) and Zod.
+- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client).
 - **App bootstrap** `src/index.ts`:
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
   2. `@elysia/cors` — origins from `FRONTEND_URL` + `http://localhost:3000`, credentials enabled.
@@ -106,7 +107,19 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/auth/sign-in/email` | — | better-auth sign-in |
 | POST | `/api/v1/auth/sign-out` | — | sign-out |
 | GET | `/api/v1/auth/me` | `auth: true` | current user + session |
+| GET | `/api/v1/forms` | `auth: true` | list form submissions (filter by formTypeId/classSectionId/status) |
+| POST | `/api/v1/forms` | `auth: true` | create a draft `FormSubmission` |
+| GET | `/api/v1/forms/:id` | `auth: true` | get a submission with its ordered `ApprovalStep` chain |
+| PUT | `/api/v1/forms/:id` | `auth: true` | edit a draft/returned submission |
+| POST | `/api/v1/forms/:id/submit` | `auth: true` | submit — creates the ordered approval chain, `draft → submitted` |
+| POST | `/api/v1/forms/:id/approve/:role` | `auth: true` | approve the current pending step for the given role; advances the chain or `submitted → approved` |
+| POST | `/api/v1/forms/:id/return` | `auth: true` | return the current pending step (`submitted → returned`) |
+| POST | `/api/v1/forms/:id/archive` | `auth: true` | archive an approved submission (`approved → archived`) |
+| POST | `/api/v1/ingest/upload` | `auth: true` | forward a class-record `.xlsx` to python-server; polls the job to completion |
+| GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job |
 | GET | `/openapi` | — | OpenAPI docs |
+
+> **Status machine** (enforced in `lib/forms/state-machine.ts`): `draft → submitted → returned → approved → archived`. `returned` is re-submittable; edits are restricted to `draft`/`returned`; approval chains must ascend the canonical role order (`program_chair → dean → aqau → vpaa`, skipping allowed). Every lifecycle action writes an `AuditLog` row (`forms` module).
 
 ### Planned (feature plugins, one per module mirroring the form catalog)
 
@@ -194,12 +207,13 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 `ComputedField` / rollup services encapsulate the shared validation + computation rules:
 
-- **`attainment-service`** — computes `CloAttainment`/`PloAttainment` per `ComputationRun`; formula `Direct×0.70 + Indirect×0.30`; applies ≥70% floor; sets `isBelowThreshold`.
+- **`submission-service`** *(implemented, `src/v1/forms/service.ts`)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
+- **`ingest-service`** *(implemented, `src/v1/ingest/controller.ts` + `lib/ingest/ingest-client.ts`)* — `POST /upload` → poll `GET /jobs/{job_id}` to completion; maps the structured python error object (`error_type`/`message`/`details`) into typed `IngestJobFailedError`.
+- **`attainment-service`** — computes `CloAttainment`/`PloAttainment` per `ComputationRun`; formula `Direct×0.70 + Indirect×0.30` (constants in `lib/validators/attainment.ts`); applies ≥70% floor; sets `isBelowThreshold`.
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
 - **`cqi-service`** — stateful `cqi_action_plan` entries; enforces CLOSED only when 5 CTL conditions met; feeds gap/systemic/CAPA.
-- **`submission-service`** — form lifecycle (`SubmissionStatus`), `ApprovalStep` routing by role chain, APAR attach-gate, audit logging.
 - **`dashboard/rollup-service`** — APAR KPI/dashboard and institutional completion-rate computations.
-- **`archival-service`** *(schema complete, implementation pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment is captured** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
+- **`archival-service`** *(schema complete + migration applied; pipeline pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment is captured** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
   1. **Auto-create** at end of AY (June 30 / July 15 cycle): per program, find students whose `graduationTermId` = the closing term (graduates + `transferred_out`/`withdrawn`) → create `GraduationCluster(status=open)` listing candidates; nothing locked.
   2. **Confirm to compile** (`aqau`/`system_admin`): blocked until `peoAttainmentCapturedAt` is set; set `compiling`; per student in a transaction — (a) compile snapshot from lifetime `CloAttainment`/`PloAttainment`/`AtRiskFlag`/`FormSubmission` plus **PEO attainment** (`PeoAttainment` → entry `peoAttainment` column) into `compiledData`; (b) export full granular detail to a `detailArtifactUrl` (configurable storage); (c) purge granular hot rows (`StudentScore`, per-student `CloAttainment`, `AtRiskFlag`, detached `FormSubmission.formData`) while keeping `PloAttainment` + `class_section`/`enrollment`; (d) write `GraduationClusterEntry` + `AuditLog`.
   3. **Lock read-only**: set cluster `archived`. Writes to `GraduationClusterEntry` are rejected — service guard (GET-only endpoints) as primary, optional Postgres trigger as defense-in-depth. Archived entries are permanent and viewable via `GET` only.
@@ -212,7 +226,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 ## 9. Deferred / Open Questions
 
-- **Build strategy: backend-first.** All backend feature phases (forms, ingest, rollups, CQI, archival) are built and stabilized (typecheck + lint + bun:test green) before any frontend work resumes; see `../roadmap.md` for the tracking. DB-dependent steps (migration apply, integration tests) are blocked while Neon is unreachable.
+- **Build strategy: backend-first.** All backend feature phases (forms, ingest, rollups, CQI, archival) are built and stabilized (typecheck + lint + bun:test green) before any frontend work resumes; see `../roadmap.md` for the tracking. **Phase 0 is complete**; the archival migration is applied, so DB integration tests now run against the live dev database.
 - I-P-D stage representation for curriculum-map cells and cohort progression (new column on `CloToPloMap` vs. JSON).
 - Stateful CQI/logical status fields beyond the clean single-table forms (may warrant dedicated CQI/CTL tables rather than `FormSubmission.formData` JSON).
 - Survey long-guide vs. row-normalized tabulations (JSON now, consider normalized later).
