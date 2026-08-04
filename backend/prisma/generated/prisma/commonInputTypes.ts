@@ -203,6 +203,13 @@ export type IntNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedIntNullableFilter<$PrismaModel> | number | null
 }
 
+export type EnumStudentStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.StudentStatus | Prisma.EnumStudentStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel> | $Enums.StudentStatus
+}
+
 export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -217,6 +224,16 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
+}
+
+export type EnumStudentStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.StudentStatus | Prisma.EnumStudentStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumStudentStatusWithAggregatesFilter<$PrismaModel> | $Enums.StudentStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel>
 }
 
 export type DecimalFilter<$PrismaModel = never> = {
@@ -443,6 +460,23 @@ export type EnumExportFormatWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumExportFormatFilter<$PrismaModel>
 }
 
+export type EnumGraduationClusterStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.GraduationClusterStatus | Prisma.EnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel> | $Enums.GraduationClusterStatus
+}
+
+export type EnumGraduationClusterStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.GraduationClusterStatus | Prisma.EnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumGraduationClusterStatusWithAggregatesFilter<$PrismaModel> | $Enums.GraduationClusterStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel>
+}
+
 export type NestedStringFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -634,6 +668,13 @@ export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDecimalNullableFilter<$PrismaModel>
 }
 
+export type NestedEnumStudentStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.StudentStatus | Prisma.EnumStudentStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel> | $Enums.StudentStatus
+}
+
 export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -659,6 +700,16 @@ export type NestedFloatNullableFilter<$PrismaModel = never> = {
   gt?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   gte?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   not?: Prisma.NestedFloatNullableFilter<$PrismaModel> | number | null
+}
+
+export type NestedEnumStudentStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.StudentStatus | Prisma.EnumStudentStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.StudentStatus[] | Prisma.ListEnumStudentStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumStudentStatusWithAggregatesFilter<$PrismaModel> | $Enums.StudentStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumStudentStatusFilter<$PrismaModel>
 }
 
 export type NestedDecimalFilter<$PrismaModel = never> = {
@@ -856,6 +907,23 @@ export type NestedEnumExportFormatWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumExportFormatFilter<$PrismaModel>
   _max?: Prisma.NestedEnumExportFormatFilter<$PrismaModel>
+}
+
+export type NestedEnumGraduationClusterStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.GraduationClusterStatus | Prisma.EnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel> | $Enums.GraduationClusterStatus
+}
+
+export type NestedEnumGraduationClusterStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.GraduationClusterStatus | Prisma.EnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.GraduationClusterStatus[] | Prisma.ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumGraduationClusterStatusWithAggregatesFilter<$PrismaModel> | $Enums.GraduationClusterStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumGraduationClusterStatusFilter<$PrismaModel>
 }
 
 

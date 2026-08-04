@@ -46,3 +46,18 @@ enum ExportFormat {
   excel
   word
 }
+
+enum StudentStatus {
+  active
+  irregular
+  transferee
+  graduated
+  transferred_out
+  withdrawn
+}
+
+enum GraduationClusterStatus {
+  open
+  compiling
+  archived
+}

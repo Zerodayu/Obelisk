@@ -21,15 +21,16 @@ model user {
   // Back-relations
   sessions                  session[]
   accounts                  account[]
-  departmentsAsDean         Department[]       @relation("Dean")
-  programsAsChair           Program[]          @relation("ProgramChair")
-  classSectionsAsFaculty    ClassSection[]     @relation("Faculty")
-  formSubmissions           FormSubmission[]   @relation("Submitter")
-  approvalSteps             ApprovalStep[]     @relation("Approver")
-  computationRuns           ComputationRun[]   @relation("TriggeredBy")
-  auditLogs                 AuditLog[]         @relation("AuditUser")
-  aiRecommendationsReviewed AiRecommendation[] @relation("Reviewer")
-  reportExports             ReportExport[]     @relation("Exporter")
+  departmentsAsDean         Department[]        @relation("Dean")
+  programsAsChair           Program[]           @relation("ProgramChair")
+  classSectionsAsFaculty    ClassSection[]      @relation("Faculty")
+  formSubmissions           FormSubmission[]    @relation("Submitter")
+  approvalSteps             ApprovalStep[]      @relation("Approver")
+  computationRuns           ComputationRun[]    @relation("TriggeredBy")
+  auditLogs                 AuditLog[]          @relation("AuditUser")
+  aiRecommendationsReviewed AiRecommendation[]  @relation("Reviewer")
+  reportExports             ReportExport[]      @relation("Exporter")
+  clustersConfirmed         GraduationCluster[] @relation("ClusterConfirmer")
 
   @@map("user")
 }

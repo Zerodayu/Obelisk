@@ -193,7 +193,10 @@ export type AcademicTermWhereInput = {
   classSections?: Prisma.ClassSectionListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
+  graduationClusters?: Prisma.GraduationClusterListRelationFilter
+  studentsGraduated?: Prisma.StudentListRelationFilter
 }
 
 export type AcademicTermOrderByWithRelationInput = {
@@ -206,7 +209,10 @@ export type AcademicTermOrderByWithRelationInput = {
   classSections?: Prisma.ClassSectionOrderByRelationAggregateInput
   formSubmissions?: Prisma.FormSubmissionOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
+  peoAttainments?: Prisma.PeoAttainmentOrderByRelationAggregateInput
   aiRecommendations?: Prisma.AiRecommendationOrderByRelationAggregateInput
+  graduationClusters?: Prisma.GraduationClusterOrderByRelationAggregateInput
+  studentsGraduated?: Prisma.StudentOrderByRelationAggregateInput
 }
 
 export type AcademicTermWhereUniqueInput = Prisma.AtLeast<{
@@ -223,7 +229,10 @@ export type AcademicTermWhereUniqueInput = Prisma.AtLeast<{
   classSections?: Prisma.ClassSectionListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
+  graduationClusters?: Prisma.GraduationClusterListRelationFilter
+  studentsGraduated?: Prisma.StudentListRelationFilter
 }, "id" | "schoolYear_semester">
 
 export type AcademicTermOrderByWithAggregationInput = {
@@ -260,7 +269,10 @@ export type AcademicTermCreateInput = {
   classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUncheckedCreateInput = {
@@ -273,7 +285,10 @@ export type AcademicTermUncheckedCreateInput = {
   classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUpdateInput = {
@@ -286,7 +301,10 @@ export type AcademicTermUpdateInput = {
   classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermUncheckedUpdateInput = {
@@ -299,7 +317,10 @@ export type AcademicTermUncheckedUpdateInput = {
   classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermCreateManyInput = {
@@ -385,6 +406,22 @@ export type AcademicTermUpdateOneRequiredWithoutClassSectionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutClassSectionsInput, Prisma.AcademicTermUpdateWithoutClassSectionsInput>, Prisma.AcademicTermUncheckedUpdateWithoutClassSectionsInput>
 }
 
+export type AcademicTermCreateNestedOneWithoutStudentsGraduatedInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedCreateWithoutStudentsGraduatedInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutStudentsGraduatedInput
+  connect?: Prisma.AcademicTermWhereUniqueInput
+}
+
+export type AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedCreateWithoutStudentsGraduatedInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutStudentsGraduatedInput
+  upsert?: Prisma.AcademicTermUpsertWithoutStudentsGraduatedInput
+  disconnect?: Prisma.AcademicTermWhereInput | boolean
+  delete?: Prisma.AcademicTermWhereInput | boolean
+  connect?: Prisma.AcademicTermWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutStudentsGraduatedInput, Prisma.AcademicTermUpdateWithoutStudentsGraduatedInput>, Prisma.AcademicTermUncheckedUpdateWithoutStudentsGraduatedInput>
+}
+
 export type AcademicTermCreateNestedOneWithoutFormSubmissionsInput = {
   create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutFormSubmissionsInput, Prisma.AcademicTermUncheckedCreateWithoutFormSubmissionsInput>
   connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutFormSubmissionsInput
@@ -413,6 +450,20 @@ export type AcademicTermUpdateOneRequiredWithoutPloAttainmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutPloAttainmentsInput, Prisma.AcademicTermUpdateWithoutPloAttainmentsInput>, Prisma.AcademicTermUncheckedUpdateWithoutPloAttainmentsInput>
 }
 
+export type AcademicTermCreateNestedOneWithoutPeoAttainmentsInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutPeoAttainmentsInput
+  connect?: Prisma.AcademicTermWhereUniqueInput
+}
+
+export type AcademicTermUpdateOneRequiredWithoutPeoAttainmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutPeoAttainmentsInput
+  upsert?: Prisma.AcademicTermUpsertWithoutPeoAttainmentsInput
+  connect?: Prisma.AcademicTermWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutPeoAttainmentsInput, Prisma.AcademicTermUpdateWithoutPeoAttainmentsInput>, Prisma.AcademicTermUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
 export type AcademicTermCreateNestedOneWithoutAiRecommendationsInput = {
   create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutAiRecommendationsInput, Prisma.AcademicTermUncheckedCreateWithoutAiRecommendationsInput>
   connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutAiRecommendationsInput
@@ -429,6 +480,20 @@ export type AcademicTermUpdateOneWithoutAiRecommendationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutAiRecommendationsInput, Prisma.AcademicTermUpdateWithoutAiRecommendationsInput>, Prisma.AcademicTermUncheckedUpdateWithoutAiRecommendationsInput>
 }
 
+export type AcademicTermCreateNestedOneWithoutGraduationClustersInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedCreateWithoutGraduationClustersInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutGraduationClustersInput
+  connect?: Prisma.AcademicTermWhereUniqueInput
+}
+
+export type AcademicTermUpdateOneRequiredWithoutGraduationClustersNestedInput = {
+  create?: Prisma.XOR<Prisma.AcademicTermCreateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedCreateWithoutGraduationClustersInput>
+  connectOrCreate?: Prisma.AcademicTermCreateOrConnectWithoutGraduationClustersInput
+  upsert?: Prisma.AcademicTermUpsertWithoutGraduationClustersInput
+  connect?: Prisma.AcademicTermWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.AcademicTermUpdateToOneWithWhereWithoutGraduationClustersInput, Prisma.AcademicTermUpdateWithoutGraduationClustersInput>, Prisma.AcademicTermUncheckedUpdateWithoutGraduationClustersInput>
+}
+
 export type AcademicTermCreateWithoutClassSectionsInput = {
   id: string
   schoolYear: string
@@ -438,7 +503,10 @@ export type AcademicTermCreateWithoutClassSectionsInput = {
   endDate?: Date | string | null
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUncheckedCreateWithoutClassSectionsInput = {
@@ -450,7 +518,10 @@ export type AcademicTermUncheckedCreateWithoutClassSectionsInput = {
   endDate?: Date | string | null
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermCreateOrConnectWithoutClassSectionsInput = {
@@ -478,7 +549,10 @@ export type AcademicTermUpdateWithoutClassSectionsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermUncheckedUpdateWithoutClassSectionsInput = {
@@ -490,7 +564,86 @@ export type AcademicTermUncheckedUpdateWithoutClassSectionsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermCreateWithoutStudentsGraduatedInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermUncheckedCreateWithoutStudentsGraduatedInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermCreateOrConnectWithoutStudentsGraduatedInput = {
+  where: Prisma.AcademicTermWhereUniqueInput
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedCreateWithoutStudentsGraduatedInput>
+}
+
+export type AcademicTermUpsertWithoutStudentsGraduatedInput = {
+  update: Prisma.XOR<Prisma.AcademicTermUpdateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedUpdateWithoutStudentsGraduatedInput>
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedCreateWithoutStudentsGraduatedInput>
+  where?: Prisma.AcademicTermWhereInput
+}
+
+export type AcademicTermUpdateToOneWithWhereWithoutStudentsGraduatedInput = {
+  where?: Prisma.AcademicTermWhereInput
+  data: Prisma.XOR<Prisma.AcademicTermUpdateWithoutStudentsGraduatedInput, Prisma.AcademicTermUncheckedUpdateWithoutStudentsGraduatedInput>
+}
+
+export type AcademicTermUpdateWithoutStudentsGraduatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermUncheckedUpdateWithoutStudentsGraduatedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermCreateWithoutFormSubmissionsInput = {
@@ -502,7 +655,10 @@ export type AcademicTermCreateWithoutFormSubmissionsInput = {
   endDate?: Date | string | null
   classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUncheckedCreateWithoutFormSubmissionsInput = {
@@ -514,7 +670,10 @@ export type AcademicTermUncheckedCreateWithoutFormSubmissionsInput = {
   endDate?: Date | string | null
   classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermCreateOrConnectWithoutFormSubmissionsInput = {
@@ -542,7 +701,10 @@ export type AcademicTermUpdateWithoutFormSubmissionsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermUncheckedUpdateWithoutFormSubmissionsInput = {
@@ -554,7 +716,10 @@ export type AcademicTermUncheckedUpdateWithoutFormSubmissionsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermCreateWithoutPloAttainmentsInput = {
@@ -566,7 +731,10 @@ export type AcademicTermCreateWithoutPloAttainmentsInput = {
   endDate?: Date | string | null
   classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUncheckedCreateWithoutPloAttainmentsInput = {
@@ -578,7 +746,10 @@ export type AcademicTermUncheckedCreateWithoutPloAttainmentsInput = {
   endDate?: Date | string | null
   classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermCreateOrConnectWithoutPloAttainmentsInput = {
@@ -606,7 +777,10 @@ export type AcademicTermUpdateWithoutPloAttainmentsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -618,7 +792,86 @@ export type AcademicTermUncheckedUpdateWithoutPloAttainmentsInput = {
   endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermCreateWithoutPeoAttainmentsInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermUncheckedCreateWithoutPeoAttainmentsInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermCreateOrConnectWithoutPeoAttainmentsInput = {
+  where: Prisma.AcademicTermWhereUniqueInput
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedCreateWithoutPeoAttainmentsInput>
+}
+
+export type AcademicTermUpsertWithoutPeoAttainmentsInput = {
+  update: Prisma.XOR<Prisma.AcademicTermUpdateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedUpdateWithoutPeoAttainmentsInput>
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedCreateWithoutPeoAttainmentsInput>
+  where?: Prisma.AcademicTermWhereInput
+}
+
+export type AcademicTermUpdateToOneWithWhereWithoutPeoAttainmentsInput = {
+  where?: Prisma.AcademicTermWhereInput
+  data: Prisma.XOR<Prisma.AcademicTermUpdateWithoutPeoAttainmentsInput, Prisma.AcademicTermUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
+export type AcademicTermUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermUncheckedUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermCreateWithoutAiRecommendationsInput = {
@@ -631,6 +884,9 @@ export type AcademicTermCreateWithoutAiRecommendationsInput = {
   classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermUncheckedCreateWithoutAiRecommendationsInput = {
@@ -643,6 +899,9 @@ export type AcademicTermUncheckedCreateWithoutAiRecommendationsInput = {
   classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutGraduationTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
 }
 
 export type AcademicTermCreateOrConnectWithoutAiRecommendationsInput = {
@@ -671,6 +930,9 @@ export type AcademicTermUpdateWithoutAiRecommendationsInput = {
   classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
 }
 
 export type AcademicTermUncheckedUpdateWithoutAiRecommendationsInput = {
@@ -683,6 +945,85 @@ export type AcademicTermUncheckedUpdateWithoutAiRecommendationsInput = {
   classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutGraduationTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermCreateWithoutGraduationClustersInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutTermInput
+  studentsGraduated?: Prisma.StudentCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermUncheckedCreateWithoutGraduationClustersInput = {
+  id: string
+  schoolYear: string
+  semester: string
+  isActive?: boolean
+  startDate?: Date | string | null
+  endDate?: Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutTermInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutTermInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutTermInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutTermInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutTermInput
+  studentsGraduated?: Prisma.StudentUncheckedCreateNestedManyWithoutGraduationTermInput
+}
+
+export type AcademicTermCreateOrConnectWithoutGraduationClustersInput = {
+  where: Prisma.AcademicTermWhereUniqueInput
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedCreateWithoutGraduationClustersInput>
+}
+
+export type AcademicTermUpsertWithoutGraduationClustersInput = {
+  update: Prisma.XOR<Prisma.AcademicTermUpdateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedUpdateWithoutGraduationClustersInput>
+  create: Prisma.XOR<Prisma.AcademicTermCreateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedCreateWithoutGraduationClustersInput>
+  where?: Prisma.AcademicTermWhereInput
+}
+
+export type AcademicTermUpdateToOneWithWhereWithoutGraduationClustersInput = {
+  where?: Prisma.AcademicTermWhereInput
+  data: Prisma.XOR<Prisma.AcademicTermUpdateWithoutGraduationClustersInput, Prisma.AcademicTermUncheckedUpdateWithoutGraduationClustersInput>
+}
+
+export type AcademicTermUpdateWithoutGraduationClustersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutTermNestedInput
+  studentsGraduated?: Prisma.StudentUpdateManyWithoutGraduationTermNestedInput
+}
+
+export type AcademicTermUncheckedUpdateWithoutGraduationClustersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  schoolYear?: Prisma.StringFieldUpdateOperationsInput | string
+  semester?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  startDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  endDate?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  classSections?: Prisma.ClassSectionUncheckedUpdateManyWithoutTermNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutTermNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutTermNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutTermNestedInput
+  studentsGraduated?: Prisma.StudentUncheckedUpdateManyWithoutGraduationTermNestedInput
 }
 
 
@@ -694,14 +1035,20 @@ export type AcademicTermCountOutputType = {
   classSections: number
   formSubmissions: number
   ploAttainments: number
+  peoAttainments: number
   aiRecommendations: number
+  graduationClusters: number
+  studentsGraduated: number
 }
 
 export type AcademicTermCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   classSections?: boolean | AcademicTermCountOutputTypeCountClassSectionsArgs
   formSubmissions?: boolean | AcademicTermCountOutputTypeCountFormSubmissionsArgs
   ploAttainments?: boolean | AcademicTermCountOutputTypeCountPloAttainmentsArgs
+  peoAttainments?: boolean | AcademicTermCountOutputTypeCountPeoAttainmentsArgs
   aiRecommendations?: boolean | AcademicTermCountOutputTypeCountAiRecommendationsArgs
+  graduationClusters?: boolean | AcademicTermCountOutputTypeCountGraduationClustersArgs
+  studentsGraduated?: boolean | AcademicTermCountOutputTypeCountStudentsGraduatedArgs
 }
 
 /**
@@ -738,8 +1085,29 @@ export type AcademicTermCountOutputTypeCountPloAttainmentsArgs<ExtArgs extends r
 /**
  * AcademicTermCountOutputType without action
  */
+export type AcademicTermCountOutputTypeCountPeoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PeoAttainmentWhereInput
+}
+
+/**
+ * AcademicTermCountOutputType without action
+ */
 export type AcademicTermCountOutputTypeCountAiRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.AiRecommendationWhereInput
+}
+
+/**
+ * AcademicTermCountOutputType without action
+ */
+export type AcademicTermCountOutputTypeCountGraduationClustersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GraduationClusterWhereInput
+}
+
+/**
+ * AcademicTermCountOutputType without action
+ */
+export type AcademicTermCountOutputTypeCountStudentsGraduatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.StudentWhereInput
 }
 
 
@@ -753,7 +1121,10 @@ export type AcademicTermSelect<ExtArgs extends runtime.Types.Extensions.Internal
   classSections?: boolean | Prisma.AcademicTerm$classSectionsArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.AcademicTerm$formSubmissionsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.AcademicTerm$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.AcademicTerm$peoAttainmentsArgs<ExtArgs>
   aiRecommendations?: boolean | Prisma.AcademicTerm$aiRecommendationsArgs<ExtArgs>
+  graduationClusters?: boolean | Prisma.AcademicTerm$graduationClustersArgs<ExtArgs>
+  studentsGraduated?: boolean | Prisma.AcademicTerm$studentsGraduatedArgs<ExtArgs>
   _count?: boolean | Prisma.AcademicTermCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["academicTerm"]>
 
@@ -789,7 +1160,10 @@ export type AcademicTermInclude<ExtArgs extends runtime.Types.Extensions.Interna
   classSections?: boolean | Prisma.AcademicTerm$classSectionsArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.AcademicTerm$formSubmissionsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.AcademicTerm$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.AcademicTerm$peoAttainmentsArgs<ExtArgs>
   aiRecommendations?: boolean | Prisma.AcademicTerm$aiRecommendationsArgs<ExtArgs>
+  graduationClusters?: boolean | Prisma.AcademicTerm$graduationClustersArgs<ExtArgs>
+  studentsGraduated?: boolean | Prisma.AcademicTerm$studentsGraduatedArgs<ExtArgs>
   _count?: boolean | Prisma.AcademicTermCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type AcademicTermIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -801,7 +1175,10 @@ export type $AcademicTermPayload<ExtArgs extends runtime.Types.Extensions.Intern
     classSections: Prisma.$ClassSectionPayload<ExtArgs>[]
     formSubmissions: Prisma.$FormSubmissionPayload<ExtArgs>[]
     ploAttainments: Prisma.$PloAttainmentPayload<ExtArgs>[]
+    peoAttainments: Prisma.$PeoAttainmentPayload<ExtArgs>[]
     aiRecommendations: Prisma.$AiRecommendationPayload<ExtArgs>[]
+    graduationClusters: Prisma.$GraduationClusterPayload<ExtArgs>[]
+    studentsGraduated: Prisma.$StudentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1207,7 +1584,10 @@ export interface Prisma__AcademicTermClient<T, Null = never, ExtArgs extends run
   classSections<T extends Prisma.AcademicTerm$classSectionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$classSectionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ClassSectionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   formSubmissions<T extends Prisma.AcademicTerm$formSubmissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$formSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FormSubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ploAttainments<T extends Prisma.AcademicTerm$ploAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$ploAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  peoAttainments<T extends Prisma.AcademicTerm$peoAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$peoAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRecommendations<T extends Prisma.AcademicTerm$aiRecommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$aiRecommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  graduationClusters<T extends Prisma.AcademicTerm$graduationClustersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$graduationClustersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GraduationClusterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  studentsGraduated<T extends Prisma.AcademicTerm$studentsGraduatedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.AcademicTerm$studentsGraduatedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StudentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1708,6 +2088,30 @@ export type AcademicTerm$ploAttainmentsArgs<ExtArgs extends runtime.Types.Extens
 }
 
 /**
+ * AcademicTerm.peoAttainments
+ */
+export type AcademicTerm$peoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PeoAttainment
+   */
+  select?: Prisma.PeoAttainmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PeoAttainment
+   */
+  omit?: Prisma.PeoAttainmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PeoAttainmentInclude<ExtArgs> | null
+  where?: Prisma.PeoAttainmentWhereInput
+  orderBy?: Prisma.PeoAttainmentOrderByWithRelationInput | Prisma.PeoAttainmentOrderByWithRelationInput[]
+  cursor?: Prisma.PeoAttainmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PeoAttainmentScalarFieldEnum | Prisma.PeoAttainmentScalarFieldEnum[]
+}
+
+/**
  * AcademicTerm.aiRecommendations
  */
 export type AcademicTerm$aiRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1729,6 +2133,54 @@ export type AcademicTerm$aiRecommendationsArgs<ExtArgs extends runtime.Types.Ext
   take?: number
   skip?: number
   distinct?: Prisma.AiRecommendationScalarFieldEnum | Prisma.AiRecommendationScalarFieldEnum[]
+}
+
+/**
+ * AcademicTerm.graduationClusters
+ */
+export type AcademicTerm$graduationClustersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GraduationCluster
+   */
+  select?: Prisma.GraduationClusterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GraduationCluster
+   */
+  omit?: Prisma.GraduationClusterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GraduationClusterInclude<ExtArgs> | null
+  where?: Prisma.GraduationClusterWhereInput
+  orderBy?: Prisma.GraduationClusterOrderByWithRelationInput | Prisma.GraduationClusterOrderByWithRelationInput[]
+  cursor?: Prisma.GraduationClusterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GraduationClusterScalarFieldEnum | Prisma.GraduationClusterScalarFieldEnum[]
+}
+
+/**
+ * AcademicTerm.studentsGraduated
+ */
+export type AcademicTerm$studentsGraduatedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Student
+   */
+  select?: Prisma.StudentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Student
+   */
+  omit?: Prisma.StudentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.StudentInclude<ExtArgs> | null
+  where?: Prisma.StudentWhereInput
+  orderBy?: Prisma.StudentOrderByWithRelationInput | Prisma.StudentOrderByWithRelationInput[]
+  cursor?: Prisma.StudentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.StudentScalarFieldEnum | Prisma.StudentScalarFieldEnum[]
 }
 
 /**

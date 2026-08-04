@@ -77,3 +77,24 @@ export const ExportFormat = {
 } as const
 
 export type ExportFormat = (typeof ExportFormat)[keyof typeof ExportFormat]
+
+
+export const StudentStatus = {
+  active: 'active',
+  irregular: 'irregular',
+  transferee: 'transferee',
+  graduated: 'graduated',
+  transferred_out: 'transferred_out',
+  withdrawn: 'withdrawn'
+} as const
+
+export type StudentStatus = (typeof StudentStatus)[keyof typeof StudentStatus]
+
+
+export const GraduationClusterStatus = {
+  open: 'open',
+  compiling: 'compiling',
+  archived: 'archived'
+} as const
+
+export type GraduationClusterStatus = (typeof GraduationClusterStatus)[keyof typeof GraduationClusterStatus]

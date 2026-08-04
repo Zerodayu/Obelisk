@@ -55,7 +55,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 ### 2.6 Attainment & Computation — `07-attainment.prisma`
 
-`ComputationRun` (`scope`, `formulaVersion` default `70_30_v1`, `directWeight` 0.70, `indirectWeight` 0.30), `CloAttainment` (unique `[classSectionId, cloId, studentId, computationRunId]`, `directScorePct`, `indirectScorePct`, `compositeScorePct`, `isBelowThreshold`), `PloAttainment` (unique `[ploId, programId, termId, computationRunId]`, `attainedPct`, `studentsBelowTargetCount`).
+`ComputationRun` (`scope`, `formulaVersion` default `70_30_v1`, `directWeight` 0.70, `indirectWeight` 0.30), `CloAttainment` (unique `[classSectionId, cloId, studentId, computationRunId]`, `directScorePct`, `indirectScorePct`, `compositeScorePct`, `isBelowThreshold`), `PloAttainment` (unique `[ploId, programId, termId, computationRunId]`, `attainedPct`, `studentsBelowTargetCount`), `PeoAttainment` (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`, `formSubmissionId?`).
 
 ### 2.7 Monitoring — `08-monitoring.prisma`
 
@@ -67,7 +67,18 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 ### 2.9 Enums — `01-enums.prisma`
 
-`UserRole` (user, faculty, program_chair, dean, aqau, vpaa, system_admin), `AssessmentType` (direct, indirect), `SubmissionStatus` (draft, submitted, returned, approved, archived), `ApprovalDecision` (pending, approved, returned), `ApproverRole`, `RecommendationStatus`, `ExportFormat`.
+`UserRole` (user, faculty, program_chair, dean, aqau, vpaa, system_admin), `AssessmentType` (direct, indirect), `SubmissionStatus` (draft, submitted, returned, approved, archived), `ApprovalDecision` (pending, approved, returned), `ApproverRole`, `RecommendationStatus`, `ExportFormat`, `StudentStatus` (active, irregular, transferee, graduated, transferred_out, withdrawn), `GraduationClusterStatus` (open, compiling, archived).
+
+### 2.10 Archive — `10-archive.prisma`
+
+**Graduation-Cluster Archival** — compiles finished cohorts into compact, permanent, **read-only** snapshots to reclaim space while keeping data viewable.
+
+- `GraduationCluster` — a batch of students who finish their relationship with a program in a given `graduationTermId` (`AcademicTerm`): `id`, `programId`, `graduationTermId`, `label` (e.g. "BSIT — AY 2026–2027"), `status` (open → compiling → archived), `stats Json`, `confirmedByUserId?`, `confirmedAt?`, `compiledAt?`, `archivedAt?`, `createdAt`. Unique `[programId, graduationTermId]`, index `[status]`.
+- `GraduationClusterEntry` — the permanent write-once snapshot per student (no `updatedAt`): `id`, `clusterId` (Cascade), `studentId` (Restrict, unique), `anonymizedId`, `studentStatusAtArchive`, `isGraduationEntry` (false for `transferred_out`/`withdrawn`), `graduatedAt?`, `compiledData Json` (per-year CLO/PLO rollups, at-risk counts, CQI refs), `detailArtifactUrl?` (exported full-detail artifact), `purgedRowCounts Json` (audit), `createdAt`. Unique `[clusterId, anonymizedId]`.
+
+**`Student` additions** (`03-academic.prisma`): `studentStatus` (default `active`), `graduationTermId?` → `AcademicTerm` (relation `"StudentGraduationTerm"`, SetNull), `graduationClusterId?` → `GraduationCluster` (relation `"StudentCluster"`, SetNull), `archiveEntry GraduationClusterEntry?`. `Program` gains `graduationClusters`; `AcademicTerm` gains `graduationClusters` (relation `"GraduationClusterTerm"`) + `studentsGraduated`; `user` gains `clustersConfirmed` (relation `"ClusterConfirmer"`).
+
+**Key rules encoded in the model:** cluster membership is keyed by actual `graduationTermId`, never `yearLevel` (protects transferees + irregular students); non-graduating departures get an entry with `isGraduationEntry = false`; entries are permanent (accreditation evidence). Archival pipeline (compile → export artifact → purge granular hot rows → read-only lock) is **pending implementation** — see §7 `archival-service`. **Sequenced after PEO attainment capture** (biennial alumni/employer surveys from `alumni_tracer`/`employer_satisfaction_survey`): a cluster must not be compiled until its PEO evidence exists, so the snapshot includes it.
 
 ## 3. Roles & Authorization Matrix
 
@@ -77,11 +88,13 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | `faculty` | own `ClassSection` + own courses | Enter per-student raw scores (`clo_raw_data`), author CAR, fill direct instruments |
 | `program_chair` | one `Program` | Set targets, publish calendar, approve faculty records, gap analysis, CQI plans |
 | `dean` | `department` | Approve budgets/plans, endorse APAR |
-| `aqau` | institution-wide QA | Receive/review filings, cohort tracking oversight |
+| `aqau` | institution-wide QA | Receive/review filings, cohort tracking oversight, **confirm graduation-cluster compile** |
 | `vpaa` | institution-wide | Approve CAPA/budget, institutional decisions |
-| `system_admin` | everything | Admin/roles |
+| `system_admin` | everything | Admin/roles, **confirm graduation-cluster compile** |
 
 **Approval chain (target):** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. Canonical descent: `faculty → program_chair → dean → aqau → vpaa` (exact chain and who prepares/receives each form is form-specific; see §5 catalog).
+
+**Cluster confirm:** a `GraduationCluster` is confirmed for compile by `aqau` or `system_admin` (no registrar role exists yet). Confirmation flips the cluster `open → compiling → archived` and locks its entries read-only.
 
 ## 4. API Endpoints
 
@@ -186,6 +199,10 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 - **`cqi-service`** — stateful `cqi_action_plan` entries; enforces CLOSED only when 5 CTL conditions met; feeds gap/systemic/CAPA.
 - **`submission-service`** — form lifecycle (`SubmissionStatus`), `ApprovalStep` routing by role chain, APAR attach-gate, audit logging.
 - **`dashboard/rollup-service`** — APAR KPI/dashboard and institutional completion-rate computations.
+- **`archival-service`** *(schema complete, implementation pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment is captured** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
+  1. **Auto-create** at end of AY (June 30 / July 15 cycle): per program, find students whose `graduationTermId` = the closing term (graduates + `transferred_out`/`withdrawn`) → create `GraduationCluster(status=open)` listing candidates; nothing locked.
+  2. **Confirm to compile** (`aqau`/`system_admin`): blocked until `peoAttainmentCapturedAt` is set; set `compiling`; per student in a transaction — (a) compile snapshot from lifetime `CloAttainment`/`PloAttainment`/`AtRiskFlag`/`FormSubmission` plus **PEO attainment** (`PeoAttainment` → entry `peoAttainment` column) into `compiledData`; (b) export full granular detail to a `detailArtifactUrl` (configurable storage); (c) purge granular hot rows (`StudentScore`, per-student `CloAttainment`, `AtRiskFlag`, detached `FormSubmission.formData`) while keeping `PloAttainment` + `class_section`/`enrollment`; (d) write `GraduationClusterEntry` + `AuditLog`.
+  3. **Lock read-only**: set cluster `archived`. Writes to `GraduationClusterEntry` are rejected — service guard (GET-only endpoints) as primary, optional Postgres trigger as defense-in-depth. Archived entries are permanent and viewable via `GET` only.
 
 ## 8. External Services
 
@@ -199,3 +216,4 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 - Stateful CQI/logical status fields beyond the clean single-table forms (may warrant dedicated CQI/CTL tables rather than `FormSubmission.formData` JSON).
 - Survey long-guide vs. row-normalized tabulations (JSON now, consider normalized later).
 - Portfolio/capstone per-criterion rubric rows — JSON within `FormSubmission` vs. dedicated tables.
+- **Archival (schema done, pipeline pending):** implementation follows **after PEO attainment capture** (biennial alumni/employer surveys) — snapshots must include PEO evidence before granular purge. `PeoAttainment` rows (biennial, per `[peoId, termId]`) are the capture records; cluster compile is gated by `GraduationCluster.peoAttainmentCapturedAt`. Open items: object-storage provider for detail artifacts (`ARCHIVE_STORAGE_URL`; S3/MinIO/local in dev); how `graduated`/`graduationTermId` get set (registrar action for now — manual flag, external SIS sync later); DB-level write-blocking trigger as optional hardening; scope of granular purge (keep `PloAttainment`/`class_section`/`enrollment`).

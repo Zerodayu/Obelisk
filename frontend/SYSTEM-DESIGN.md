@@ -30,6 +30,9 @@ Supporting: `app/layout.tsx` (theme provider + fonts), `components/app-sidebar.t
     - `forms/attainment/...` (`clo-attainment-summary`, `plo-attainment-summary`, `cohort-tracking`)
     - `forms/cqi/...` (`plo-gap-analysis`, `cqi-action-plan`, `closing-the-loop`)
     - `forms/plan/...`, `forms/do-check/...`, `forms/institutional/...` (remaining catalog)
+- `archives` — read-only **graduation-cluster archives** (target):
+  - `archives/` — cluster list (program, batch, status, student count, archivedAt), role-gated (`aqau`/`vpaa`/`dean`/`system_admin`).
+  - `archives/[clusterId]` — read-only per-student compiled snapshots (`GraduationClusterEntry`), with drill-down into the exported detail artifact. No edit/delete affordances anywhere on archived data.
 - `app/faculty` — evolves into the per-student raw-data entry + import screen.
 
 Route naming uses the stable snake_case codes (see `../backend/SYSTEM-DESIGN.md` §5). The manual's `F##` numbers are provisional — do not use them in URLs or UI.
@@ -113,9 +116,11 @@ Chart/table data comes from backend rollup endpoints; `app/dashboard/data.json` 
 5. CQI/ACT screens: `plo-gap-analysis` → `cqi-action-plan` → `closing-the-loop`.
 6. PLAN-phase setup forms (`curriculum-map`, `assessment-calendar`, `target-setting-matrix`, `assessment-budget`).
 7. Remaining DO/CHECK + periodic/institutional forms (see backend catalog; lowest MVP urgency).
+8. **Archives** (`archives/` viewer) — implemented alongside the backend `archival-service`, **after PEO attainment is captured** (biennial alumni/employer surveys). Schema is already modeled (`GraduationCluster`/`GraduationClusterEntry`, backend §2.10).
 
 ## 7. Open Questions
 
 - Shared Zod schemas between frontend/backend (monorepo package) vs. duplicated — currently duplicated and must be kept in sync.
 - PDF/export rendering of completed forms (`ReportExport`) — decide client-side print sheet vs. backend-rendered artifact.
 - Async upload UX for large class-record files (progress, retry, error states) — extend `motion/file-upload`.
+- Archive detail-artifact streaming (object-storage URL) vs. backend-proxied download for the `archives/[clusterId]` viewer.

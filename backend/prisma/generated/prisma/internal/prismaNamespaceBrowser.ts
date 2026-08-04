@@ -75,10 +75,13 @@ export const ModelName = {
   ComputationRun: 'ComputationRun',
   CloAttainment: 'CloAttainment',
   PloAttainment: 'PloAttainment',
+  PeoAttainment: 'PeoAttainment',
   AuditLog: 'AuditLog',
   AtRiskFlag: 'AtRiskFlag',
   AiRecommendation: 'AiRecommendation',
-  ReportExport: 'ReportExport'
+  ReportExport: 'ReportExport',
+  GraduationCluster: 'GraduationCluster',
+  GraduationClusterEntry: 'GraduationClusterEntry'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -225,7 +228,10 @@ export const StudentScalarFieldEnum = {
   yearLevel: 'yearLevel',
   firstName: 'firstName',
   lastName: 'lastName',
-  anonymizedId: 'anonymizedId'
+  anonymizedId: 'anonymizedId',
+  studentStatus: 'studentStatus',
+  graduationTermId: 'graduationTermId',
+  graduationClusterId: 'graduationClusterId'
 } as const
 
 export type StudentScalarFieldEnum = (typeof StudentScalarFieldEnum)[keyof typeof StudentScalarFieldEnum]
@@ -400,6 +406,19 @@ export const PloAttainmentScalarFieldEnum = {
 export type PloAttainmentScalarFieldEnum = (typeof PloAttainmentScalarFieldEnum)[keyof typeof PloAttainmentScalarFieldEnum]
 
 
+export const PeoAttainmentScalarFieldEnum = {
+  id: 'id',
+  peoId: 'peoId',
+  programId: 'programId',
+  termId: 'termId',
+  attainedPct: 'attainedPct',
+  evidenceJson: 'evidenceJson',
+  formSubmissionId: 'formSubmissionId'
+} as const
+
+export type PeoAttainmentScalarFieldEnum = (typeof PeoAttainmentScalarFieldEnum)[keyof typeof PeoAttainmentScalarFieldEnum]
+
+
 export const AuditLogScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -451,6 +470,42 @@ export const ReportExportScalarFieldEnum = {
 } as const
 
 export type ReportExportScalarFieldEnum = (typeof ReportExportScalarFieldEnum)[keyof typeof ReportExportScalarFieldEnum]
+
+
+export const GraduationClusterScalarFieldEnum = {
+  id: 'id',
+  programId: 'programId',
+  graduationTermId: 'graduationTermId',
+  label: 'label',
+  status: 'status',
+  stats: 'stats',
+  confirmedByUserId: 'confirmedByUserId',
+  peoAttainmentCapturedAt: 'peoAttainmentCapturedAt',
+  confirmedAt: 'confirmedAt',
+  compiledAt: 'compiledAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type GraduationClusterScalarFieldEnum = (typeof GraduationClusterScalarFieldEnum)[keyof typeof GraduationClusterScalarFieldEnum]
+
+
+export const GraduationClusterEntryScalarFieldEnum = {
+  id: 'id',
+  clusterId: 'clusterId',
+  studentId: 'studentId',
+  anonymizedId: 'anonymizedId',
+  studentStatusAtArchive: 'studentStatusAtArchive',
+  isGraduationEntry: 'isGraduationEntry',
+  graduatedAt: 'graduatedAt',
+  compiledData: 'compiledData',
+  peoAttainment: 'peoAttainment',
+  detailArtifactUrl: 'detailArtifactUrl',
+  purgedRowCounts: 'purgedRowCounts',
+  createdAt: 'createdAt'
+} as const
+
+export type GraduationClusterEntryScalarFieldEnum = (typeof GraduationClusterEntryScalarFieldEnum)[keyof typeof GraduationClusterEntryScalarFieldEnum]
 
 
 export const SortOrder = {

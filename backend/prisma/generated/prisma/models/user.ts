@@ -251,6 +251,7 @@ export type userWhereInput = {
   auditLogs?: Prisma.AuditLogListRelationFilter
   aiRecommendationsReviewed?: Prisma.AiRecommendationListRelationFilter
   reportExports?: Prisma.ReportExportListRelationFilter
+  clustersConfirmed?: Prisma.GraduationClusterListRelationFilter
 }
 
 export type userOrderByWithRelationInput = {
@@ -279,6 +280,7 @@ export type userOrderByWithRelationInput = {
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationOrderByRelationAggregateInput
   reportExports?: Prisma.ReportExportOrderByRelationAggregateInput
+  clustersConfirmed?: Prisma.GraduationClusterOrderByRelationAggregateInput
 }
 
 export type userWhereUniqueInput = Prisma.AtLeast<{
@@ -310,6 +312,7 @@ export type userWhereUniqueInput = Prisma.AtLeast<{
   auditLogs?: Prisma.AuditLogListRelationFilter
   aiRecommendationsReviewed?: Prisma.AiRecommendationListRelationFilter
   reportExports?: Prisma.ReportExportListRelationFilter
+  clustersConfirmed?: Prisma.GraduationClusterListRelationFilter
 }, "id" | "email" | "employeeId">
 
 export type userOrderByWithAggregationInput = {
@@ -372,6 +375,7 @@ export type userCreateInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateInput = {
@@ -398,6 +402,7 @@ export type userUncheckedCreateInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUpdateInput = {
@@ -424,6 +429,7 @@ export type userUpdateInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateInput = {
@@ -450,6 +456,7 @@ export type userUncheckedUpdateInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateManyInput = {
@@ -836,6 +843,22 @@ export type userUpdateOneWithoutReportExportsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.userUpdateToOneWithWhereWithoutReportExportsInput, Prisma.userUpdateWithoutReportExportsInput>, Prisma.userUncheckedUpdateWithoutReportExportsInput>
 }
 
+export type userCreateNestedOneWithoutClustersConfirmedInput = {
+  create?: Prisma.XOR<Prisma.userCreateWithoutClustersConfirmedInput, Prisma.userUncheckedCreateWithoutClustersConfirmedInput>
+  connectOrCreate?: Prisma.userCreateOrConnectWithoutClustersConfirmedInput
+  connect?: Prisma.userWhereUniqueInput
+}
+
+export type userUpdateOneWithoutClustersConfirmedNestedInput = {
+  create?: Prisma.XOR<Prisma.userCreateWithoutClustersConfirmedInput, Prisma.userUncheckedCreateWithoutClustersConfirmedInput>
+  connectOrCreate?: Prisma.userCreateOrConnectWithoutClustersConfirmedInput
+  upsert?: Prisma.userUpsertWithoutClustersConfirmedInput
+  disconnect?: Prisma.userWhereInput | boolean
+  delete?: Prisma.userWhereInput | boolean
+  connect?: Prisma.userWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.userUpdateToOneWithWhereWithoutClustersConfirmedInput, Prisma.userUpdateWithoutClustersConfirmedInput>, Prisma.userUncheckedUpdateWithoutClustersConfirmedInput>
+}
+
 export type userCreateWithoutSessionsInput = {
   id?: string
   name: string
@@ -859,6 +882,7 @@ export type userCreateWithoutSessionsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutSessionsInput = {
@@ -884,6 +908,7 @@ export type userUncheckedCreateWithoutSessionsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutSessionsInput = {
@@ -925,6 +950,7 @@ export type userUpdateWithoutSessionsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutSessionsInput = {
@@ -950,6 +976,7 @@ export type userUncheckedUpdateWithoutSessionsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutAccountsInput = {
@@ -975,6 +1002,7 @@ export type userCreateWithoutAccountsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutAccountsInput = {
@@ -1000,6 +1028,7 @@ export type userUncheckedCreateWithoutAccountsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutAccountsInput = {
@@ -1041,6 +1070,7 @@ export type userUpdateWithoutAccountsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutAccountsInput = {
@@ -1066,6 +1096,7 @@ export type userUncheckedUpdateWithoutAccountsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutDepartmentsAsDeanInput = {
@@ -1091,6 +1122,7 @@ export type userCreateWithoutDepartmentsAsDeanInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutDepartmentsAsDeanInput = {
@@ -1116,6 +1148,7 @@ export type userUncheckedCreateWithoutDepartmentsAsDeanInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutDepartmentsAsDeanInput = {
@@ -1146,6 +1179,7 @@ export type userCreateWithoutDepartmentInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutDepartmentInput = {
@@ -1171,6 +1205,7 @@ export type userUncheckedCreateWithoutDepartmentInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutDepartmentInput = {
@@ -1217,6 +1252,7 @@ export type userUpdateWithoutDepartmentsAsDeanInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutDepartmentsAsDeanInput = {
@@ -1242,6 +1278,7 @@ export type userUncheckedUpdateWithoutDepartmentsAsDeanInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUpsertWithWhereUniqueWithoutDepartmentInput = {
@@ -1301,6 +1338,7 @@ export type userCreateWithoutProgramsAsChairInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutProgramsAsChairInput = {
@@ -1326,6 +1364,7 @@ export type userUncheckedCreateWithoutProgramsAsChairInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutProgramsAsChairInput = {
@@ -1356,6 +1395,7 @@ export type userCreateWithoutProgramInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutProgramInput = {
@@ -1381,6 +1421,7 @@ export type userUncheckedCreateWithoutProgramInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutProgramInput = {
@@ -1427,6 +1468,7 @@ export type userUpdateWithoutProgramsAsChairInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutProgramsAsChairInput = {
@@ -1452,6 +1494,7 @@ export type userUncheckedUpdateWithoutProgramsAsChairInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUpsertWithWhereUniqueWithoutProgramInput = {
@@ -1493,6 +1536,7 @@ export type userCreateWithoutClassSectionsAsFacultyInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutClassSectionsAsFacultyInput = {
@@ -1518,6 +1562,7 @@ export type userUncheckedCreateWithoutClassSectionsAsFacultyInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutClassSectionsAsFacultyInput = {
@@ -1559,6 +1604,7 @@ export type userUpdateWithoutClassSectionsAsFacultyInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutClassSectionsAsFacultyInput = {
@@ -1584,6 +1630,7 @@ export type userUncheckedUpdateWithoutClassSectionsAsFacultyInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutFormSubmissionsInput = {
@@ -1609,6 +1656,7 @@ export type userCreateWithoutFormSubmissionsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutFormSubmissionsInput = {
@@ -1634,6 +1682,7 @@ export type userUncheckedCreateWithoutFormSubmissionsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutFormSubmissionsInput = {
@@ -1675,6 +1724,7 @@ export type userUpdateWithoutFormSubmissionsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutFormSubmissionsInput = {
@@ -1700,6 +1750,7 @@ export type userUncheckedUpdateWithoutFormSubmissionsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutApprovalStepsInput = {
@@ -1725,6 +1776,7 @@ export type userCreateWithoutApprovalStepsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutApprovalStepsInput = {
@@ -1750,6 +1802,7 @@ export type userUncheckedCreateWithoutApprovalStepsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutApprovalStepsInput = {
@@ -1791,6 +1844,7 @@ export type userUpdateWithoutApprovalStepsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutApprovalStepsInput = {
@@ -1816,6 +1870,7 @@ export type userUncheckedUpdateWithoutApprovalStepsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutComputationRunsInput = {
@@ -1841,6 +1896,7 @@ export type userCreateWithoutComputationRunsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutComputationRunsInput = {
@@ -1866,6 +1922,7 @@ export type userUncheckedCreateWithoutComputationRunsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutComputationRunsInput = {
@@ -1907,6 +1964,7 @@ export type userUpdateWithoutComputationRunsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutComputationRunsInput = {
@@ -1932,6 +1990,7 @@ export type userUncheckedUpdateWithoutComputationRunsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutAuditLogsInput = {
@@ -1957,6 +2016,7 @@ export type userCreateWithoutAuditLogsInput = {
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutAuditLogsInput = {
@@ -1982,6 +2042,7 @@ export type userUncheckedCreateWithoutAuditLogsInput = {
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutAuditLogsInput = {
@@ -2023,6 +2084,7 @@ export type userUpdateWithoutAuditLogsInput = {
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutAuditLogsInput = {
@@ -2048,6 +2110,7 @@ export type userUncheckedUpdateWithoutAuditLogsInput = {
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutAiRecommendationsReviewedInput = {
@@ -2073,6 +2136,7 @@ export type userCreateWithoutAiRecommendationsReviewedInput = {
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutAiRecommendationsReviewedInput = {
@@ -2098,6 +2162,7 @@ export type userUncheckedCreateWithoutAiRecommendationsReviewedInput = {
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutAiRecommendationsReviewedInput = {
@@ -2139,6 +2204,7 @@ export type userUpdateWithoutAiRecommendationsReviewedInput = {
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutAiRecommendationsReviewedInput = {
@@ -2164,6 +2230,7 @@ export type userUncheckedUpdateWithoutAiRecommendationsReviewedInput = {
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userCreateWithoutReportExportsInput = {
@@ -2189,6 +2256,7 @@ export type userCreateWithoutReportExportsInput = {
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userUncheckedCreateWithoutReportExportsInput = {
@@ -2214,6 +2282,7 @@ export type userUncheckedCreateWithoutReportExportsInput = {
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
 }
 
 export type userCreateOrConnectWithoutReportExportsInput = {
@@ -2255,6 +2324,7 @@ export type userUpdateWithoutReportExportsInput = {
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutReportExportsInput = {
@@ -2280,6 +2350,127 @@ export type userUncheckedUpdateWithoutReportExportsInput = {
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
+}
+
+export type userCreateWithoutClustersConfirmedInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  employeeId?: string | null
+  isActive?: boolean
+  program?: Prisma.ProgramCreateNestedOneWithoutUsersInput
+  department?: Prisma.DepartmentCreateNestedOneWithoutUsersInput
+  sessions?: Prisma.sessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.accountCreateNestedManyWithoutUserInput
+  departmentsAsDean?: Prisma.DepartmentCreateNestedManyWithoutDeanInput
+  programsAsChair?: Prisma.ProgramCreateNestedManyWithoutProgramChairInput
+  classSectionsAsFaculty?: Prisma.ClassSectionCreateNestedManyWithoutFacultyInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
+  computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+}
+
+export type userUncheckedCreateWithoutClustersConfirmedInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  employeeId?: string | null
+  programId?: string | null
+  departmentId?: string | null
+  isActive?: boolean
+  sessions?: Prisma.sessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.accountUncheckedCreateNestedManyWithoutUserInput
+  departmentsAsDean?: Prisma.DepartmentUncheckedCreateNestedManyWithoutDeanInput
+  programsAsChair?: Prisma.ProgramUncheckedCreateNestedManyWithoutProgramChairInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutFacultyInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
+  computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+}
+
+export type userCreateOrConnectWithoutClustersConfirmedInput = {
+  where: Prisma.userWhereUniqueInput
+  create: Prisma.XOR<Prisma.userCreateWithoutClustersConfirmedInput, Prisma.userUncheckedCreateWithoutClustersConfirmedInput>
+}
+
+export type userUpsertWithoutClustersConfirmedInput = {
+  update: Prisma.XOR<Prisma.userUpdateWithoutClustersConfirmedInput, Prisma.userUncheckedUpdateWithoutClustersConfirmedInput>
+  create: Prisma.XOR<Prisma.userCreateWithoutClustersConfirmedInput, Prisma.userUncheckedCreateWithoutClustersConfirmedInput>
+  where?: Prisma.userWhereInput
+}
+
+export type userUpdateToOneWithWhereWithoutClustersConfirmedInput = {
+  where?: Prisma.userWhereInput
+  data: Prisma.XOR<Prisma.userUpdateWithoutClustersConfirmedInput, Prisma.userUncheckedUpdateWithoutClustersConfirmedInput>
+}
+
+export type userUpdateWithoutClustersConfirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  employeeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  program?: Prisma.ProgramUpdateOneWithoutUsersNestedInput
+  department?: Prisma.DepartmentUpdateOneWithoutUsersNestedInput
+  sessions?: Prisma.sessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.accountUpdateManyWithoutUserNestedInput
+  departmentsAsDean?: Prisma.DepartmentUpdateManyWithoutDeanNestedInput
+  programsAsChair?: Prisma.ProgramUpdateManyWithoutProgramChairNestedInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUpdateManyWithoutFacultyNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
+  computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+}
+
+export type userUncheckedUpdateWithoutClustersConfirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  employeeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sessions?: Prisma.sessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.accountUncheckedUpdateManyWithoutUserNestedInput
+  departmentsAsDean?: Prisma.DepartmentUncheckedUpdateManyWithoutDeanNestedInput
+  programsAsChair?: Prisma.ProgramUncheckedUpdateManyWithoutProgramChairNestedInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUncheckedUpdateManyWithoutFacultyNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
+  computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
 }
 
 export type userCreateManyDepartmentInput = {
@@ -2319,6 +2510,7 @@ export type userUpdateWithoutDepartmentInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutDepartmentInput = {
@@ -2344,6 +2536,7 @@ export type userUncheckedUpdateWithoutDepartmentInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateManyWithoutDepartmentInput = {
@@ -2397,6 +2590,7 @@ export type userUpdateWithoutProgramInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateWithoutProgramInput = {
@@ -2422,6 +2616,7 @@ export type userUncheckedUpdateWithoutProgramInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
 }
 
 export type userUncheckedUpdateManyWithoutProgramInput = {
@@ -2455,6 +2650,7 @@ export type UserCountOutputType = {
   auditLogs: number
   aiRecommendationsReviewed: number
   reportExports: number
+  clustersConfirmed: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2469,6 +2665,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
   aiRecommendationsReviewed?: boolean | UserCountOutputTypeCountAiRecommendationsReviewedArgs
   reportExports?: boolean | UserCountOutputTypeCountReportExportsArgs
+  clustersConfirmed?: boolean | UserCountOutputTypeCountClustersConfirmedArgs
 }
 
 /**
@@ -2558,6 +2755,13 @@ export type UserCountOutputTypeCountReportExportsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.ReportExportWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountClustersConfirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GraduationClusterWhereInput
+}
+
 
 export type userSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -2585,6 +2789,7 @@ export type userSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   auditLogs?: boolean | Prisma.user$auditLogsArgs<ExtArgs>
   aiRecommendationsReviewed?: boolean | Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>
   reportExports?: boolean | Prisma.user$reportExportsArgs<ExtArgs>
+  clustersConfirmed?: boolean | Prisma.user$clustersConfirmedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -2652,6 +2857,7 @@ export type userInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   auditLogs?: boolean | Prisma.user$auditLogsArgs<ExtArgs>
   aiRecommendationsReviewed?: boolean | Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>
   reportExports?: boolean | Prisma.user$reportExportsArgs<ExtArgs>
+  clustersConfirmed?: boolean | Prisma.user$clustersConfirmedArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type userIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2679,6 +2885,7 @@ export type $userPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     aiRecommendationsReviewed: Prisma.$AiRecommendationPayload<ExtArgs>[]
     reportExports: Prisma.$ReportExportPayload<ExtArgs>[]
+    clustersConfirmed: Prisma.$GraduationClusterPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3100,6 +3307,7 @@ export interface Prisma__userClient<T, Null = never, ExtArgs extends runtime.Typ
   auditLogs<T extends Prisma.user$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRecommendationsReviewed<T extends Prisma.user$aiRecommendationsReviewedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reportExports<T extends Prisma.user$reportExportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$reportExportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReportExportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  clustersConfirmed<T extends Prisma.user$clustersConfirmedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$clustersConfirmedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GraduationClusterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3841,6 +4049,30 @@ export type user$reportExportsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.ReportExportScalarFieldEnum | Prisma.ReportExportScalarFieldEnum[]
+}
+
+/**
+ * user.clustersConfirmed
+ */
+export type user$clustersConfirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GraduationCluster
+   */
+  select?: Prisma.GraduationClusterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GraduationCluster
+   */
+  omit?: Prisma.GraduationClusterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GraduationClusterInclude<ExtArgs> | null
+  where?: Prisma.GraduationClusterWhereInput
+  orderBy?: Prisma.GraduationClusterOrderByWithRelationInput | Prisma.GraduationClusterOrderByWithRelationInput[]
+  cursor?: Prisma.GraduationClusterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GraduationClusterScalarFieldEnum | Prisma.GraduationClusterScalarFieldEnum[]
 }
 
 /**

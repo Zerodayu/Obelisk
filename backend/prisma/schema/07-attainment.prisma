@@ -57,3 +57,21 @@ model PloAttainment {
   @@unique([ploId, programId, termId, computationRunId])
   @@map("plo_attainment")
 }
+
+model PeoAttainment {
+  id               String  @id
+  peoId            String  @map("peo_id")
+  programId        String  @map("program_id")
+  termId           String  @map("term_id")
+  attainedPct      Decimal @map("attained_pct") @db.Decimal(5, 2)
+  evidenceJson     Json    @default("{}") @map("evidence_json")
+  formSubmissionId String? @map("form_submission_id")
+
+  peo            Peo             @relation(fields: [peoId], references: [id], onDelete: Cascade)
+  program        Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  term           AcademicTerm    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  formSubmission FormSubmission? @relation(fields: [formSubmissionId], references: [id], onDelete: SetNull)
+
+  @@unique([peoId, termId])
+  @@map("peo_attainment")
+}

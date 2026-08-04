@@ -1,0 +1,64 @@
+// Graduation-Cluster Archival (compiled, read-only)
+//
+// A graduation cluster groups every student who finishes their relationship
+// with a program in a given term (graduates, plus transferees-out / withdrawn
+// who must be preserved but never join a graduation cluster).
+//
+// Membership is keyed by a student's ACTUAL graduation/departure term
+// (Student.graduationTermId) -- never by nominal yearLevel. This keeps
+// transferees (data spans programs/terms) and irregular students (graduate off
+// the standard Y1-Y4 path) safe.
+//
+// When a cluster is confirmed and compiled, each student's granular data is
+// consolidated into a write-once GraduationClusterEntry (the read-only
+// snapshot), its full detail is exported to an offline detail artifact, and the
+// granular hot rows are purged to reclaim space. Entries are permanent
+// (accreditation evidence) and intentionally have no updatedAt.
+
+model GraduationCluster {
+  id                      String                  @id
+  programId               String                  @map("program_id")
+  graduationTermId        String                  @map("graduation_term_id")
+  label                   String
+  status                  GraduationClusterStatus @default(open)
+  stats                   Json                    @default("{}")
+  confirmedByUserId       String?                 @map("confirmed_by_user_id")
+  peoAttainmentCapturedAt DateTime?               @map("peo_attainment_captured_at")
+  confirmedAt             DateTime?               @map("confirmed_at")
+  compiledAt              DateTime?               @map("compiled_at")
+  archivedAt              DateTime?               @map("archived_at")
+  createdAt               DateTime                @default(now()) @map("created_at")
+
+  program        Program                  @relation(fields: [programId], references: [id], onDelete: Cascade)
+  graduationTerm AcademicTerm             @relation("GraduationClusterTerm", fields: [graduationTermId], references: [id], onDelete: Restrict)
+  confirmedBy    user?                    @relation("ClusterConfirmer", fields: [confirmedByUserId], references: [id], onDelete: SetNull)
+  students       Student[]                @relation("StudentCluster")
+  entries        GraduationClusterEntry[]
+
+  @@unique([programId, graduationTermId])
+  @@index([status])
+  @@map("graduation_cluster")
+}
+
+model GraduationClusterEntry {
+  id                     String        @id
+  clusterId              String        @map("cluster_id")
+  studentId              String        @map("student_id")
+  anonymizedId           String        @map("anonymized_id")
+  studentStatusAtArchive StudentStatus @map("student_status_at_archive")
+  isGraduationEntry      Boolean       @default(true) @map("is_graduation_entry")
+  graduatedAt            DateTime?     @map("graduated_at")
+  compiledData           Json          @default("{}") @map("compiled_data")
+  peoAttainment          Json          @default("{}") @map("peo_attainment")
+  detailArtifactUrl      String?       @map("detail_artifact_url")
+  purgedRowCounts        Json          @default("{}") @map("purged_row_counts")
+  createdAt              DateTime      @default(now()) @map("created_at")
+
+  cluster GraduationCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+  student Student           @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId])
+  @@unique([clusterId, anonymizedId])
+  @@index([clusterId])
+  @@map("graduation_cluster_entry")
+}

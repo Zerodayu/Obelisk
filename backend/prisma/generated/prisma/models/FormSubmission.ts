@@ -235,6 +235,7 @@ export type FormSubmissionWhereInput = {
   reportExports?: Prisma.ReportExportListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
 }
 
 export type FormSubmissionOrderByWithRelationInput = {
@@ -258,6 +259,7 @@ export type FormSubmissionOrderByWithRelationInput = {
   reportExports?: Prisma.ReportExportOrderByRelationAggregateInput
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
+  peoAttainments?: Prisma.PeoAttainmentOrderByRelationAggregateInput
 }
 
 export type FormSubmissionWhereUniqueInput = Prisma.AtLeast<{
@@ -284,6 +286,7 @@ export type FormSubmissionWhereUniqueInput = Prisma.AtLeast<{
   reportExports?: Prisma.ReportExportListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
 }, "id">
 
 export type FormSubmissionOrderByWithAggregationInput = {
@@ -336,6 +339,7 @@ export type FormSubmissionCreateInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateInput = {
@@ -354,6 +358,7 @@ export type FormSubmissionUncheckedCreateInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUpdateInput = {
@@ -372,6 +377,7 @@ export type FormSubmissionUpdateInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateInput = {
@@ -390,6 +396,7 @@ export type FormSubmissionUncheckedUpdateInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionCreateManyInput = {
@@ -753,6 +760,22 @@ export type FormSubmissionUpdateOneWithoutPloAttainmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutPloAttainmentsInput, Prisma.FormSubmissionUpdateWithoutPloAttainmentsInput>, Prisma.FormSubmissionUncheckedUpdateWithoutPloAttainmentsInput>
 }
 
+export type FormSubmissionCreateNestedOneWithoutPeoAttainmentsInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutPeoAttainmentsInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+}
+
+export type FormSubmissionUpdateOneWithoutPeoAttainmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutPeoAttainmentsInput
+  upsert?: Prisma.FormSubmissionUpsertWithoutPeoAttainmentsInput
+  disconnect?: Prisma.FormSubmissionWhereInput | boolean
+  delete?: Prisma.FormSubmissionWhereInput | boolean
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutPeoAttainmentsInput, Prisma.FormSubmissionUpdateWithoutPeoAttainmentsInput>, Prisma.FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
 export type FormSubmissionCreateNestedOneWithoutReportExportsInput = {
   create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutReportExportsInput, Prisma.FormSubmissionUncheckedCreateWithoutReportExportsInput>
   connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutReportExportsInput
@@ -784,6 +807,7 @@ export type FormSubmissionCreateWithoutSubmittedByInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutSubmittedByInput = {
@@ -801,6 +825,7 @@ export type FormSubmissionUncheckedCreateWithoutSubmittedByInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutSubmittedByInput = {
@@ -861,6 +886,7 @@ export type FormSubmissionCreateWithoutProgramInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutProgramInput = {
@@ -878,6 +904,7 @@ export type FormSubmissionUncheckedCreateWithoutProgramInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutProgramInput = {
@@ -921,6 +948,7 @@ export type FormSubmissionCreateWithoutTermInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutTermInput = {
@@ -938,6 +966,7 @@ export type FormSubmissionUncheckedCreateWithoutTermInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutTermInput = {
@@ -981,6 +1010,7 @@ export type FormSubmissionCreateWithoutClassSectionInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutClassSectionInput = {
@@ -998,6 +1028,7 @@ export type FormSubmissionUncheckedCreateWithoutClassSectionInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutClassSectionInput = {
@@ -1041,6 +1072,7 @@ export type FormSubmissionCreateWithoutFormTypeInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutFormTypeInput = {
@@ -1058,6 +1090,7 @@ export type FormSubmissionUncheckedCreateWithoutFormTypeInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutFormTypeInput = {
@@ -1101,6 +1134,7 @@ export type FormSubmissionCreateWithoutApprovalStepsInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutApprovalStepsInput = {
@@ -1118,6 +1152,7 @@ export type FormSubmissionUncheckedCreateWithoutApprovalStepsInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutApprovalStepsInput = {
@@ -1151,6 +1186,7 @@ export type FormSubmissionUpdateWithoutApprovalStepsInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutApprovalStepsInput = {
@@ -1168,6 +1204,7 @@ export type FormSubmissionUncheckedUpdateWithoutApprovalStepsInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionCreateWithoutCloAttainmentsInput = {
@@ -1185,6 +1222,7 @@ export type FormSubmissionCreateWithoutCloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutCloAttainmentsInput = {
@@ -1202,6 +1240,7 @@ export type FormSubmissionUncheckedCreateWithoutCloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutCloAttainmentsInput = {
@@ -1235,6 +1274,7 @@ export type FormSubmissionUpdateWithoutCloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutCloAttainmentsInput = {
@@ -1252,6 +1292,7 @@ export type FormSubmissionUncheckedUpdateWithoutCloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionCreateWithoutPloAttainmentsInput = {
@@ -1269,6 +1310,7 @@ export type FormSubmissionCreateWithoutPloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutPloAttainmentsInput = {
@@ -1286,6 +1328,7 @@ export type FormSubmissionUncheckedCreateWithoutPloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutPloAttainmentsInput = {
@@ -1319,6 +1362,7 @@ export type FormSubmissionUpdateWithoutPloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -1336,6 +1380,95 @@ export type FormSubmissionUncheckedUpdateWithoutPloAttainmentsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+}
+
+export type FormSubmissionCreateWithoutPeoAttainmentsInput = {
+  id: string
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  formType: Prisma.FormTypeCreateNestedOneWithoutFormSubmissionsInput
+  classSection?: Prisma.ClassSectionCreateNestedOneWithoutFormSubmissionsInput
+  program?: Prisma.ProgramCreateNestedOneWithoutFormSubmissionsInput
+  term: Prisma.AcademicTermCreateNestedOneWithoutFormSubmissionsInput
+  submittedBy?: Prisma.userCreateNestedOneWithoutFormSubmissionsInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+}
+
+export type FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput = {
+  id: string
+  formTypeId: string
+  classSectionId?: string | null
+  programId?: string | null
+  termId: string
+  submittedByUserId?: string | null
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+}
+
+export type FormSubmissionCreateOrConnectWithoutPeoAttainmentsInput = {
+  where: Prisma.FormSubmissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput>
+}
+
+export type FormSubmissionUpsertWithoutPeoAttainmentsInput = {
+  update: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput>
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput>
+  where?: Prisma.FormSubmissionWhereInput
+}
+
+export type FormSubmissionUpdateToOneWithWhereWithoutPeoAttainmentsInput = {
+  where?: Prisma.FormSubmissionWhereInput
+  data: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutPeoAttainmentsInput, Prisma.FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
+export type FormSubmissionUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  formType?: Prisma.FormTypeUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  classSection?: Prisma.ClassSectionUpdateOneWithoutFormSubmissionsNestedInput
+  program?: Prisma.ProgramUpdateOneWithoutFormSubmissionsNestedInput
+  term?: Prisma.AcademicTermUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  submittedBy?: Prisma.userUpdateOneWithoutFormSubmissionsNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+}
+
+export type FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  formTypeId?: Prisma.StringFieldUpdateOperationsInput | string
+  classSectionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termId?: Prisma.StringFieldUpdateOperationsInput | string
+  submittedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionCreateWithoutReportExportsInput = {
@@ -1353,6 +1486,7 @@ export type FormSubmissionCreateWithoutReportExportsInput = {
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutReportExportsInput = {
@@ -1370,6 +1504,7 @@ export type FormSubmissionUncheckedCreateWithoutReportExportsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutReportExportsInput = {
@@ -1403,6 +1538,7 @@ export type FormSubmissionUpdateWithoutReportExportsInput = {
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutReportExportsInput = {
@@ -1420,6 +1556,7 @@ export type FormSubmissionUncheckedUpdateWithoutReportExportsInput = {
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionCreateManySubmittedByInput = {
@@ -1450,6 +1587,7 @@ export type FormSubmissionUpdateWithoutSubmittedByInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutSubmittedByInput = {
@@ -1467,6 +1605,7 @@ export type FormSubmissionUncheckedUpdateWithoutSubmittedByInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutSubmittedByInput = {
@@ -1510,6 +1649,7 @@ export type FormSubmissionUpdateWithoutProgramInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutProgramInput = {
@@ -1527,6 +1667,7 @@ export type FormSubmissionUncheckedUpdateWithoutProgramInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutProgramInput = {
@@ -1570,6 +1711,7 @@ export type FormSubmissionUpdateWithoutTermInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutTermInput = {
@@ -1587,6 +1729,7 @@ export type FormSubmissionUncheckedUpdateWithoutTermInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutTermInput = {
@@ -1630,6 +1773,7 @@ export type FormSubmissionUpdateWithoutClassSectionInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutClassSectionInput = {
@@ -1647,6 +1791,7 @@ export type FormSubmissionUncheckedUpdateWithoutClassSectionInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutClassSectionInput = {
@@ -1690,6 +1835,7 @@ export type FormSubmissionUpdateWithoutFormTypeInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutFormTypeInput = {
@@ -1707,6 +1853,7 @@ export type FormSubmissionUncheckedUpdateWithoutFormTypeInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutFormTypeInput = {
@@ -1732,6 +1879,7 @@ export type FormSubmissionCountOutputType = {
   reportExports: number
   cloAttainments: number
   ploAttainments: number
+  peoAttainments: number
 }
 
 export type FormSubmissionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1739,6 +1887,7 @@ export type FormSubmissionCountOutputTypeSelect<ExtArgs extends runtime.Types.Ex
   reportExports?: boolean | FormSubmissionCountOutputTypeCountReportExportsArgs
   cloAttainments?: boolean | FormSubmissionCountOutputTypeCountCloAttainmentsArgs
   ploAttainments?: boolean | FormSubmissionCountOutputTypeCountPloAttainmentsArgs
+  peoAttainments?: boolean | FormSubmissionCountOutputTypeCountPeoAttainmentsArgs
 }
 
 /**
@@ -1779,6 +1928,13 @@ export type FormSubmissionCountOutputTypeCountPloAttainmentsArgs<ExtArgs extends
   where?: Prisma.PloAttainmentWhereInput
 }
 
+/**
+ * FormSubmissionCountOutputType without action
+ */
+export type FormSubmissionCountOutputTypeCountPeoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PeoAttainmentWhereInput
+}
+
 
 export type FormSubmissionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1801,6 +1957,7 @@ export type FormSubmissionSelect<ExtArgs extends runtime.Types.Extensions.Intern
   reportExports?: boolean | Prisma.FormSubmission$reportExportsArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>
   _count?: boolean | Prisma.FormSubmissionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["formSubmission"]>
 
@@ -1867,6 +2024,7 @@ export type FormSubmissionInclude<ExtArgs extends runtime.Types.Extensions.Inter
   reportExports?: boolean | Prisma.FormSubmission$reportExportsArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>
   _count?: boolean | Prisma.FormSubmissionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FormSubmissionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1896,6 +2054,7 @@ export type $FormSubmissionPayload<ExtArgs extends runtime.Types.Extensions.Inte
     reportExports: Prisma.$ReportExportPayload<ExtArgs>[]
     cloAttainments: Prisma.$CloAttainmentPayload<ExtArgs>[]
     ploAttainments: Prisma.$PloAttainmentPayload<ExtArgs>[]
+    peoAttainments: Prisma.$PeoAttainmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2312,6 +2471,7 @@ export interface Prisma__FormSubmissionClient<T, Null = never, ExtArgs extends r
   reportExports<T extends Prisma.FormSubmission$reportExportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$reportExportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReportExportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   cloAttainments<T extends Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ploAttainments<T extends Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  peoAttainments<T extends Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2903,6 +3063,30 @@ export type FormSubmission$ploAttainmentsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.PloAttainmentScalarFieldEnum | Prisma.PloAttainmentScalarFieldEnum[]
+}
+
+/**
+ * FormSubmission.peoAttainments
+ */
+export type FormSubmission$peoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PeoAttainment
+   */
+  select?: Prisma.PeoAttainmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PeoAttainment
+   */
+  omit?: Prisma.PeoAttainmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PeoAttainmentInclude<ExtArgs> | null
+  where?: Prisma.PeoAttainmentWhereInput
+  orderBy?: Prisma.PeoAttainmentOrderByWithRelationInput | Prisma.PeoAttainmentOrderByWithRelationInput[]
+  cursor?: Prisma.PeoAttainmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PeoAttainmentScalarFieldEnum | Prisma.PeoAttainmentScalarFieldEnum[]
 }
 
 /**

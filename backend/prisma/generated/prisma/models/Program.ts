@@ -199,7 +199,9 @@ export type ProgramWhereInput = {
   peos?: Prisma.PeoListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
+  graduationClusters?: Prisma.GraduationClusterListRelationFilter
 }
 
 export type ProgramOrderByWithRelationInput = {
@@ -218,7 +220,9 @@ export type ProgramOrderByWithRelationInput = {
   peos?: Prisma.PeoOrderByRelationAggregateInput
   formSubmissions?: Prisma.FormSubmissionOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
+  peoAttainments?: Prisma.PeoAttainmentOrderByRelationAggregateInput
   aiRecommendations?: Prisma.AiRecommendationOrderByRelationAggregateInput
+  graduationClusters?: Prisma.GraduationClusterOrderByRelationAggregateInput
 }
 
 export type ProgramWhereUniqueInput = Prisma.AtLeast<{
@@ -240,7 +244,9 @@ export type ProgramWhereUniqueInput = Prisma.AtLeast<{
   peos?: Prisma.PeoListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
+  graduationClusters?: Prisma.GraduationClusterListRelationFilter
 }, "id" | "code">
 
 export type ProgramOrderByWithAggregationInput = {
@@ -281,7 +287,9 @@ export type ProgramCreateInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateInput = {
@@ -298,7 +306,9 @@ export type ProgramUncheckedCreateInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUpdateInput = {
@@ -315,7 +325,9 @@ export type ProgramUpdateInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateInput = {
@@ -332,7 +344,9 @@ export type ProgramUncheckedUpdateInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateManyInput = {
@@ -593,6 +607,20 @@ export type ProgramUpdateOneRequiredWithoutPloAttainmentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProgramUpdateToOneWithWhereWithoutPloAttainmentsInput, Prisma.ProgramUpdateWithoutPloAttainmentsInput>, Prisma.ProgramUncheckedUpdateWithoutPloAttainmentsInput>
 }
 
+export type ProgramCreateNestedOneWithoutPeoAttainmentsInput = {
+  create?: Prisma.XOR<Prisma.ProgramCreateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.ProgramCreateOrConnectWithoutPeoAttainmentsInput
+  connect?: Prisma.ProgramWhereUniqueInput
+}
+
+export type ProgramUpdateOneRequiredWithoutPeoAttainmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProgramCreateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.ProgramCreateOrConnectWithoutPeoAttainmentsInput
+  upsert?: Prisma.ProgramUpsertWithoutPeoAttainmentsInput
+  connect?: Prisma.ProgramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProgramUpdateToOneWithWhereWithoutPeoAttainmentsInput, Prisma.ProgramUpdateWithoutPeoAttainmentsInput>, Prisma.ProgramUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
 export type ProgramCreateNestedOneWithoutAiRecommendationsInput = {
   create?: Prisma.XOR<Prisma.ProgramCreateWithoutAiRecommendationsInput, Prisma.ProgramUncheckedCreateWithoutAiRecommendationsInput>
   connectOrCreate?: Prisma.ProgramCreateOrConnectWithoutAiRecommendationsInput
@@ -609,6 +637,20 @@ export type ProgramUpdateOneWithoutAiRecommendationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ProgramUpdateToOneWithWhereWithoutAiRecommendationsInput, Prisma.ProgramUpdateWithoutAiRecommendationsInput>, Prisma.ProgramUncheckedUpdateWithoutAiRecommendationsInput>
 }
 
+export type ProgramCreateNestedOneWithoutGraduationClustersInput = {
+  create?: Prisma.XOR<Prisma.ProgramCreateWithoutGraduationClustersInput, Prisma.ProgramUncheckedCreateWithoutGraduationClustersInput>
+  connectOrCreate?: Prisma.ProgramCreateOrConnectWithoutGraduationClustersInput
+  connect?: Prisma.ProgramWhereUniqueInput
+}
+
+export type ProgramUpdateOneRequiredWithoutGraduationClustersNestedInput = {
+  create?: Prisma.XOR<Prisma.ProgramCreateWithoutGraduationClustersInput, Prisma.ProgramUncheckedCreateWithoutGraduationClustersInput>
+  connectOrCreate?: Prisma.ProgramCreateOrConnectWithoutGraduationClustersInput
+  upsert?: Prisma.ProgramUpsertWithoutGraduationClustersInput
+  connect?: Prisma.ProgramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProgramUpdateToOneWithWhereWithoutGraduationClustersInput, Prisma.ProgramUpdateWithoutGraduationClustersInput>, Prisma.ProgramUncheckedUpdateWithoutGraduationClustersInput>
+}
+
 export type ProgramCreateWithoutUsersInput = {
   id: string
   name: string
@@ -622,7 +664,9 @@ export type ProgramCreateWithoutUsersInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutUsersInput = {
@@ -638,7 +682,9 @@ export type ProgramUncheckedCreateWithoutUsersInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutUsersInput = {
@@ -659,7 +705,9 @@ export type ProgramCreateWithoutProgramChairInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutProgramChairInput = {
@@ -675,7 +723,9 @@ export type ProgramUncheckedCreateWithoutProgramChairInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutProgramChairInput = {
@@ -712,7 +762,9 @@ export type ProgramUpdateWithoutUsersInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutUsersInput = {
@@ -728,7 +780,9 @@ export type ProgramUncheckedUpdateWithoutUsersInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUpsertWithWhereUniqueWithoutProgramChairInput = {
@@ -772,7 +826,9 @@ export type ProgramCreateWithoutDepartmentInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutDepartmentInput = {
@@ -788,7 +844,9 @@ export type ProgramUncheckedCreateWithoutDepartmentInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutDepartmentInput = {
@@ -830,7 +888,9 @@ export type ProgramCreateWithoutCoursesInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutCoursesInput = {
@@ -846,7 +906,9 @@ export type ProgramUncheckedCreateWithoutCoursesInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutCoursesInput = {
@@ -878,7 +940,9 @@ export type ProgramUpdateWithoutCoursesInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutCoursesInput = {
@@ -894,7 +958,9 @@ export type ProgramUncheckedUpdateWithoutCoursesInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutStudentsInput = {
@@ -910,7 +976,9 @@ export type ProgramCreateWithoutStudentsInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutStudentsInput = {
@@ -926,7 +994,9 @@ export type ProgramUncheckedCreateWithoutStudentsInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutStudentsInput = {
@@ -958,7 +1028,9 @@ export type ProgramUpdateWithoutStudentsInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutStudentsInput = {
@@ -974,7 +1046,9 @@ export type ProgramUncheckedUpdateWithoutStudentsInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutPlosInput = {
@@ -990,7 +1064,9 @@ export type ProgramCreateWithoutPlosInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutPlosInput = {
@@ -1006,7 +1082,9 @@ export type ProgramUncheckedCreateWithoutPlosInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutPlosInput = {
@@ -1038,7 +1116,9 @@ export type ProgramUpdateWithoutPlosInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutPlosInput = {
@@ -1054,7 +1134,9 @@ export type ProgramUncheckedUpdateWithoutPlosInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutPeosInput = {
@@ -1070,7 +1152,9 @@ export type ProgramCreateWithoutPeosInput = {
   plos?: Prisma.PloCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutPeosInput = {
@@ -1086,7 +1170,9 @@ export type ProgramUncheckedCreateWithoutPeosInput = {
   plos?: Prisma.PloUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutPeosInput = {
@@ -1118,7 +1204,9 @@ export type ProgramUpdateWithoutPeosInput = {
   plos?: Prisma.PloUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutPeosInput = {
@@ -1134,7 +1222,9 @@ export type ProgramUncheckedUpdateWithoutPeosInput = {
   plos?: Prisma.PloUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutFormSubmissionsInput = {
@@ -1150,7 +1240,9 @@ export type ProgramCreateWithoutFormSubmissionsInput = {
   plos?: Prisma.PloCreateNestedManyWithoutProgramInput
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutFormSubmissionsInput = {
@@ -1166,7 +1258,9 @@ export type ProgramUncheckedCreateWithoutFormSubmissionsInput = {
   plos?: Prisma.PloUncheckedCreateNestedManyWithoutProgramInput
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutFormSubmissionsInput = {
@@ -1198,7 +1292,9 @@ export type ProgramUpdateWithoutFormSubmissionsInput = {
   plos?: Prisma.PloUpdateManyWithoutProgramNestedInput
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutFormSubmissionsInput = {
@@ -1214,7 +1310,9 @@ export type ProgramUncheckedUpdateWithoutFormSubmissionsInput = {
   plos?: Prisma.PloUncheckedUpdateManyWithoutProgramNestedInput
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutPloAttainmentsInput = {
@@ -1230,7 +1328,9 @@ export type ProgramCreateWithoutPloAttainmentsInput = {
   plos?: Prisma.PloCreateNestedManyWithoutProgramInput
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutPloAttainmentsInput = {
@@ -1246,7 +1346,9 @@ export type ProgramUncheckedCreateWithoutPloAttainmentsInput = {
   plos?: Prisma.PloUncheckedCreateNestedManyWithoutProgramInput
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutPloAttainmentsInput = {
@@ -1278,7 +1380,9 @@ export type ProgramUpdateWithoutPloAttainmentsInput = {
   plos?: Prisma.PloUpdateManyWithoutProgramNestedInput
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -1294,7 +1398,97 @@ export type ProgramUncheckedUpdateWithoutPloAttainmentsInput = {
   plos?: Prisma.PloUncheckedUpdateManyWithoutProgramNestedInput
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
+}
+
+export type ProgramCreateWithoutPeoAttainmentsInput = {
+  id: string
+  name: string
+  code: string
+  createdAt?: Date | string
+  department: Prisma.DepartmentCreateNestedOneWithoutProgramsInput
+  programChair?: Prisma.userCreateNestedOneWithoutProgramsAsChairInput
+  users?: Prisma.userCreateNestedManyWithoutProgramInput
+  courses?: Prisma.CourseCreateNestedManyWithoutProgramInput
+  students?: Prisma.StudentCreateNestedManyWithoutProgramInput
+  plos?: Prisma.PloCreateNestedManyWithoutProgramInput
+  peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
+}
+
+export type ProgramUncheckedCreateWithoutPeoAttainmentsInput = {
+  id: string
+  departmentId: string
+  name: string
+  code: string
+  programChairId?: string | null
+  createdAt?: Date | string
+  users?: Prisma.userUncheckedCreateNestedManyWithoutProgramInput
+  courses?: Prisma.CourseUncheckedCreateNestedManyWithoutProgramInput
+  students?: Prisma.StudentUncheckedCreateNestedManyWithoutProgramInput
+  plos?: Prisma.PloUncheckedCreateNestedManyWithoutProgramInput
+  peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
+}
+
+export type ProgramCreateOrConnectWithoutPeoAttainmentsInput = {
+  where: Prisma.ProgramWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProgramCreateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedCreateWithoutPeoAttainmentsInput>
+}
+
+export type ProgramUpsertWithoutPeoAttainmentsInput = {
+  update: Prisma.XOR<Prisma.ProgramUpdateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedUpdateWithoutPeoAttainmentsInput>
+  create: Prisma.XOR<Prisma.ProgramCreateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedCreateWithoutPeoAttainmentsInput>
+  where?: Prisma.ProgramWhereInput
+}
+
+export type ProgramUpdateToOneWithWhereWithoutPeoAttainmentsInput = {
+  where?: Prisma.ProgramWhereInput
+  data: Prisma.XOR<Prisma.ProgramUpdateWithoutPeoAttainmentsInput, Prisma.ProgramUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
+export type ProgramUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  department?: Prisma.DepartmentUpdateOneRequiredWithoutProgramsNestedInput
+  programChair?: Prisma.userUpdateOneWithoutProgramsAsChairNestedInput
+  users?: Prisma.userUpdateManyWithoutProgramNestedInput
+  courses?: Prisma.CourseUpdateManyWithoutProgramNestedInput
+  students?: Prisma.StudentUpdateManyWithoutProgramNestedInput
+  plos?: Prisma.PloUpdateManyWithoutProgramNestedInput
+  peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
+}
+
+export type ProgramUncheckedUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  departmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  programChairId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.userUncheckedUpdateManyWithoutProgramNestedInput
+  courses?: Prisma.CourseUncheckedUpdateManyWithoutProgramNestedInput
+  students?: Prisma.StudentUncheckedUpdateManyWithoutProgramNestedInput
+  plos?: Prisma.PloUncheckedUpdateManyWithoutProgramNestedInput
+  peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateWithoutAiRecommendationsInput = {
@@ -1311,6 +1505,8 @@ export type ProgramCreateWithoutAiRecommendationsInput = {
   peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramUncheckedCreateWithoutAiRecommendationsInput = {
@@ -1327,6 +1523,8 @@ export type ProgramUncheckedCreateWithoutAiRecommendationsInput = {
   peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutProgramInput
 }
 
 export type ProgramCreateOrConnectWithoutAiRecommendationsInput = {
@@ -1359,6 +1557,8 @@ export type ProgramUpdateWithoutAiRecommendationsInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutAiRecommendationsInput = {
@@ -1375,6 +1575,96 @@ export type ProgramUncheckedUpdateWithoutAiRecommendationsInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
+}
+
+export type ProgramCreateWithoutGraduationClustersInput = {
+  id: string
+  name: string
+  code: string
+  createdAt?: Date | string
+  department: Prisma.DepartmentCreateNestedOneWithoutProgramsInput
+  programChair?: Prisma.userCreateNestedOneWithoutProgramsAsChairInput
+  users?: Prisma.userCreateNestedManyWithoutProgramInput
+  courses?: Prisma.CourseCreateNestedManyWithoutProgramInput
+  students?: Prisma.StudentCreateNestedManyWithoutProgramInput
+  plos?: Prisma.PloCreateNestedManyWithoutProgramInput
+  peos?: Prisma.PeoCreateNestedManyWithoutProgramInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutProgramInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutProgramInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutProgramInput
+}
+
+export type ProgramUncheckedCreateWithoutGraduationClustersInput = {
+  id: string
+  departmentId: string
+  name: string
+  code: string
+  programChairId?: string | null
+  createdAt?: Date | string
+  users?: Prisma.userUncheckedCreateNestedManyWithoutProgramInput
+  courses?: Prisma.CourseUncheckedCreateNestedManyWithoutProgramInput
+  students?: Prisma.StudentUncheckedCreateNestedManyWithoutProgramInput
+  plos?: Prisma.PloUncheckedCreateNestedManyWithoutProgramInput
+  peos?: Prisma.PeoUncheckedCreateNestedManyWithoutProgramInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutProgramInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutProgramInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutProgramInput
+}
+
+export type ProgramCreateOrConnectWithoutGraduationClustersInput = {
+  where: Prisma.ProgramWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProgramCreateWithoutGraduationClustersInput, Prisma.ProgramUncheckedCreateWithoutGraduationClustersInput>
+}
+
+export type ProgramUpsertWithoutGraduationClustersInput = {
+  update: Prisma.XOR<Prisma.ProgramUpdateWithoutGraduationClustersInput, Prisma.ProgramUncheckedUpdateWithoutGraduationClustersInput>
+  create: Prisma.XOR<Prisma.ProgramCreateWithoutGraduationClustersInput, Prisma.ProgramUncheckedCreateWithoutGraduationClustersInput>
+  where?: Prisma.ProgramWhereInput
+}
+
+export type ProgramUpdateToOneWithWhereWithoutGraduationClustersInput = {
+  where?: Prisma.ProgramWhereInput
+  data: Prisma.XOR<Prisma.ProgramUpdateWithoutGraduationClustersInput, Prisma.ProgramUncheckedUpdateWithoutGraduationClustersInput>
+}
+
+export type ProgramUpdateWithoutGraduationClustersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  department?: Prisma.DepartmentUpdateOneRequiredWithoutProgramsNestedInput
+  programChair?: Prisma.userUpdateOneWithoutProgramsAsChairNestedInput
+  users?: Prisma.userUpdateManyWithoutProgramNestedInput
+  courses?: Prisma.CourseUpdateManyWithoutProgramNestedInput
+  students?: Prisma.StudentUpdateManyWithoutProgramNestedInput
+  plos?: Prisma.PloUpdateManyWithoutProgramNestedInput
+  peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+}
+
+export type ProgramUncheckedUpdateWithoutGraduationClustersInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  departmentId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  programChairId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  users?: Prisma.userUncheckedUpdateManyWithoutProgramNestedInput
+  courses?: Prisma.CourseUncheckedUpdateManyWithoutProgramNestedInput
+  students?: Prisma.StudentUncheckedUpdateManyWithoutProgramNestedInput
+  plos?: Prisma.PloUncheckedUpdateManyWithoutProgramNestedInput
+  peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramCreateManyProgramChairInput = {
@@ -1398,7 +1688,9 @@ export type ProgramUpdateWithoutProgramChairInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutProgramChairInput = {
@@ -1414,7 +1706,9 @@ export type ProgramUncheckedUpdateWithoutProgramChairInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateManyWithoutProgramChairInput = {
@@ -1446,7 +1740,9 @@ export type ProgramUpdateWithoutDepartmentInput = {
   peos?: Prisma.PeoUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateWithoutDepartmentInput = {
@@ -1462,7 +1758,9 @@ export type ProgramUncheckedUpdateWithoutDepartmentInput = {
   peos?: Prisma.PeoUncheckedUpdateManyWithoutProgramNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutProgramNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutProgramNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutProgramNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutProgramNestedInput
+  graduationClusters?: Prisma.GraduationClusterUncheckedUpdateManyWithoutProgramNestedInput
 }
 
 export type ProgramUncheckedUpdateManyWithoutDepartmentInput = {
@@ -1486,7 +1784,9 @@ export type ProgramCountOutputType = {
   peos: number
   formSubmissions: number
   ploAttainments: number
+  peoAttainments: number
   aiRecommendations: number
+  graduationClusters: number
 }
 
 export type ProgramCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1497,7 +1797,9 @@ export type ProgramCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   peos?: boolean | ProgramCountOutputTypeCountPeosArgs
   formSubmissions?: boolean | ProgramCountOutputTypeCountFormSubmissionsArgs
   ploAttainments?: boolean | ProgramCountOutputTypeCountPloAttainmentsArgs
+  peoAttainments?: boolean | ProgramCountOutputTypeCountPeoAttainmentsArgs
   aiRecommendations?: boolean | ProgramCountOutputTypeCountAiRecommendationsArgs
+  graduationClusters?: boolean | ProgramCountOutputTypeCountGraduationClustersArgs
 }
 
 /**
@@ -1562,8 +1864,22 @@ export type ProgramCountOutputTypeCountPloAttainmentsArgs<ExtArgs extends runtim
 /**
  * ProgramCountOutputType without action
  */
+export type ProgramCountOutputTypeCountPeoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PeoAttainmentWhereInput
+}
+
+/**
+ * ProgramCountOutputType without action
+ */
 export type ProgramCountOutputTypeCountAiRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.AiRecommendationWhereInput
+}
+
+/**
+ * ProgramCountOutputType without action
+ */
+export type ProgramCountOutputTypeCountGraduationClustersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GraduationClusterWhereInput
 }
 
 
@@ -1583,7 +1899,9 @@ export type ProgramSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   peos?: boolean | Prisma.Program$peosArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.Program$formSubmissionsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.Program$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.Program$peoAttainmentsArgs<ExtArgs>
   aiRecommendations?: boolean | Prisma.Program$aiRecommendationsArgs<ExtArgs>
+  graduationClusters?: boolean | Prisma.Program$graduationClustersArgs<ExtArgs>
   _count?: boolean | Prisma.ProgramCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["program"]>
 
@@ -1629,7 +1947,9 @@ export type ProgramInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   peos?: boolean | Prisma.Program$peosArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.Program$formSubmissionsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.Program$ploAttainmentsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.Program$peoAttainmentsArgs<ExtArgs>
   aiRecommendations?: boolean | Prisma.Program$aiRecommendationsArgs<ExtArgs>
+  graduationClusters?: boolean | Prisma.Program$graduationClustersArgs<ExtArgs>
   _count?: boolean | Prisma.ProgramCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProgramIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1653,7 +1973,9 @@ export type $ProgramPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     peos: Prisma.$PeoPayload<ExtArgs>[]
     formSubmissions: Prisma.$FormSubmissionPayload<ExtArgs>[]
     ploAttainments: Prisma.$PloAttainmentPayload<ExtArgs>[]
+    peoAttainments: Prisma.$PeoAttainmentPayload<ExtArgs>[]
     aiRecommendations: Prisma.$AiRecommendationPayload<ExtArgs>[]
+    graduationClusters: Prisma.$GraduationClusterPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2065,7 +2387,9 @@ export interface Prisma__ProgramClient<T, Null = never, ExtArgs extends runtime.
   peos<T extends Prisma.Program$peosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$peosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   formSubmissions<T extends Prisma.Program$formSubmissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$formSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FormSubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ploAttainments<T extends Prisma.Program$ploAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$ploAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  peoAttainments<T extends Prisma.Program$peoAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$peoAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRecommendations<T extends Prisma.Program$aiRecommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$aiRecommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  graduationClusters<T extends Prisma.Program$graduationClustersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Program$graduationClustersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GraduationClusterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2689,6 +3013,30 @@ export type Program$ploAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.
 }
 
 /**
+ * Program.peoAttainments
+ */
+export type Program$peoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PeoAttainment
+   */
+  select?: Prisma.PeoAttainmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PeoAttainment
+   */
+  omit?: Prisma.PeoAttainmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PeoAttainmentInclude<ExtArgs> | null
+  where?: Prisma.PeoAttainmentWhereInput
+  orderBy?: Prisma.PeoAttainmentOrderByWithRelationInput | Prisma.PeoAttainmentOrderByWithRelationInput[]
+  cursor?: Prisma.PeoAttainmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PeoAttainmentScalarFieldEnum | Prisma.PeoAttainmentScalarFieldEnum[]
+}
+
+/**
  * Program.aiRecommendations
  */
 export type Program$aiRecommendationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2710,6 +3058,30 @@ export type Program$aiRecommendationsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.AiRecommendationScalarFieldEnum | Prisma.AiRecommendationScalarFieldEnum[]
+}
+
+/**
+ * Program.graduationClusters
+ */
+export type Program$graduationClustersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GraduationCluster
+   */
+  select?: Prisma.GraduationClusterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GraduationCluster
+   */
+  omit?: Prisma.GraduationClusterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GraduationClusterInclude<ExtArgs> | null
+  where?: Prisma.GraduationClusterWhereInput
+  orderBy?: Prisma.GraduationClusterOrderByWithRelationInput | Prisma.GraduationClusterOrderByWithRelationInput[]
+  cursor?: Prisma.GraduationClusterWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GraduationClusterScalarFieldEnum | Prisma.GraduationClusterScalarFieldEnum[]
 }
 
 /**

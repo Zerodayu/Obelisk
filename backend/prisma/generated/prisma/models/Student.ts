@@ -42,6 +42,9 @@ export type StudentMinAggregateOutputType = {
   firstName: string | null
   lastName: string | null
   anonymizedId: string | null
+  studentStatus: $Enums.StudentStatus | null
+  graduationTermId: string | null
+  graduationClusterId: string | null
 }
 
 export type StudentMaxAggregateOutputType = {
@@ -52,6 +55,9 @@ export type StudentMaxAggregateOutputType = {
   firstName: string | null
   lastName: string | null
   anonymizedId: string | null
+  studentStatus: $Enums.StudentStatus | null
+  graduationTermId: string | null
+  graduationClusterId: string | null
 }
 
 export type StudentCountAggregateOutputType = {
@@ -62,6 +68,9 @@ export type StudentCountAggregateOutputType = {
   firstName: number
   lastName: number
   anonymizedId: number
+  studentStatus: number
+  graduationTermId: number
+  graduationClusterId: number
   _all: number
 }
 
@@ -82,6 +91,9 @@ export type StudentMinAggregateInputType = {
   firstName?: true
   lastName?: true
   anonymizedId?: true
+  studentStatus?: true
+  graduationTermId?: true
+  graduationClusterId?: true
 }
 
 export type StudentMaxAggregateInputType = {
@@ -92,6 +104,9 @@ export type StudentMaxAggregateInputType = {
   firstName?: true
   lastName?: true
   anonymizedId?: true
+  studentStatus?: true
+  graduationTermId?: true
+  graduationClusterId?: true
 }
 
 export type StudentCountAggregateInputType = {
@@ -102,6 +117,9 @@ export type StudentCountAggregateInputType = {
   firstName?: true
   lastName?: true
   anonymizedId?: true
+  studentStatus?: true
+  graduationTermId?: true
+  graduationClusterId?: true
   _all?: true
 }
 
@@ -199,6 +217,9 @@ export type StudentGroupByOutputType = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus: $Enums.StudentStatus
+  graduationTermId: string | null
+  graduationClusterId: string | null
   _count: StudentCountAggregateOutputType | null
   _avg: StudentAvgAggregateOutputType | null
   _sum: StudentSumAggregateOutputType | null
@@ -232,11 +253,17 @@ export type StudentWhereInput = {
   firstName?: Prisma.StringFilter<"Student"> | string
   lastName?: Prisma.StringFilter<"Student"> | string
   anonymizedId?: Prisma.StringFilter<"Student"> | string
+  studentStatus?: Prisma.EnumStudentStatusFilter<"Student"> | $Enums.StudentStatus
+  graduationTermId?: Prisma.StringNullableFilter<"Student"> | string | null
+  graduationClusterId?: Prisma.StringNullableFilter<"Student"> | string | null
   program?: Prisma.XOR<Prisma.ProgramScalarRelationFilter, Prisma.ProgramWhereInput>
   enrollments?: Prisma.EnrollmentListRelationFilter
   studentScores?: Prisma.StudentScoreListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   atRiskFlags?: Prisma.AtRiskFlagListRelationFilter
+  graduationTerm?: Prisma.XOR<Prisma.AcademicTermNullableScalarRelationFilter, Prisma.AcademicTermWhereInput> | null
+  graduationCluster?: Prisma.XOR<Prisma.GraduationClusterNullableScalarRelationFilter, Prisma.GraduationClusterWhereInput> | null
+  archiveEntry?: Prisma.XOR<Prisma.GraduationClusterEntryNullableScalarRelationFilter, Prisma.GraduationClusterEntryWhereInput> | null
 }
 
 export type StudentOrderByWithRelationInput = {
@@ -247,11 +274,17 @@ export type StudentOrderByWithRelationInput = {
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
   anonymizedId?: Prisma.SortOrder
+  studentStatus?: Prisma.SortOrder
+  graduationTermId?: Prisma.SortOrderInput | Prisma.SortOrder
+  graduationClusterId?: Prisma.SortOrderInput | Prisma.SortOrder
   program?: Prisma.ProgramOrderByWithRelationInput
   enrollments?: Prisma.EnrollmentOrderByRelationAggregateInput
   studentScores?: Prisma.StudentScoreOrderByRelationAggregateInput
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   atRiskFlags?: Prisma.AtRiskFlagOrderByRelationAggregateInput
+  graduationTerm?: Prisma.AcademicTermOrderByWithRelationInput
+  graduationCluster?: Prisma.GraduationClusterOrderByWithRelationInput
+  archiveEntry?: Prisma.GraduationClusterEntryOrderByWithRelationInput
 }
 
 export type StudentWhereUniqueInput = Prisma.AtLeast<{
@@ -265,11 +298,17 @@ export type StudentWhereUniqueInput = Prisma.AtLeast<{
   yearLevel?: Prisma.IntNullableFilter<"Student"> | number | null
   firstName?: Prisma.StringFilter<"Student"> | string
   lastName?: Prisma.StringFilter<"Student"> | string
+  studentStatus?: Prisma.EnumStudentStatusFilter<"Student"> | $Enums.StudentStatus
+  graduationTermId?: Prisma.StringNullableFilter<"Student"> | string | null
+  graduationClusterId?: Prisma.StringNullableFilter<"Student"> | string | null
   program?: Prisma.XOR<Prisma.ProgramScalarRelationFilter, Prisma.ProgramWhereInput>
   enrollments?: Prisma.EnrollmentListRelationFilter
   studentScores?: Prisma.StudentScoreListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   atRiskFlags?: Prisma.AtRiskFlagListRelationFilter
+  graduationTerm?: Prisma.XOR<Prisma.AcademicTermNullableScalarRelationFilter, Prisma.AcademicTermWhereInput> | null
+  graduationCluster?: Prisma.XOR<Prisma.GraduationClusterNullableScalarRelationFilter, Prisma.GraduationClusterWhereInput> | null
+  archiveEntry?: Prisma.XOR<Prisma.GraduationClusterEntryNullableScalarRelationFilter, Prisma.GraduationClusterEntryWhereInput> | null
 }, "id" | "studentNumber" | "anonymizedId">
 
 export type StudentOrderByWithAggregationInput = {
@@ -280,6 +319,9 @@ export type StudentOrderByWithAggregationInput = {
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
   anonymizedId?: Prisma.SortOrder
+  studentStatus?: Prisma.SortOrder
+  graduationTermId?: Prisma.SortOrderInput | Prisma.SortOrder
+  graduationClusterId?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.StudentCountOrderByAggregateInput
   _avg?: Prisma.StudentAvgOrderByAggregateInput
   _max?: Prisma.StudentMaxOrderByAggregateInput
@@ -298,6 +340,9 @@ export type StudentScalarWhereWithAggregatesInput = {
   firstName?: Prisma.StringWithAggregatesFilter<"Student"> | string
   lastName?: Prisma.StringWithAggregatesFilter<"Student"> | string
   anonymizedId?: Prisma.StringWithAggregatesFilter<"Student"> | string
+  studentStatus?: Prisma.EnumStudentStatusWithAggregatesFilter<"Student"> | $Enums.StudentStatus
+  graduationTermId?: Prisma.StringNullableWithAggregatesFilter<"Student"> | string | null
+  graduationClusterId?: Prisma.StringNullableWithAggregatesFilter<"Student"> | string | null
 }
 
 export type StudentCreateInput = {
@@ -307,11 +352,15 @@ export type StudentCreateInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateInput = {
@@ -322,10 +371,14 @@ export type StudentUncheckedCreateInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUpdateInput = {
@@ -335,11 +388,15 @@ export type StudentUpdateInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
   enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateInput = {
@@ -350,10 +407,14 @@ export type StudentUncheckedUpdateInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentCreateManyInput = {
@@ -364,6 +425,9 @@ export type StudentCreateManyInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
 }
 
 export type StudentUpdateManyMutationInput = {
@@ -373,6 +437,7 @@ export type StudentUpdateManyMutationInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
 }
 
 export type StudentUncheckedUpdateManyInput = {
@@ -383,6 +448,9 @@ export type StudentUncheckedUpdateManyInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type StudentListRelationFilter = {
@@ -403,6 +471,9 @@ export type StudentCountOrderByAggregateInput = {
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
   anonymizedId?: Prisma.SortOrder
+  studentStatus?: Prisma.SortOrder
+  graduationTermId?: Prisma.SortOrder
+  graduationClusterId?: Prisma.SortOrder
 }
 
 export type StudentAvgOrderByAggregateInput = {
@@ -417,6 +488,9 @@ export type StudentMaxOrderByAggregateInput = {
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
   anonymizedId?: Prisma.SortOrder
+  studentStatus?: Prisma.SortOrder
+  graduationTermId?: Prisma.SortOrder
+  graduationClusterId?: Prisma.SortOrder
 }
 
 export type StudentMinOrderByAggregateInput = {
@@ -427,6 +501,9 @@ export type StudentMinOrderByAggregateInput = {
   firstName?: Prisma.SortOrder
   lastName?: Prisma.SortOrder
   anonymizedId?: Prisma.SortOrder
+  studentStatus?: Prisma.SortOrder
+  graduationTermId?: Prisma.SortOrder
+  graduationClusterId?: Prisma.SortOrder
 }
 
 export type StudentSumOrderByAggregateInput = {
@@ -480,12 +557,58 @@ export type StudentUncheckedUpdateManyWithoutProgramNestedInput = {
   deleteMany?: Prisma.StudentScalarWhereInput | Prisma.StudentScalarWhereInput[]
 }
 
+export type StudentCreateNestedManyWithoutGraduationTermInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput> | Prisma.StudentCreateWithoutGraduationTermInput[] | Prisma.StudentUncheckedCreateWithoutGraduationTermInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationTermInput | Prisma.StudentCreateOrConnectWithoutGraduationTermInput[]
+  createMany?: Prisma.StudentCreateManyGraduationTermInputEnvelope
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+}
+
+export type StudentUncheckedCreateNestedManyWithoutGraduationTermInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput> | Prisma.StudentCreateWithoutGraduationTermInput[] | Prisma.StudentUncheckedCreateWithoutGraduationTermInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationTermInput | Prisma.StudentCreateOrConnectWithoutGraduationTermInput[]
+  createMany?: Prisma.StudentCreateManyGraduationTermInputEnvelope
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+}
+
+export type StudentUpdateManyWithoutGraduationTermNestedInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput> | Prisma.StudentCreateWithoutGraduationTermInput[] | Prisma.StudentUncheckedCreateWithoutGraduationTermInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationTermInput | Prisma.StudentCreateOrConnectWithoutGraduationTermInput[]
+  upsert?: Prisma.StudentUpsertWithWhereUniqueWithoutGraduationTermInput | Prisma.StudentUpsertWithWhereUniqueWithoutGraduationTermInput[]
+  createMany?: Prisma.StudentCreateManyGraduationTermInputEnvelope
+  set?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  disconnect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  delete?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  update?: Prisma.StudentUpdateWithWhereUniqueWithoutGraduationTermInput | Prisma.StudentUpdateWithWhereUniqueWithoutGraduationTermInput[]
+  updateMany?: Prisma.StudentUpdateManyWithWhereWithoutGraduationTermInput | Prisma.StudentUpdateManyWithWhereWithoutGraduationTermInput[]
+  deleteMany?: Prisma.StudentScalarWhereInput | Prisma.StudentScalarWhereInput[]
+}
+
+export type StudentUncheckedUpdateManyWithoutGraduationTermNestedInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput> | Prisma.StudentCreateWithoutGraduationTermInput[] | Prisma.StudentUncheckedCreateWithoutGraduationTermInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationTermInput | Prisma.StudentCreateOrConnectWithoutGraduationTermInput[]
+  upsert?: Prisma.StudentUpsertWithWhereUniqueWithoutGraduationTermInput | Prisma.StudentUpsertWithWhereUniqueWithoutGraduationTermInput[]
+  createMany?: Prisma.StudentCreateManyGraduationTermInputEnvelope
+  set?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  disconnect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  delete?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  update?: Prisma.StudentUpdateWithWhereUniqueWithoutGraduationTermInput | Prisma.StudentUpdateWithWhereUniqueWithoutGraduationTermInput[]
+  updateMany?: Prisma.StudentUpdateManyWithWhereWithoutGraduationTermInput | Prisma.StudentUpdateManyWithWhereWithoutGraduationTermInput[]
+  deleteMany?: Prisma.StudentScalarWhereInput | Prisma.StudentScalarWhereInput[]
+}
+
 export type NullableIntFieldUpdateOperationsInput = {
   set?: number | null
   increment?: number
   decrement?: number
   multiply?: number
   divide?: number
+}
+
+export type EnumStudentStatusFieldUpdateOperationsInput = {
+  set?: $Enums.StudentStatus
 }
 
 export type StudentCreateNestedOneWithoutEnrollmentsInput = {
@@ -544,6 +667,62 @@ export type StudentUpdateOneRequiredWithoutAtRiskFlagsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.StudentUpdateToOneWithWhereWithoutAtRiskFlagsInput, Prisma.StudentUpdateWithoutAtRiskFlagsInput>, Prisma.StudentUncheckedUpdateWithoutAtRiskFlagsInput>
 }
 
+export type StudentCreateNestedManyWithoutGraduationClusterInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput> | Prisma.StudentCreateWithoutGraduationClusterInput[] | Prisma.StudentUncheckedCreateWithoutGraduationClusterInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationClusterInput | Prisma.StudentCreateOrConnectWithoutGraduationClusterInput[]
+  createMany?: Prisma.StudentCreateManyGraduationClusterInputEnvelope
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+}
+
+export type StudentUncheckedCreateNestedManyWithoutGraduationClusterInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput> | Prisma.StudentCreateWithoutGraduationClusterInput[] | Prisma.StudentUncheckedCreateWithoutGraduationClusterInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationClusterInput | Prisma.StudentCreateOrConnectWithoutGraduationClusterInput[]
+  createMany?: Prisma.StudentCreateManyGraduationClusterInputEnvelope
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+}
+
+export type StudentUpdateManyWithoutGraduationClusterNestedInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput> | Prisma.StudentCreateWithoutGraduationClusterInput[] | Prisma.StudentUncheckedCreateWithoutGraduationClusterInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationClusterInput | Prisma.StudentCreateOrConnectWithoutGraduationClusterInput[]
+  upsert?: Prisma.StudentUpsertWithWhereUniqueWithoutGraduationClusterInput | Prisma.StudentUpsertWithWhereUniqueWithoutGraduationClusterInput[]
+  createMany?: Prisma.StudentCreateManyGraduationClusterInputEnvelope
+  set?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  disconnect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  delete?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  update?: Prisma.StudentUpdateWithWhereUniqueWithoutGraduationClusterInput | Prisma.StudentUpdateWithWhereUniqueWithoutGraduationClusterInput[]
+  updateMany?: Prisma.StudentUpdateManyWithWhereWithoutGraduationClusterInput | Prisma.StudentUpdateManyWithWhereWithoutGraduationClusterInput[]
+  deleteMany?: Prisma.StudentScalarWhereInput | Prisma.StudentScalarWhereInput[]
+}
+
+export type StudentUncheckedUpdateManyWithoutGraduationClusterNestedInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput> | Prisma.StudentCreateWithoutGraduationClusterInput[] | Prisma.StudentUncheckedCreateWithoutGraduationClusterInput[]
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutGraduationClusterInput | Prisma.StudentCreateOrConnectWithoutGraduationClusterInput[]
+  upsert?: Prisma.StudentUpsertWithWhereUniqueWithoutGraduationClusterInput | Prisma.StudentUpsertWithWhereUniqueWithoutGraduationClusterInput[]
+  createMany?: Prisma.StudentCreateManyGraduationClusterInputEnvelope
+  set?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  disconnect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  delete?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  connect?: Prisma.StudentWhereUniqueInput | Prisma.StudentWhereUniqueInput[]
+  update?: Prisma.StudentUpdateWithWhereUniqueWithoutGraduationClusterInput | Prisma.StudentUpdateWithWhereUniqueWithoutGraduationClusterInput[]
+  updateMany?: Prisma.StudentUpdateManyWithWhereWithoutGraduationClusterInput | Prisma.StudentUpdateManyWithWhereWithoutGraduationClusterInput[]
+  deleteMany?: Prisma.StudentScalarWhereInput | Prisma.StudentScalarWhereInput[]
+}
+
+export type StudentCreateNestedOneWithoutArchiveEntryInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutArchiveEntryInput, Prisma.StudentUncheckedCreateWithoutArchiveEntryInput>
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutArchiveEntryInput
+  connect?: Prisma.StudentWhereUniqueInput
+}
+
+export type StudentUpdateOneRequiredWithoutArchiveEntryNestedInput = {
+  create?: Prisma.XOR<Prisma.StudentCreateWithoutArchiveEntryInput, Prisma.StudentUncheckedCreateWithoutArchiveEntryInput>
+  connectOrCreate?: Prisma.StudentCreateOrConnectWithoutArchiveEntryInput
+  upsert?: Prisma.StudentUpsertWithoutArchiveEntryInput
+  connect?: Prisma.StudentWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.StudentUpdateToOneWithWhereWithoutArchiveEntryInput, Prisma.StudentUpdateWithoutArchiveEntryInput>, Prisma.StudentUncheckedUpdateWithoutArchiveEntryInput>
+}
+
 export type StudentCreateWithoutProgramInput = {
   id: string
   studentNumber: string
@@ -551,10 +730,14 @@ export type StudentCreateWithoutProgramInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateWithoutProgramInput = {
@@ -564,10 +747,14 @@ export type StudentUncheckedCreateWithoutProgramInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentCreateOrConnectWithoutProgramInput = {
@@ -607,6 +794,69 @@ export type StudentScalarWhereInput = {
   firstName?: Prisma.StringFilter<"Student"> | string
   lastName?: Prisma.StringFilter<"Student"> | string
   anonymizedId?: Prisma.StringFilter<"Student"> | string
+  studentStatus?: Prisma.EnumStudentStatusFilter<"Student"> | $Enums.StudentStatus
+  graduationTermId?: Prisma.StringNullableFilter<"Student"> | string | null
+  graduationClusterId?: Prisma.StringNullableFilter<"Student"> | string | null
+}
+
+export type StudentCreateWithoutGraduationTermInput = {
+  id: string
+  studentNumber: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
+  enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
+}
+
+export type StudentUncheckedCreateWithoutGraduationTermInput = {
+  id: string
+  studentNumber: string
+  programId: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationClusterId?: string | null
+  enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
+}
+
+export type StudentCreateOrConnectWithoutGraduationTermInput = {
+  where: Prisma.StudentWhereUniqueInput
+  create: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput>
+}
+
+export type StudentCreateManyGraduationTermInputEnvelope = {
+  data: Prisma.StudentCreateManyGraduationTermInput | Prisma.StudentCreateManyGraduationTermInput[]
+  skipDuplicates?: boolean
+}
+
+export type StudentUpsertWithWhereUniqueWithoutGraduationTermInput = {
+  where: Prisma.StudentWhereUniqueInput
+  update: Prisma.XOR<Prisma.StudentUpdateWithoutGraduationTermInput, Prisma.StudentUncheckedUpdateWithoutGraduationTermInput>
+  create: Prisma.XOR<Prisma.StudentCreateWithoutGraduationTermInput, Prisma.StudentUncheckedCreateWithoutGraduationTermInput>
+}
+
+export type StudentUpdateWithWhereUniqueWithoutGraduationTermInput = {
+  where: Prisma.StudentWhereUniqueInput
+  data: Prisma.XOR<Prisma.StudentUpdateWithoutGraduationTermInput, Prisma.StudentUncheckedUpdateWithoutGraduationTermInput>
+}
+
+export type StudentUpdateManyWithWhereWithoutGraduationTermInput = {
+  where: Prisma.StudentScalarWhereInput
+  data: Prisma.XOR<Prisma.StudentUpdateManyMutationInput, Prisma.StudentUncheckedUpdateManyWithoutGraduationTermInput>
 }
 
 export type StudentCreateWithoutEnrollmentsInput = {
@@ -616,10 +866,14 @@ export type StudentCreateWithoutEnrollmentsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
   studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateWithoutEnrollmentsInput = {
@@ -630,9 +884,13 @@ export type StudentUncheckedCreateWithoutEnrollmentsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentCreateOrConnectWithoutEnrollmentsInput = {
@@ -658,10 +916,14 @@ export type StudentUpdateWithoutEnrollmentsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
   studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateWithoutEnrollmentsInput = {
@@ -672,9 +934,13 @@ export type StudentUncheckedUpdateWithoutEnrollmentsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentCreateWithoutStudentScoresInput = {
@@ -684,10 +950,14 @@ export type StudentCreateWithoutStudentScoresInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateWithoutStudentScoresInput = {
@@ -698,9 +968,13 @@ export type StudentUncheckedCreateWithoutStudentScoresInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentCreateOrConnectWithoutStudentScoresInput = {
@@ -726,10 +1000,14 @@ export type StudentUpdateWithoutStudentScoresInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
   enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateWithoutStudentScoresInput = {
@@ -740,9 +1018,13 @@ export type StudentUncheckedUpdateWithoutStudentScoresInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentCreateWithoutCloAttainmentsInput = {
@@ -752,10 +1034,14 @@ export type StudentCreateWithoutCloAttainmentsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateWithoutCloAttainmentsInput = {
@@ -766,9 +1052,13 @@ export type StudentUncheckedCreateWithoutCloAttainmentsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentCreateOrConnectWithoutCloAttainmentsInput = {
@@ -794,10 +1084,14 @@ export type StudentUpdateWithoutCloAttainmentsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
   enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateWithoutCloAttainmentsInput = {
@@ -808,9 +1102,13 @@ export type StudentUncheckedUpdateWithoutCloAttainmentsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentCreateWithoutAtRiskFlagsInput = {
@@ -820,10 +1118,14 @@ export type StudentCreateWithoutAtRiskFlagsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
   program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
 }
 
 export type StudentUncheckedCreateWithoutAtRiskFlagsInput = {
@@ -834,9 +1136,13 @@ export type StudentUncheckedCreateWithoutAtRiskFlagsInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
   studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
 }
 
 export type StudentCreateOrConnectWithoutAtRiskFlagsInput = {
@@ -862,10 +1168,14 @@ export type StudentUpdateWithoutAtRiskFlagsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
   enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateWithoutAtRiskFlagsInput = {
@@ -876,9 +1186,157 @@ export type StudentUncheckedUpdateWithoutAtRiskFlagsInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
+}
+
+export type StudentCreateWithoutGraduationClusterInput = {
+  id: string
+  studentNumber: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
+  enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  archiveEntry?: Prisma.GraduationClusterEntryCreateNestedOneWithoutStudentInput
+}
+
+export type StudentUncheckedCreateWithoutGraduationClusterInput = {
+  id: string
+  studentNumber: string
+  programId: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedCreateNestedOneWithoutStudentInput
+}
+
+export type StudentCreateOrConnectWithoutGraduationClusterInput = {
+  where: Prisma.StudentWhereUniqueInput
+  create: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput>
+}
+
+export type StudentCreateManyGraduationClusterInputEnvelope = {
+  data: Prisma.StudentCreateManyGraduationClusterInput | Prisma.StudentCreateManyGraduationClusterInput[]
+  skipDuplicates?: boolean
+}
+
+export type StudentUpsertWithWhereUniqueWithoutGraduationClusterInput = {
+  where: Prisma.StudentWhereUniqueInput
+  update: Prisma.XOR<Prisma.StudentUpdateWithoutGraduationClusterInput, Prisma.StudentUncheckedUpdateWithoutGraduationClusterInput>
+  create: Prisma.XOR<Prisma.StudentCreateWithoutGraduationClusterInput, Prisma.StudentUncheckedCreateWithoutGraduationClusterInput>
+}
+
+export type StudentUpdateWithWhereUniqueWithoutGraduationClusterInput = {
+  where: Prisma.StudentWhereUniqueInput
+  data: Prisma.XOR<Prisma.StudentUpdateWithoutGraduationClusterInput, Prisma.StudentUncheckedUpdateWithoutGraduationClusterInput>
+}
+
+export type StudentUpdateManyWithWhereWithoutGraduationClusterInput = {
+  where: Prisma.StudentScalarWhereInput
+  data: Prisma.XOR<Prisma.StudentUpdateManyMutationInput, Prisma.StudentUncheckedUpdateManyWithoutGraduationClusterInput>
+}
+
+export type StudentCreateWithoutArchiveEntryInput = {
+  id: string
+  studentNumber: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  program: Prisma.ProgramCreateNestedOneWithoutStudentsInput
+  enrollments?: Prisma.EnrollmentCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagCreateNestedManyWithoutStudentInput
+  graduationTerm?: Prisma.AcademicTermCreateNestedOneWithoutStudentsGraduatedInput
+  graduationCluster?: Prisma.GraduationClusterCreateNestedOneWithoutStudentsInput
+}
+
+export type StudentUncheckedCreateWithoutArchiveEntryInput = {
+  id: string
+  studentNumber: string
+  programId: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
+  enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutStudentInput
+  studentScores?: Prisma.StudentScoreUncheckedCreateNestedManyWithoutStudentInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutStudentInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutStudentInput
+}
+
+export type StudentCreateOrConnectWithoutArchiveEntryInput = {
+  where: Prisma.StudentWhereUniqueInput
+  create: Prisma.XOR<Prisma.StudentCreateWithoutArchiveEntryInput, Prisma.StudentUncheckedCreateWithoutArchiveEntryInput>
+}
+
+export type StudentUpsertWithoutArchiveEntryInput = {
+  update: Prisma.XOR<Prisma.StudentUpdateWithoutArchiveEntryInput, Prisma.StudentUncheckedUpdateWithoutArchiveEntryInput>
+  create: Prisma.XOR<Prisma.StudentCreateWithoutArchiveEntryInput, Prisma.StudentUncheckedCreateWithoutArchiveEntryInput>
+  where?: Prisma.StudentWhereInput
+}
+
+export type StudentUpdateToOneWithWhereWithoutArchiveEntryInput = {
+  where?: Prisma.StudentWhereInput
+  data: Prisma.XOR<Prisma.StudentUpdateWithoutArchiveEntryInput, Prisma.StudentUncheckedUpdateWithoutArchiveEntryInput>
+}
+
+export type StudentUpdateWithoutArchiveEntryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
+  enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+}
+
+export type StudentUncheckedUpdateWithoutArchiveEntryInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
 }
 
 export type StudentCreateManyProgramInput = {
@@ -888,6 +1346,9 @@ export type StudentCreateManyProgramInput = {
   firstName: string
   lastName: string
   anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+  graduationClusterId?: string | null
 }
 
 export type StudentUpdateWithoutProgramInput = {
@@ -897,10 +1358,14 @@ export type StudentUpdateWithoutProgramInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
   enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateWithoutProgramInput = {
@@ -910,10 +1375,14 @@ export type StudentUncheckedUpdateWithoutProgramInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
   studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
 }
 
 export type StudentUncheckedUpdateManyWithoutProgramInput = {
@@ -923,6 +1392,125 @@ export type StudentUncheckedUpdateManyWithoutProgramInput = {
   firstName?: Prisma.StringFieldUpdateOperationsInput | string
   lastName?: Prisma.StringFieldUpdateOperationsInput | string
   anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type StudentCreateManyGraduationTermInput = {
+  id: string
+  studentNumber: string
+  programId: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationClusterId?: string | null
+}
+
+export type StudentUpdateWithoutGraduationTermInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
+  enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationCluster?: Prisma.GraduationClusterUpdateOneWithoutStudentsNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
+}
+
+export type StudentUncheckedUpdateWithoutGraduationTermInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
+}
+
+export type StudentUncheckedUpdateManyWithoutGraduationTermInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationClusterId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type StudentCreateManyGraduationClusterInput = {
+  id: string
+  studentNumber: string
+  programId: string
+  yearLevel?: number | null
+  firstName: string
+  lastName: string
+  anonymizedId: string
+  studentStatus?: $Enums.StudentStatus
+  graduationTermId?: string | null
+}
+
+export type StudentUpdateWithoutGraduationClusterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  program?: Prisma.ProgramUpdateOneRequiredWithoutStudentsNestedInput
+  enrollments?: Prisma.EnrollmentUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUpdateManyWithoutStudentNestedInput
+  graduationTerm?: Prisma.AcademicTermUpdateOneWithoutStudentsGraduatedNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUpdateOneWithoutStudentNestedInput
+}
+
+export type StudentUncheckedUpdateWithoutGraduationClusterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutStudentNestedInput
+  studentScores?: Prisma.StudentScoreUncheckedUpdateManyWithoutStudentNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutStudentNestedInput
+  atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutStudentNestedInput
+  archiveEntry?: Prisma.GraduationClusterEntryUncheckedUpdateOneWithoutStudentNestedInput
+}
+
+export type StudentUncheckedUpdateManyWithoutGraduationClusterInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  studentNumber?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  yearLevel?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  firstName?: Prisma.StringFieldUpdateOperationsInput | string
+  lastName?: Prisma.StringFieldUpdateOperationsInput | string
+  anonymizedId?: Prisma.StringFieldUpdateOperationsInput | string
+  studentStatus?: Prisma.EnumStudentStatusFieldUpdateOperationsInput | $Enums.StudentStatus
+  graduationTermId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 
@@ -991,11 +1579,17 @@ export type StudentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   firstName?: boolean
   lastName?: boolean
   anonymizedId?: boolean
+  studentStatus?: boolean
+  graduationTermId?: boolean
+  graduationClusterId?: boolean
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
   enrollments?: boolean | Prisma.Student$enrollmentsArgs<ExtArgs>
   studentScores?: boolean | Prisma.Student$studentScoresArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.Student$cloAttainmentsArgs<ExtArgs>
   atRiskFlags?: boolean | Prisma.Student$atRiskFlagsArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
+  archiveEntry?: boolean | Prisma.Student$archiveEntryArgs<ExtArgs>
   _count?: boolean | Prisma.StudentCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["student"]>
 
@@ -1007,7 +1601,12 @@ export type StudentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   firstName?: boolean
   lastName?: boolean
   anonymizedId?: boolean
+  studentStatus?: boolean
+  graduationTermId?: boolean
+  graduationClusterId?: boolean
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
 }, ExtArgs["result"]["student"]>
 
 export type StudentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1018,7 +1617,12 @@ export type StudentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   firstName?: boolean
   lastName?: boolean
   anonymizedId?: boolean
+  studentStatus?: boolean
+  graduationTermId?: boolean
+  graduationClusterId?: boolean
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
 }, ExtArgs["result"]["student"]>
 
 export type StudentSelectScalar = {
@@ -1029,22 +1633,32 @@ export type StudentSelectScalar = {
   firstName?: boolean
   lastName?: boolean
   anonymizedId?: boolean
+  studentStatus?: boolean
+  graduationTermId?: boolean
+  graduationClusterId?: boolean
 }
 
-export type StudentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "studentNumber" | "programId" | "yearLevel" | "firstName" | "lastName" | "anonymizedId", ExtArgs["result"]["student"]>
+export type StudentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "studentNumber" | "programId" | "yearLevel" | "firstName" | "lastName" | "anonymizedId" | "studentStatus" | "graduationTermId" | "graduationClusterId", ExtArgs["result"]["student"]>
 export type StudentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
   enrollments?: boolean | Prisma.Student$enrollmentsArgs<ExtArgs>
   studentScores?: boolean | Prisma.Student$studentScoresArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.Student$cloAttainmentsArgs<ExtArgs>
   atRiskFlags?: boolean | Prisma.Student$atRiskFlagsArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
+  archiveEntry?: boolean | Prisma.Student$archiveEntryArgs<ExtArgs>
   _count?: boolean | Prisma.StudentCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type StudentIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
 }
 export type StudentIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
+  graduationTerm?: boolean | Prisma.Student$graduationTermArgs<ExtArgs>
+  graduationCluster?: boolean | Prisma.Student$graduationClusterArgs<ExtArgs>
 }
 
 export type $StudentPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1055,6 +1669,9 @@ export type $StudentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     studentScores: Prisma.$StudentScorePayload<ExtArgs>[]
     cloAttainments: Prisma.$CloAttainmentPayload<ExtArgs>[]
     atRiskFlags: Prisma.$AtRiskFlagPayload<ExtArgs>[]
+    graduationTerm: Prisma.$AcademicTermPayload<ExtArgs> | null
+    graduationCluster: Prisma.$GraduationClusterPayload<ExtArgs> | null
+    archiveEntry: Prisma.$GraduationClusterEntryPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1064,6 +1681,9 @@ export type $StudentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     firstName: string
     lastName: string
     anonymizedId: string
+    studentStatus: $Enums.StudentStatus
+    graduationTermId: string | null
+    graduationClusterId: string | null
   }, ExtArgs["result"]["student"]>
   composites: {}
 }
@@ -1463,6 +2083,9 @@ export interface Prisma__StudentClient<T, Null = never, ExtArgs extends runtime.
   studentScores<T extends Prisma.Student$studentScoresArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$studentScoresArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StudentScorePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   cloAttainments<T extends Prisma.Student$cloAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$cloAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   atRiskFlags<T extends Prisma.Student$atRiskFlagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$atRiskFlagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AtRiskFlagPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  graduationTerm<T extends Prisma.Student$graduationTermArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$graduationTermArgs<ExtArgs>>): Prisma.Prisma__AcademicTermClient<runtime.Types.Result.GetResult<Prisma.$AcademicTermPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  graduationCluster<T extends Prisma.Student$graduationClusterArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$graduationClusterArgs<ExtArgs>>): Prisma.Prisma__GraduationClusterClient<runtime.Types.Result.GetResult<Prisma.$GraduationClusterPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  archiveEntry<T extends Prisma.Student$archiveEntryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Student$archiveEntryArgs<ExtArgs>>): Prisma.Prisma__GraduationClusterEntryClient<runtime.Types.Result.GetResult<Prisma.$GraduationClusterEntryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1499,6 +2122,9 @@ export interface StudentFieldRefs {
   readonly firstName: Prisma.FieldRef<"Student", 'String'>
   readonly lastName: Prisma.FieldRef<"Student", 'String'>
   readonly anonymizedId: Prisma.FieldRef<"Student", 'String'>
+  readonly studentStatus: Prisma.FieldRef<"Student", 'StudentStatus'>
+  readonly graduationTermId: Prisma.FieldRef<"Student", 'String'>
+  readonly graduationClusterId: Prisma.FieldRef<"Student", 'String'>
 }
     
 
@@ -1993,6 +2619,63 @@ export type Student$atRiskFlagsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.AtRiskFlagScalarFieldEnum | Prisma.AtRiskFlagScalarFieldEnum[]
+}
+
+/**
+ * Student.graduationTerm
+ */
+export type Student$graduationTermArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the AcademicTerm
+   */
+  select?: Prisma.AcademicTermSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the AcademicTerm
+   */
+  omit?: Prisma.AcademicTermOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AcademicTermInclude<ExtArgs> | null
+  where?: Prisma.AcademicTermWhereInput
+}
+
+/**
+ * Student.graduationCluster
+ */
+export type Student$graduationClusterArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GraduationCluster
+   */
+  select?: Prisma.GraduationClusterSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GraduationCluster
+   */
+  omit?: Prisma.GraduationClusterOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GraduationClusterInclude<ExtArgs> | null
+  where?: Prisma.GraduationClusterWhereInput
+}
+
+/**
+ * Student.archiveEntry
+ */
+export type Student$archiveEntryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GraduationClusterEntry
+   */
+  select?: Prisma.GraduationClusterEntrySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GraduationClusterEntry
+   */
+  omit?: Prisma.GraduationClusterEntryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GraduationClusterEntryInclude<ExtArgs> | null
+  where?: Prisma.GraduationClusterEntryWhereInput
 }
 
 /**

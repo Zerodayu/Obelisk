@@ -80,11 +80,11 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.9.0
+ * Prisma Client JS version: 7.9.1
  * Query Engine version: e922089b7d7502aff4249d5da3420f6fa55fc6ad
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.9.0",
+  client: "7.9.1",
   engine: "e922089b7d7502aff4249d5da3420f6fa55fc6ad"
 }
 
@@ -421,10 +421,13 @@ export const ModelName = {
   ComputationRun: 'ComputationRun',
   CloAttainment: 'CloAttainment',
   PloAttainment: 'PloAttainment',
+  PeoAttainment: 'PeoAttainment',
   AuditLog: 'AuditLog',
   AtRiskFlag: 'AtRiskFlag',
   AiRecommendation: 'AiRecommendation',
-  ReportExport: 'ReportExport'
+  ReportExport: 'ReportExport',
+  GraduationCluster: 'GraduationCluster',
+  GraduationClusterEntry: 'GraduationClusterEntry'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -440,7 +443,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "cloAttainment" | "ploAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport"
+    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2220,6 +2223,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PeoAttainment: {
+      payload: Prisma.$PeoAttainmentPayload<ExtArgs>
+      fields: Prisma.PeoAttainmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PeoAttainmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PeoAttainmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        findFirst: {
+          args: Prisma.PeoAttainmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PeoAttainmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        findMany: {
+          args: Prisma.PeoAttainmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>[]
+        }
+        create: {
+          args: Prisma.PeoAttainmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        createMany: {
+          args: Prisma.PeoAttainmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PeoAttainmentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>[]
+        }
+        delete: {
+          args: Prisma.PeoAttainmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        update: {
+          args: Prisma.PeoAttainmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.PeoAttainmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PeoAttainmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PeoAttainmentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>[]
+        }
+        upsert: {
+          args: Prisma.PeoAttainmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PeoAttainmentPayload>
+        }
+        aggregate: {
+          args: Prisma.PeoAttainmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePeoAttainment>
+        }
+        groupBy: {
+          args: Prisma.PeoAttainmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PeoAttainmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PeoAttainmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PeoAttainmentCountAggregateOutputType> | number
+        }
+      }
+    }
     AuditLog: {
       payload: Prisma.$AuditLogPayload<ExtArgs>
       fields: Prisma.AuditLogFieldRefs
@@ -2516,6 +2593,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GraduationCluster: {
+      payload: Prisma.$GraduationClusterPayload<ExtArgs>
+      fields: Prisma.GraduationClusterFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GraduationClusterFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GraduationClusterFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        findFirst: {
+          args: Prisma.GraduationClusterFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GraduationClusterFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        findMany: {
+          args: Prisma.GraduationClusterFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>[]
+        }
+        create: {
+          args: Prisma.GraduationClusterCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        createMany: {
+          args: Prisma.GraduationClusterCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GraduationClusterCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>[]
+        }
+        delete: {
+          args: Prisma.GraduationClusterDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        update: {
+          args: Prisma.GraduationClusterUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        deleteMany: {
+          args: Prisma.GraduationClusterDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GraduationClusterUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GraduationClusterUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>[]
+        }
+        upsert: {
+          args: Prisma.GraduationClusterUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterPayload>
+        }
+        aggregate: {
+          args: Prisma.GraduationClusterAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGraduationCluster>
+        }
+        groupBy: {
+          args: Prisma.GraduationClusterGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GraduationClusterGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GraduationClusterCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GraduationClusterCountAggregateOutputType> | number
+        }
+      }
+    }
+    GraduationClusterEntry: {
+      payload: Prisma.$GraduationClusterEntryPayload<ExtArgs>
+      fields: Prisma.GraduationClusterEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GraduationClusterEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GraduationClusterEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.GraduationClusterEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GraduationClusterEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        findMany: {
+          args: Prisma.GraduationClusterEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>[]
+        }
+        create: {
+          args: Prisma.GraduationClusterEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        createMany: {
+          args: Prisma.GraduationClusterEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GraduationClusterEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.GraduationClusterEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        update: {
+          args: Prisma.GraduationClusterEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.GraduationClusterEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GraduationClusterEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GraduationClusterEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.GraduationClusterEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GraduationClusterEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.GraduationClusterEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGraduationClusterEntry>
+        }
+        groupBy: {
+          args: Prisma.GraduationClusterEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GraduationClusterEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GraduationClusterEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GraduationClusterEntryCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2683,7 +2908,10 @@ export const StudentScalarFieldEnum = {
   yearLevel: 'yearLevel',
   firstName: 'firstName',
   lastName: 'lastName',
-  anonymizedId: 'anonymizedId'
+  anonymizedId: 'anonymizedId',
+  studentStatus: 'studentStatus',
+  graduationTermId: 'graduationTermId',
+  graduationClusterId: 'graduationClusterId'
 } as const
 
 export type StudentScalarFieldEnum = (typeof StudentScalarFieldEnum)[keyof typeof StudentScalarFieldEnum]
@@ -2858,6 +3086,19 @@ export const PloAttainmentScalarFieldEnum = {
 export type PloAttainmentScalarFieldEnum = (typeof PloAttainmentScalarFieldEnum)[keyof typeof PloAttainmentScalarFieldEnum]
 
 
+export const PeoAttainmentScalarFieldEnum = {
+  id: 'id',
+  peoId: 'peoId',
+  programId: 'programId',
+  termId: 'termId',
+  attainedPct: 'attainedPct',
+  evidenceJson: 'evidenceJson',
+  formSubmissionId: 'formSubmissionId'
+} as const
+
+export type PeoAttainmentScalarFieldEnum = (typeof PeoAttainmentScalarFieldEnum)[keyof typeof PeoAttainmentScalarFieldEnum]
+
+
 export const AuditLogScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2909,6 +3150,42 @@ export const ReportExportScalarFieldEnum = {
 } as const
 
 export type ReportExportScalarFieldEnum = (typeof ReportExportScalarFieldEnum)[keyof typeof ReportExportScalarFieldEnum]
+
+
+export const GraduationClusterScalarFieldEnum = {
+  id: 'id',
+  programId: 'programId',
+  graduationTermId: 'graduationTermId',
+  label: 'label',
+  status: 'status',
+  stats: 'stats',
+  confirmedByUserId: 'confirmedByUserId',
+  peoAttainmentCapturedAt: 'peoAttainmentCapturedAt',
+  confirmedAt: 'confirmedAt',
+  compiledAt: 'compiledAt',
+  archivedAt: 'archivedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type GraduationClusterScalarFieldEnum = (typeof GraduationClusterScalarFieldEnum)[keyof typeof GraduationClusterScalarFieldEnum]
+
+
+export const GraduationClusterEntryScalarFieldEnum = {
+  id: 'id',
+  clusterId: 'clusterId',
+  studentId: 'studentId',
+  anonymizedId: 'anonymizedId',
+  studentStatusAtArchive: 'studentStatusAtArchive',
+  isGraduationEntry: 'isGraduationEntry',
+  graduatedAt: 'graduatedAt',
+  compiledData: 'compiledData',
+  peoAttainment: 'peoAttainment',
+  detailArtifactUrl: 'detailArtifactUrl',
+  purgedRowCounts: 'purgedRowCounts',
+  createdAt: 'createdAt'
+} as const
+
+export type GraduationClusterEntryScalarFieldEnum = (typeof GraduationClusterEntryScalarFieldEnum)[keyof typeof GraduationClusterEntryScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3035,6 +3312,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'StudentStatus'
+ */
+export type EnumStudentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StudentStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'StudentStatus[]'
+ */
+export type ListEnumStudentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StudentStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'AssessmentType'
  */
 export type EnumAssessmentTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'AssessmentType'>
@@ -3129,6 +3420,20 @@ export type EnumExportFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'ExportFormat[]'
  */
 export type ListEnumExportFormatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ExportFormat[]'>
+    
+
+
+/**
+ * Reference to a field of type 'GraduationClusterStatus'
+ */
+export type EnumGraduationClusterStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GraduationClusterStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'GraduationClusterStatus[]'
+ */
+export type ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'GraduationClusterStatus[]'>
     
 
 
@@ -3320,10 +3625,13 @@ export type GlobalOmitConfig = {
   computationRun?: Prisma.ComputationRunOmit
   cloAttainment?: Prisma.CloAttainmentOmit
   ploAttainment?: Prisma.PloAttainmentOmit
+  peoAttainment?: Prisma.PeoAttainmentOmit
   auditLog?: Prisma.AuditLogOmit
   atRiskFlag?: Prisma.AtRiskFlagOmit
   aiRecommendation?: Prisma.AiRecommendationOmit
   reportExport?: Prisma.ReportExportOmit
+  graduationCluster?: Prisma.GraduationClusterOmit
+  graduationClusterEntry?: Prisma.GraduationClusterEntryOmit
 }
 
 /* Types for Logging */

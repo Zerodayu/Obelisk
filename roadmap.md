@@ -95,12 +95,39 @@ The term-level hub that consolidates a term's data.
 
 ### Periodic / institutional (lowest MVP urgency)
 
-- [ ] `alumni_tracer` + `employer_satisfaction_survey` — biennial surveys → feed composite (Direct×70% + Indirect×30%)
+- [ ] `alumni_tracer` + `employer_satisfaction_survey` — biennial surveys → **PEO attainment evidence** + feed composite (Direct×70% + Indirect×30%)
 - [ ] `annual_program_report` (APAR) — dashboard KPIs, mandatory attachments
 - [ ] `systemic_gap_report` — trigger: 3 consecutive NOT-MET, due trigger + 30 days
 - [ ] `capa_plan` — actions/milestones, AQAU progress monitoring
 - [ ] `institutional_review` — program APAR review, institutional CQI completion rate
 - [ ] `portfolio_roadmap` — 4-year roadmap + rubric standards (portfolio programs)
+
+---
+
+## Phase 7 — Graduation-Cluster Archival (compiled, read-only)
+
+Purpose: compile finished cohorts into compact, permanent, read-only snapshots to reclaim space while keeping data viewable. Clustering keyed by **actual graduation term** (protects transferees + irregular students). **Runs AFTER PEO attainment is captured** — the compiled snapshot must include the cohort's PEO evidence from the biennial alumni/employer surveys (Phase 6) before granular data is purged. Schema is done; pipeline + viewer pending (post PEO data capture).
+
+### Schema (done)
+- [x] `StudentStatus` + `GraduationClusterStatus` enums
+- [x] `GraduationCluster` model (per program × graduation term; open → compiling → archived) + `peoAttainmentCapturedAt` gate
+- [x] `GraduationClusterEntry` (write-once read-only snapshot + `peoAttainment` snapshot column + detail-artifact URL + purge audit)
+- [x] `Student` fields (`studentStatus`, `graduationTermId`, `graduationClusterId`) + relations
+- [x] `PeoAttainment` model (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`) — PEO capture records feeding the snapshot
+- [x] Migration SQL written (`20260805000000_add_graduation_cluster_archival`) — **apply blocked, DB offline**
+- [ ] Apply migration to DB (once `ep-delicate-water...neon.tech` reachable)
+
+### Pipeline (backend `archival-service`)
+- [ ] Auto-create cluster at AY end (graduates + transferred_out/withdrawn candidates)
+- [ ] Confirm to compile (aqau / system_admin only) — `open → compiling → archived`
+- [ ] Compile per-student snapshot into `compiledData` — **including PEO attainment (alumni/employer survey results)**
+- [ ] Export full detail artifact (`detailArtifactUrl`; storage provider TBD)
+- [ ] Purge granular hot rows (StudentScore, per-student CloAttainment, AtRiskFlag) — keep PloAttainment/enrollments
+- [ ] Read-only enforcement: GET-only endpoints + audit log; optional DB write-block trigger
+
+### Viewer (frontend)
+- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin)
+- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down
 
 ---
 

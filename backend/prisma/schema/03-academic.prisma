@@ -20,16 +20,18 @@ model Program {
   programChairId String?  @map("program_chair_id")
   createdAt      DateTime @default(now()) @map("created_at")
 
-  department        Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  programChair      user?              @relation("ProgramChair", fields: [programChairId], references: [id])
-  users             user[]
-  courses           Course[]
-  students          Student[]
-  plos              Plo[]
-  peos              Peo[]
+  department         Department          @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  programChair       user?               @relation("ProgramChair", fields: [programChairId], references: [id])
+  users              user[]
+  courses            Course[]
+  students           Student[]
+  plos               Plo[]
+  peos               Peo[]
   formSubmissions   FormSubmission[]
   ploAttainments    PloAttainment[]
+  peoAttainments    PeoAttainment[]
   aiRecommendations AiRecommendation[]
+  graduationClusters GraduationCluster[]
 
   @@map("program")
 }
@@ -45,7 +47,10 @@ model AcademicTerm {
   classSections     ClassSection[]
   formSubmissions   FormSubmission[]
   ploAttainments    PloAttainment[]
+  peoAttainments    PeoAttainment[]
   aiRecommendations AiRecommendation[]
+  graduationClusters GraduationCluster[] @relation("GraduationClusterTerm")
+  studentsGraduated  Student[]           @relation("StudentGraduationTerm")
 
   @@unique([schoolYear, semester])
   @@map("academic_term")
@@ -96,11 +101,19 @@ model Student {
   lastName      String @map("last_name")
   anonymizedId  String @unique @map("anonymized_id")
 
+  studentStatus       StudentStatus @default(active) @map("student_status")
+  graduationTermId    String?       @map("graduation_term_id")
+  graduationClusterId String?       @map("graduation_cluster_id")
+
   program        Program         @relation(fields: [programId], references: [id], onDelete: Restrict)
   enrollments    Enrollment[]
   studentScores  StudentScore[]
   cloAttainments CloAttainment[]
   atRiskFlags    AtRiskFlag[]
+
+  graduationTerm    AcademicTerm?           @relation("StudentGraduationTerm", fields: [graduationTermId], references: [id], onDelete: SetNull)
+  graduationCluster GraduationCluster?      @relation("StudentCluster", fields: [graduationClusterId], references: [id], onDelete: SetNull)
+  archiveEntry      GraduationClusterEntry?
 
   @@map("student")
 }

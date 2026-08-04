@@ -138,6 +138,11 @@ export type CloAttainment = Prisma.CloAttainmentModel
  */
 export type PloAttainment = Prisma.PloAttainmentModel
 /**
+ * Model PeoAttainment
+ * 
+ */
+export type PeoAttainment = Prisma.PeoAttainmentModel
+/**
  * Model AuditLog
  * 
  */
@@ -157,3 +162,13 @@ export type AiRecommendation = Prisma.AiRecommendationModel
  * 
  */
 export type ReportExport = Prisma.ReportExportModel
+/**
+ * Model GraduationCluster
+ * 
+ */
+export type GraduationCluster = Prisma.GraduationClusterModel
+/**
+ * Model GraduationClusterEntry
+ * 
+ */
+export type GraduationClusterEntry = Prisma.GraduationClusterEntryModel

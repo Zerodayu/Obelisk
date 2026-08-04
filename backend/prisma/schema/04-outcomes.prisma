@@ -34,8 +34,9 @@ model Peo {
   code        String
   description String
 
-  program     Program      @relation(fields: [programId], references: [id], onDelete: Cascade)
-  ploToPeoMaps PloToPeoMap[]
+  program        Program         @relation(fields: [programId], references: [id], onDelete: Cascade)
+  ploToPeoMaps   PloToPeoMap[]
+  peoAttainments PeoAttainment[]
 
   @@map("peo")
 }

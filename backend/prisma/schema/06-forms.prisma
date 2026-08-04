@@ -32,6 +32,7 @@ model FormSubmission {
   reportExports  ReportExport[]
   cloAttainments CloAttainment[]
   ploAttainments PloAttainment[]
+  peoAttainments PeoAttainment[]
 
   @@index([status])
   @@map("form_submission")

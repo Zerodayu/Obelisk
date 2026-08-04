@@ -176,6 +176,7 @@ export type PeoWhereInput = {
   description?: Prisma.StringFilter<"Peo"> | string
   program?: Prisma.XOR<Prisma.ProgramScalarRelationFilter, Prisma.ProgramWhereInput>
   ploToPeoMaps?: Prisma.PloToPeoMapListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
 }
 
 export type PeoOrderByWithRelationInput = {
@@ -185,6 +186,7 @@ export type PeoOrderByWithRelationInput = {
   description?: Prisma.SortOrder
   program?: Prisma.ProgramOrderByWithRelationInput
   ploToPeoMaps?: Prisma.PloToPeoMapOrderByRelationAggregateInput
+  peoAttainments?: Prisma.PeoAttainmentOrderByRelationAggregateInput
 }
 
 export type PeoWhereUniqueInput = Prisma.AtLeast<{
@@ -197,6 +199,7 @@ export type PeoWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringFilter<"Peo"> | string
   program?: Prisma.XOR<Prisma.ProgramScalarRelationFilter, Prisma.ProgramWhereInput>
   ploToPeoMaps?: Prisma.PloToPeoMapListRelationFilter
+  peoAttainments?: Prisma.PeoAttainmentListRelationFilter
 }, "id">
 
 export type PeoOrderByWithAggregationInput = {
@@ -225,6 +228,7 @@ export type PeoCreateInput = {
   description: string
   program: Prisma.ProgramCreateNestedOneWithoutPeosInput
   ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPeoInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutPeoInput
 }
 
 export type PeoUncheckedCreateInput = {
@@ -233,6 +237,7 @@ export type PeoUncheckedCreateInput = {
   code: string
   description: string
   ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPeoInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutPeoInput
 }
 
 export type PeoUpdateInput = {
@@ -241,6 +246,7 @@ export type PeoUpdateInput = {
   description?: Prisma.StringFieldUpdateOperationsInput | string
   program?: Prisma.ProgramUpdateOneRequiredWithoutPeosNestedInput
   ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPeoNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoUncheckedUpdateInput = {
@@ -249,6 +255,7 @@ export type PeoUncheckedUpdateInput = {
   code?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPeoNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoCreateManyInput = {
@@ -363,11 +370,26 @@ export type PeoUpdateOneRequiredWithoutPloToPeoMapsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PeoUpdateToOneWithWhereWithoutPloToPeoMapsInput, Prisma.PeoUpdateWithoutPloToPeoMapsInput>, Prisma.PeoUncheckedUpdateWithoutPloToPeoMapsInput>
 }
 
+export type PeoCreateNestedOneWithoutPeoAttainmentsInput = {
+  create?: Prisma.XOR<Prisma.PeoCreateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.PeoCreateOrConnectWithoutPeoAttainmentsInput
+  connect?: Prisma.PeoWhereUniqueInput
+}
+
+export type PeoUpdateOneRequiredWithoutPeoAttainmentsNestedInput = {
+  create?: Prisma.XOR<Prisma.PeoCreateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedCreateWithoutPeoAttainmentsInput>
+  connectOrCreate?: Prisma.PeoCreateOrConnectWithoutPeoAttainmentsInput
+  upsert?: Prisma.PeoUpsertWithoutPeoAttainmentsInput
+  connect?: Prisma.PeoWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PeoUpdateToOneWithWhereWithoutPeoAttainmentsInput, Prisma.PeoUpdateWithoutPeoAttainmentsInput>, Prisma.PeoUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
 export type PeoCreateWithoutProgramInput = {
   id: string
   code: string
   description: string
   ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPeoInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutPeoInput
 }
 
 export type PeoUncheckedCreateWithoutProgramInput = {
@@ -375,6 +397,7 @@ export type PeoUncheckedCreateWithoutProgramInput = {
   code: string
   description: string
   ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPeoInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutPeoInput
 }
 
 export type PeoCreateOrConnectWithoutProgramInput = {
@@ -418,6 +441,7 @@ export type PeoCreateWithoutPloToPeoMapsInput = {
   code: string
   description: string
   program: Prisma.ProgramCreateNestedOneWithoutPeosInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutPeoInput
 }
 
 export type PeoUncheckedCreateWithoutPloToPeoMapsInput = {
@@ -425,6 +449,7 @@ export type PeoUncheckedCreateWithoutPloToPeoMapsInput = {
   programId: string
   code: string
   description: string
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutPeoInput
 }
 
 export type PeoCreateOrConnectWithoutPloToPeoMapsInput = {
@@ -448,6 +473,7 @@ export type PeoUpdateWithoutPloToPeoMapsInput = {
   code?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   program?: Prisma.ProgramUpdateOneRequiredWithoutPeosNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoUncheckedUpdateWithoutPloToPeoMapsInput = {
@@ -455,6 +481,55 @@ export type PeoUncheckedUpdateWithoutPloToPeoMapsInput = {
   programId?: Prisma.StringFieldUpdateOperationsInput | string
   code?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutPeoNestedInput
+}
+
+export type PeoCreateWithoutPeoAttainmentsInput = {
+  id: string
+  code: string
+  description: string
+  program: Prisma.ProgramCreateNestedOneWithoutPeosInput
+  ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPeoInput
+}
+
+export type PeoUncheckedCreateWithoutPeoAttainmentsInput = {
+  id: string
+  programId: string
+  code: string
+  description: string
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPeoInput
+}
+
+export type PeoCreateOrConnectWithoutPeoAttainmentsInput = {
+  where: Prisma.PeoWhereUniqueInput
+  create: Prisma.XOR<Prisma.PeoCreateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedCreateWithoutPeoAttainmentsInput>
+}
+
+export type PeoUpsertWithoutPeoAttainmentsInput = {
+  update: Prisma.XOR<Prisma.PeoUpdateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedUpdateWithoutPeoAttainmentsInput>
+  create: Prisma.XOR<Prisma.PeoCreateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedCreateWithoutPeoAttainmentsInput>
+  where?: Prisma.PeoWhereInput
+}
+
+export type PeoUpdateToOneWithWhereWithoutPeoAttainmentsInput = {
+  where?: Prisma.PeoWhereInput
+  data: Prisma.XOR<Prisma.PeoUpdateWithoutPeoAttainmentsInput, Prisma.PeoUncheckedUpdateWithoutPeoAttainmentsInput>
+}
+
+export type PeoUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  program?: Prisma.ProgramUpdateOneRequiredWithoutPeosNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPeoNestedInput
+}
+
+export type PeoUncheckedUpdateWithoutPeoAttainmentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoCreateManyProgramInput = {
@@ -468,6 +543,7 @@ export type PeoUpdateWithoutProgramInput = {
   code?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPeoNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoUncheckedUpdateWithoutProgramInput = {
@@ -475,6 +551,7 @@ export type PeoUncheckedUpdateWithoutProgramInput = {
   code?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPeoNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutPeoNestedInput
 }
 
 export type PeoUncheckedUpdateManyWithoutProgramInput = {
@@ -490,10 +567,12 @@ export type PeoUncheckedUpdateManyWithoutProgramInput = {
 
 export type PeoCountOutputType = {
   ploToPeoMaps: number
+  peoAttainments: number
 }
 
 export type PeoCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   ploToPeoMaps?: boolean | PeoCountOutputTypeCountPloToPeoMapsArgs
+  peoAttainments?: boolean | PeoCountOutputTypeCountPeoAttainmentsArgs
 }
 
 /**
@@ -513,6 +592,13 @@ export type PeoCountOutputTypeCountPloToPeoMapsArgs<ExtArgs extends runtime.Type
   where?: Prisma.PloToPeoMapWhereInput
 }
 
+/**
+ * PeoCountOutputType without action
+ */
+export type PeoCountOutputTypeCountPeoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PeoAttainmentWhereInput
+}
+
 
 export type PeoSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -521,6 +607,7 @@ export type PeoSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   description?: boolean
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
   ploToPeoMaps?: boolean | Prisma.Peo$ploToPeoMapsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.Peo$peoAttainmentsArgs<ExtArgs>
   _count?: boolean | Prisma.PeoCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["peo"]>
 
@@ -551,6 +638,7 @@ export type PeoOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
 export type PeoInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   program?: boolean | Prisma.ProgramDefaultArgs<ExtArgs>
   ploToPeoMaps?: boolean | Prisma.Peo$ploToPeoMapsArgs<ExtArgs>
+  peoAttainments?: boolean | Prisma.Peo$peoAttainmentsArgs<ExtArgs>
   _count?: boolean | Prisma.PeoCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PeoIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -565,6 +653,7 @@ export type $PeoPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   objects: {
     program: Prisma.$ProgramPayload<ExtArgs>
     ploToPeoMaps: Prisma.$PloToPeoMapPayload<ExtArgs>[]
+    peoAttainments: Prisma.$PeoAttainmentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -967,6 +1056,7 @@ export interface Prisma__PeoClient<T, Null = never, ExtArgs extends runtime.Type
   readonly [Symbol.toStringTag]: "PrismaPromise"
   program<T extends Prisma.ProgramDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProgramDefaultArgs<ExtArgs>>): Prisma.Prisma__ProgramClient<runtime.Types.Result.GetResult<Prisma.$ProgramPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   ploToPeoMaps<T extends Prisma.Peo$ploToPeoMapsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Peo$ploToPeoMapsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloToPeoMapPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  peoAttainments<T extends Prisma.Peo$peoAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Peo$peoAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1422,6 +1512,30 @@ export type Peo$ploToPeoMapsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.PloToPeoMapScalarFieldEnum | Prisma.PloToPeoMapScalarFieldEnum[]
+}
+
+/**
+ * Peo.peoAttainments
+ */
+export type Peo$peoAttainmentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PeoAttainment
+   */
+  select?: Prisma.PeoAttainmentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PeoAttainment
+   */
+  omit?: Prisma.PeoAttainmentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PeoAttainmentInclude<ExtArgs> | null
+  where?: Prisma.PeoAttainmentWhereInput
+  orderBy?: Prisma.PeoAttainmentOrderByWithRelationInput | Prisma.PeoAttainmentOrderByWithRelationInput[]
+  cursor?: Prisma.PeoAttainmentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PeoAttainmentScalarFieldEnum | Prisma.PeoAttainmentScalarFieldEnum[]
 }
 
 /**
