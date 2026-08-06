@@ -20,6 +20,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Tables** use `@tanstack/react-table` (`components/data-table.tsx`).
 - **Commands** use Bun: `bun dev`, `bun run lint` (biome check), `bun run format` (biome format --write).
 
+## Environment & secrets (dotenvx)
+
+- `.env.local` is **encrypted with dotenvx** (public-key encryption, `DOTENV_PUBLIC_KEY_LOCAL` header). The decryption key lives in `.env.keys` (gitignored) — never commit it.
+- Run every command through `dotenvx run -f .env.local -- <cmd>` so decrypted vars are injected into the process: `bun dev`, `bun run build`, `bun run start`, etc. Next.js does not decrypt `.env.local` itself.
+- To edit secrets: `bun run env:decrypt` → edit → `bun run env:encrypt`.
+- Env vars are validated by Zod in `utils/env.ts` (mirrors backend `@env`). Prefer `import { env } from "@/utils/env"` over reading `process.env` directly in server code.
+- **Edge-runtime exception:** `lib/dev-mode.ts` (imported by `proxy.ts`) must stay edge-safe — it reads `process.env.DEVELOPMENT` directly and must not import dotenvx or `server-only` code.
+- `DEVELOPMENT=true` disables auth (frontend-only): `proxy.ts` + server guards (`server/auth.ts`, `server/api.ts`) short-circuit to a dev `system_admin` user so every route is viewable without an account. The backend still enforces auth.
+
 ## Canonical domain rules (consume from backend, do not re-derive)
 
 The backend is the source of truth for all institutional computations. The frontend **renders server-computed values as read-only badges/results**; do not duplicate the rules locally or they will drift.
