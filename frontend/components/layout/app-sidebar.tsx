@@ -16,6 +16,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { ApiUser } from "@/lib/api-client";
+import { roleLabel } from "@/lib/roles";
+import { app } from "@/utils/app-info";
 
 /**
  * Role-aware application sidebar. Nav content (workspace + form catalog +
@@ -33,10 +35,17 @@ export function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton
               className="hover:bg-sidebar active:bg-sidebar"
-              render={<Link href="/dashboard" aria-label="Obelisk dashboard" />}
+              render={
+                <Link href="/dashboard" aria-label={`${app.title} dashboard`} />
+              }
             >
               <ObeliskLogo className="size-5" />
-              <span className="text-base font-semibold">Obelisk</span>
+              <div className="grid flex-1 leading-tight">
+                <span className="text-base font-semibold">{app.title}</span>
+                <span className="truncate font-mono font-bold text-xs text-foreground/70">
+                  {roleLabel(user.role)}
+                </span>
+              </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

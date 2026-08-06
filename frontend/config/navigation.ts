@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 
 import { ACADEMIC_ROLES, hasAccess, type UserRole } from "@/lib/roles";
+import { app } from "@/utils/app-info";
 
 export interface NavChild {
   title: string;
@@ -204,5 +205,5 @@ export function titleForPathname(pathname: string): string {
       if (!best || link.url.length > best.url.length) best = link;
     }
   }
-  return best?.title ?? "Obelisk";
+  return best?.title ?? app.title;
 }

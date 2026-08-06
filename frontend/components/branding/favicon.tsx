@@ -2,9 +2,10 @@
 
 import { useEffect } from "react";
 import { useTheme } from "@/components/theme/theme-provider";
+import { app } from "@/utils/app-info";
 
-const LIGHT_ICON = "/metadata/obelisk-logo.svg";
-const DARK_ICON = "/metadata/obelisk-logo-dark.svg";
+const LIGHT_ICON = app.logo.light;
+const DARK_ICON = app.logo.dark;
 
 export function FaviconSync() {
   const { resolvedTheme } = useTheme();

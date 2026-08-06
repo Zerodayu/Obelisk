@@ -4,6 +4,7 @@ import { LoginForm } from "@/components/auth/login-form";
 import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { Separator } from "@/components/ui/separator";
 import { requireGuest } from "@/server/auth";
+import { app } from "@/utils/app-info";
 
 const SignIn = async ({
   searchParams,
@@ -23,7 +24,7 @@ const SignIn = async ({
         <div className="border border-border/70 bg-muted/60 px-10 py-14 max-sm:border-x-0 sm:rounded-lg sm:shadow-sm/2">
           <ObeliskLogo className="mx-auto size-9" />
           <h1 className="mt-3 text-center font-medium text-2xl tracking-[-0.015em]">
-            Login to Obelisk
+            Login to {app.title}
           </h1>
 
           <div className="mt-10">
@@ -59,7 +60,7 @@ const SignIn = async ({
           />
 
           <p className="relative isolate text-center text-sm">
-            New to Obelisk?{" "}
+            New to {app.title}?{" "}
             <Link className="text-muted-foreground underline" href="/register">
               Create an account
             </Link>

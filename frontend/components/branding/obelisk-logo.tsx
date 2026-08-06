@@ -1,8 +1,6 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-
-const LIGHT_LOGO = "/metadata/obelisk-logo.svg";
-const DARK_LOGO = "/metadata/obelisk-logo-dark.svg";
+import { app } from "@/utils/app-info";
 
 /**
  * Obelisk brand mark. Renders the themed SVG from `public/metadata/` and swaps
@@ -13,15 +11,15 @@ export function ObeliskLogo({ className }: { className?: string }) {
   return (
     <>
       <Image
-        src={LIGHT_LOGO}
-        alt="Obelisk logo"
+        src={app.logo.light}
+        alt={`${app.title} logo`}
         width={300}
         height={300}
         className={cn("size-5 dark:hidden", className)}
       />
       <Image
-        src={DARK_LOGO}
-        alt="Obelisk logo"
+        src={app.logo.dark}
+        alt={`${app.title} logo`}
         width={300}
         height={300}
         className={cn("hidden size-5 dark:block", className)}
