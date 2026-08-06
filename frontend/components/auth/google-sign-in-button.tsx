@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { GoogleLogo } from "@/components/branding/icons";
 import { Button } from "@/components/ui/button";
-import { startGoogleSignIn } from "@/server/actions/auth";
+import { authClient } from "@/lib/auth-client";
 
 interface GoogleSignInButtonProps {
   /** Frontend path better-auth redirects the browser to after the OAuth exchange. */
@@ -15,8 +15,8 @@ interface GoogleSignInButtonProps {
 
 /**
  * Single "Continue with Google" entry point for login/register. Starts the
- * better-auth social flow: POSTs `/auth/sign-in/social` (returns the Google
- * authorize URL), then navigates the top-level window to it.
+ * better-auth social flow through the client: POSTs `/api/v1/auth/sign-in/social`
+ * (proxied to the backend), then navigates to the returned Google authorize URL.
  */
 export const GoogleSignInButton = ({
   callbackURL,
@@ -29,13 +29,23 @@ export const GoogleSignInButton = ({
   async function signIn() {
     setSubmitting(true);
     setError(null);
-    const result = await startGoogleSignIn({ callbackURL, errorCallbackURL });
-    if (!result.ok) {
+    const { data, error } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: new URL(callbackURL, window.location.origin).toString(),
+      errorCallbackURL: errorCallbackURL
+        ? new URL(errorCallbackURL, window.location.origin).toString()
+        : undefined,
+    });
+    if (error) {
       setSubmitting(false);
-      setError(result.error);
+      setError(
+        error.message ?? "Could not start Google sign-in. Please try again.",
+      );
       return;
     }
-    window.location.assign(result.data.url);
+    if (data?.url && !data.redirect) {
+      window.location.assign(data.url);
+    }
   }
 
   return (
