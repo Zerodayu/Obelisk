@@ -13,7 +13,7 @@
 
 import "server-only";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import {
   API_ROOT,
@@ -65,6 +65,19 @@ const DEV_SESSION: ApiSession = {
   userAgent: null,
 };
 
+/**
+ * Relay the incoming request's `Origin` (falling back to `Referer`) to the
+ * backend. better-auth validates the `Origin` header on cookie-carrying POSTs
+ * (CSRF protection); without it the backend rejects with "Missing or null
+ * Origin".
+ */
+async function forwardedOrigin(): Promise<string | undefined> {
+  const requestHeaders = await headers();
+  return (
+    requestHeaders.get("origin") ?? requestHeaders.get("referer") ?? undefined
+  );
+}
+
 async function serverFetch<T>(
   path: string,
   init: RequestInit = {},
@@ -74,12 +87,14 @@ async function serverFetch<T>(
     .getAll()
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
+  const origin = await forwardedOrigin();
 
   const res = await fetch(`${API_ROOT}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      ...(origin ? { Origin: origin } : {}),
       ...(init.headers ?? {}),
     },
     cache: "no-store",
@@ -180,12 +195,14 @@ async function actionFetch<T>(
     .getAll()
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join("; ");
+  const origin = await forwardedOrigin();
 
   const res = await fetch(`${API_ROOT}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      ...(origin ? { Origin: origin } : {}),
       ...(init.headers ?? {}),
     },
     cache: "no-store",
