@@ -33,6 +33,19 @@ export async function requireUser(): Promise<ApiUser> {
 }
 
 /**
+ * Guest guard for auth-only routes (`/login`, `/register`): redirects an
+ * already-authenticated user to their home (`/dashboard`).
+ *
+ * In dev mode the simulated role is treated as authenticated like production
+ * when `DEV_ENFORCE_ROLE_ACCESS` is `true`; when it is `false` the auth pages
+ * stay previewable.
+ */
+export async function requireGuest(): Promise<void> {
+  const user = await currentUser();
+  if (user && (!isDevMode || DEV_ENFORCE_ROLE_ACCESS)) redirect("/dashboard");
+}
+
+/**
  * Role guard for a route group: redirects to `/login` when unauthenticated and
  * to `/dashboard` when authenticated but not allowed (matching the "client
  * hides/navigates" model — the backend still enforces authority).

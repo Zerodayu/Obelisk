@@ -4,6 +4,7 @@ import { GoogleLogo } from "@/components/branding/icons";
 import { Logo } from "@/components/branding/logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { requireGuest } from "@/server/auth";
 
 const SignIn = async ({
   searchParams,
@@ -11,6 +12,7 @@ const SignIn = async ({
   searchParams: Promise<{ registered?: string }>;
 }) => {
   const { registered } = await searchParams;
+  await requireGuest();
 
   return (
     <div className="flex h-screen items-center justify-center">
