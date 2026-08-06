@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { GoogleLogo } from "@/components/icons";
-import { LoginForm } from "@/components/login-form";
-import { Logo } from "@/components/logo";
+import { GoogleLogo } from "@/components/branding/icons";
+import { LoginForm } from "@/components/auth/login-form";
+import { Logo } from "@/components/branding/logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
