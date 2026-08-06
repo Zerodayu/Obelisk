@@ -8,6 +8,5 @@
  */
 import { env } from "@/utils/env";
 
-const normalized = env.DEVELOPMENT.trim().toLowerCase();
-export const isDevMode =
-  normalized === "true" || normalized === "1" || normalized === "yes";
+const raw = env.DEVELOPMENT?.trim().toLowerCase();
+export const isDevMode = raw === "true" || raw === "1" || raw === "yes";

@@ -1,19 +1,17 @@
-import dotenvx from "@dotenvx/dotenvx";
 import { z } from "zod";
 
-// Load the encrypted `.env.local` from disk in the Node runtime only. The
-// edge runtime (`proxy.ts`) and the browser cannot access the filesystem —
-// they rely on vars injected by `dotenvx run` / Next.js at build time.
-if (
-  typeof process !== "undefined" &&
-  process.env.NEXT_RUNTIME !== "edge" &&
-  process.env.NODE_ENV
-) {
-  dotenvx.config({ path: ".env.local" });
-}
+const rawEnv = {
+  DEVELOPMENT: process.env.DEVELOPMENT,
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  // DATABASE_URL: process.env.DATABASE_URL,
+  // BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
+  // BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
+  // FRONTEND_URL: process.env.FRONTEND_URL,
+  // PYTHON_SERVER_URL: process.env.PYTHON_SERVER_URL,
+};
 
 const envSchema = z.object({
-  DEVELOPMENT: z.string().min(1),
+  DEVELOPMENT: z.string().min(1).optional(),
   NEXT_PUBLIC_API_URL: z.string().min(1),
   // DATABASE_URL: z.string().min(1),
   // BETTER_AUTH_SECRET: z.string().min(1),
@@ -22,4 +20,4 @@ const envSchema = z.object({
   // PYTHON_SERVER_URL: z.string().min(1),
 });
 
-export const env = envSchema.parse(process.env);
+export const env = envSchema.parse(rawEnv);
