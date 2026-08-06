@@ -23,7 +23,7 @@
 | `/archives/[clusterId]` | `app/(app)/archives/[clusterId]/page.tsx` | Read-only per-student snapshot placeholder | aqau/vpaa/dean/system_admin |
 | `/faculty` | `app/faculty/page.tsx` | **Legacy redirect** → `/forms/clo-raw-data` | — |
 
-Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/app-shell.tsx` (auth gate + shell), `components/app-sidebar.tsx` (registry-driven), `lib/roles.ts`, `lib/api.ts`, `lib/api/server.ts`, `lib/auth.ts`, `lib/navigation.tsx`.
+Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/app-shell.tsx` (auth gate + shell), `components/app-sidebar.tsx` (registry-driven), `lib/roles.ts`, `lib/api-client.ts`, `server/api-client.ts`, `server/auth.ts`, `lib/navigation.tsx`.
 
 ## 2. Target Architecture
 
@@ -42,7 +42,7 @@ Form routes key off the stable snake_case codes (see `../backend/SYSTEM-DESIGN.m
 The frontend uses **both** layers, each doing what it does best — the backend remains the source of truth for enforcement (the client only hides/navigates):
 
 - **`proxy.ts`** (Next 16 `proxy`, formerly middleware) — the **coarse** gate. On `/dashboard`, `/forms`, `/archives` (and `/login` is excluded), it checks for the better-auth session cookie prefix (`obelisk-app.session`) and redirects unauthenticated requests to `/login?next=…`. It never authorizes — reading a cookie is all it does.
-- **`app/(app)/layout.tsx`** (Server Component) — real session validation via `lib/auth.requireUser()` → `GET /auth/me`; redirects to `/login` when invalid.
+- **`app/(app)/layout.tsx`** (Server Component) — real session validation via `server/auth.requireUser()` → `GET /auth/me`; redirects to `/login` when invalid.
 - **Role-restricted route groups** get their own nested `layout.tsx` calling `requireRole([...])` (e.g. `forms/clo-raw-data`, `archives`). Unauthorized roles are redirected to `/dashboard`.
 - **`lib/roles.ts`** — central allow/deny logic (`hasAccess`, role groups, scope resolvers). Nav/routes/forms are filtered through it.
 
@@ -58,9 +58,9 @@ Single source of truth for what is in the sidebar and which routes each role may
 
 ### 2.5 API client layer
 
-- **`lib/api.ts`** — browser client: typed `api.get/post/put/patch/delete`, cookie credentials, `NEXT_PUBLIC_API_URL`, error handling (`ApiError`), and the `MeResponse`/`ApiUser` types. All data flows through it — no inline fetch in pages.
-- **`lib/api/server.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`).
-- **`lib/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireRole`, `requireRoleOrNotFound`).
+- **`lib/api-client.ts`** — browser client: typed `api.get/post/put/patch/delete`, cookie credentials, `NEXT_PUBLIC_API_URL`, error handling (`ApiError`), and the `MeResponse`/`ApiUser` types. All data flows through it — no inline fetch in pages.
+- **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`).
+- **`server/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireRole`, `requireRoleOrNotFound`).
 
 ## 3. Role & Scope Matrix
 
@@ -108,7 +108,7 @@ Build once, reuse across all forms (defined in `frontend/AGENTS.md`):
 
 ```
 User edits form ──> react-hook-form + Zod (client validation mirrors backend)
-   ──> lib/api.ts ──POST api/v1/forms/:code──> backend
+   ──> lib/api-client.ts ──POST api/v1/forms/:code──> backend
    ──< server-validated + computed fields (attainment %, status, approvals) <──
    ──> rendered read-only via computed-cell / badges
 ```
@@ -153,4 +153,4 @@ Chart/table data comes from backend rollup endpoints; dashboards currently rende
 - PDF/export rendering of completed forms (`ReportExport`) — decide client-side print sheet vs. backend-rendered artifact.
 - Async upload UX for large class-record files — extend `ClassRecordUpload` (progress, retry, error states).
 - Archive detail-artifact streaming (object-storage URL) vs. backend-proxied download for the `archives/[clusterId]` viewer.
-- Backend is the session source of truth; when `/auth/me` handles token-silent refresh, mirror that in `lib/api.ts`.
+- Backend is the session source of truth; when `/auth/me` handles token-silent refresh, mirror that in `lib/api-client.ts`.
