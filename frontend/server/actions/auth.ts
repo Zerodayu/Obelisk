@@ -1,6 +1,7 @@
 /**
- * Auth server actions — the frontend's mutation layer for sign-in, social
- * sign-in, role requests, and sign-out.
+ * Auth server actions — the frontend's mutation layer for email sign-in, role
+ * requests, and sign-out. Google social sign-in uses the better-auth client
+ * (`lib/auth-client.ts`) directly in the browser.
  *
  * Server actions live in `server/actions/` (one file per domain) and are the
  * only place the frontend performs authenticated mutations. They go through
@@ -15,7 +16,6 @@
 
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api-client";
@@ -29,19 +29,6 @@ export type ActionResult<TData = void> =
 
 function errorMessage(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
-}
-
-/** Resolve a frontend path into an absolute URL from the incoming request. */
-async function absoluteUrl(path: string): Promise<string> {
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const requestHeaders = await headers();
-  const host =
-    requestHeaders.get("x-forwarded-host") ??
-    requestHeaders.get("host") ??
-    "localhost:3000";
-  const proto =
-    requestHeaders.get("x-forwarded-proto")?.split(",")[0]?.trim() ?? "http";
-  return `${proto}://${host}${path}`;
 }
 
 /**
@@ -66,36 +53,6 @@ export async function signInWithEmail(input: {
     };
   }
   redirect(input.next?.startsWith("/") ? input.next : "/dashboard");
-}
-
-/** Start the Google OAuth flow; returns the authorize URL for the browser to follow. */
-export async function startGoogleSignIn(input: {
-  /** Frontend path better-auth redirects the browser to after the OAuth exchange. */
-  callbackURL: string;
-  /** Frontend path the browser lands on when the OAuth exchange fails. */
-  errorCallbackURL?: string;
-}): Promise<ActionResult<{ url: string }>> {
-  try {
-    const { url } = await actionApi.post<{ url: string }>(
-      "/auth/sign-in/social",
-      {
-        provider: "google",
-        callbackURL: await absoluteUrl(input.callbackURL),
-        errorCallbackURL: input.errorCallbackURL
-          ? await absoluteUrl(input.errorCallbackURL)
-          : undefined,
-      },
-    );
-    return { ok: true, data: { url } };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(
-        err,
-        "Could not start Google sign-in. Please try again.",
-      ),
-    };
-  }
 }
 
 /** File (or re-file) a role request for the signed-in user. */
