@@ -39,11 +39,11 @@ export function AppSidebar({
                 <Link href="/dashboard" aria-label={`${app.title} dashboard`} />
               }
             >
-              <ObeliskLogo className="size-5" />
+              <ObeliskLogo className="size-9" />
               <div className="grid flex-1 leading-tight">
-                <span className="text-base font-semibold">{app.title}</span>
+                <span className="text-base font-bold">{app.title}</span>
                 <span className="truncate font-mono font-bold text-xs text-foreground/70">
-                  {roleLabel(user.role)}
+                  — {roleLabel(user.role)}
                 </span>
               </div>
             </SidebarMenuButton>
