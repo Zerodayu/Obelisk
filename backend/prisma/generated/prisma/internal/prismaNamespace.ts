@@ -16,10 +16,10 @@
  */
 
 import * as runtime from "@prisma/client/runtime/client"
-import type * as Prisma from "../models.js"
-import { type PrismaClient } from "./class.js"
+import type * as Prisma from "../models"
+import { type PrismaClient } from "./class"
 
-export type * from '../models.js'
+export type * from '../models'
 
 export type DMMF = typeof runtime.DMMF
 
@@ -2789,6 +2789,8 @@ export const UserScalarFieldEnum = {
   createdAt: 'createdAt',
   updatedAt: 'updatedAt',
   role: 'role',
+  requestedRole: 'requestedRole',
+  roleRequestStatus: 'roleRequestStatus',
   employeeId: 'employeeId',
   programId: 'programId',
   departmentId: 'departmentId',
@@ -3280,6 +3282,20 @@ export type EnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
  * Reference to a field of type 'UserRole[]'
  */
 export type ListEnumUserRoleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UserRole[]'>
+    
+
+
+/**
+ * Reference to a field of type 'RoleRequestStatus'
+ */
+export type EnumRoleRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RoleRequestStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'RoleRequestStatus[]'
+ */
+export type ListEnumRoleRequestStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'RoleRequestStatus[]'>
     
 
 

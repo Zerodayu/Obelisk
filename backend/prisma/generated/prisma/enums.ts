@@ -22,6 +22,16 @@ export const UserRole = {
 export type UserRole = (typeof UserRole)[keyof typeof UserRole]
 
 
+export const RoleRequestStatus = {
+  none: 'none',
+  pending: 'pending',
+  approved: 'approved',
+  denied: 'denied'
+} as const
+
+export type RoleRequestStatus = (typeof RoleRequestStatus)[keyof typeof RoleRequestStatus]
+
+
 export const AssessmentType = {
   direct: 'direct',
   indirect: 'indirect'

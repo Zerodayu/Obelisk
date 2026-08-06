@@ -8,11 +8,13 @@ model user {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // --- Institutional extensions ---
-  role         UserRole @default(user)
-  employeeId   String?  @unique @map("employee_id")
-  programId    String?  @map("program_id")
-  departmentId String?  @map("department_id")
-  isActive     Boolean  @default(true) @map("is_active")
+  role               UserRole           @default(user)
+  requestedRole      UserRole?          @map("requested_role")
+  roleRequestStatus  RoleRequestStatus  @default(none) @map("role_request_status")
+  employeeId         String?            @unique @map("employee_id")
+  programId          String?            @map("program_id")
+  departmentId       String?            @map("department_id")
+  isActive           Boolean            @default(true) @map("is_active")
 
   // Forward relations
   program    Program?    @relation(fields: [programId], references: [id])
