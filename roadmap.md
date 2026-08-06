@@ -149,6 +149,8 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] **Role-scoped routing foundation** — `proxy.ts` coarse auth gate; `(app)` layout (server `requireUser`); single adaptive `/dashboard` with per-role dashboards (registry in `role-dashboard.tsx`); form route groups keyed by stable codes; archives viewer gated to aqau/vpaa/dean/system_admin; `/faculty` redirects → `/forms/clo-raw-data`.
 - [x] **API client layer** — `lib/api.ts` (browser), `lib/api/server.ts` (server-only), `lib/auth.ts` (guards).
 - [x] **Role & nav registry** — `lib/roles.ts` + `lib/navigation.tsx` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
+- [x] **Sign-up + role request** — `/register` with role selection; new accounts default to `user` until a `system_admin` approves (`requestedRole` + `roleRequestStatus` on the user; `GET/POST /auth/role-requests*`; approval UI on the system-admin dashboard).
+- [x] **DEVELOPMENT auth bypass** — when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev `system_admin` user so every route is viewable without an account (frontend-only; backend still requires a session).
 
 ### Shared infrastructure
 
@@ -183,6 +185,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 - [x] Prisma schema (auth, academic, outcomes, assessment, forms, attainment, monitoring, reports, archive)
 - [x] better-auth (email/password, sessions), `/auth/me`, OpenAPI
+- [x] Role request workflow — `requestedRole`/`roleRequestStatus` on `user`; system_admin-only list/approve/deny endpoints
 - [x] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators, forms module, ingest client)
 - [ ] Feature routes (all forms) — see Phases 1–6
 - [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
