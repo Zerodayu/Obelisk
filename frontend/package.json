@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bunx dotenvx run -f .env.local -- next dev",
+    "build": "bunx dotenvx run -f .env.local -- next build",
+    "start": "bunx dotenvx run -f .env.local -- next start",
 
     "env:encrypt": "bunx dotenvx encrypt -f .env.local",
     "env:decrypt": "bunx dotenvx decrypt -f .env.local",
