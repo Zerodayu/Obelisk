@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { GoogleLogo } from "@/components/branding/icons";
 import { Button } from "@/components/ui/button";
-import { ApiError, api } from "@/lib/api-client";
+import { startGoogleSignIn } from "@/server/actions/auth";
 
 interface GoogleSignInButtonProps {
   /** Frontend path better-auth redirects the browser to after the OAuth exchange. */
@@ -29,23 +29,13 @@ export const GoogleSignInButton = ({
   async function signIn() {
     setSubmitting(true);
     setError(null);
-    try {
-      const { url } = await api.post<{ url: string }>("/auth/sign-in/social", {
-        provider: "google",
-        callbackURL: new URL(callbackURL, window.location.origin).toString(),
-        errorCallbackURL: errorCallbackURL
-          ? new URL(errorCallbackURL, window.location.origin).toString()
-          : undefined,
-      });
-      window.location.assign(url);
-    } catch (err) {
+    const result = await startGoogleSignIn({ callbackURL, errorCallbackURL });
+    if (!result.ok) {
       setSubmitting(false);
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Could not start Google sign-in. Please try again.",
-      );
+      setError(result.error);
+      return;
     }
+    window.location.assign(result.data.url);
   }
 
   return (

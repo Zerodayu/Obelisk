@@ -2,14 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Mail } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ApiError, api } from "@/lib/api-client";
+import { signInWithEmail } from "@/server/actions/auth";
 
 const formSchema = z.object({
   email: z.email({
@@ -26,7 +25,6 @@ interface LoginFormProps {
 }
 
 export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,19 +39,13 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setSubmitting(true);
     setError(null);
-    try {
-      await api.post("/auth/sign-in/email", {
-        email: values.email,
-        password: values.password,
-      });
-      router.push(next);
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
-    } finally {
+    const result = await signInWithEmail({
+      email: values.email,
+      password: values.password,
+      next,
+    });
+    if (!result.ok) {
+      setError(result.error);
       setSubmitting(false);
     }
   }

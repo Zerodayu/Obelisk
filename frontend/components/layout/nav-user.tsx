@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { ApiUser } from "@/lib/api-client";
 import { roleLabel } from "@/lib/roles";
+import { signOut } from "@/server/actions/auth";
 
 function initials(name: string): string {
   return name
@@ -112,6 +113,5 @@ export function NavUser({ user }: { user: ApiUser }) {
 }
 
 function handleSignOut() {
-  // POST /api/v1/auth/sign-out then navigate to /login. Wired when auth lands.
-  window.location.assign("/login");
+  void signOut();
 }

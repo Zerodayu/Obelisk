@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api-client";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
+import { decideRoleRequest } from "@/server/actions/auth";
 
 interface RoleRequestProgram {
   id: string;
@@ -58,16 +59,13 @@ export function RoleRequestsPanel() {
   async function decide(userId: string, action: "approve" | "deny") {
     setBusyId(userId);
     setError(null);
-    try {
-      await api.post(`/auth/role-requests/${userId}/${action}`);
+    const result = await decideRoleRequest(userId, action);
+    if (!result.ok) {
+      setError(result.error);
+    } else {
       await load();
-    } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Action failed. Please retry.",
-      );
-    } finally {
-      setBusyId(null);
     }
+    setBusyId(null);
   }
 
   return (

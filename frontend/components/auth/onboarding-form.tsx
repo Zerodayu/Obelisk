@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SelectRole } from "@/components/auth/select-role";
 import { Button } from "@/components/ui/button";
-import { ApiError, api } from "@/lib/api-client";
+import { fileRoleRequest } from "@/server/actions/auth";
 
 /**
  * Post-login role selection. New Google accounts sign in without a role; they
@@ -24,18 +24,13 @@ export const OnboardingForm = () => {
     }
     setSubmitting(true);
     setError(null);
-    try {
-      await api.post("/auth/role-request", { requestedRole });
+    const result = await fileRoleRequest(requestedRole);
+    if (!result.ok) {
+      setError(result.error);
+    } else {
       setSubmitted(true);
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
-    } finally {
-      setSubmitting(false);
     }
+    setSubmitting(false);
   }
 
   if (submitted) {
