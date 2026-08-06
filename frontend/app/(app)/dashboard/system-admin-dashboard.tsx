@@ -1,3 +1,4 @@
+import { RoleRequestsPanel } from "@/components/auth/role-requests-panel";
 import { PendingSection } from "@/components/dashboard/role-dashboard-shell";
 
 /**
@@ -7,6 +8,7 @@ import { PendingSection } from "@/components/dashboard/role-dashboard-shell";
 export function SystemAdminDashboard() {
   return (
     <section className="space-y-6">
+      <RoleRequestsPanel />
       <PendingSection label="User & role administration" />
       <PendingSection label="Graduation-cluster confirmation" />
       <PendingSection label="System-wide audits & retention" />
