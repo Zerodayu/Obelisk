@@ -36,7 +36,9 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 ### 2.1 Auth — `02-auth.prisma`
 
-`user` (with institutional extensions: `role`, `employeeId`, `programId`, `departmentId`, `isActive`), `session`, `account`, `verification`. `user` holds back-relations for dean/chair/faculty submitter/approver roles.
+`user` (with institutional extensions: `role`, `requestedRole`, `roleRequestStatus`, `employeeId`, `programId`, `departmentId`, `isActive`), `session`, `account`, `verification`. `user` holds back-relations for dean/chair/faculty submitter/approver roles.
+
+**Role request flow:** users self-select `requestedRole` at sign-up; the sign-up hook forces `role = user` and `roleRequestStatus = pending`. A `system_admin` confirms (approve → `role = requestedRole`, `roleRequestStatus = approved`; deny → `roleRequestStatus = denied`, `requestedRole` cleared) via `GET/POST /api/v1/auth/role-requests*`. Until confirmed the user keeps the default `user` role.
 
 ### 2.2 Academic — `03-academic.prisma`
 
@@ -68,7 +70,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 ### 2.9 Enums — `01-enums.prisma`
 
-`UserRole` (user, faculty, program_chair, dean, aqau, vpaa, system_admin), `AssessmentType` (direct, indirect), `SubmissionStatus` (draft, submitted, returned, approved, archived), `ApprovalDecision` (pending, approved, returned), `ApproverRole`, `RecommendationStatus`, `ExportFormat`, `StudentStatus` (active, irregular, transferee, graduated, transferred_out, withdrawn), `GraduationClusterStatus` (open, compiling, archived).
+`UserRole` (user, faculty, program_chair, dean, aqau, vpaa, system_admin), `RoleRequestStatus` (none, pending, approved, denied), `AssessmentType` (direct, indirect), `SubmissionStatus` (draft, submitted, returned, approved, archived), `ApprovalDecision` (pending, approved, returned), `ApproverRole`, `RecommendationStatus`, `ExportFormat`, `StudentStatus` (active, irregular, transferee, graduated, transferred_out, withdrawn), `GraduationClusterStatus` (open, compiling, archived).
 
 ### 2.10 Archive — `10-archive.prisma`
 
@@ -91,7 +93,9 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | `dean` | `department` | Approve budgets/plans, endorse APAR |
 | `aqau` | institution-wide QA | Receive/review filings, cohort tracking oversight, **confirm graduation-cluster compile** |
 | `vpaa` | institution-wide | Approve CAPA/budget, institutional decisions |
-| `system_admin` | everything | Admin/roles, **confirm graduation-cluster compile** |
+| `system_admin` | everything | Admin/roles, **confirm role requests**, **confirm graduation-cluster compile** |
+
+**Role request:** accounts created with a `requestedRole` start as `user` (`roleRequestStatus = pending`). Only `system_admin` may list/approve/deny requests; approval promotes `role = requestedRole`, denial leaves the account at `user`.
 
 **Approval chain (target):** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. Canonical descent: `faculty → program_chair → dean → aqau → vpaa` (exact chain and who prepares/receives each form is form-specific; see §5 catalog).
 
@@ -103,10 +107,13 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 | Method | Path | Guard | Summary |
 | --- | --- | --- | --- |
-| POST | `/api/v1/auth/sign-up/email` | — | better-auth sign-up |
+| POST | `/api/v1/auth/sign-up/email` | — | better-auth sign-up (accepts `requestedRole`; forced to `user`/`pending`) |
 | POST | `/api/v1/auth/sign-in/email` | — | better-auth sign-in |
 | POST | `/api/v1/auth/sign-out` | — | sign-out |
 | GET | `/api/v1/auth/me` | `auth: true` | current user + session |
+| GET | `/api/v1/auth/role-requests` | `auth: true` + system_admin | list role requests (filter by `status`, default `pending`) |
+| POST | `/api/v1/auth/role-requests/:userId/approve` | `auth: true` + system_admin | grant the user's requested role |
+| POST | `/api/v1/auth/role-requests/:userId/deny` | `auth: true` + system_admin | reject the role request (keeps `user` role) |
 | GET | `/api/v1/forms` | `auth: true` | list form submissions (filter by formTypeId/classSectionId/status) |
 | POST | `/api/v1/forms` | `auth: true` | create a draft `FormSubmission` |
 | GET | `/api/v1/forms/:id` | `auth: true` | get a submission with its ordered `ApprovalStep` chain |
