@@ -7,7 +7,7 @@
 
 Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Update the box when a task is truly done (including verification).
 
-**Build strategy: backend-first.** The entire backend (all form phases, incl. tests/lint/typecheck green) is stabilized before **any** frontend work resumes. Frontend work is consolidated in a single deferred section at the bottom and does not start until the backend is stable. **Phase 0 is complete** (tsconfig, scripts, test harness, validators, forms module, ingest client, archival migration applied); Phases 1–7 proceed backend-only.
+**Build strategy: backend-first.** The entire backend (all form phases, incl. tests/lint/typecheck green) is stabilized before **any** frontend form screens are built. Frontend work is consolidated in a single deferred section at the bottom and does not start until the backend is stable. **Phase 0 is complete** (tsconfig, scripts, test harness, validators, forms module, ingest client, archival migration applied); Phases 1–7 proceed backend-only. A routing/scope **foundation** (shell, role-gated routes, adaptive per-role dashboards, API client) was landed early to lock the frontend architecture — see the deferred section.
 
 ---
 
@@ -140,29 +140,30 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ## Frontend (deferred — starts only after backend is stable)
 
-> All frontend work is consolidated here and does **not** begin until the backend phases (0–7) are stable (typecheck + lint + tests green, DB migration applied). Carried forward from the original interleaved plan.
+> All frontend work is consolidated here and does **not** begin until the backend phases (0–7) are stable (typecheck + lint + tests green, DB migration applied). Carried forward from the original interleaved plan. Route sheer/scoping foundation landed ahead of full backend stabilization to lock the architecture.
 
 ### Already built
 
 - [x] App shell, theme, sidebar, login
 - [x] File-upload preview (`faculty` page)
+- [x] **Role-scoped routing foundation** — `proxy.ts` coarse auth gate; `(app)` layout (server `requireUser`); single adaptive `/dashboard` with per-role dashboards (registry in `role-dashboard.tsx`); form route groups keyed by stable codes; archives viewer gated to aqau/vpaa/dean/system_admin; `/faculty` redirects → `/forms/clo-raw-data`.
+- [x] **API client layer** — `lib/api.ts` (browser), `lib/api/server.ts` (server-only), `lib/auth.ts` (guards).
+- [x] **Role & nav registry** — `lib/roles.ts` + `lib/navigation.tsx` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
 
 ### Shared infrastructure
 
-- [ ] `lib/api.ts` API client (cookie credentials, typed responses, `auth/me`)
-- [ ] Role-gated app shell — layout + nav filtered by `role`
 - [ ] `components/obe/` primitives — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table
 
 ### Form screens (mirror backend phases)
 
-- [ ] `clo_raw_data` entry screen (`/forms/clo-raw-data`) + import UX (job progress, structured errors)
-- [ ] CAR screen (`/forms/course-assessment-report`) — 7 parts, computed cells read-only
-- [ ] Roll-up screens (`/forms/attainment/...`) + dashboard KPI cards/charts
-- [ ] CQI screens (`/forms/cqi/...`)
-- [ ] PLAN setup screens (`curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget`)
-- [ ] Supporting/periodic/institutional screens (Phase 6 forms)
-- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin)
-- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down
+- [ ] `clo_raw_data` entry screen (`/forms/clo-raw-data`) — upload panel scaffolded; wire to `POST /ingest/upload` + job polling.
+- [ ] CAR screen (`/forms/course-assessment-report`) — 7 parts, computed cells read-only.
+- [ ] Roll-up screens (`/forms/attainment/...`) + dashboard KPI cards/charts.
+- [ ] CQI screens (`/forms/cqi/...`).
+- [ ] PLAN setup screens (`curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget`).
+- [ ] Supporting/periodic/institutional screens (Phase 6 forms).
+- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin).
+- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down.
 
 ---
 
@@ -187,11 +188,11 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
 - [ ] Archival pipeline — see Phase 7
 
-### frontend (Next.js 16) — **deferred until backend stable**
+### frontend (Next.js 16) — **foundation landed; screens deferred until backend stable**
 
 - [x] App shell, theme, sidebar, login
 - [x] File-upload preview (`faculty` page)
-- [ ] API client layer + role-gated routing
+- [x] API client layer + role-gated routing + adaptive role dashboards (foundation)
 - [ ] OBE form components + wired form screens (see deferred Frontend section)
 
 ---

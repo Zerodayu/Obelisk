@@ -12,7 +12,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Conventions
 
-- **App Router** — routes under `app/`; shared UI under `components/`. Follow the existing examples (`app/dashboard/page.tsx`, `app/faculty/page.tsx`) for layout and client-component patterns.
+- **App Router** — authenticated routes live under `app/(app)/` (auth gate + shell in `app/(app)/layout.tsx`, adaptive dashboard in `app/(app)/dashboard/`, forms under `app/(app)/forms/`); shared UI under `components/`. Follow the existing examples for layout and client-component patterns.
+- **Routing & auth** — `proxy.ts` handles the coarse unauthenticated redirect only. Real session + role gating happen in server layouts via `lib/auth.ts` (`requireUser`, `requireRole`) and `lib/roles.ts`. Nav, sidebar, and route gating derive from the registry in `lib/navigation.tsx` — add a route there **and** create its page.
+- **API client** — use `lib/api.ts` (browser) / `lib/api/server.ts` (Server Components). No inline fetch of backend paths in pages.
 - **shadcn/ui** primitives live in `components/ui/` — reuse them, don't re-implement.
 - **Forms** use `react-hook-form` with **Zod** schemas (mirror backend `model.ts` validation). Keep client validation aligned with the backend so errors match.
 - **Tables** use `@tanstack/react-table` (`components/data-table.tsx`).
