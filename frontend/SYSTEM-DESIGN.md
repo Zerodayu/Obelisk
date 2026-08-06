@@ -62,6 +62,8 @@ Single source of truth for what is in the sidebar and which routes each role may
 - **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`).
 - **`server/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireRole`, `requireRoleOrNotFound`).
 
+**Dev-mode role simulation:** when `DEVELOPMENT=true` the guards short-circuit to the dev user in `server/api-client.ts`. Edit `DEV_ROLE` there to simulate a role (nav, dashboards, and — when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true`, the default — route gates) without an account. The backend still enforces auth.
+
 ## 3. Role & Scope Matrix
 
 Backend status quo from `../backend/SYSTEM-DESIGN.md` §3; the frontend maps each role to a scoped dashboard and an allowed route set. "Scope" indicates what the dashboard filters to — data is still enforced server-side.

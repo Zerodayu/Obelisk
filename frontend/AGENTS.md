@@ -27,7 +27,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - To edit secrets: `bun run env:decrypt` → edit → `bun run env:encrypt`.
 - Env vars are validated by Zod in `utils/env.ts` (mirrors backend `@env`). Prefer `import { env } from "@/utils/env"` over reading `process.env` directly in server code.
 - **Edge-runtime exception:** `lib/dev-mode.ts` (imported by `proxy.ts`) must stay edge-safe — it reads `process.env.DEVELOPMENT` directly and must not import dotenvx or `server-only` code.
-- `DEVELOPMENT=true` disables auth (frontend-only): `proxy.ts` + server guards (`server/auth.ts`, `server/api-client.ts`) short-circuit to a dev `system_admin` user so every route is viewable without an account. The backend still enforces auth.
+- `DEVELOPMENT=true` disables auth (frontend-only): `proxy.ts` + server guards (`server/auth.ts`, `server/api-client.ts`) short-circuit to a dev user so every route is viewable without an account. Simulate a role by editing `DEV_ROLE` in `server/api-client.ts` (default `system_admin`); route access is enforced like prod when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true` (set to `false` for open navigation). The backend still enforces auth.
 
 ## Canonical domain rules (consume from backend, do not re-derive)
 
