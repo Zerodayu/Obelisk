@@ -17,6 +17,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+/**
+ * Applies the persisted/system theme to <html> before first paint to prevent a
+ * light→dark flash on every load. Mirrors `theme-provider.tsx` (storageKey
+ * "theme", values light/dark/system, class strategy).
+ */
+const THEME_INIT_SCRIPT = `(function () {
+  try {
+    var root = document.documentElement;
+    var stored = localStorage.getItem("theme");
+    var theme =
+      stored === "light" || stored === "dark" || stored === "system"
+        ? stored
+        : "system";
+    var resolved =
+      theme === "system"
+        ? window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light"
+        : theme;
+    root.classList.remove("light", "dark");
+    root.classList.add(resolved);
+    root.style.colorScheme = resolved;
+  } catch (e) {}
+})();`;
+
 export const metadata: Metadata = {
   title:
     "Obelisk – OUTCOMES-BASED EDUCATIONAL LEARNING AND INTELLIGENT SYSTEM KIT FOR JOSE MARIA COLLEGE FOUNDATION INC.",
@@ -24,12 +49,12 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/obelisk-logo.svg",
+        url: "/metadata/obelisk-logo.svg",
         type: "image/svg+xml",
         media: "(prefers-color-scheme: light)",
       },
       {
-        url: "/obelisk-logo-dark.svg",
+        url: "/metadata/obelisk-logo-dark.svg",
         type: "image/svg+xml",
         media: "(prefers-color-scheme: dark)",
       },
@@ -45,6 +70,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={cn(
         "h-full",
         "antialiased",
@@ -54,6 +80,10 @@ export default function RootLayout({
         inter.variable,
       )}
     >
+      <head>
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme-init script, no user input */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <ThemeProvider>
         <FaviconSync />
         <body className="min-h-full flex flex-col">{children}</body>

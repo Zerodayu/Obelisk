@@ -1,7 +1,8 @@
 "use client";
 
-import { CommandIcon, FolderIcon } from "lucide-react";
+import { FolderIcon } from "lucide-react";
 import Link from "next/link";
+import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { NavSecondary } from "@/components/layout/nav-secondary";
 import { NavUser } from "@/components/layout/nav-user";
 import { SidebarNav } from "@/components/layout/nav-workspace";
@@ -31,10 +32,10 @@ export function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+              className="hover:bg-sidebar active:bg-sidebar"
               render={<Link href="/dashboard" aria-label="Obelisk dashboard" />}
             >
-              <CommandIcon className="size-5!" />
+              <ObeliskLogo className="size-5" />
               <span className="text-base font-semibold">Obelisk</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
