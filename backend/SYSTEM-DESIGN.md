@@ -7,7 +7,7 @@
 
 ## 1. Architecture & Runtime
 
-- **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (email/password, cookie sessions). **Validation:** Elysia `t` (backend) and Zod.
+- **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (Google OAuth for new accounts — restricted to the organization's Workspace domain; email/password sign-in kept for existing accounts, new email sign-ups disabled). **Validation:** Elysia `t` (backend) and Zod.
 - **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client).
 - **App bootstrap** `src/index.ts`:
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
@@ -38,7 +38,9 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 `user` (with institutional extensions: `role`, `requestedRole`, `roleRequestStatus`, `employeeId`, `programId`, `departmentId`, `isActive`), `session`, `account`, `verification`. `user` holds back-relations for dean/chair/faculty submitter/approver roles.
 
-**Role request flow:** users self-select `requestedRole` at sign-up; the sign-up hook forces `role = user` and `roleRequestStatus = pending`. A `system_admin` confirms (approve → `role = requestedRole`, `roleRequestStatus = approved`; deny → `roleRequestStatus = denied`, `requestedRole` cleared) via `GET/POST /api/v1/auth/role-requests*`. Until confirmed the user keeps the default `user` role.
+**Role request flow:** new accounts sign in through the org-restricted Google provider with no role (`role = user`, `roleRequestStatus = none`). After login they file a role request on the frontend `/onboarding` route via `POST /api/v1/auth/role-request` (`requestedRole` ∈ faculty/program_chair/dean/aqau/vpaa → `roleRequestStatus = pending`). A `system_admin` confirms (approve → `role = requestedRole`, `roleRequestStatus = approved`; deny → `roleRequestStatus = denied`, `requestedRole` cleared) via `GET/POST /api/v1/auth/role-requests*`. Until confirmed the user keeps the default `user` role.
+
+**Account-creation gate:** only organization-email addresses may open an account. The Google provider passes `hd: ORG_EMAIL_DOMAIN` — sent to Google as the hosted-domain authorization hint and enforced against the id-token's `hd` claim (sign-in is rejected when the claim is missing or doesn't match), with the Google Cloud Console Workspace restriction as the outer gate. Email/password **sign-up** is disabled (`emailAndPassword.disableSignUp`); email/password **sign-in** remains available for existing accounts.
 
 ### 2.2 Academic — `03-academic.prisma`
 
@@ -95,7 +97,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | `vpaa` | institution-wide | Approve CAPA/budget, institutional decisions |
 | `system_admin` | everything | Admin/roles, **confirm role requests**, **confirm graduation-cluster compile** |
 
-**Role request:** accounts created with a `requestedRole` start as `user` (`roleRequestStatus = pending`). Only `system_admin` may list/approve/deny requests; approval promotes `role = requestedRole`, denial leaves the account at `user`.
+**Role request:** new accounts (org Google sign-in) file a `requestedRole` on the `/onboarding` route and start as `user` (`roleRequestStatus = pending`). Only `system_admin` may list/approve/deny requests; approval promotes `role = requestedRole`, denial leaves the account at `user`.
 
 **Approval chain (target):** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. Canonical descent: `faculty → program_chair → dean → aqau → vpaa` (exact chain and who prepares/receives each form is form-specific; see §5 catalog).
 
@@ -107,10 +109,12 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 | Method | Path | Guard | Summary |
 | --- | --- | --- | --- |
-| POST | `/api/v1/auth/sign-up/email` | — | better-auth sign-up (accepts `requestedRole`; forced to `user`/`pending`) |
-| POST | `/api/v1/auth/sign-in/email` | — | better-auth sign-in |
+| POST | `/api/v1/auth/sign-up/email` | — | better-auth email sign-up (**disabled** — new accounts must use Google) |
+| POST | `/api/v1/auth/sign-in/email` | — | better-auth sign-in (existing accounts) |
+| POST | `/api/v1/auth/sign-in/social` | — | better-auth Google OAuth (org-email gate at Google Console + `user.create.before` hook) |
 | POST | `/api/v1/auth/sign-out` | — | sign-out |
 | GET | `/api/v1/auth/me` | `auth: true` | current user + session |
+| POST | `/api/v1/auth/role-request` | `auth: true` | file/re-file a role request (`requestedRole` → `pending`) |
 | GET | `/api/v1/auth/role-requests` | `auth: true` + system_admin | list role requests (filter by `status`, default `pending`) |
 | POST | `/api/v1/auth/role-requests/:userId/approve` | `auth: true` + system_admin | grant the user's requested role |
 | POST | `/api/v1/auth/role-requests/:userId/deny` | `auth: true` + system_admin | reject the role request (keeps `user` role) |
