@@ -24,6 +24,9 @@ export interface ApiUser {
   emailVerified: boolean;
   image?: string | null;
   role: UserRole;
+  /** role the user applied for via `/onboarding`; absent until one is filed. */
+  requestedRole?: UserRole | null;
+  roleRequestStatus: "none" | "pending" | "approved" | "denied";
   employeeId?: string | null;
   programId?: string | null;
   departmentId?: string | null;

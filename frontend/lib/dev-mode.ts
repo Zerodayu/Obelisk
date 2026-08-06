@@ -20,4 +20,4 @@ export const isDevMode = raw === "true" || raw === "1" || raw === "yes";
  *
  * Must stay edge-safe (plain boolean) — `proxy.ts` imports this module.
  */
-export const DEV_ENFORCE_ROLE_ACCESS = true;
+export const DEV_ENFORCE_ROLE_ACCESS = false;

@@ -29,7 +29,7 @@ import type { UserRole } from "@/lib/roles";
  *
  * `satisfies UserRole` errors at compile time if a wrong role is typed here.
  */
-export const DEV_ROLE = "aqau" satisfies UserRole;
+export const DEV_ROLE = "faculty" satisfies UserRole;
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
 export const DEV_USER: ApiUser = {
@@ -39,6 +39,8 @@ export const DEV_USER: ApiUser = {
   emailVerified: true,
   image: null,
   role: DEV_ROLE,
+  requestedRole: null,
+  roleRequestStatus: "none",
   employeeId: null,
   programId: null,
   departmentId: null,
