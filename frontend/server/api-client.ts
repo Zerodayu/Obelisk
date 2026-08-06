@@ -120,6 +120,20 @@ interface RelayCookie {
   };
 }
 
+/**
+ * Reverse the URL-encoding the backend applies to cookie values (better-auth
+ * signs+encodes before writing `Set-Cookie`). The relay must hand Next.js the
+ * decoded value so its own re-encoding restores the backend's original form;
+ * otherwise the browser stores a double-encoded value the backend can't parse.
+ */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 /** Parse a raw `Set-Cookie` header into name/value + the options `cookies()` accepts. */
 function parseSetCookie(header: string): RelayCookie | null {
   const parts = header.split(";");
@@ -127,7 +141,7 @@ function parseSetCookie(header: string): RelayCookie | null {
   const eq = nameValue.indexOf("=");
   if (eq <= 0) return null;
   const name = nameValue.slice(0, eq).trim();
-  const value = nameValue.slice(eq + 1).trim();
+  const value = safeDecode(nameValue.slice(eq + 1).trim());
   const options: RelayCookie["options"] = {};
 
   for (const part of rest) {
