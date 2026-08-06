@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCheckIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SelectRole } from "@/components/auth/select-role";
@@ -36,8 +37,8 @@ export const OnboardingForm = () => {
   if (submitted) {
     return (
       <div className="space-y-5 text-center">
-        <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-          ✓
+        <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-success/10 text-success">
+          <CheckCheckIcon className="size-5" />
         </div>
         <div className="space-y-1">
           <p className="font-medium text-base">Request submitted</p>
