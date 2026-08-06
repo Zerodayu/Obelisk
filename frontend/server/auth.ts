@@ -10,6 +10,7 @@ import "server-only";
 
 import { notFound, redirect } from "next/navigation";
 import type { ApiUser } from "@/lib/api";
+import { isDevMode } from "@/lib/dev-mode";
 import { hasAccess, type UserRole } from "@/lib/roles";
 import { getMe } from "@/server/api";
 
@@ -41,7 +42,7 @@ export async function requireRole(
 ): Promise<ApiUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (!hasAccess(user.role, allowed)) redirect("/dashboard");
+  if (!isDevMode && !hasAccess(user.role, allowed)) redirect("/dashboard");
   return user;
 }
 
@@ -51,6 +52,6 @@ export async function requireRoleOrNotFound(
 ): Promise<ApiUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (!hasAccess(user.role, allowed)) notFound();
+  if (!isDevMode && !hasAccess(user.role, allowed)) notFound();
   return user;
 }

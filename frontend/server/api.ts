@@ -10,7 +10,34 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { API_ROOT, type MeResponse } from "@/lib/api";
+import { API_ROOT, type ApiSession, type MeResponse } from "@/lib/api";
+import { isDevMode } from "@/lib/dev-mode";
+
+/** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
+export const DEV_USER = {
+  id: "dev-user",
+  name: "Development User",
+  email: "dev@obelisk.local",
+  emailVerified: true,
+  image: null,
+  role: "system_admin",
+  employeeId: null,
+  programId: null,
+  departmentId: null,
+  isActive: true,
+  createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+} as const;
+
+const DEV_SESSION: ApiSession = {
+  id: "dev-session",
+  userId: DEV_USER.id,
+  expiresAt: new Date("2099-01-01T00:00:00.000Z").toISOString(),
+  createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+  ipAddress: null,
+  userAgent: null,
+};
 
 async function serverFetch<T>(
   path: string,
@@ -44,6 +71,7 @@ async function serverFetch<T>(
  * request is unauthenticated (rather than throwing) so layouts can redirect.
  */
 export async function getMe(): Promise<MeResponse | null> {
+  if (isDevMode) return { user: DEV_USER, session: DEV_SESSION };
   try {
     return await serverFetch<MeResponse>("/auth/me");
   } catch {

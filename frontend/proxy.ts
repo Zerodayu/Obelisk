@@ -1,4 +1,5 @@
 import { type NextProxy, NextResponse } from "next/server";
+import { isDevMode } from "@/lib/dev-mode";
 
 /**
  * Coarse authentication gate (Next.js 16 `proxy`, formerly middleware).
@@ -8,6 +9,9 @@ import { type NextProxy, NextResponse } from "next/server";
  * session-cookie presence check. It never authorizes — real session validation
  * and role gating happen in server layouts (`app/(app)/layout.tsx` +
  * `lib/auth.ts`), which is what proxy is NOT meant to do.
+ *
+ * When DEVELOPMENT=true the gate is disabled so every route is viewable
+ * without an account (frontend-only; the backend still requires a session).
  *
  * The better-auth session cookie is named `<cookiePrefix>.session_token`,
  * where the backend sets `cookiePrefix: "obelisk-app"`.
@@ -30,7 +34,7 @@ export default function nextProxy(
     pathname.startsWith("/images/") ||
     pathname === "/favicon.ico";
 
-  if (!isProtected || isStatic) return NextResponse.next();
+  if (!isProtected || isStatic || isDevMode) return NextResponse.next();
 
   const hasSessionCookie = request.cookies
     .getAll()

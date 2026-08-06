@@ -10,9 +10,9 @@
  */
 
 import type { UserRole } from "@/lib/roles";
+import { env } from "@/utils/env";
 
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+export const API_BASE_URL = env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export const API_ROOT = `${API_BASE_URL}/api/v1`;
 
