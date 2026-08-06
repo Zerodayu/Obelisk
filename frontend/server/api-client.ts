@@ -23,8 +23,13 @@ import type { UserRole } from "@/lib/roles";
  * Role the dev user simulates when DEVELOPMENT=true. Change this to preview
  * what each role sees (nav, dashboards, route gates). `DEV_ENFORCE_ROLE_ACCESS`
  * in `lib/dev-mode.ts` decides whether route access is enforced like prod.
+ *
+ * Valid values (from `USER_ROLES` in `lib/roles.ts`):
+ * "user" | "faculty" | "program_chair" | "dean" | "aqau" | "vpaa" | "system_admin"
+ *
+ * `satisfies UserRole` errors at compile time if a wrong role is typed here.
  */
-export const DEV_ROLE: UserRole = "system_admin";
+export const DEV_ROLE = "aqau" satisfies UserRole;
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
 export const DEV_USER: ApiUser = {
