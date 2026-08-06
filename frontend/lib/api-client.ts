@@ -6,7 +6,7 @@
  * cookie/session (see `backend/SYSTEM-DESIGN.md` §1).
  *
  * The server-side variant used inside server components / layouts lives in
- * `lib/api/server.ts`; import from there when you are fetching for RSC pages.
+ * `server/api-client.ts`; import from there when you are fetching for RSC pages.
  */
 
 import type { UserRole } from "@/lib/roles";

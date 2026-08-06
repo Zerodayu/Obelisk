@@ -10,7 +10,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { API_ROOT, type ApiSession, type MeResponse } from "@/lib/api";
+import { API_ROOT, type ApiSession, type MeResponse } from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
