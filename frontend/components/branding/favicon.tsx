@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/theme/theme-provider";
 
 const LIGHT_ICON = "/metadata/obelisk-logo.svg";
 const DARK_ICON = "/metadata/obelisk-logo-dark.svg";
