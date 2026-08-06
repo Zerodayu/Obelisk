@@ -1,17 +1,20 @@
 import Link from "next/link";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { LoginForm } from "@/components/auth/login-form";
-import { GoogleLogo } from "@/components/branding/icons";
 import { Logo } from "@/components/branding/logo";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { requireGuest } from "@/server/auth";
 
 const SignIn = async ({
   searchParams,
 }: {
-  searchParams: Promise<{ registered?: string }>;
+  searchParams: Promise<{
+    registered?: string;
+    error?: string;
+    next?: string;
+  }>;
 }) => {
-  const { registered } = await searchParams;
+  const { registered, error, next } = await searchParams;
   await requireGuest();
 
   return (
@@ -24,14 +27,10 @@ const SignIn = async ({
           </h1>
 
           <div className="mt-10">
-            <Button
-              className="w-full hover:cursor-pointer"
-              size="lg"
-              type="button"
-            >
-              <GoogleLogo className="mr-2 size-4" />
-              Continue with Google
-            </Button>
+            <GoogleSignInButton
+              callbackURL={next?.startsWith("/") ? next : "/dashboard"}
+              errorCallbackURL="/login"
+            />
 
             <div className="my-6 flex items-center justify-center gap-2 overflow-hidden">
               <Separator />
@@ -39,7 +38,7 @@ const SignIn = async ({
               <Separator />
             </div>
 
-            <LoginForm />
+            <LoginForm next={next?.startsWith("/") ? next : "/dashboard"} />
           </div>
         </div>
 
@@ -73,6 +72,13 @@ const SignIn = async ({
           <span className="size-2 shrink-0 rounded-full bg-primary" />
           Account created. An administrator must approve your role request
           before you get access.
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-x-0 bottom-6 mx-auto flex w-fit max-w-md items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm">
+          <span className="size-2 shrink-0 rounded-full bg-destructive" />
+          Sign-in failed. Make sure you use your organization account.
         </div>
       )}
     </div>

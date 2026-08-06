@@ -3,7 +3,12 @@ import { RegisterForm } from "@/components/auth/register-form";
 import { Logo } from "@/components/branding/logo";
 import { requireGuest } from "@/server/auth";
 
-const Register = async () => {
+const Register = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) => {
+  const { error } = await searchParams;
   await requireGuest();
 
   return (
@@ -15,7 +20,8 @@ const Register = async () => {
             Create an account
           </h1>
           <p className="mt-1 text-center text-sm text-muted-foreground">
-            Your role is activated once an administrator approves your request.
+            Sign in with your organization Google account. You&apos;ll choose
+            your role after logging in.
           </p>
 
           <div className="mt-10">
@@ -47,6 +53,13 @@ const Register = async () => {
           </p>
         </div>
       </div>
+
+      {error && (
+        <div className="absolute inset-x-0 bottom-6 mx-auto flex w-fit max-w-md items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm">
+          <span className="size-2 shrink-0 rounded-full bg-destructive" />
+          Sign-up failed. Make sure you use your organization Google account.
+        </div>
+      )}
     </div>
   );
 };
