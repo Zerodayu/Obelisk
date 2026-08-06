@@ -58,9 +58,10 @@ Single source of truth for what is in the sidebar and which routes each role may
 
 ### 2.5 API client layer
 
-- **`lib/api-client.ts`** — browser client: typed `api.get/post/put/patch/delete`, cookie credentials, `NEXT_PUBLIC_API_URL`, error handling (`ApiError`), and the `MeResponse`/`ApiUser` types. All data flows through it — no inline fetch in pages.
-- **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`).
+- **`lib/api-client.ts`** — browser client: typed `api.get/post/put/patch/delete`, cookie credentials, `NEXT_PUBLIC_API_URL`, error handling (`ApiError`), and the `MeResponse`/`ApiUser` types. All data flows through it — no inline fetch in pages. Use for reads/actions that don't need server-side auth forwarding.
+- **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`). **`actionApi`** is the Server Action variant: it forwards the browser's cookies **and** relays the backend's `Set-Cookie` headers onto the outgoing response so better-auth session cookies land on the frontend origin (matching the `proxy.ts` cookie check); failures throw `ApiError`.
 - **`server/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireRole`, `requireRoleOrNotFound`).
+- **`server/actions/`** — all `"use server"` Server Actions, one file per domain (e.g. `auth.ts`). They are the frontend's mutation layer: form submissions, sign-in/sign-out, approve/deny. Each action authenticates/authorizes, calls `actionApi`, and returns a serializable `ActionResult` (`{ ok: true, data } | { ok: false, error }`); success navigations use `redirect()`. Client components import these actions — mutations never call `api.post` directly.
 
 **Dev-mode role simulation:** when `DEVELOPMENT=true` the guards short-circuit to the dev user in `server/api-client.ts`. Edit `DEV_ROLE` there to simulate a role (nav, dashboards, and — when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true`, the default — route gates) without an account. The backend still enforces auth.
 
@@ -110,8 +111,10 @@ Build once, reuse across all forms (defined in `frontend/AGENTS.md`):
 
 ```
 User edits form ──> react-hook-form + Zod (client validation mirrors backend)
-   ──> lib/api-client.ts ──POST api/v1/forms/:code──> backend
-   ──< server-validated + computed fields (attainment %, status, approvals) <──
+   ──> server/actions/<domain>.ts (Server Action, "use server")
+        ── actionApi (server/api-client.ts) ──POST api/v1/forms/:code──> backend
+        ──< server-validated + computed fields (attainment %, status, approvals) <──
+        ──> returns ActionResult ({ ok, data } | { ok, error })
    ──> rendered read-only via computed-cell / badges
 ```
 
