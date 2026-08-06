@@ -1,6 +1,13 @@
 import { prisma } from "@lib/prisma";
+import type { UserRole } from "@prisma/generated/prisma/enums";
 import type { Session, User } from "better-auth";
 import { Elysia, t } from "elysia";
+import {
+	RoleRequestError,
+	SELF_SELECTABLE_ROLES,
+	type SelfSelectableRole,
+	validateRoleRequest,
+} from "./models";
 import { auth } from "./service";
 
 const ROLE_REQUEST_STATUS = {
@@ -11,16 +18,6 @@ const ROLE_REQUEST_STATUS = {
 } as const;
 
 const ROLE_REQUEST_STATUS_ENUM = t.Enum(ROLE_REQUEST_STATUS);
-
-export class RoleRequestError extends Error {
-	readonly status: number;
-
-	constructor(message: string, status = 400) {
-		super(message);
-		this.name = "RoleRequestError";
-		this.status = status;
-	}
-}
 
 const roleRequestSelect = {
 	id: true,
@@ -39,6 +36,31 @@ const roleRequestSelect = {
 } as const;
 
 export const roleRequestService = {
+	/**
+	 * File (or re-file) a role request for the signed-in user. New accounts
+	 * sign in through the org-restricted Google provider without a role; they
+	 * choose one here and a system_admin must approve it.
+	 */
+	async submit(
+		user: { id: string; role?: string; roleRequestStatus?: string },
+		requestedRole: string,
+	) {
+		const validation = validateRoleRequest(user, requestedRole);
+		if (!validation.ok) {
+			throw new RoleRequestError(validation.message, validation.status);
+		}
+
+		await prisma.user.update({
+			where: { id: user.id },
+			data: {
+				requestedRole: requestedRole as UserRole,
+				roleRequestStatus: "pending",
+			},
+		});
+
+		return { ok: true };
+	},
+
 	async list(status: keyof typeof ROLE_REQUEST_STATUS = "pending") {
 		return prisma.user.findMany({
 			where: { roleRequestStatus: status },
@@ -118,6 +140,44 @@ export const authPlugin = new Elysia({ name: "auth" })
 					},
 				},
 			})
+			.post(
+				"/auth/role-request",
+				async ({ user, body, set }) => {
+					try {
+						return await roleRequestService.submit(user, body.requestedRole);
+					} catch (error) {
+						if (error instanceof RoleRequestError) {
+							set.status = error.status;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					body: t.Object({
+						requestedRole: t.Enum(
+							Object.fromEntries(
+								SELF_SELECTABLE_ROLES.map((role) => [role, role]),
+							) as Record<SelfSelectableRole, SelfSelectableRole>,
+						),
+					}),
+					detail: {
+						tags: ["Auth"],
+						summary: "Request a role",
+						description:
+							"Authenticated users without an institutional role file a role request here; a system_admin must approve it before the role is granted.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Role request filed" },
+							400: { description: "Invalid requested role" },
+							401: { description: "Unauthorized" },
+							409: {
+								description: "Account already has a role or a pending request",
+							},
+						},
+					},
+				},
+			)
 			.get(
 				"/auth/role-requests",
 				async ({ user, query, set }) => {
