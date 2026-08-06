@@ -13,6 +13,51 @@ export const auth = betterAuth({
 
 	plugins: [openAPI()],
 
+	user: {
+		additionalFields: {
+			role: {
+				type: "string",
+				input: false,
+				required: false,
+				defaultValue: "user",
+			},
+			requestedRole: {
+				type: "string",
+				input: true,
+				required: false,
+			},
+			roleRequestStatus: {
+				type: "string",
+				input: false,
+				required: false,
+				defaultValue: "none",
+			},
+			employeeId: { type: "string", input: false, required: false },
+			programId: { type: "string", input: false, required: false },
+			departmentId: { type: "string", input: false, required: false },
+			isActive: {
+				type: "boolean",
+				input: false,
+				required: false,
+				defaultValue: true,
+			},
+		},
+	},
+
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (user) => ({
+					data: {
+						...user,
+						role: "user",
+						roleRequestStatus: user.requestedRole ? "pending" : "none",
+					},
+				}),
+			},
+		},
+	},
+
 	emailAndPassword: {
 		enabled: true,
 		password: {
