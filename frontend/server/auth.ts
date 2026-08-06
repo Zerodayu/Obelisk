@@ -10,7 +10,7 @@ import "server-only";
 
 import { notFound, redirect } from "next/navigation";
 import type { ApiUser } from "@/lib/api-client";
-import { isDevMode } from "@/lib/dev-mode";
+import { DEV_ENFORCE_ROLE_ACCESS, isDevMode } from "@/lib/dev-mode";
 import { hasAccess, type UserRole } from "@/lib/roles";
 import { getMe } from "@/server/api-client";
 
@@ -36,13 +36,18 @@ export async function requireUser(): Promise<ApiUser> {
  * Role guard for a route group: redirects to `/login` when unauthenticated and
  * to `/dashboard` when authenticated but not allowed (matching the "client
  * hides/navigates" model — the backend still enforces authority).
+ *
+ * In dev mode the simulated role (`DEV_ROLE` in `server/api-client.ts`) gates
+ * access exactly like production unless `DEV_ENFORCE_ROLE_ACCESS` is set to
+ * `false`, which restores open navigation for inspecting any route.
  */
 export async function requireRole(
   allowed?: readonly UserRole[],
 ): Promise<ApiUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (!isDevMode && !hasAccess(user.role, allowed)) redirect("/dashboard");
+  if ((!isDevMode || DEV_ENFORCE_ROLE_ACCESS) && !hasAccess(user.role, allowed))
+    redirect("/dashboard");
   return user;
 }
 
@@ -52,6 +57,7 @@ export async function requireRoleOrNotFound(
 ): Promise<ApiUser> {
   const user = await currentUser();
   if (!user) redirect("/login");
-  if (!isDevMode && !hasAccess(user.role, allowed)) notFound();
+  if ((!isDevMode || DEV_ENFORCE_ROLE_ACCESS) && !hasAccess(user.role, allowed))
+    notFound();
   return user;
 }

@@ -10,24 +10,37 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { API_ROOT, type ApiSession, type MeResponse } from "@/lib/api-client";
+import {
+  API_ROOT,
+  type ApiSession,
+  type ApiUser,
+  type MeResponse,
+} from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
+import type { UserRole } from "@/lib/roles";
+
+/**
+ * Role the dev user simulates when DEVELOPMENT=true. Change this to preview
+ * what each role sees (nav, dashboards, route gates). `DEV_ENFORCE_ROLE_ACCESS`
+ * in `lib/dev-mode.ts` decides whether route access is enforced like prod.
+ */
+export const DEV_ROLE: UserRole = "system_admin";
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
-export const DEV_USER = {
+export const DEV_USER: ApiUser = {
   id: "dev-user",
   name: "Development User",
   email: "dev@obelisk.local",
   emailVerified: true,
   image: null,
-  role: "system_admin",
+  role: DEV_ROLE,
   employeeId: null,
   programId: null,
   departmentId: null,
   isActive: true,
   createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
   updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-} as const;
+};
 
 const DEV_SESSION: ApiSession = {
   id: "dev-session",
