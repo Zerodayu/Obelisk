@@ -9,7 +9,7 @@ import {
   DashboardShell,
   type StatCard,
 } from "@/components/dashboard/role-dashboard-shell";
-import type { ApiUser } from "@/lib/api";
+import type { ApiUser } from "@/lib/api-client";
 import { roleLabel } from "@/lib/roles";
 
 interface DashboardConfig {

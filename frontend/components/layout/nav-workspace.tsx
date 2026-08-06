@@ -13,8 +13,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import type { ApiUser } from "@/lib/api";
-import { type NavItem, navSectionsFor, workspaceNav } from "@/config/navigation";
+import type { ApiUser } from "@/lib/api-client";
+import {
+  type NavItem,
+  navSectionsFor,
+  workspaceNav,
+} from "@/config/navigation";
 
 function WorkspaceLink({ item }: { item: NavItem }) {
   return (

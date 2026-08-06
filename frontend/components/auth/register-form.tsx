@@ -13,7 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api-client";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { cn } from "@/lib/utils";
 

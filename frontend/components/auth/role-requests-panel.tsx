@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ApiError, api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api-client";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 
 interface RoleRequestProgram {

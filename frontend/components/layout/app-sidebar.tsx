@@ -14,7 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import type { ApiUser } from "@/lib/api";
+import type { ApiUser } from "@/lib/api-client";
 
 /**
  * Role-aware application sidebar. Nav content (workspace + form catalog +

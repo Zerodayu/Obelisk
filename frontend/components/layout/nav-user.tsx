@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import type { ApiUser } from "@/lib/api";
+import type { ApiUser } from "@/lib/api-client";
 import { roleLabel } from "@/lib/roles";
 
 function initials(name: string): string {

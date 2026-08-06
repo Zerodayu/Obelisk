@@ -17,7 +17,7 @@ const ALLOWED_MIME = [
 /**
  * Class-record upload for `/forms/clo-raw-data`. Mirrors the prior `/faculty`
  * preview UX. When the backend ingest contract lands, submission will POST the
- * file via `lib/api.ts` → `POST /ingest/upload` and poll the ETL job.
+ * file via `lib/api-client.ts` → `POST /ingest/upload` and poll the ETL job.
  */
 export function ClassRecordUpload() {
   const [items, setItems] = useState<FileUploadItem[]>([]);

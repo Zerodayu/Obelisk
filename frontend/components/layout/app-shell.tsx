@@ -3,7 +3,7 @@
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import type { ApiUser } from "@/lib/api";
+import type { ApiUser } from "@/lib/api-client";
 
 /**
  * Shared authenticated shell. Renders the role-aware sidebar + header around
