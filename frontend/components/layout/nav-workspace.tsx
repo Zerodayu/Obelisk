@@ -2,6 +2,7 @@
 
 import { Collapsible } from "@base-ui/react/collapsible";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -20,10 +21,22 @@ import {
 } from "@/config/navigation";
 import type { ApiUser } from "@/lib/api-client";
 
-function WorkspaceLink({ item }: { item: NavItem }) {
+function isRouteActive(pathname: string, url?: string): boolean {
+  if (!url) return false;
+  return pathname === url || pathname.startsWith(`${url}/`);
+}
+
+function WorkspaceLink({
+  item,
+  pathname,
+}: {
+  item: NavItem;
+  pathname: string;
+}) {
   return (
     <SidebarMenuButton
       tooltip={item.title}
+      isActive={isRouteActive(pathname, item.url)}
       render={
         item.url ? <Link href={item.url} aria-label={item.title} /> : undefined
       }
@@ -34,11 +47,22 @@ function WorkspaceLink({ item }: { item: NavItem }) {
   );
 }
 
-function FormCollapsible({ item }: { item: NavItem }) {
+function FormCollapsible({
+  item,
+  pathname,
+}: {
+  item: NavItem;
+  pathname: string;
+}) {
+  const childrenActive = (item.children ?? []).some((child) =>
+    isRouteActive(pathname, child.url),
+  );
+  const parentActive = isRouteActive(pathname, item.url) || childrenActive;
+
   return (
     <Collapsible.Root defaultOpen>
       <Collapsible.Trigger className="group/collapsible">
-        <SidebarMenuButton tooltip={item.title}>
+        <SidebarMenuButton tooltip={item.title} isActive={parentActive}>
           {item.icon ? <item.icon /> : null}
           <span>{item.title}</span>
           <ChevronIcon className="ml-auto transition-transform data-open:rotate-90" />
@@ -49,6 +73,7 @@ function FormCollapsible({ item }: { item: NavItem }) {
           {(item.children ?? []).map((child) => (
             <SidebarMenuSubItem key={child.title}>
               <SidebarMenuSubButton
+                isActive={isRouteActive(pathname, child.url)}
                 render={<Link href={child.url} aria-label={child.title} />}
               >
                 <span>{child.title}</span>
@@ -88,6 +113,7 @@ function ChevronIcon({ className }: { className?: string }) {
 export function SidebarNav({ role }: { role: ApiUser["role"] }) {
   const workspace = workspaceNav(role);
   const sections = navSectionsFor(role);
+  const pathname = usePathname();
 
   return (
     <>
@@ -97,7 +123,7 @@ export function SidebarNav({ role }: { role: ApiUser["role"] }) {
           <SidebarMenu>
             {workspace.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <WorkspaceLink item={item} />
+                <WorkspaceLink item={item} pathname={pathname} />
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -112,9 +138,9 @@ export function SidebarNav({ role }: { role: ApiUser["role"] }) {
               {section.items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   {item.children && item.children.length > 0 ? (
-                    <FormCollapsible item={item} />
+                    <FormCollapsible item={item} pathname={pathname} />
                   ) : (
-                    <WorkspaceLink item={item} />
+                    <WorkspaceLink item={item} pathname={pathname} />
                   )}
                 </SidebarMenuItem>
               ))}
