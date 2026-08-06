@@ -196,7 +196,16 @@ export const DialogContent = (props: DialogContentProps) => {
           {children}
 
           {!!showCloseButton && (
-            <DialogClose render={<Button aria-label="Close" className="absolute inset-e-2 top-2 opacity-64 hover:opacity-100" size="icon-sm" variant="ghost" />}><XIcon /></DialogClose>
+            <DialogClose asChild>
+              <Button
+                aria-label="Close"
+                className="absolute inset-e-2 top-2 opacity-64 hover:opacity-100"
+                size="icon-sm"
+                variant="ghost"
+              >
+                <XIcon />
+              </Button>
+            </DialogClose>
           )}
         </ArkDialog.Content>
       </DialogPositioner>

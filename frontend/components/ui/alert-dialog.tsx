@@ -92,5 +92,7 @@ interface AlertDialogCancelProps
     Omit<ButtonProps, "variant"> {}
 
 export const AlertDialogCancel = (props: AlertDialogCancelProps) => (
-  <AlertDialogClose data-slot="alert-dialog-cancel" render={<Button variant="outline" {...props} />}></AlertDialogClose>
+  <AlertDialogClose data-slot="alert-dialog-cancel" asChild>
+    <Button variant="outline" {...props} />
+  </AlertDialogClose>
 );

@@ -22,7 +22,7 @@ import { signOut } from "@/server/actions/auth";
 export const SignOutButton = () => (
   <AlertDialog>
     <AlertDialogTrigger asChild>
-      <Button variant="destructive" className="w-full font-bold">
+      <Button variant="default" className="w-full font-bold">
         <LogOutIcon />
         Sign-out
       </Button>
@@ -35,7 +35,7 @@ export const SignOutButton = () => (
       <AlertDialogFooter className="w-full">
         <AlertDialogCancel>Cancel</AlertDialogCancel>
         <AlertDialogClose asChild>
-          <AlertDialogAction onClick={() => signOut()}>
+          <AlertDialogAction variant="destructive" onClick={() => signOut()}>
             <LogOutIcon />
             Logout
           </AlertDialogAction>
