@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { LoginForm } from "@/components/auth/login-form";
-import { Logo } from "@/components/branding/logo";
+import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { Separator } from "@/components/ui/separator";
 import { requireGuest } from "@/server/auth";
 
@@ -21,7 +21,7 @@ const SignIn = async ({
     <div className="flex h-screen items-center justify-center">
       <div className="mx-auto w-full border border-border/70 pb-0 max-sm:border-t-0 sm:max-w-md sm:rounded-xl sm:bg-card sm:p-1 sm:shadow-lg/3">
         <div className="border border-border/70 bg-muted/60 px-10 py-14 max-sm:border-x-0 sm:rounded-lg sm:shadow-sm/2">
-          <Logo className="mx-auto size-9" />
+          <ObeliskLogo className="mx-auto size-9" />
           <h1 className="mt-3 text-center font-medium text-2xl tracking-[-0.015em]">
             Login to Obelisk
           </h1>
