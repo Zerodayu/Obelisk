@@ -1,7 +1,7 @@
 "use client";
 
 import { Collapsible } from "@base-ui/react/collapsible";
-
+import Link from "next/link";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -13,20 +13,19 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import type { ApiUser } from "@/lib/api-client";
 import {
   type NavItem,
   navSectionsFor,
   workspaceNav,
 } from "@/config/navigation";
+import type { ApiUser } from "@/lib/api-client";
 
 function WorkspaceLink({ item }: { item: NavItem }) {
   return (
     <SidebarMenuButton
       tooltip={item.title}
       render={
-        // biome-ignore lint/a11y/useAnchorContent: base-ui <SidebarMenuButton> render prop injects the visible label as anchor text at runtime.
-        item.url ? <a href={item.url} aria-label={item.title} /> : undefined
+        item.url ? <Link href={item.url} aria-label={item.title} /> : undefined
       }
     >
       {item.icon ? <item.icon /> : null}
@@ -50,10 +49,7 @@ function FormCollapsible({ item }: { item: NavItem }) {
           {(item.children ?? []).map((child) => (
             <SidebarMenuSubItem key={child.title}>
               <SidebarMenuSubButton
-                render={
-                  // biome-ignore lint/a11y/useAnchorContent: base-ui render prop injects the sub-label as anchor text at runtime.
-                  <a href={child.url} aria-label={child.title} />
-                }
+                render={<Link href={child.url} aria-label={child.title} />}
               >
                 <span>{child.title}</span>
               </SidebarMenuSubButton>

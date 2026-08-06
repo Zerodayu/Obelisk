@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import type * as React from "react";
-
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -27,7 +27,7 @@ export function NavSecondary({
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
-                render={<a href={item.url} aria-label={item.title} />}
+                render={<Link href={item.url} aria-label={item.title} />}
               >
                 {item.icon}
                 <span>{item.title}</span>
