@@ -4,6 +4,11 @@
  * These forward the request's cookies to the backend so better-auth sessions
  * resolve from the server-to-server request. Only import from Server
  * Components or Server Actions (`"server-only"` enforces that).
+ *
+ * `serverApi` is for reads (Server Components). `actionApi` is for mutations
+ * (Server Actions): it relays the backend's `Set-Cookie` headers back to the
+ * browser so better-auth cookies land on the frontend origin — matching the
+ * session-cookie check in `proxy.ts` and the cookie forwarding in reads.
  */
 
 import "server-only";
@@ -12,6 +17,7 @@ import { cookies } from "next/headers";
 
 import {
   API_ROOT,
+  ApiError,
   type ApiSession,
   type ApiUser,
   type MeResponse,
@@ -85,6 +91,137 @@ async function serverFetch<T>(
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
+
+interface RelayCookie {
+  name: string;
+  value: string;
+  options: {
+    path?: string;
+    maxAge?: number;
+    expires?: Date;
+    secure?: boolean;
+    httpOnly?: boolean;
+    sameSite?: "lax" | "strict" | "none";
+  };
+}
+
+/** Parse a raw `Set-Cookie` header into name/value + the options `cookies()` accepts. */
+function parseSetCookie(header: string): RelayCookie | null {
+  const parts = header.split(";");
+  const [nameValue = "", ...rest] = parts;
+  const eq = nameValue.indexOf("=");
+  if (eq <= 0) return null;
+  const name = nameValue.slice(0, eq).trim();
+  const value = nameValue.slice(eq + 1).trim();
+  const options: RelayCookie["options"] = {};
+
+  for (const part of rest) {
+    const [rawKey, ...rawValueParts] = part.split("=");
+    const key = rawKey.trim().toLowerCase();
+    const rawValue = rawValueParts.join("=").trim();
+    switch (key) {
+      case "path":
+        options.path = rawValue || "/";
+        break;
+      case "max-age": {
+        const maxAge = Number(rawValue);
+        if (Number.isFinite(maxAge)) options.maxAge = maxAge;
+        break;
+      }
+      case "expires": {
+        const expires = new Date(rawValue);
+        if (!Number.isNaN(expires.getTime())) options.expires = expires;
+        break;
+      }
+      case "secure":
+        options.secure = true;
+        break;
+      case "httponly":
+        options.httpOnly = true;
+        break;
+      case "samesite": {
+        const sameSite = rawValue.toLowerCase();
+        if (
+          sameSite === "lax" ||
+          sameSite === "strict" ||
+          sameSite === "none"
+        ) {
+          options.sameSite = sameSite;
+        }
+        break;
+      }
+    }
+  }
+
+  return { name, value, options };
+}
+
+/**
+ * Relay the backend response's `Set-Cookie` headers onto the outgoing browser
+ * response. Server Actions must call this so better-auth session cookies are
+ * stored on the frontend origin instead of being swallowed by the
+ * server-to-server fetch.
+ */
+async function forwardSetCookies(res: Response): Promise<void> {
+  const store = await cookies();
+  for (const header of res.headers.getSetCookie()) {
+    const cookie = parseSetCookie(header);
+    if (!cookie) continue;
+    store.set(cookie.name, cookie.value, cookie.options);
+  }
+}
+
+async function actionFetch<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const store = await cookies();
+  const cookieHeader = store
+    .getAll()
+    .map((cookie) => `${cookie.name}=${cookie.value}`)
+    .join("; ");
+
+  const res = await fetch(`${API_ROOT}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
+      ...(init.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  await forwardSetCookies(res);
+
+  if (!res.ok) {
+    let payload: { error?: string; message?: string } | undefined;
+    try {
+      payload = (await res.json()) as { error?: string; message?: string };
+    } catch {
+      payload = undefined;
+    }
+    throw new ApiError(
+      payload?.message ?? payload?.error ?? `Request failed (${res.status})`,
+      { status: res.status, payload },
+    );
+  }
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
+/**
+ * Server Action variant of `serverApi`. Use from `server/actions/*` for
+ * mutations that must set/clear cookies (sign-in, sign-out) or that carry the
+ * browser session forward. Unlike `serverFetch`, failures throw `ApiError`
+ * (with the backend's message) so actions can surface them to the UI.
+ */
+export const actionApi = {
+  post: <T>(path: string, body?: unknown) =>
+    actionFetch<T>(path, {
+      method: "POST",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
+};
 
 /**
  * Resolve the current user + session on the server. Returns `null` when the
