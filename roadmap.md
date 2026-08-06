@@ -150,6 +150,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] **API client layer** — `lib/api.ts` (browser), `lib/api/server.ts` (server-only), `lib/auth.ts` (guards).
 - [x] **Role & nav registry** — `lib/roles.ts` + `lib/navigation.tsx` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
 - [x] **Sign-up + role request** — `/register` with role selection; new accounts default to `user` until a `system_admin` approves (`requestedRole` + `roleRequestStatus` on the user; `GET/POST /auth/role-requests*`; approval UI on the system-admin dashboard).
+- [x] **Google-only account creation** — `/register` shows only the org-restricted Google provider (email/password sign-up disabled; login kept for existing accounts); role selection moved to a post-login `/onboarding` route (`POST /auth/role-request`); the `(app)` shell redirects role-less users to `/onboarding`.
 - [x] **DEVELOPMENT auth bypass** — when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev `system_admin` user so every route is viewable without an account (frontend-only; backend still requires a session).
 
 ### Shared infrastructure
