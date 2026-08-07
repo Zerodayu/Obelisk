@@ -1,6 +1,5 @@
 "use client";
 
-import { CheckCheckIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SelectRole } from "@/components/auth/select-role";
@@ -16,7 +15,6 @@ export const OnboardingForm = () => {
   const [requestedRole, setRequestedRole] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
 
   async function onSubmit() {
     if (!requestedRole) {
@@ -29,34 +27,9 @@ export const OnboardingForm = () => {
     if (!result.ok) {
       setError(result.error);
     } else {
-      setSubmitted(true);
+      router.refresh();
     }
     setSubmitting(false);
-  }
-
-  if (submitted) {
-    return (
-      <div className="space-y-5 text-center">
-        <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-success/10 text-success">
-          <CheckCheckIcon className="size-5" />
-        </div>
-        <div className="space-y-1">
-          <p className="font-medium text-base">Request submitted</p>
-          <p className="text-sm text-muted-foreground">
-            An administrator must approve your request before you gain access to
-            this role.
-          </p>
-        </div>
-        <Button
-          className="w-full hover:cursor-pointer"
-          onClick={() => router.push("/dashboard")}
-          size="lg"
-          type="button"
-        >
-          Go to dashboard
-        </Button>
-      </div>
-    );
   }
 
   return (
