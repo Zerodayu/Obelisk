@@ -133,9 +133,6 @@ const Onboarding = async () => {
               <div className="mt-10">
                 <OnboardingForm />
               </div>
-              <div className="mt-6">
-                <SignOutButton />
-              </div>
             </>
           )}
         </div>
