@@ -102,7 +102,7 @@ export function NavUser({ user }: { user: ApiUser }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={logout}>
+            <DropdownMenuItem variant="destructive" onClick={logout}>
               <LogOutIcon />
               Sign out
             </DropdownMenuItem>
