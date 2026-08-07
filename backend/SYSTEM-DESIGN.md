@@ -15,7 +15,7 @@
   3. `.mount(auth.handler)` — better-auth at basePath `/api/v1/auth`.
   4. `.use(apiRoutesV1)` — feature routes under prefix `api/v1`.
   5. `listen(8080)`.
-- **Auth guard macro:** `src/v1/auth/controller.ts` exposes a `auth: true` macro (resolves session via `auth.api.getSession`, returns `user`/`session`, 401 on failure) plus `/auth/me`. `OpenAPI` helper aggregates better-auth paths with tag `Better Auth`.
+- **Auth guard macro:** `src/v1/auth/controller.ts` exposes a `auth: true` macro (resolves session via `auth.api.getSession`, returns `user`/`session`, 401 on failure) plus `/auth/me`. `OpenAPI` helper aggregates better-auth paths with tag `Better Auth`. The macro bypasses better-auth's `session_data` cookie cache (`query: { disableCookieCache: true }`) so role/status reads always reflect the DB — a role request filed on `/onboarding` shows as `pending` immediately instead of waiting out the 5-minute cache.
 
 ### Request flow
 
