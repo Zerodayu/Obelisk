@@ -11,6 +11,43 @@ Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Update the box when a 
 
 ---
 
+## Target Timeline — Split Sprint, Compressed (Aug 8–17)
+
+> Hard target: full pipeline working by Aug 17. Soft target: Aug 15. Aug 18–23 is
+> buffer for demo prep and client/adviser conversations — no new building in that
+> window unless something broke. Dates are checkpoints, not caps — finish early,
+> roll into the next task same session. But if a day's task is genuinely done and
+> you're tired, stop; don't force hours just because the schedule is tight.
+
+**Harold's lane — Phases 1–3 (partial) + AI integration + approval-chain wiring.**
+Primary tool: Gemini (daily quota); Copilot as backup only.
+
+Goal: upload a class record → compute → persist → CAR → PLO rollup → AI
+recommendation → routed through the existing approval chain (program_chair →
+dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
+
+- **Aug 8 (Sat)** — rest (last full rest day before the compressed sprint)
+- **Aug 9 (Sun)** — audit `ingest` module; scope `attainment-service` prompt
+- **Aug 10 (Mon)** — Student/Clo matching logic + `ComputationRun`/`CloAttainment` inserts (composite fallback resolved same day)
+- **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output
+- **Aug 12 (Wed)** — wire `/forms/clo-raw-data` panel to upload + polling; render real attainment
+- **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data
+- **Aug 14 (Fri)** — CAR Part 3 (consolidated CLO summary) + Part 4 (at-risk watchlist) auto-populate
+- **Aug 15 (Sat)** — `plo_attainment_summary` via `/analytics/summary`, persisted to `PloAttainment` — **soft target: full data pipeline complete**
+- **Aug 16 (Sun)** — wire `FormSubmission` creation on persist → route through existing approval chain to VPAA
+- **Aug 17 (Mon)** — verify full chain end-to-end (upload → ... → visible at every approval step incl. VPAA); dashboard check — **hard target: done**
+
+**Aug 18–23** — buffer: demo prep, client/adviser conversations, fix whatever broke. No new scope unless Aug 17 slipped.
+
+**Explicitly deferred, unscheduled:** CAR Parts 1–2/5–7; `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phases 6, 7; manual edit/CSV re-import; tests.
+
+**Exit criteria:** upload → compute → persist → CAR → PLO rollup → AI recommendation → routed through full approval chain to VPAA, no manual re-entry.
+
+---
+
+**Kim's lane — Phase 5: PLAN-phase setup forms** (independent, parallel).
+- `curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget`
+
 ## Phase 0 — Backend Foundation & Stabilization
 
 Goal: make the backend buildable, testable, and lint-clean, then stand up the shared plumbing all phases depend on.
