@@ -1,0 +1,193 @@
+# OBELISK
+
+Outcomes-Based Educational Learning and Intelligent System Kit for **Jose Maria College Foundation, Inc. (JMCFI)**.
+
+Obelisk digitizes the JMCFI WIN-OBE assessment **forms** (CLO/PLO attainment, course assessment reports, CQI plans, institutional reviews) with an approval workflow and audit trail. It ingests instructor class-record Excel workbooks, computes per-student Direct CLO attainment and institutional roll-ups, and surfaces results through a web dashboard.
+
+This is a monorepo containing three services:
+
+| Service | Path | Stack | Port |
+| :--- | :--- | :--- | :--- |
+| Backend API | `backend/` | Bun · Elysia · Prisma + PostgreSQL (Neon) · better-auth · Zod | `8080` |
+| Web frontend | `frontend/` | Next.js 16 · React 19 · Tailwind CSS v4 · shadcn/ui | `3000` |
+| ETL & analytics | `python-server/` | FastAPI · Python (pure compute, no DB access) | `8000` |
+
+Each service has its own README and agent guide with deeper details:
+
+- [`backend/README.md`](backend/README.md) — see also `backend/SYSTEM-DESIGN.md`
+- [`frontend/README.md`](frontend/README.md) — see also `frontend/SYSTEM-DESIGN.md`
+- [`python-server/README.md`](python-server/README.md) — see also `python-server/SYSTEM-DESIGN.md`
+
+> **Note:** The project is under active development (backend-first). See [`roadmap.md`](roadmap.md) for what is built and what is pending.
+
+---
+
+## Prerequisites
+
+- [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
+- [Python](https://www.python.org) `3.11+` (`3.13` recommended) and [Poetry](https://python-poetry.org) — for running `python-server` locally
+- [Docker](https://www.docker.com) — optional, alternative way to run `python-server`
+- A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
+
+---
+
+## 1. Clone the repository
+
+```sh
+git clone https://github.com/Zerodayu/Obelisk.git
+cd Obelisk
+```
+
+---
+
+## 2. Environment setup
+
+The backend and frontend load their configuration from a `.env.local` file located in each service directory. These files are **encrypted with [dotenvx](https://dotenvx.com)**; the decryption keys (`.env.keys`) are gitignored, so a fresh clone cannot decrypt the committed `.env.local` out of the box.
+
+Choose **one** of the two options below per service.
+
+### Option A — Decrypt the committed `.env.local` (requires keys)
+
+The decryption keys live in `backend/.env.keys` and `frontend/.env.keys` (never committed). Obtain them from a maintainer, place them in the right directory, then run every command through `dotenvx`.
+
+### Option B — Create a plaintext `.env.local`
+
+dotenvx reads plaintext (unencrypted) `.env.local` files fine. Create the file with the required variables listed below.
+
+> To edit secrets in an encrypted file: `bun run env:decrypt` → edit → `bun run env:encrypt` (run inside `backend/` or `frontend/`).
+
+### Required variables
+
+**`backend/.env.local`** — validated by `backend/utils/env.ts`:
+
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/obelisk?sslmode=require"
+DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/obelisk?sslmode=require"
+BETTER_AUTH_SECRET="generate-a-long-random-secret"
+BETTER_AUTH_URL="http://localhost:3000"
+FRONTEND_URL="http://localhost:3000"
+PYTHON_SERVER_URL="http://localhost:8000"
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+ORG_EMAIL_DOMAIN="jmcfi.edu.ph"
+```
+
+**`frontend/.env.local`** — validated by `frontend/utils/env.ts`:
+
+```env
+NEXT_PUBLIC_API_URL="http://localhost:8080"
+# Optional — disables the auth gate for quick local preview:
+# DEVELOPMENT=true
+```
+
+**`python-server/.env`** (optional) — CORS origins for the web app:
+
+```env
+OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+```
+
+---
+
+## 3. Install & run the services
+
+Start services in dependency order. Each runs in its own terminal.
+
+### 3a. python-server — ETL & analytics
+
+**Poetry (development):**
+
+```sh
+cd python-server
+poetry install
+poetry run uvicorn app.main:app --reload
+```
+
+**Docker (production / easy setup):**
+
+```sh
+cd python-server
+docker build -t obelisk-etl .
+docker run -p 8000:8000 obelisk-etl
+```
+
+Verify: <http://localhost:8000/health>
+
+### 3b. backend — API
+
+```sh
+cd backend
+bun install
+
+# create backend/.env.local (see §2), then apply the database schema:
+bun run db:generate
+bun run db:migrate dev
+
+# or, if migrations already exist and you only need to apply them:
+# bunx dotenvx run -f .env.local -- bunx prisma migrate deploy
+
+bun run dev
+```
+
+The server starts on <http://localhost:8080>. Interactive API docs (OpenAPI/Swagger) are at <http://localhost:8080/openapi>.
+
+### 3c. frontend — web app
+
+```sh
+cd frontend
+bun install
+
+# create frontend/.env.local (see §2)
+bun run dev
+```
+
+Open <http://localhost:3000>. It proxies `api/v1` requests to the backend at `NEXT_PUBLIC_API_URL` (default `http://localhost:8080`).
+
+---
+
+## 4. Quality & verification
+
+**Backend** (inside `backend/`):
+
+```sh
+bun run typecheck   # bunx tsc --noEmit
+bun run lint        # bunx biome check
+bun test            # bun:test unit + integration tests
+```
+
+**Frontend** (inside `frontend/`):
+
+```sh
+bun run lint        # biome check
+bun run build       # production build
+```
+
+**python-server** (inside `python-server/`): see `python-server/testing_modules/` for standalone and end-to-end test scripts.
+
+---
+
+## 5. Development mode (skip login)
+
+Setting `DEVELOPMENT=true` in `frontend/.env.local` disables the auth gate so every route is viewable without an account (frontend-only; the backend still enforces auth):
+
+```env
+DEVELOPMENT=true
+```
+
+To simulate a role, edit `DEV_ROLE` in `frontend/server/api-client.ts` (default `system_admin`).
+
+---
+
+## 6. Troubleshooting
+
+- **`[dotenvx] This is a private key. Please use the public key...` or decryption errors** — you don't have `backend/.env.keys` / `frontend/.env.keys`. Ask a maintainer for them, or replace `.env.local` with a plaintext file (Option B in §2).
+- **Backend fails to start with a missing-var error** — all required env vars are Zod-validated at startup in `backend/utils/env.ts`; fill in the missing ones.
+- **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point to a reachable Postgres (Neon or local) and that the schema was applied (`bun run db:migrate dev`).
+- **Port already in use** — the services expect `8080`, `3000`, and `8000`. Stop anything occupying those ports.
+- **Frontend can't reach the API** — ensure the backend is running and `NEXT_PUBLIC_API_URL` matches its origin (`http://localhost:8080`).
+- **python-server uploads fail** — the ETL service has no database and no auth; the backend must be reachable (`PYTHON_SERVER_URL`), and the upload endpoints require the backend to be running too.
+
+---
+
+## License
+
+See [LICENSE](LICENSE).
