@@ -38,6 +38,7 @@ function initials(name: string): string {
 export function NavUser({ user }: { user: ApiUser }) {
   const { isMobile } = useSidebar();
   const displayName = user.name || user.email;
+  const logout = () => signOut()
 
   return (
     <SidebarMenu>
@@ -101,7 +102,7 @@ export function NavUser({ user }: { user: ApiUser }) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={handleSignOut}>
+            <DropdownMenuItem variant="destructive" onSelect={logout}>
               <LogOutIcon />
               Sign out
             </DropdownMenuItem>
@@ -110,8 +111,4 @@ export function NavUser({ user }: { user: ApiUser }) {
       </SidebarMenuItem>
     </SidebarMenu>
   );
-}
-
-function handleSignOut() {
-  void signOut();
 }
