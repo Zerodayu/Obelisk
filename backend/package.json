@@ -2,8 +2,9 @@
 	"name": "backend",
 	"version": "1.0.50",
 	"scripts": {
-		"test": "bun test",
-		"test:integration": "bun test -- test/integration",
+		"test": "dotenvx run -f .env.local -- bun test",
+		"test:unit": "bun test -- test/unit",
+		"test:integration": "dotenvx run -f .env.local -- bun test -- test/integration",
 		"typecheck": "bunx tsc --noEmit",
 		"lint": "bunx biome check",
 		"env:encrypt": "bunx dotenvx encrypt -f .env.local",

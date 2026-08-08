@@ -218,8 +218,8 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 ### Implemented
 - **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
-- **`ingest-service`** *(src/v1/ingest/controller.ts)* — Orchestrates the `POST /upload` flow: calls `ingestClient` to forward the file to python-server, polls for completion, then passes the result to `attainment-service` for persistence.
-- **`attainment-service`** *(src/v1/ingest/attainment-service.ts)* — Takes a completed ETL job result. Creates a `ComputationRun`, then iterates through attainment records to find or create `Student` rows and create the corresponding `CloAttainment` records in the database.
+- **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.uploadAndPersist`: orchestrates the `POST /upload` flow, calls `ingestClient` to forward the file to python-server, polls for completion, runtime-validates the nested ETL result (`MalformedEtlResultError`), then delegates persistence to `attainment-service`.
+- **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records, and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`.
 
 ### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.

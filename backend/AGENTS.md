@@ -12,12 +12,13 @@ Routes follow a feature-module pattern (see <https://github.com/Zerodayu/bun-ely
 ```
 src/
 ├── index.ts              # Elysia app entry point
-├── routes.ts             # Aggregates all feature route plugins
-├── auth/                 # Auth (better-auth config, session guard macro)
-└── {feature}/
-    ├── controller.ts     # Route definitions (Elysia plugin with prefix + tags)
-    ├── service.ts        # Business logic (class with methods)
-    └── model.ts          # Validation schemas using Elysia's t + Static types
+├── routes.ts             # Aggregates all feature route plugins (api/v1 prefix)
+└── v1/
+    ├── auth/             # Auth (better-auth config, session guard macro, role requests)
+    └── {feature}/
+        ├── controller.ts # Route definitions (Elysia plugin with prefix + tags)
+        ├── service.ts    # Business logic (class with methods)
+        └── model.ts      # Validation schemas using Elysia's t + Static types
 ```
 
 ## Conventions
