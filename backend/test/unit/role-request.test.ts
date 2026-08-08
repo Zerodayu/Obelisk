@@ -1,8 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-	SELF_SELECTABLE_ROLES,
-	validateRoleRequest,
-} from "../../src/v1/auth/model";
+import { SELF_SELECTABLE_ROLES, validateRoleRequest } from "@v1/auth/model";
 
 describe("role request validation", () => {
 	it("exposes exactly the self-selectable roles", () => {

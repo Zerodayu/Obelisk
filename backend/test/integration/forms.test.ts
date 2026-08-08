@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
-import { submissionService } from "../../src/v1/forms/service";
-import { isDbReachable } from "../helpers/db-gate";
+import { isDbReachable } from "@test/helpers/db-gate";
+import { submissionService } from "@v1/forms/service";
 
 const db = await isDbReachable();
 

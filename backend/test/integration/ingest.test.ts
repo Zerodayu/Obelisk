@@ -1,8 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
-import type { TypedEtlLoadedData } from "../../src/v1/ingest/service";
-import { attainmentService } from "../../src/v1/ingest/service";
-import { isDbReachable } from "../helpers/db-gate";
+import { isDbReachable } from "@test/helpers/db-gate";
+import type { TypedEtlLoadedData } from "@v1/ingest/service";
+import { attainmentService } from "@v1/ingest/service";
 
 const db = await isDbReachable();
 
