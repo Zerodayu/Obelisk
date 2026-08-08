@@ -1,6 +1,8 @@
-import { prisma } from "@lib/prisma";
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 import type { EtlLoadedData } from "@lib/ingest/ingest-client";
+import { ingestClient } from "@lib/ingest/ingest-client";
+import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
+import { prisma } from "@lib/prisma";
 
 // The `EtlLoadedData` from the client is already well-typed, but we can
 // create a more specific version for this service's known `attainments` shape.
@@ -23,27 +25,11 @@ export interface PersistenceSummary {
 	studentsProcessed: number;
 	studentsCreated: number;
 	cloAttainmentsCreated: number;
-	atRiskFlagsCreated: number; // New field
+	atRiskFlagsCreated: number;
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
 }
 
-// Helper to normalize names for matching
-const normalizeName = (name: string) =>
-	name.toLowerCase().replace(/[^a-z0-9]/g, "");
-
-// Helper to parse student name into last and first names
-function parseStudentName(name: string): { lastName: string; firstName: string } {
-	if (name.includes(",")) {
-		const [lastName, firstName] = name.split(",").map((s) => s.trim());
-		return { lastName, firstName: firstName || "" };
-	}
-	const parts = name.split(" ").filter((p) => p);
-	const lastName = parts.pop() || "";
-	const firstName = parts.join(" ");
-	return { lastName, firstName };
-}
-
-export const attainmentService = {
+export class AttainmentService {
 	async persistAttainment(
 		etlLoadedData: TypedEtlLoadedData,
 		classSectionId: string,
@@ -54,7 +40,7 @@ export const attainmentService = {
 			studentsProcessed: 0,
 			studentsCreated: 0,
 			cloAttainmentsCreated: 0,
-			atRiskFlagsCreated: 0, // Initialized
+			atRiskFlagsCreated: 0,
 			cloMatchFailures: [],
 		};
 
@@ -78,18 +64,15 @@ export const attainmentService = {
 		const courseId = classSection.course.id;
 		const programId = classSection.course.programId;
 
-		const commonComputationData = {
-			id: randomUUID(), // Provide the ID
-			scope: classSectionId,
-			formulaVersion: "70_30_v1",
-			directWeight: 0.7,
-			indirectWeight: 0.3,
-		};
-
 		const computationRun = await prisma.computationRun.create({
-			data: triggeredByUserId
-				? { ...commonComputationData, triggeredByUserId }
-				: commonComputationData,
+			data: {
+				id: randomUUID(),
+				scope: classSectionId,
+				formulaVersion: "70_30_v1",
+				directWeight: 0.7,
+				indirectWeight: 0.3,
+				...(triggeredByUserId ? { triggeredByUserId } : {}),
+			},
 		});
 		summary.computationRunId = computationRun.id;
 
@@ -134,14 +117,12 @@ export const attainmentService = {
 				const { lastName, firstName } = parseStudentName(record.student_name);
 				const newStudent = await prisma.student.create({
 					data: {
-						id: randomUUID(), // Provide the ID
+						id: randomUUID(),
 						firstName,
 						lastName,
 						studentNumber:
 							record.student_id ||
-							`TBA-${Date.now()}-${Math.random()
-								.toString(36)
-								.substring(2, 7)}`,
+							`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
 						anonymizedId: randomUUID(),
 						program: {
 							connect: { id: programId }, // Connect to the program
@@ -165,8 +146,9 @@ export const attainmentService = {
 
 			// 2. Find CLO, using a cache for performance
 			let clo: { id: string } | null;
-			if (cloCache.has(record.clo_code)) {
-				clo = cloCache.get(record.clo_code)!;
+			const cachedClo = cloCache.get(record.clo_code);
+			if (cachedClo !== undefined) {
+				clo = cachedClo;
 			} else {
 				// Use findFirst with a composite where clause
 				const dbClo = await prisma.clo.findFirst({
@@ -199,7 +181,7 @@ export const attainmentService = {
 
 			const newAttainment = await prisma.cloAttainment.create({
 				data: {
-					id: randomUUID(), // Provide the ID
+					id: randomUUID(),
 					directScorePct: directScore,
 					indirectScorePct: null,
 					compositeScorePct: directScore,
@@ -216,7 +198,7 @@ export const attainmentService = {
 			if (isBelowThreshold) {
 				await prisma.atRiskFlag.create({
 					data: {
-						id: randomUUID(), // Provide the ID
+						id: randomUUID(),
 						studentId: student.id,
 						cloAttainmentId: newAttainment.id,
 						reason: `Below institutional threshold on ${
@@ -229,5 +211,54 @@ export const attainmentService = {
 		}
 
 		return summary;
-	},
-};
+	}
+}
+
+export class IngestService {
+	async uploadAndPersist(
+		file: File,
+		filename: string,
+		classSectionId: string,
+		triggeredByUserId?: string,
+	): Promise<{ etl: unknown; persistence: PersistenceSummary }> {
+		const blob = new Blob([file]);
+		const etlResult = await ingestClient.ingest(blob, filename);
+
+		// Runtime validation of the nested structure
+		if (
+			!etlResult.result?.loaded ||
+			!Array.isArray(etlResult.result.loaded.attainments)
+		) {
+			throw new MalformedEtlResultError(etlResult.job_id);
+		}
+
+		// The type assertion is safe due to the runtime check above
+		const loadedData = etlResult.result.loaded as TypedEtlLoadedData;
+
+		const persistenceSummary = await attainmentService.persistAttainment(
+			loadedData,
+			classSectionId,
+			triggeredByUserId,
+		);
+
+		return {
+			etl: etlResult.result,
+			persistence: persistenceSummary,
+		};
+	}
+}
+
+export class MalformedEtlResultError extends Error {
+	public readonly etlJobId: string;
+
+	constructor(etlJobId: string) {
+		super(
+			"The result from the python-server was missing the expected 'result.loaded.attainments' structure.",
+		);
+		this.name = "MalformedEtlResultError";
+		this.etlJobId = etlJobId;
+	}
+}
+
+export const attainmentService = new AttainmentService();
+export const ingestService = new IngestService();
