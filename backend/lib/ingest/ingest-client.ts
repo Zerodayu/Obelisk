@@ -8,6 +8,18 @@ export interface StructuredError {
 	details?: Record<string, unknown>;
 }
 
+// This is the actual shape of the data loaded by the python-server
+export interface EtlLoadedData {
+	header: unknown;
+	attainments: unknown[];
+	clo_plo_mapping: unknown;
+}
+
+// This is the shape of the 'result' field in a completed job
+export interface EtlResultData {
+	loaded: EtlLoadedData;
+}
+
 export interface ETLJob {
 	job_id: string;
 	type?: string;
@@ -16,13 +28,13 @@ export interface ETLJob {
 	created_at?: string;
 	updated_at?: string;
 	error?: StructuredError | null;
-	result?: unknown;
+	result?: EtlResultData | null;
 }
 
 export interface IngestResult {
 	job_id: string;
 	status: "completed";
-	result: unknown;
+	result?: EtlResultData | null;
 }
 
 export class PythonServerError extends Error {
@@ -59,22 +71,34 @@ class IngestClient {
 		this.baseUrl = baseUrl.replace(/\/+$/, "");
 	}
 
-	async upload(file: Blob, filename: string): Promise<string> {
-		const form = new FormData();
-		form.append("file", file, filename);
+async upload(file: Blob, filename: string): Promise<string> {
+    const form = new FormData();
+    form.append("file", file, filename);
 
-		const response = await fetch(`${this.baseUrl}/upload`, {
-			method: "POST",
-			body: form,
-		});
+    const response = await fetch(`${this.baseUrl}/upload`, {
+        method: "POST",
+        body: form,
+    });
 
-		if (!response.ok) {
-			throw new Error(`Upload failed with status ${response.status}`);
-		}
+    if (!response.ok) {
+        // Try to parse a structured error from the python server
+        try {
+            const errorBody = (await response.json()) as { detail: StructuredError };
+            if (errorBody.detail) {
+                throw new PythonServerError(errorBody.detail);
+            }
+        } catch (e) {
+            // If parsing fails or it's not the expected shape, throw generic error
+            if (e instanceof PythonServerError) throw e;
+            throw new Error(`Upload failed with status ${response.status}`);
+        }
+        // Fallback for non-JSON error responses
+        throw new Error(`Upload failed with status ${response.status}`);
+    }
 
-		const body = (await response.json()) as { job_id: string };
-		return body.job_id;
-	}
+    const body = (await response.json()) as { job_id: string };
+    return body.job_id;
+}
 
 	async getJob(jobId: string): Promise<ETLJob> {
 		const response = await fetch(`${this.baseUrl}/jobs/${jobId}`, {
@@ -83,6 +107,12 @@ class IngestClient {
 
 		if (response.status === 404) {
 			throw new Error(`Job ${jobId} not found`);
+		}
+
+		if (!response.ok) {
+			throw new Error(
+				`Failed to get job ${jobId}, status: ${response.status}`,
+			);
 		}
 
 		const body = (await response.json()) as ETLJob;

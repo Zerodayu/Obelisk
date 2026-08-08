@@ -124,10 +124,9 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
       signal,
       cache: "no-store",
     });
-  } catch {
-    throw new ApiError(`Network error reaching ${url.pathname}`, {
-      status: undefined,
-    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    throw new ApiError(message, { status: undefined });
   }
 
   if (!res.ok) {
@@ -143,6 +142,56 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   }
 
   if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
+/**
+ * Uploads a file and associated data as a multipart/form-data request.
+ * This is a special-purpose function that bypasses the JSON-stringifying `request` helper.
+ */
+async function upload<T>(
+  path: string,
+  file: File,
+  fields: Record<string, string>,
+  opts: Omit<RequestOptions, "method" | "body" | "headers"> = {},
+): Promise<T> {
+  const { credentials = true, signal } = opts;
+  const url = new URL(`${API_ROOT}${path}`);
+
+  const formData = new FormData();
+  formData.append("file", file);
+  for (const [key, value] of Object.entries(fields)) {
+    formData.append(key, value);
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      body: formData,
+      credentials: credentials ? "include" : "omit",
+      signal,
+      cache: "no-store",
+      // Note: Do not set 'Content-Type' here. The browser will correctly set it
+      // to 'multipart/form-data' with the proper boundary.
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    throw new ApiError(message, { status: undefined });
+  }
+
+  if (!res.ok) {
+    let payload: ApiErrorPayload | undefined;
+    try {
+      payload = (await res.json()) as ApiErrorPayload;
+    } catch {
+      payload = undefined;
+    }
+    const message =
+      payload?.message ?? payload?.error ?? `Request failed (${res.status})`;
+    throw new ApiError(message, { status: res.status, payload });
+  }
+
   return (await res.json()) as T;
 }
 
@@ -172,6 +221,9 @@ export const api = {
     path: string,
     opts: Omit<RequestOptions, "method" | "body"> = {},
   ) => request<T>(path, { ...opts, method: "DELETE" }),
+
+  /** Special-purpose multipart file upload. */
+  upload,
 
   me: () => request<MeResponse>("/auth/me"),
 };
