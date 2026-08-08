@@ -29,9 +29,9 @@ dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
 - **Aug 8 (Sat)** — rest (last full rest day before the compressed sprint)
 - **Aug 9 (Sun)** — audit `ingest` module; scope `attainment-service` prompt `[x]`
 - **Aug 10 (Mon)** — Student/Clo matching logic + `ComputationRun`/`CloAttainment` inserts (composite fallback resolved same day) `[x]`
-- **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output `[~]` — verification done (real upload, 10 students matched, all 5 CLOs matched, `isBelowThreshold` confirmed correct against 70% threshold); `AtRiskFlag` auto-derivation still pending
+- **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output `[~]` — verification done (real upload, 10 students matched, all 5 CLOs matched, `isBelowThreshold` confirmed correct against 70% threshold); `AtRiskFlag` auto-derivation still pending '[x]'
 - **Aug 12 (Wed)** — wire `/forms/clo-raw-data` panel to upload + polling; render real attainment `[ ]`
-- **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data `[ ]`
+- **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data `[x]`
 - **Aug 14 (Fri)** — CAR Part 3 (consolidated CLO summary) + Part 4 (at-risk watchlist) auto-populate `[ ]`
 - **Aug 15 (Sat)** — `plo_attainment_summary` via `/analytics/summary`, persisted to `PloAttainment` — **soft target: full data pipeline complete** `[ ]`
 - **Aug 16 (Sun)** — wire `FormSubmission` creation on persist → route through existing approval chain to VPAA `[ ]`
@@ -215,7 +215,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] Formula 1A direct CLO attainment + 4-tier levels + Rule-1 completeness
 - [x] Analytics rollups (Formulas 2A/7A/7C, Rule 3)
 - [ ] Real loader/delivery to backend (currently `DummyLoader`)
-- [ ] Real LLM integration (currently `IS_DEBUG_MODE` placeholder)
+- [x] Real LLM integration (currently `IS_DEBUG_MODE` placeholder)
 - [ ] Indirect (30%) attainment pipeline (needs survey data)
 - [ ] Persistent job queue (currently in-memory)
 
