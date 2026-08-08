@@ -27,6 +27,7 @@ interface UploadResult {
     studentsProcessed: number;
     studentsCreated: number;
     cloAttainmentsCreated: number;
+    atRiskFlagsCreated: number;
     cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
   };
 }
@@ -36,6 +37,11 @@ export function ClassRecordUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const file = items[0]?.file;
 
@@ -89,21 +95,23 @@ export function ClassRecordUpload() {
         description="CSV, Excel, or TSV class record sheets"
         disabled={isUploading}
       />
-      <div className="flex items-center gap-4">
-        <Button
-          onClick={handleUpload}
-          disabled={!file || isUploading}
-          className="w-40"
-        >
-          {isUploading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : null}
-          {isUploading ? "Uploading..." : "Upload & Process"}
-        </Button>
-        <p className="text-xs text-muted-foreground">
-          Uploads to class section: {TEST_CLASS_SECTION_ID}
-        </p>
-      </div>
+      {isMounted && (
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleUpload}
+            disabled={!file || isUploading}
+            className="w-40"
+          >
+            {isUploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : null}
+            {isUploading ? "Uploading..." : "Upload & Process"}
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Uploads to class section: {TEST_CLASS_SECTION_ID}
+          </p>
+        </div>
+      )}
 
       {uploadError && (
         <div className="p-4 rounded-md bg-destructive/10 text-destructive flex items-start gap-3">

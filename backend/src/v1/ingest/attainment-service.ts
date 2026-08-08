@@ -23,6 +23,7 @@ export interface PersistenceSummary {
 	studentsProcessed: number;
 	studentsCreated: number;
 	cloAttainmentsCreated: number;
+	atRiskFlagsCreated: number; // New field
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
 }
 
@@ -53,6 +54,7 @@ export const attainmentService = {
 			studentsProcessed: 0,
 			studentsCreated: 0,
 			cloAttainmentsCreated: 0,
+			atRiskFlagsCreated: 0, // Initialized
 			cloMatchFailures: [],
 		};
 
@@ -193,13 +195,15 @@ export const attainmentService = {
 
 			// 3. Insert CloAttainment
 			const directScore = record.direct_clo_attainment_pct * 100;
-			await prisma.cloAttainment.create({
+			const isBelowThreshold = !record.met_threshold;
+
+			const newAttainment = await prisma.cloAttainment.create({
 				data: {
 					id: randomUUID(), // Provide the ID
 					directScorePct: directScore,
 					indirectScorePct: null,
 					compositeScorePct: directScore,
-					isBelowThreshold: !record.met_threshold,
+					isBelowThreshold,
 					classSectionId: classSectionId,
 					cloId: clo.id,
 					studentId: student.id,
@@ -207,6 +211,21 @@ export const attainmentService = {
 				},
 			});
 			summary.cloAttainmentsCreated++;
+
+			// 4. If below threshold, create an AtRiskFlag
+			if (isBelowThreshold) {
+				await prisma.atRiskFlag.create({
+					data: {
+						id: randomUUID(), // Provide the ID
+						studentId: student.id,
+						cloAttainmentId: newAttainment.id,
+						reason: `Below institutional threshold on ${
+							record.clo_code
+						}: ${directScore.toFixed(1)}%`,
+					},
+				});
+				summary.atRiskFlagsCreated++;
+			}
 		}
 
 		return summary;

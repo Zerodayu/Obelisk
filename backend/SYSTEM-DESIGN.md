@@ -126,7 +126,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/forms/:id/approve/:role` | `auth: true` | approve the current pending step for the given role; advances the chain or `submitted → approved` |
 | POST | `/api/v1/forms/:id/return` | `auth: true` | return the current pending step (`submitted → returned`) |
 | POST | `/api/v1/forms/:id/archive` | `auth: true` | archive an approved submission (`approved → archived`) |
-| POST | `/api/v1/ingest/upload` | `auth: true` | forward a class-record `.xlsx` to python-server; polls the job to completion |
+| POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, runs ETL, and persists attainment results. Returns `{ etl, persistence }`. |
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job |
 | GET | `/openapi` | — | OpenAPI docs |
 
@@ -214,17 +214,18 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   (Direct×70% + Indirect×30%) and annual_program_report
 ```
 
-## 7. Service Layer (target)
+## 7. Service Layer
 
-`ComputedField` / rollup services encapsulate the shared validation + computation rules:
+### Implemented
+- **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
+- **`ingest-service`** *(src/v1/ingest/controller.ts)* — Orchestrates the `POST /upload` flow: calls `ingestClient` to forward the file to python-server, polls for completion, then passes the result to `attainment-service` for persistence.
+- **`attainment-service`** *(src/v1/ingest/attainment-service.ts)* — Takes a completed ETL job result. Creates a `ComputationRun`, then iterates through attainment records to find or create `Student` rows and create the corresponding `CloAttainment` records in the database.
 
-- **`submission-service`** *(implemented, `src/v1/forms/service.ts`)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
-- **`ingest-service`** *(implemented, `src/v1/ingest/controller.ts` + `lib/ingest/ingest-client.ts`)* — `POST /upload` → poll `GET /jobs/{job_id}` to completion; maps the structured python error object (`error_type`/`message`/`details`) into typed `IngestJobFailedError`.
-- **`attainment-service`** — computes `CloAttainment`/`PloAttainment` per `ComputationRun`; formula `Direct×0.70 + Indirect×0.30` (constants in `lib/validators/attainment.ts`); applies ≥70% floor; sets `isBelowThreshold`.
+### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
 - **`cqi-service`** — stateful `cqi_action_plan` entries; enforces CLOSED only when 5 CTL conditions met; feeds gap/systemic/CAPA.
 - **`dashboard/rollup-service`** — APAR KPI/dashboard and institutional completion-rate computations.
-- **`archival-service`** *(schema complete + migration applied; pipeline pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment is captured** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
+- **`archival-service`** *(schema complete + migration applied; pipeline pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment capture** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
   1. **Auto-create** at end of AY (June 30 / July 15 cycle): per program, find students whose `graduationTermId` = the closing term (graduates + `transferred_out`/`withdrawn`) → create `GraduationCluster(status=open)` listing candidates; nothing locked.
   2. **Confirm to compile** (`aqau`/`system_admin`): blocked until `peoAttainmentCapturedAt` is set; set `compiling`; per student in a transaction — (a) compile snapshot from lifetime `CloAttainment`/`PloAttainment`/`AtRiskFlag`/`FormSubmission` plus **PEO attainment** (`PeoAttainment` → entry `peoAttainment` column) into `compiledData`; (b) export full granular detail to a `detailArtifactUrl` (configurable storage); (c) purge granular hot rows (`StudentScore`, per-student `CloAttainment`, `AtRiskFlag`, detached `FormSubmission.formData`) while keeping `PloAttainment` + `class_section`/`enrollment`; (d) write `GraduationClusterEntry` + `AuditLog`.
   3. **Lock read-only**: set cluster `archived`. Writes to `GraduationClusterEntry` are rejected — service guard (GET-only endpoints) as primary, optional Postgres trigger as defense-in-depth. Archived entries are permanent and viewable via `GET` only.
@@ -233,7 +234,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 - **`python-server/`** — the authoritative pure-compute engine for spreadsheet-derived attainment (FastAPI, port 8000; no DB, no auth). It parses class-record `.xlsx` (Formula 1A direct CLO attainment, 4-tier levels, Rule-1 completeness) and provides program/department/AVP rollups (Formulas 2A/7A/7C) + AI CQI recommendations. Docs: `../python-server/AGENTS.md`, `../python-server/SYSTEM-DESIGN.md`, `../python-server/documentations/INTEGRATION.md`.
 
-  **Ownership boundary (see `python-server/SYSTEM-DESIGN.md` §7):** this backend is the **sole persister** — it stores python-server's results into `CloAttainment`/`PloAttainment`/`ComputationRun` (recording formula version/weights) and performs all auth/RBAC, approvals, form lifecycle, audit, exports. It must **not** re-implement Formula 1A or the rollups. It calls python-server via `POST /upload` → poll `GET /jobs/{job_id}` → `POST /analytics/*`, storing returned `StudentCLOAttainment` records to seed `clo_raw_data` / CAR. Frontend import flow: see `frontend/SYSTEM-DESIGN.md` §4.2.
+  **Ownership boundary (see `python-server/SYSTEM-DESIGN.md` §7):** this backend is the **sole persister** — it stores python-server's results into `CloAttainment`/`PloAttainment`/`ComputationRun` (recording formula version/weights) and performs all auth/RBAC, approvals, form lifecycle, audit, exports. It must **not** re-implement Formula 1A or the rollups. It calls python-server via `POST /upload` → poll `GET /jobs/{job_id}`, then the `attainment-service` persists the results directly to the `CloAttainment` table.
 
 ## 9. Deferred / Open Questions
 

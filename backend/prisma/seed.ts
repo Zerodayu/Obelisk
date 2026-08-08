@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 const TARGET_CLASS_SECTION_ID = "clv92a9f1000108l3d26b52b3";
 const TEST_DEPT_CODE = "TEST-DEPT";
 const TEST_PROG_CODE = "TEST-PROG";
+const DEV_USER_ID = "clv000000000000000000000000"; // A known, predictable ID
 
 // These are the actual CLO codes from the test workbook.
 const ACTUAL_CLO_CODES = ["CLO1", "CLO2", "CLO3", "CLO4", "CLO5"];
@@ -16,40 +17,31 @@ async function main() {
   console.log("Cleaning up previous seed data...");
 
   // Delete records from the bottom of the dependency chain upwards.
-
-  // 1. Delete all attainment and computation runs linked to the test class section
-  await prisma.cloAttainment.deleteMany({
-    where: { classSectionId: TARGET_CLASS_SECTION_ID },
-  });
-  await prisma.computationRun.deleteMany({
-    where: { scope: TARGET_CLASS_SECTION_ID },
-  });
-  console.log("Cleaned up old attainment and computation runs.");
-
-  // 2. Delete all students linked to the test program
-  await prisma.student.deleteMany({
-    where: { program: { code: TEST_PROG_CODE } },
-  });
-  console.log("Cleaned up old student records.");
-
-  // 3. Now it's safe to delete the department, which will cascade to program/course
-  await prisma.department.deleteMany({
-    where: { code: TEST_DEPT_CODE },
-  });
-  console.log("Cleaned up old department, program, and course records.");
-
-  // 4. Clean up the specific class section and academic term as a final measure
-  await prisma.classSection.deleteMany({
-    where: { id: TARGET_CLASS_SECTION_ID },
-  });
-  await prisma.academicTerm.deleteMany({
-    where: { semester: "Test Semester" },
-  });
-  console.log("Cleaned up old class section and academic term.");
+  await prisma.atRiskFlag.deleteMany({});
+  await prisma.cloAttainment.deleteMany({});
+  await prisma.computationRun.deleteMany({});
+  await prisma.student.deleteMany({});
+  await prisma.user.deleteMany({ where: { email: "dev@jmcfi.edu.ph" } });
+  await prisma.department.deleteMany({ where: { code: TEST_DEPT_CODE } });
+  await prisma.classSection.deleteMany({ where: { id: TARGET_CLASS_SECTION_ID } });
+  await prisma.academicTerm.deleteMany({ where: { semester: "Test Semester" } });
 
   console.log("Cleanup complete. Seeding new data...");
 
   // --- Seeding New Data ---
+
+  // 0. Create a predictable, all-powerful development user
+  const devUser = await prisma.user.create({
+    data: {
+      id: DEV_USER_ID,
+      email: "dev@jmcfi.edu.ph",
+      name: "Development User",
+      role: "system_admin",
+      isActive: true,
+      roleRequestStatus: "approved",
+    },
+  });
+  console.log(`Created development user: ${devUser.email} (ID: ${devUser.id})`);
 
   // 1. Create a Department
   const department = await prisma.department.create({

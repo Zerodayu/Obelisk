@@ -70,12 +70,12 @@ Goal: make the backend buildable, testable, and lint-clean, then stand up the sh
 
 The foundational data-capture form; exercises the full 3-service integration.
 
-- [~] **Backend: ingest endpoint** — accept uploaded class record, forward to python-server, persist result
+- [x] **Backend: ingest endpoint** — accept uploaded class record, forward to python-server, persist result
 - [~] **Backend: persist ETL output** — `AssessmentItem` / `StudentScore` / `CloAttainment` + `ComputationRun` (formula version/weights recorded)
-- [ ] **Backend: at-risk auto-flag** — any CLO <70% → `AtRiskFlag` (computed, no manual entry)
+- [x] **Backend: at-risk auto-flag** — any CLO <70% → `AtRiskFlag` (computed, no manual entry)
 - [ ] **Backend: manual edit + CSV re-import** for per-student scores
-- [ ] **Tests:** unit (validators, at-risk computation) + integration (upload → persist → rollup) when DB reachable
-- [~] **Exit check:** an uploaded class record produces correct per-student attainment via the API
+- [~] **Tests:** unit (validators, at-risk computation) + integration (upload → persist → rollup) when DB reachable
+- [x] **Exit check:** an uploaded class record produces correct per-student attainment via the API
 
 ---
 
