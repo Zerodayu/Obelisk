@@ -1,13 +1,28 @@
 import asyncio
 import json
 from pathlib import Path
+import sys
+
+# Add project root to path to allow imports from `app`
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+# Load environment variables from the .env file at the project root
+try:
+    from dotenv import load_dotenv
+    dotenv_path = PROJECT_ROOT / ".env"
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path=dotenv_path)
+except ImportError:
+    pass # python-dotenv is not a hard requirement
 
 from app.etl.extract.extractor import ExcelExtractor
 from app.etl.transform.transformer import SimpleTransformer
 from app.analytics.cqi_recommender import generate_cqi_recommendation
 
 # --- Configuration ---
-FILE_PATH = Path(__file__).parent / "E-classrecord(LECTURE ONLY).xlsx"
+TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
+FILE_PATH = TEMPLATES_DIR / "E-classrecord(LECTURE ONLY).xlsx"
 
 
 def print_step(message: str):
@@ -55,18 +70,19 @@ async def main():
     
     # Verify that student names are not present in the final output
     result_str = json.dumps(cqi_result)
-    if any(name in result_str for name in ["DELA CRUZ, JUAN", "DOE, JOHN"]): # Add sample names from file if needed
+    if any(name in result_str for name in ["DELA CRUZ, JUAN", "DOE, JOHN"]):
         print("VERIFICATION FAILED: Real student names were found in the output.")
     else:
         print("VERIFICATION PASSED: No real student names found in the output.")
 
-    # Verify that the placeholder response is present
-    if cqi_result and "[PLACEHOLDER RESPONSE" in cqi_result.get("recommendation", ""):
-        print("VERIFICATION PASSED: LLM call was correctly stubbed.")
-    elif cqi_result and cqi_result.get("status") == "no_gaps_found":
+    # Verify that a real recommendation was received
+    recommendation_text = cqi_result.get("recommendation", "")
+    if cqi_result and cqi_result.get("status") == "no_gaps_found":
         print("VERIFICATION PASSED: No gaps found, so LLM was not called (correct).")
+    elif recommendation_text and "LLM API ERROR" not in recommendation_text:
+        print("VERIFICATION PASSED: A real, non-error recommendation was received.")
     else:
-        print("VERIFICATION FAILED: Placeholder response was not found.")
+        print("VERIFICATION FAILED: Recommendation was empty or contained an error.")
         
     print("\nTest script finished.")
 

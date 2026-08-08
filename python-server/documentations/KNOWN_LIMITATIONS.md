@@ -3,8 +3,8 @@
 This document lists known limitations, design trade-offs, and deferred implementation details for the OBELISK ETL & Analytics Service.
 
 1.  **No Real LLM Integration**
-    -   **Status**: Not Implemented
-    -   **Details**: The AI-powered recommendation features (`GET /jobs/{job_id}/recommendation` and `POST /analytics/institutional-summary`) are currently hardcoded to return a static placeholder response. The `IS_DEBUG_MODE` flag in `app/analytics/cqi_recommender.py` is globally set to `True`, preventing any real outbound API calls. A real integration with an LLM provider (e.g., Gemini, OpenAI) is required to generate dynamic insights.
+    -   **Status**: Resolved
+    -   **Details**: The AI-powered recommendation features now make real API calls to Google's Gemini model (`gemini-1.5-flash`). The `IS_DEBUG_MODE` flag in `app/analytics/cqi_recommender.py` can be set to `True` to revert to the placeholder behavior for testing or if the API key is unavailable.
 
 2.  **Indirect Attainment Not Computed**
     -   **Status**: Not Implemented

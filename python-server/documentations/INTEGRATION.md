@@ -75,7 +75,7 @@ The `error` field will contain a structured JSON object with details about the f
 ```
 
 ### `GET /analytics/jobs/{job_id}/recommendation`
-Per-course AI gap analysis (VPAA-only, currently returns a placeholder).
+Per-course AI gap analysis. Triggers a real LLM call.
 
 ---
 

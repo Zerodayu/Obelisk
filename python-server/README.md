@@ -31,6 +31,7 @@ This is the simplest way to run the service without managing Python environments
 
 **Prerequisites:**
 -   Docker Desktop installed and running.
+-   An LLM API key (e.g., from Google AI Studio).
 
 **Instructions:**
 
@@ -41,8 +42,18 @@ This is the simplest way to run the service without managing Python environments
     ```
 
 2.  **Run the Docker container:**
+    You have two options for providing the API key.
+
+    **Option 1 (Recommended for Local Dev): Use a `.env` file.**
+    This command reads your `.env` file and securely passes the variables to the container.
     ```sh
-    docker run -p 8000:8000 obelisk-etl
+    docker run --env-file .env -p 8000:8000 obelisk-etl
+    ```
+
+    **Option 2 (For CI/CD or manual use): Pass the key directly.**
+    This is useful in environments where you don't have a `.env` file.
+    ```sh
+    docker run -p 8000:8000 -e OBELISK_LLM_API_KEY="your_api_key_here" obelisk-etl
     ```
 
 The API will be available at `http://localhost:8000`.
@@ -54,6 +65,7 @@ This method is ideal for active development.
 **Prerequisites:**
 -   Python 3.11+
 -   Poetry
+-   A `.env` file in the project root containing your `OBELISK_LLM_API_KEY`.
 
 **Instructions:**
 
@@ -62,14 +74,16 @@ This method is ideal for active development.
     poetry install
     ```
 
-2.  **(Optional) Configure Environment:**
-    Create a `.env` file in the project root to configure CORS origins.
+2.  **Configure Environment:**
+    Create a `.env` file in the project root. The `ALLOWED_ORIGINS` value must be a valid JSON array (without outer quotes).
     ```env
     # .env
-    OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+    OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
+    OBELISK_LLM_API_KEY="your_api_key_here"
     ```
 
 3.  **Start the development server:**
+    The application will automatically load the `.env` file.
     ```sh
     poetry run uvicorn app.main:app --reload
     ```
@@ -83,8 +97,8 @@ The project includes several scripts in the `testing_modules/` directory to vali
 | Script | Purpose | How to Run (from project root) |
 | :--- | :--- | :--- |
 | `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. | `python testing_modules/test_validate.py` |
-| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course. Requires the server to be running. | `python testing_modules/test_upload_e2e.py` |
-| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint. Requires the server to be running. | `python testing_modules/test_institutional_summary_e2e.py` |
+| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course, including a real LLM call. Requires the server to be running. | `python testing_modules/test_upload_e2e.py` |
+| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint, including a real LLM call. Requires the server to be running. | `python testing_modules/test_institutional_summary_e2e.py` |
 
 ---
 
@@ -93,6 +107,7 @@ The project includes several scripts in the `testing_modules/` directory to vali
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
 | `POST` | `/upload` | Upload a class-record `.xlsx` file to start a new ETL job. |
+| `GET` | `/jobs` | Get a list of all jobs currently in memory. |
 | `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
 | `GET` | `/analytics/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
 | `POST` | `/analytics/summary` | Get pure data rollups for a given set of course submissions. |

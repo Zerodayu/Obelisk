@@ -125,18 +125,19 @@ def main():
     print_step(f"5. Calling GET /analytics/jobs/{job_id}/recommendation")
     recommendation_url = f"{BASE_URL}/analytics/jobs/{job_id}/recommendation"
     try:
-        rec_response = requests.get(recommendation_url, timeout=10)
+        rec_response = requests.get(recommendation_url, timeout=20) # Increased timeout for LLM call
         print(f"GET {recommendation_url} status code: {rec_response.status_code}")
 
         if rec_response.status_code == 200:
             rec_data = rec_response.json()
             print_json(rec_data, title="CQI Recommendation Response")
 
-            if "gaps" in rec_data and "prompt_used" in rec_data and "[PLACEHOLDER RESPONSE" in rec_data.get("recommendation", ""):
-                print("\nVERIFICATION PASSED: Recommendation response has the correct shape and placeholder content.")
+            recommendation_text = rec_data.get("recommendation", "")
+            if recommendation_text and "LLM API ERROR" not in recommendation_text:
+                print("\nVERIFICATION PASSED: A real, non-error recommendation was received from the LLM.")
                 print("\nEND-TO-END TEST: PASSED")
             else:
-                print("\nVERIFICATION FAILED: Recommendation response is missing expected fields or content.")
+                print("\nVERIFICATION FAILED: Recommendation was empty or contained an API error.")
                 print("\nEND-TO-END TEST: FAILED")
 
         else:

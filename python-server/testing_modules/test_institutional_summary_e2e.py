@@ -16,9 +16,6 @@ POLL_INTERVAL_SECONDS = 1
 JOB_TIMEOUT_SECONDS = 60
 
 # --- Test Fixture ---
-# This list simulates the webapp backend looking up organizational data for each
-# submitted class record. These are manually-assigned test stubs that stand in
-# for that future database lookup, using the exact names from the org chart.
 CLASS_RECORDS = [
     {
         "file": TEMPLATES_DIR / "E-classrecord_CITE_BSEMC.xlsx",
@@ -156,7 +153,7 @@ def main():
     print_step("4. POSTing to /analytics/institutional-summary")
     
     try:
-        response = requests.post(f"{BASE_URL}/analytics/institutional-summary", json=payload, timeout=30)
+        response = requests.post(f"{BASE_URL}/analytics/institutional-summary", json=payload, timeout=45) # Increased timeout
         print(f"POST /analytics/institutional-summary status code: {response.status_code}")
 
         if response.status_code != 200:
@@ -169,12 +166,16 @@ def main():
             
         summary_data = response.json()
 
-        print_step("5. Displaying Aggregated Results")
+        print_step("5. Verifying and Displaying Aggregated Results")
 
-        print_json(summary_data.get("summary", {}).get("department_summary", {}), title="Department Summary")
-        print_json(summary_data.get("summary", {}).get("program_summary", {}), title="Program Summary")
-        print_json(summary_data.get("summary", {}).get("avp_group_summary", {}), title="AVP Group Summary")
-        print_json({"worst_performing_clos": summary_data.get("summary", {}).get("worst_performing_clos", [])}, title="Overall Worst Performing CLOs")
+        recommendation_text = summary_data.get("recommendation", "")
+        if recommendation_text and "LLM API ERROR" not in recommendation_text:
+            print("✓ VERIFICATION PASSED: A real, non-error recommendation was received.")
+        else:
+            print("✗ VERIFICATION FAILED: Recommendation was empty or contained an API error.")
+        
+        print_json(summary_data.get("summary", {}), title="Data Summary")
+        print_json({"recommendation": recommendation_text}, title="AI Recommendation")
 
         print("\n✓ Institutional summary test completed successfully.")
 
