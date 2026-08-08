@@ -71,34 +71,36 @@ class IngestClient {
 		this.baseUrl = baseUrl.replace(/\/+$/, "");
 	}
 
-async upload(file: Blob, filename: string): Promise<string> {
-    const form = new FormData();
-    form.append("file", file, filename);
+	async upload(file: Blob, filename: string): Promise<string> {
+		const form = new FormData();
+		form.append("file", file, filename);
 
-    const response = await fetch(`${this.baseUrl}/upload`, {
-        method: "POST",
-        body: form,
-    });
+		const response = await fetch(`${this.baseUrl}/upload`, {
+			method: "POST",
+			body: form,
+		});
 
-    if (!response.ok) {
-        // Try to parse a structured error from the python server
-        try {
-            const errorBody = (await response.json()) as { detail: StructuredError };
-            if (errorBody.detail) {
-                throw new PythonServerError(errorBody.detail);
-            }
-        } catch (e) {
-            // If parsing fails or it's not the expected shape, throw generic error
-            if (e instanceof PythonServerError) throw e;
-            throw new Error(`Upload failed with status ${response.status}`);
-        }
-        // Fallback for non-JSON error responses
-        throw new Error(`Upload failed with status ${response.status}`);
-    }
+		if (!response.ok) {
+			// Try to parse a structured error from the python server
+			try {
+				const errorBody = (await response.json()) as {
+					detail: StructuredError;
+				};
+				if (errorBody.detail) {
+					throw new PythonServerError(errorBody.detail);
+				}
+			} catch (e) {
+				// If parsing fails or it's not the expected shape, throw generic error
+				if (e instanceof PythonServerError) throw e;
+				throw new Error(`Upload failed with status ${response.status}`);
+			}
+			// Fallback for non-JSON error responses
+			throw new Error(`Upload failed with status ${response.status}`);
+		}
 
-    const body = (await response.json()) as { job_id: string };
-    return body.job_id;
-}
+		const body = (await response.json()) as { job_id: string };
+		return body.job_id;
+	}
 
 	async getJob(jobId: string): Promise<ETLJob> {
 		const response = await fetch(`${this.baseUrl}/jobs/${jobId}`, {
@@ -110,9 +112,7 @@ async upload(file: Blob, filename: string): Promise<string> {
 		}
 
 		if (!response.ok) {
-			throw new Error(
-				`Failed to get job ${jobId}, status: ${response.status}`,
-			);
+			throw new Error(`Failed to get job ${jobId}, status: ${response.status}`);
 		}
 
 		const body = (await response.json()) as ETLJob;
