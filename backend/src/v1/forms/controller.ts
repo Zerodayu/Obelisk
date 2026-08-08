@@ -1,5 +1,5 @@
+import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
-import { authPlugin } from "../auth/controller";
 import {
 	CreateFormSubmissionSchema,
 	SubmitFormSchema,

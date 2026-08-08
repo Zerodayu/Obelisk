@@ -1,6 +1,6 @@
 import { ingestClient } from "@lib/ingest/ingest-client";
+import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
-import { authPlugin } from "../auth/controller";
 import { UploadClassRecordSchema } from "./model";
 import { ingestService, MalformedEtlResultError } from "./service";
 
