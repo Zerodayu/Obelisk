@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import type { EtlLoadedData } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
@@ -66,7 +65,7 @@ export class AttainmentService {
 
 		const computationRun = await prisma.computationRun.create({
 			data: {
-				id: randomUUID(),
+				id: crypto.randomUUID(),
 				scope: classSectionId,
 				formulaVersion: "70_30_v1",
 				directWeight: 0.7,
@@ -117,13 +116,13 @@ export class AttainmentService {
 				const { lastName, firstName } = parseStudentName(record.student_name);
 				const newStudent = await prisma.student.create({
 					data: {
-						id: randomUUID(),
+						id: crypto.randomUUID(),
 						firstName,
 						lastName,
 						studentNumber:
 							record.student_id ||
 							`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-						anonymizedId: randomUUID(),
+						anonymizedId: crypto.randomUUID(),
 						program: {
 							connect: { id: programId }, // Connect to the program
 						},
@@ -181,7 +180,7 @@ export class AttainmentService {
 
 			const newAttainment = await prisma.cloAttainment.create({
 				data: {
-					id: randomUUID(),
+					id: crypto.randomUUID(),
 					directScorePct: directScore,
 					indirectScorePct: null,
 					compositeScorePct: directScore,
@@ -198,7 +197,7 @@ export class AttainmentService {
 			if (isBelowThreshold) {
 				await prisma.atRiskFlag.create({
 					data: {
-						id: randomUUID(),
+						id: crypto.randomUUID(),
 						studentId: student.id,
 						cloAttainmentId: newAttainment.id,
 						reason: `Below institutional threshold on ${

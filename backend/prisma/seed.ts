@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { prisma } from "@lib/prisma";
 
 // This is the hardcoded ID from the frontend component.
@@ -50,7 +49,7 @@ async function main() {
 	// 1. Create a Department
 	const department = await prisma.department.create({
 		data: {
-			id: randomUUID(),
+			id: crypto.randomUUID(),
 			name: "Test Department",
 			code: TEST_DEPT_CODE,
 		},
@@ -60,7 +59,7 @@ async function main() {
 	// 2. Create a Program linked to the Department
 	const program = await prisma.program.create({
 		data: {
-			id: randomUUID(),
+			id: crypto.randomUUID(),
 			name: "Test Program",
 			code: TEST_PROG_CODE,
 			departmentId: department.id,
@@ -72,7 +71,7 @@ async function main() {
 	const currentYear = new Date().getFullYear();
 	const academicTerm = await prisma.academicTerm.create({
 		data: {
-			id: randomUUID(),
+			id: crypto.randomUUID(),
 			schoolYear: `${currentYear}-${currentYear + 1}`,
 			semester: "Test Semester",
 			isActive: true,
@@ -85,7 +84,7 @@ async function main() {
 	// 4. Create a Course linked to the Program
 	const course = await prisma.course.create({
 		data: {
-			id: randomUUID(),
+			id: crypto.randomUUID(),
 			title: "Test Course",
 			code: "TEST-101",
 			programId: program.id,
@@ -110,7 +109,7 @@ async function main() {
 	for (const cloCode of ACTUAL_CLO_CODES) {
 		const clo = await prisma.clo.create({
 			data: {
-				id: randomUUID(),
+				id: crypto.randomUUID(),
 				code: cloCode,
 				description: `Placeholder description for ${cloCode}`,
 				courseId: course.id,

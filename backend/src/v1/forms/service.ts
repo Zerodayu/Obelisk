@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import {
 	assertEditable,
 	assertTransition,
@@ -30,7 +29,7 @@ const APPROVAL_STEP_INCLUDE = {
 } as const;
 
 function newId(): string {
-	return randomUUID();
+	return crypto.randomUUID();
 }
 
 export class NoPendingApprovalError extends Error {
