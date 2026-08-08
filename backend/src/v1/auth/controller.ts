@@ -7,7 +7,7 @@ import {
 	SELF_SELECTABLE_ROLES,
 	type SelfSelectableRole,
 	validateRoleRequest,
-} from "./models";
+} from "./model";
 import { auth } from "./service";
 
 const ROLE_REQUEST_STATUS = {
