@@ -34,15 +34,6 @@ const app = new Elysia()
 	.use(apiRoutesV1)
 	.listen(8080);
 
-// DEBUG: Log all registered routes
-console.log("🔄 Registered routes:");
-// @ts-ignore - accessing internal routes for debugging
-if (app.routes) {
-	app.routes.forEach((route: any) => {
-		console.log(`  ${route.method} ${route.path}`);
-	});
-}
-
 console.log(
 	`🦊 elysia is running at [ http://${app.server?.hostname}:${app.server?.port} ]`,
 );

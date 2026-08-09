@@ -78,17 +78,14 @@ export const auth = betterAuth({
 	// During local development the .env may contain placeholder values which
 	// cause the client-side Google flow to immediately fail; omit the
 	// provider in that case so users fall back to email/password signin.
-	socialProviders:
-		env.GOOGLE_CLIENT_ID === "placeholder" || env.GOOGLE_CLIENT_SECRET === "placeholder"
-			? {}
-			: {
-				google: {
-					prompt: "select_account",
-					clientId: env.GOOGLE_CLIENT_ID,
-					clientSecret: env.GOOGLE_CLIENT_SECRET,
-					hd: env.ORG_EMAIL_DOMAIN,
-				},
-			},
+	socialProviders: {
+		google: {
+			prompt: "select_account",
+			clientId: env.GOOGLE_CLIENT_ID,
+			clientSecret: env.GOOGLE_CLIENT_SECRET,
+			hd: env.ORG_EMAIL_DOMAIN,
+		},
+	},
 
 	advanced: {
 		cookiePrefix: "obelisk-app",
