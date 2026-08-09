@@ -1,8 +1,8 @@
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { authPlugin } from "@v1/auth/controller";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { UploadClassRecordSchema } from "./model";
-import { ingestService, MalformedEtlResultError } from "./service";
+import { ingestService } from "./service";
 
 export const ingestPlugin = new Elysia({
 	prefix: "/ingest",
@@ -12,51 +12,56 @@ export const ingestPlugin = new Elysia({
 	.use(authPlugin)
 	.post(
 		"/upload",
-		async ({ body, user, set }) => {
-			try {
-				return await ingestService.uploadAndPersist(
-					body.file,
-					body.file.name,
-					body.classSectionId,
-					user?.id,
-				);
-			} catch (error) {
-				set.status = 500;
-				if (error instanceof MalformedEtlResultError) {
-					return {
-						error: "Malformed ETL Result",
-						message: error.message,
-						etlJobId: error.etlJobId,
-					};
-				}
-				const e = error as Error;
-				console.error("[INGESTION_ERROR]", error);
-				return {
-					error: "Persistence Failed",
-					message: e.message,
-				};
-			}
+		async ({ body }) => {
+			// Start the ETL job but do not wait for it to complete.
+			return ingestService.startUpload(body.file, body.file.name);
 		},
 		{
 			auth: true,
 			body: UploadClassRecordSchema,
 			detail: {
-				summary: "Upload class record, run ETL, and persist attainment results",
+				summary: "Upload class record and start ETL process",
 				description:
-					"Forwards the file to the python-server for ETL. Once complete, " +
-					"the resulting attainment data is persisted to the database. " +
-					"Returns both the raw ETL result and a summary of the persistence operation.",
+					"Forwards the file to the python-server for ETL and immediately returns a job ID.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "ETL job started successfully." },
+					401: { description: "Unauthorized" },
+					500: { description: "Python server failure on job creation." },
+				},
+			},
+		},
+	)
+	.get(
+		"/upload/:jobId/status",
+		async ({ params, query, user, set }) => {
+			const result = await ingestService.getJobStatus(
+				params.jobId,
+				query.classSectionId,
+				user?.id,
+			);
+
+			if (result.status === "failed") {
+				set.status = 500;
+			}
+
+			return result;
+		},
+		{
+			auth: true,
+			params: t.Object({ jobId: t.String() }),
+			query: t.Object({ classSectionId: t.String() }),
+			detail: {
+				summary: "Get status of an ingest job and trigger persistence",
+				description:
+					"Poll this endpoint to check the status of an upload job. When the job is complete, the server will trigger the database persistence step and return the final summary. This persistence step is idempotent and will only run once.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: {
 						description:
-							"ETL and persistence complete. Returns ETL data and persistence summary.",
+							"Returns current job status ('queued', 'running') or the final result ('completed', 'failed').",
 					},
 					401: { description: "Unauthorized" },
-					500: {
-						description:
-							"Indicates a failure in the ETL job, a malformed ETL result, or a database persistence error.",
-					},
 				},
 			},
 		},
@@ -70,7 +75,9 @@ export const ingestPlugin = new Elysia({
 		{
 			auth: true,
 			detail: {
-				summary: "Poll a python ETL job by id",
+				summary: "Poll a python ETL job by id (raw)",
+				description:
+					"DEPRECATED: Use /ingest/upload/:jobId/status instead. This endpoint returns the raw python-server job state without triggering persistence.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Current job state" },

@@ -1,131 +1,236 @@
 import { prisma } from "@lib/prisma";
+import { env } from "@utils/env";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { randomUUID } from "crypto";
+
+const seedAuth = betterAuth({
+  basePath: "/api/v1/auth",
+
+  trustedOrigins: [env.FRONTEND_URL, "http://localhost:3000"],
+
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+
+  user: {
+    additionalFields: {
+      role: {
+        type: "string",
+        input: false,
+        required: false,
+        defaultValue: "user",
+      },
+      requestedRole: {
+        type: "string",
+        input: true,
+        required: false,
+      },
+      roleRequestStatus: {
+        type: "string",
+        input: false,
+        required: false,
+        defaultValue: "none",
+      },
+      employeeId: { type: "string", input: false, required: false },
+      programId: { type: "string", input: false, required: false },
+      departmentId: { type: "string", input: false, required: false },
+      isActive: {
+        type: "boolean",
+        input: false,
+        required: false,
+        defaultValue: true,
+      },
+    },
+  },
+
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => ({
+          data: {
+            ...user,
+            role: "user",
+            roleRequestStatus: user.requestedRole ? "pending" : "none",
+          },
+        }),
+      },
+    },
+  },
+
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: false,
+    password: {
+      hash: (pass) => Bun.password.hash(pass),
+      verify: ({ password, hash }) => Bun.password.verify(password, hash),
+    },
+  },
+
+  advanced: {
+    cookiePrefix: "obelisk-app",
+    database: {
+      generateId: false,
+    },
+  },
+
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5,
+    },
+  },
+});
 
 // This is the hardcoded ID from the frontend component.
 const TARGET_CLASS_SECTION_ID = "clv92a9f1000108l3d26b52b3";
 const TEST_DEPT_CODE = "TEST-DEPT";
 const TEST_PROG_CODE = "TEST-PROG";
-const DEV_USER_ID = "clv000000000000000000000000"; // A known, predictable ID
 
-// These are the actual CLO codes from the test workbook.
-const ACTUAL_CLO_CODES = ["CLO1", "CLO2", "CLO3", "CLO4", "CLO5"];
+// CLO codes from the actual "Electro-Mechanical Systems" workbook.
+const ACTUAL_CLO_CODES = [
+  "CLO1",
+  "CLO2",
+  "CLO3",
+  "CLO4",
+  "CLO5",
+  "CLO6",
+  "CLO7",
+];
 
 async function main() {
-	console.log("Starting seed process...");
+  console.log("Starting seed process...");
 
-	// --- Comprehensive Cleanup ---
-	console.log("Cleaning up previous seed data...");
+  // --- Comprehensive Cleanup ---
+  console.log("Cleaning up previous seed data...");
 
-	// Delete records from the bottom of the dependency chain upwards.
-	await prisma.atRiskFlag.deleteMany({});
-	await prisma.cloAttainment.deleteMany({});
-	await prisma.computationRun.deleteMany({});
-	await prisma.student.deleteMany({});
-	await prisma.user.deleteMany({ where: { email: "dev@jmcfi.edu.ph" } });
-	await prisma.department.deleteMany({ where: { code: TEST_DEPT_CODE } });
-	await prisma.classSection.deleteMany({
-		where: { id: TARGET_CLASS_SECTION_ID },
-	});
-	await prisma.academicTerm.deleteMany({
-		where: { semester: "Test Semester" },
-	});
+  await prisma.atRiskFlag.deleteMany({});
+  await prisma.cloAttainment.deleteMany({});
+  await prisma.computationRun.deleteMany({});
+  await prisma.student.deleteMany({});
+  await prisma.user.deleteMany({ where: { email: "dev@jmcfi.edu.ph" } });
+  await prisma.department.deleteMany({ where: { code: TEST_DEPT_CODE } });
+  await prisma.classSection.deleteMany({
+    where: { id: TARGET_CLASS_SECTION_ID },
+  });
+  await prisma.academicTerm.deleteMany({
+    where: { semester: "Test Semester" },
+  });
 
-	console.log("Cleanup complete. Seeding new data...");
+  console.log("Cleanup complete. Seeding new data...");
 
-	// --- Seeding New Data ---
+  // --- Seeding New Data ---
 
-	// 0. Create a predictable, all-powerful development user
-	const devUser = await prisma.user.create({
-		data: {
-			id: DEV_USER_ID,
-			email: "dev@jmcfi.edu.ph",
-			name: "Development User",
-			role: "system_admin",
-			isActive: true,
-			roleRequestStatus: "approved",
-		},
-	});
-	console.log(`Created development user: ${devUser.email} (ID: ${devUser.id})`);
+  // 1. Create the development user through Better Auth so password hashing
+  //    and account rows are handled by the library itself.
+  const devEmail = "dev@jmcfi.edu.ph";
+  const devPassword = "password";
+  const devName = "Development User";
 
-	// 1. Create a Department
-	const department = await prisma.department.create({
-		data: {
-			id: crypto.randomUUID(),
-			name: "Test Department",
-			code: TEST_DEPT_CODE,
-		},
-	});
-	console.log(`Created department: ${department.name}`);
+  await seedAuth.api.signUpEmail({
+    body: {
+      email: devEmail,
+      password: devPassword,
+      name: devName,
+    },
+  });
 
-	// 2. Create a Program linked to the Department
-	const program = await prisma.program.create({
-		data: {
-			id: crypto.randomUUID(),
-			name: "Test Program",
-			code: TEST_PROG_CODE,
-			departmentId: department.id,
-		},
-	});
-	console.log(`Created program: ${program.name}`);
+  const devUser = await prisma.user.findUnique({
+    where: { email: devEmail },
+  });
 
-	// 3. Create an active Academic Term
-	const currentYear = new Date().getFullYear();
-	const academicTerm = await prisma.academicTerm.create({
-		data: {
-			id: crypto.randomUUID(),
-			schoolYear: `${currentYear}-${currentYear + 1}`,
-			semester: "Test Semester",
-			isActive: true,
-		},
-	});
-	console.log(
-		`Created academic term: ${academicTerm.schoolYear} ${academicTerm.semester}`,
-	);
+  if (!devUser) {
+    throw new Error(`Failed to create development user ${devEmail}`);
+  }
 
-	// 4. Create a Course linked to the Program
-	const course = await prisma.course.create({
-		data: {
-			id: crypto.randomUUID(),
-			title: "Test Course",
-			code: "TEST-101",
-			programId: program.id,
-		},
-	});
-	console.log(`Created course: ${course.title}`);
+  await prisma.user.update({
+    where: { id: devUser.id },
+    data: {
+      role: "system_admin",
+    },
+  });
 
-	// 5. Create the specific ClassSection linked to the Course and Term
-	const classSection = await prisma.classSection.create({
-		data: {
-			id: TARGET_CLASS_SECTION_ID, // Use the hardcoded ID
-			sectionCode: "T1",
-			courseId: course.id,
-			termId: academicTerm.id,
-		},
-	});
-	console.log(
-		`Created class section: ${classSection.sectionCode} (ID: ${classSection.id})`,
-	);
+  console.log(`Created development user: ${devEmail} (ID: ${devUser.id})`);
+  console.log(`Working dev credentials: ${devEmail} / ${devPassword}`);
 
-	// 6. Create the actual CLOs linked to the Course
-	for (const cloCode of ACTUAL_CLO_CODES) {
-		const clo = await prisma.clo.create({
-			data: {
-				id: crypto.randomUUID(),
-				code: cloCode,
-				description: `Placeholder description for ${cloCode}`,
-				courseId: course.id,
-			},
-		});
-		console.log(`Created CLO: ${clo.code}`);
-	}
 
-	console.log("Seed process finished.");
+  // Create other academic data
+  const department = await prisma.department.create({
+    data: {
+      id: randomUUID(),
+      name: "Test Department",
+      code: TEST_DEPT_CODE,
+    },
+  });
+  console.log(`Created department: ${department.name}`);
+
+  const program = await prisma.program.create({
+    data: {
+      id: randomUUID(),
+      name: "Test Program",
+      code: TEST_PROG_CODE,
+      departmentId: department.id,
+    },
+  });
+  console.log(`Created program: ${program.name}`);
+
+  const academicTerm = await prisma.academicTerm.create({
+    data: {
+      id: randomUUID(),
+      schoolYear: `${new Date().getFullYear()}-${
+        new Date().getFullYear() + 1
+      }`,
+      semester: "Test Semester",
+      isActive: true,
+    },
+  });
+  console.log(
+    `Created academic term: ${academicTerm.schoolYear} ${academicTerm.semester}`,
+  );
+
+  const course = await prisma.course.create({
+    data: {
+      id: randomUUID(),
+      title: "Electro-Mechanical Systems",
+      code: "ELECMECH201",
+      programId: program.id,
+    },
+  });
+  console.log(`Created course: ${course.title}`);
+
+  const classSection = await prisma.classSection.create({
+    data: {
+      id: TARGET_CLASS_SECTION_ID,
+      sectionCode: "A",
+      courseId: course.id,
+      termId: academicTerm.id,
+    },
+  });
+  console.log(
+    `Created class section: ${classSection.sectionCode} (ID: ${classSection.id})`,
+  );
+
+  for (const cloCode of ACTUAL_CLO_CODES) {
+    const clo = await prisma.clo.create({
+      data: {
+        id: randomUUID(),
+        code: cloCode,
+        description: `CLO for ${course.title}`,
+        courseId: course.id,
+      },
+    });
+    console.log(`Created CLO: ${clo.code}`);
+  }
+
+  console.log("Seed process finished.");
 }
 
 main()
-	.catch((e) => {
-		console.error(e);
-		process.exit(1);
-	})
-	.finally(async () => {
-		await prisma.$disconnect();
-	});
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

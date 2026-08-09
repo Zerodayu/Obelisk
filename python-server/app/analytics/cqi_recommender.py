@@ -10,7 +10,7 @@ from app.core.config import settings
 # Manual toggle — set to False only once a real LLM API integration is implemented below.
 # True  = use the placeholder response (no real API call, safe for testing/demo)
 # False = attempt a real API call.
-IS_DEBUG_MODE: bool = False
+IS_DEBUG_MODE: bool = True
 
 # --- LLM System Prompt ---
 # This defines the persona, constraints, and output format for the LLM.

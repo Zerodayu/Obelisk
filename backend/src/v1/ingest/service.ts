@@ -1,24 +1,32 @@
-import type { EtlLoadedData } from "@lib/ingest/ingest-client";
+import type { EtlLoadedData, ETLJob } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
 import { prisma } from "@lib/prisma";
 
-// The `EtlLoadedData` from the client is already well-typed, but we can
-// create a more specific version for this service's known `attainments` shape.
+// --- In-memory Cache for Idempotency ---
+// This ensures that even if the client polls a completed job multiple times,
+// the persistence logic only runs once. The result is cached and returned on
+// subsequent requests.
+const jobCompletionCache = new Map<
+	string,
+	| { status: "completed"; persistence: PersistenceSummary; etl: unknown }
+	| { status: "failed"; error: unknown }
+>();
+
+// --- Interfaces (assuming these might be moved to a model file later) ---
+
 export interface AttainmentRecord {
 	student_name: string;
 	student_id: string | null;
 	clo_code: string;
 	direct_clo_attainment_pct: number;
 	met_threshold: boolean;
-	// other fields from python are ignored as per instructions
 }
 
 export interface TypedEtlLoadedData extends EtlLoadedData {
 	attainments: AttainmentRecord[];
 }
 
-// Summary object to be returned
 export interface PersistenceSummary {
 	computationRunId: string;
 	studentsProcessed: number;
@@ -27,6 +35,22 @@ export interface PersistenceSummary {
 	atRiskFlagsCreated: number;
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
 }
+
+// --- Custom Error ---
+
+export class MalformedEtlResultError extends Error {
+	public readonly etlJobId: string;
+
+	constructor(etlJobId: string) {
+		super(
+			"The result from the python-server was missing the expected 'result.loaded.attainments' structure.",
+		);
+		this.name = "MalformedEtlResultError";
+		this.etlJobId = etlJobId;
+	}
+}
+
+// --- Services ---
 
 export class AttainmentService {
 	async persistAttainment(
@@ -80,7 +104,6 @@ export class AttainmentService {
 		for (const record of etlLoadedData.attainments) {
 			summary.studentsProcessed++;
 
-			// 1. Find or create student
 			let student: { id: string } | null = null;
 			if (record.student_id) {
 				student = await prisma.student.findUnique({
@@ -96,7 +119,7 @@ export class AttainmentService {
 				const potentialMatches = await prisma.student.findMany({
 					where: {
 						lastName: { contains: lastName, mode: "insensitive" },
-						programId: programId, // Match within the same program
+						programId: programId,
 					},
 					select: { id: true, firstName: true, lastName: true },
 				});
@@ -124,7 +147,7 @@ export class AttainmentService {
 							`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
 						anonymizedId: crypto.randomUUID(),
 						program: {
-							connect: { id: programId }, // Connect to the program
+							connect: { id: programId },
 						},
 					},
 					select: { id: true },
@@ -143,13 +166,11 @@ export class AttainmentService {
 				continue;
 			}
 
-			// 2. Find CLO, using a cache for performance
 			let clo: { id: string } | null;
 			const cachedClo = cloCache.get(record.clo_code);
 			if (cachedClo !== undefined) {
 				clo = cachedClo;
 			} else {
-				// Use findFirst with a composite where clause
 				const dbClo = await prisma.clo.findFirst({
 					where: {
 						courseId: courseId,
@@ -174,7 +195,6 @@ export class AttainmentService {
 				continue;
 			}
 
-			// 3. Insert CloAttainment
 			const directScore = record.direct_clo_attainment_pct * 100;
 			const isBelowThreshold = !record.met_threshold;
 
@@ -193,7 +213,6 @@ export class AttainmentService {
 			});
 			summary.cloAttainmentsCreated++;
 
-			// 4. If below threshold, create an AtRiskFlag
 			if (isBelowThreshold) {
 				await prisma.atRiskFlag.create({
 					data: {
@@ -214,25 +233,34 @@ export class AttainmentService {
 }
 
 export class IngestService {
-	async uploadAndPersist(
-		file: File,
-		filename: string,
+	/**
+	 * Starts the ETL process by uploading the file to the python-server.
+	 * Does not wait for completion.
+	 * @returns The job ID for polling.
+	 */
+	async startUpload(file: File, filename: string): Promise<{ jobId: string }> {
+		const blob = new Blob([file]);
+		const jobId = await ingestClient.upload(blob, filename);
+		return { jobId };
+	}
+
+	/**
+	 * Processes a completed ETL job, validates the result, and persists it.
+	 * This is the core logic that should only run once per job.
+	 */
+	private async processAndPersistJob(
+		job: ETLJob,
 		classSectionId: string,
 		triggeredByUserId?: string,
-	): Promise<{ etl: unknown; persistence: PersistenceSummary }> {
-		const blob = new Blob([file]);
-		const etlResult = await ingestClient.ingest(blob, filename);
-
-		// Runtime validation of the nested structure
+	) {
 		if (
-			!etlResult.result?.loaded ||
-			!Array.isArray(etlResult.result.loaded.attainments)
+			!job.result?.loaded ||
+			!Array.isArray(job.result.loaded.attainments)
 		) {
-			throw new MalformedEtlResultError(etlResult.job_id);
+			throw new MalformedEtlResultError(job.job_id);
 		}
 
-		// The type assertion is safe due to the runtime check above
-		const loadedData = etlResult.result.loaded as TypedEtlLoadedData;
+		const loadedData = job.result.loaded as TypedEtlLoadedData;
 
 		const persistenceSummary = await attainmentService.persistAttainment(
 			loadedData,
@@ -241,21 +269,63 @@ export class IngestService {
 		);
 
 		return {
-			etl: etlResult.result,
+			status: "completed" as const,
+			etl: job.result,
 			persistence: persistenceSummary,
 		};
 	}
-}
 
-export class MalformedEtlResultError extends Error {
-	public readonly etlJobId: string;
+	/**
+	 * Checks the status of a job, and if complete, triggers the persistence step.
+	 * Caches results to ensure idempotency.
+	 */
+	async getJobStatus(
+		jobId: string,
+		classSectionId: string,
+		triggeredByUserId?: string,
+	) {
+		// 1. Check if the job result is already in our cache.
+		if (jobCompletionCache.has(jobId)) {
+			return jobCompletionCache.get(jobId)!;
+		}
 
-	constructor(etlJobId: string) {
-		super(
-			"The result from the python-server was missing the expected 'result.loaded.attainments' structure.",
-		);
-		this.name = "MalformedEtlResultError";
-		this.etlJobId = etlJobId;
+		// 2. If not cached, get the current job status from python-server.
+		const job = await ingestClient.getJob(jobId);
+
+		if (job.status === "running" || job.status === "queued") {
+			return { status: job.status };
+		}
+
+		if (job.status === "failed") {
+			const result = { status: "failed" as const, error: job.error };
+			jobCompletionCache.set(jobId, result); // Cache the failure
+			return result;
+		}
+
+		if (job.status === "completed") {
+			try {
+				const result = await this.processAndPersistJob(
+					job,
+					classSectionId,
+					triggeredByUserId,
+				);
+				jobCompletionCache.set(jobId, result); // Cache the success
+				return result;
+			} catch (error) {
+				const result = {
+					status: "failed" as const,
+					error:
+						error instanceof MalformedEtlResultError
+							? { error_type: error.name, message: error.message }
+							: { error_type: "PersistenceFailed", message: (error as Error).message },
+				};
+				jobCompletionCache.set(jobId, result); // Cache the failure
+				return result;
+			}
+		}
+
+		// Should not be reached
+		return { status: "unknown", error: "Unknown job status" };
 	}
 }
 

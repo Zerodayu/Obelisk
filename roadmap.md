@@ -29,14 +29,14 @@ dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
 - **Aug 8 (Sat)** — rest (last full rest day before the compressed sprint)
 - **Aug 9 (Sun)** — audit `ingest` module; scope `attainment-service` prompt `[x]`
 - **Aug 10 (Mon)** — Student/Clo matching logic + `ComputationRun`/`CloAttainment` inserts (composite fallback resolved same day) `[x]`
-- **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output `[~]` — verification done (real upload, 10 students matched, all 5 CLOs matched, `isBelowThreshold` confirmed correct against 70% threshold); `AtRiskFlag` auto-derivation still pending '[x]'
-- **Aug 12 (Wed)** — wire `/forms/clo-raw-data` panel to upload + polling; render real attainment `[ ]`
-- **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data `[x]`
+- **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output `[x]` — verified: 36/50 correctly flagged, cross-checked against `isBelowThreshold`, no false positives on passing attainments
+- **Aug 12 (Wed)** — wire `/forms/clo-raw-data` panel to upload + polling; render real attainment `[x]` — required an unplanned rework: sync long-poll → async job-id + polling (fixed a false-401 display bug), plus a working dev-auth seed user. Verified visually in UI: "Processing Complete — 50 CLO attainments recorded, 36 at-risk"
+- **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data `[ ]`
 - **Aug 14 (Fri)** — CAR Part 3 (consolidated CLO summary) + Part 4 (at-risk watchlist) auto-populate `[ ]`
 - **Aug 15 (Sat)** — `plo_attainment_summary` via `/analytics/summary`, persisted to `PloAttainment` — **soft target: full data pipeline complete** `[ ]`
 - **Aug 16 (Sun)** — wire `FormSubmission` creation on persist → route through existing approval chain to VPAA `[ ]`
 - **Aug 17 (Mon)** — verify full chain end-to-end (upload → ... → visible at every approval step incl. VPAA); dashboard check — **hard target: done** `[ ]`
-
+- 
 **Aug 18–23** — buffer: demo prep, client/adviser conversations, fix whatever broke. No new scope unless Aug 17 slipped.
 
 **Explicitly deferred, unscheduled:** CAR Parts 1–2/5–7; `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phases 6, 7; manual edit/CSV re-import; tests.
@@ -71,7 +71,7 @@ Goal: make the backend buildable, testable, and lint-clean, then stand up the sh
 The foundational data-capture form; exercises the full 3-service integration.
 
 - [x] **Backend: ingest endpoint** — accept uploaded class record, forward to python-server, persist result
-- [~] **Backend: persist ETL output** — `AssessmentItem` / `StudentScore` / `CloAttainment` + `ComputationRun` (formula version/weights recorded)
+- [x] **Backend: persist ETL output** — `AssessmentItem` / `StudentScore` / `CloAttainment` + `ComputationRun` (formula version/weights recorded)
 - [x] **Backend: at-risk auto-flag** — any CLO <70% → `AtRiskFlag` (computed, no manual entry)
 - [ ] **Backend: manual edit + CSV re-import** for per-student scores
 - [~] **Tests:** unit (validators, at-risk computation) + integration (upload → persist → rollup) when DB reachable
