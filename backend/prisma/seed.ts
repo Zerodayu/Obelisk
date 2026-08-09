@@ -125,7 +125,7 @@ async function main() {
   // 1. Create the development user through Better Auth so password hashing
   //    and account rows are handled by the library itself.
   const devEmail = "dev@jmcfi.edu.ph";
-  const devPassword = "password";
+  const devPassword = "password123";
   const devName = "Development User";
 
   await seedAuth.api.signUpEmail({

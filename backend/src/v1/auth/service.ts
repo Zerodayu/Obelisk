@@ -65,21 +65,30 @@ export const auth = betterAuth({
 		enabled: true,
 		// New accounts are created through the org-restricted Google provider
 		// only; email/password remains available for existing users to sign in.
-		disableSignUp: true,
+		// Allow email/password sign-ups (was previously disabled causing 404s
+		// on HTTP /sign-up/email endpoints after .env.local restore).
+		disableSignUp: false,
 		password: {
 			hash: (pass) => Bun.password.hash(pass),
 			verify: ({ password, hash }) => Bun.password.verify(password, hash),
 		},
 	},
 
-	socialProviders: {
-		google: {
-			prompt: "select_account",
-			clientId: env.GOOGLE_CLIENT_ID,
-			clientSecret: env.GOOGLE_CLIENT_SECRET,
-			hd: env.ORG_EMAIL_DOMAIN,
-		},
-	},
+	// Only enable the Google social provider when real credentials are set.
+	// During local development the .env may contain placeholder values which
+	// cause the client-side Google flow to immediately fail; omit the
+	// provider in that case so users fall back to email/password signin.
+	socialProviders:
+		env.GOOGLE_CLIENT_ID === "placeholder" || env.GOOGLE_CLIENT_SECRET === "placeholder"
+			? {}
+			: {
+				google: {
+					prompt: "select_account",
+					clientId: env.GOOGLE_CLIENT_ID,
+					clientSecret: env.GOOGLE_CLIENT_SECRET,
+					hd: env.ORG_EMAIL_DOMAIN,
+				},
+			},
 
 	advanced: {
 		cookiePrefix: "obelisk-app",

@@ -16,7 +16,6 @@ const app = new Elysia()
 					title:
 						"Obelisk — Outcomes-based Educational Learning and Intelligent System Kit for Jose Maria College Foundation Inc.",
 				},
-
 				components: (await OpenAPI.components) as OpenAPIV3.ComponentsObject,
 				paths: (await OpenAPI.getPaths()) as OpenAPIV3.PathsObject,
 			},
@@ -34,6 +33,15 @@ const app = new Elysia()
 	.mount(auth.handler)
 	.use(apiRoutesV1)
 	.listen(8080);
+
+// DEBUG: Log all registered routes
+console.log("🔄 Registered routes:");
+// @ts-ignore - accessing internal routes for debugging
+if (app.routes) {
+	app.routes.forEach((route: any) => {
+		console.log(`  ${route.method} ${route.path}`);
+	});
+}
 
 console.log(
 	`🦊 elysia is running at [ http://${app.server?.hostname}:${app.server?.port} ]`,
