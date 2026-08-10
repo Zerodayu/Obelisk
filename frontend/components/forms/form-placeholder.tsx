@@ -2,20 +2,23 @@ import { PendingSection } from "@/components/dashboard/role-dashboard-shell";
 
 /**
  * Shared scaffold for a form screen. Renders the form identity (title + stable
- * code + PDCA stage) and a placeholder. Each form becomes a real
- * react-hook-form + Zod screen as the corresponding backend phase lands — this
- * holds the route open and keeps navigation consistent meanwhile.
+ * code + PDCA stage). When `children` are provided they render in place of the
+ * placeholder box — screens use this to show sample-data charts while the
+ * corresponding backend phase lands. Each form becomes a real
+ * react-hook-form + Zod screen as the backend contract stabilizes.
  */
 export function FormPlaceholder({
   title,
   code,
   pdcaStage,
   description,
+  children,
 }: {
   title: string;
   code: string;
   pdcaStage: string;
   description?: string;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="px-4 lg:px-6 space-y-6">
@@ -33,7 +36,7 @@ export function FormPlaceholder({
           <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
-      <PendingSection label={`${title} screen`} />
+      {children ?? <PendingSection label={`${title} screen`} />}
     </div>
   );
 }
