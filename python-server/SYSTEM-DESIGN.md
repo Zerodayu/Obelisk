@@ -90,8 +90,8 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
 ## 9. Deployment
 
-- **Docker:** `docker build -t obelisk-etl . && docker run -p 8000:8000 obelisk-etl` (Dockerfile, `docker_requirements.txt`).
-- **Local:** `poetry install` → `poetry run uvicorn app.main:app --reload` (port 8000, docs at `/docs`).
+- **Docker:** `docker compose up --build -d` (Dockerfile, `docker-compose.yml`, `uv.lock`).
+- **Local:** `uv sync` → `uv run uvicorn app.main:app --reload` (port 8000, docs at `/docs`).
 - **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, etc.
 
 ## 10. Known limitations / deferred

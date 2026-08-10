@@ -23,55 +23,47 @@ This service is intentionally designed with a strict architectural boundary that
 
 ## 3. Quickstart
 
-There are two ways to run the service: locally with Poetry for development, or with Docker for production or easy deployment.
+There are two ways to run the service: locally with uv for development, or with Docker Compose for production or easy deployment.
 
-### Option A: Running with Docker (Recommended)
+### Option A: Running with Docker Compose (Recommended)
 
 This is the simplest way to run the service without managing Python environments.
 
 **Prerequisites:**
--   Docker Desktop installed and running.
+-   Docker Desktop (with Compose) installed and running.
 -   An LLM API key (e.g., from Google AI Studio).
 
 **Instructions:**
 
-1.  **Build the Docker image:**
+1.  **Configure Environment:**
+    Create a `.env` file in the project root. The `ALLOWED_ORIGINS` value must be a valid JSON array (without outer quotes). `.env` is read by Compose and passed to the container.
+    ```env
+    # .env
+    OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
+    OBELISK_LLM_API_KEY="your_api_key_here"
+    ```
+
+2.  **Build and start the service:**
     Open a terminal in the project root and run:
     ```sh
-    docker build -t obelisk-etl .
-    ```
-
-2.  **Run the Docker container:**
-    You have two options for providing the API key.
-
-    **Option 1 (Recommended for Local Dev): Use a `.env` file.**
-    This command reads your `.env` file and securely passes the variables to the container.
-    ```sh
-    docker run --env-file .env -p 8000:8000 obelisk-etl
-    ```
-
-    **Option 2 (For CI/CD or manual use): Pass the key directly.**
-    This is useful in environments where you don't have a `.env` file.
-    ```sh
-    docker run -p 8000:8000 -e OBELISK_LLM_API_KEY="your_api_key_here" obelisk-etl
+    docker compose up --build -d
     ```
 
 The API will be available at `http://localhost:8000`.
 
-### Option B: Running Locally with Poetry
+### Option B: Running Locally with uv
 
 This method is ideal for active development.
 
 **Prerequisites:**
--   Python 3.11+
--   Poetry
+-   [uv](https://docs.astral.sh/uv/)
 -   A `.env` file in the project root containing your `OBELISK_LLM_API_KEY`.
 
 **Instructions:**
 
 1.  **Install dependencies:**
     ```sh
-    poetry install
+    uv sync
     ```
 
 2.  **Configure Environment:**
@@ -85,7 +77,7 @@ This method is ideal for active development.
 3.  **Start the development server:**
     The application will automatically load the `.env` file.
     ```sh
-    poetry run uvicorn app.main:app --reload
+    uv run uvicorn app.main:app --reload
     ```
 
 ---

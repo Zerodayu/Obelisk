@@ -2,7 +2,7 @@
 
 **Product:** OBELISK — the pure-compute Python microservice for Jose Maria College Foundation, Inc. (JMCFI). It converts instructor class-record Excel workbooks into per-student Direct CLO attainment, and rolls consolidated course results up into program/department/AVP analytics with AI CQI recommendations.
 
-**Stack:** Python 3.13 · FastAPI · Pydantic v2 (`pydantic-settings`) · openpyxl · pandas · structlog · Poetry (dev) / Docker (deploy). Runs on port **8000**.
+**Stack:** Python 3.13 · FastAPI · Pydantic v2 (`pydantic-settings`) · openpyxl · pandas · structlog · uv (dev) / Docker Compose (deploy). Runs on port **8000**.
 
 ## Service identity (read before changing anything)
 
