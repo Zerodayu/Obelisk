@@ -1,31 +1,31 @@
-[tool.poetry]
+[project]
 name = "obelisk-etl"
 version = "0.1.0"
 description = "Foundation ETL service for OBELISK - Outcomes-Based Education Management System (placeholder)"
-authors = ["Your Name <you@example.com>"]
-package-mode = false  # ← ADD THIS LINE
+authors = [{ name = "Your Name", email = "you@example.com" }]
+requires-python = ">=3.13"
+dependencies = [
+  "fastapi>=0.100.0",
+  "uvicorn[standard]>=0.22.0,<0.30.0",
+  "pydantic>=2.6",
+  "pydantic-settings>=2.3",
+  "SQLAlchemy>=2.0",
+  "alembic>=1.19.0",
+  "openpyxl>=3.1",
+  "pandas>=2.2",
+  "orjson>=3.9",
+  "structlog>=23.3",
+  "aiofiles>=23.1",
+  "python-multipart>=0.0.32",
+  "google-generativeai>=0.7.1",
+]
 
-[tool.poetry.dependencies]
-python = "^3.13"
-fastapi = "^0.100.0"
-uvicorn = {extras = ["standard"], version = "^0.22.0"}
-"pydantic" = "^2.6"
-"pydantic-settings" = "^2.3"
-"SQLAlchemy" = "^2.0"
-"alembic" = "^1.19.0"
-openpyxl = "^3.1"
-pandas = "^2.2"
-orjson = "^3.9"
-structlog = "^23.3"
-"aiofiles" = "^23.1"
-"google-generativeai" = "^0.7.1"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+package = false
 
 [tool.black]
 line-length = 88
 
 [tool.isort]
 profile = "black"
+
