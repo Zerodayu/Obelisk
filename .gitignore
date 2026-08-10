@@ -54,4 +54,5 @@
 */**/*.tgz
 */**/*.log
 */package-lock.json
+*/*.tsbuildinfo
 */**/*.bun
