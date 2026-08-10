@@ -8,7 +8,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 **Product:** Obelisk — the JMCFI outcome-based-education (OBE) assessment system frontend. It renders institutional assessment **forms** (CARs, attainment summaries, CQI plans, institutional reports), uploads class-record spreadsheets, and surfaces computed attainment results as read-only dashboards/badges.
 
-**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui (`components/ui`) · react-hook-form + Zod · @tanstack/react-table · recharts · base-ui/react · dnd-kit · motion.
+**Stack:** Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui (`components/ui`) · react-hook-form + Zod · @tanstack/react-table · evilcharts · echarts · base-ui/react · dnd-kit · motion.
 
 ## Conventions
 
@@ -19,6 +19,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **shadcn/ui** primitives live in `components/ui/` — reuse them, don't re-implement.
 - **Forms** use `react-hook-form` with **Zod** schemas (mirror backend `model.ts` validation). Keep client validation aligned with the backend so errors match.
 - **Tables** use `@tanstack/react-table` (`components/data-table.tsx`).
+- **Charts & graphs** — when creating or using any chart/graph (dashboards, attainment rollups, trend lines, etc.), use **EvilCharts** components (shadcn registry `@evilcharts/*`, installable via `bunx shadcn add @evilcharts/<chart>`) or **Apache ECharts** (`echarts`) directly. Do not introduce another charting library (no raw recharts/other). Since both EvilCharts engines (Recharts/ECharts) exist, prefer the ECharts variants (`ECharts*Chart`) to match the installed `echarts` engine.
 - **Commands** use Bun: `bun dev`, `bun run lint` (biome check), `bun run format` (biome format --write).
 
 ## Environment & secrets (dotenvx)

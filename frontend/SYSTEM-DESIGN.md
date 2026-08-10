@@ -2,7 +2,7 @@
 
 > **Status:** Early — shell, login, and a **role-scoped routed architecture** exist: a single adaptive `/dashboard`, a registry-driven role-gated app shell, an API client layer, and form route groups. No OBE form is wired to the backend yet (backend is mid-build); screens render placeholders until the contract lands.
 
-**Stack:** Next.js 16 (App Router, server components by default — proxy renamed from middleware) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui · react-hook-form + Zod · @tanstack/react-table · recharts · base-ui/react · dnd-kit · motion. Backend: Elysia at `api/v1` (see `../backend/SYSTEM-DESIGN.md`).
+**Stack:** Next.js 16 (App Router, server components by default — proxy renamed from middleware) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui · react-hook-form + Zod · @tanstack/react-table · evilcharts · echarts · base-ui/react · dnd-kit · motion. Backend: Elysia at `api/v1` (see `../backend/SYSTEM-DESIGN.md`).
 
 ---
 
