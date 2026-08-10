@@ -1,4 +1,4 @@
-import type { EtlLoadedData, ETLJob } from "@lib/ingest/ingest-client";
+import type { ETLJob, EtlLoadedData } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
 import { prisma } from "@lib/prisma";
@@ -25,6 +25,25 @@ export interface AttainmentRecord {
 
 export interface TypedEtlLoadedData extends EtlLoadedData {
 	attainments: AttainmentRecord[];
+}
+
+/** Subset of the class-record header the persistence bootstrap can rely on. */
+interface ImportedHeader {
+	course_code?: string | null;
+	course_title?: string | null;
+	course_type?: string | null;
+	section?: string | null;
+	semester_year?: string | null;
+	instructor_name?: string | null;
+	no_of_students?: number;
+	threshold?: number;
+	grading_system?: string | null;
+}
+
+interface CloPloMappingEntry {
+	clo_code?: string;
+	plo_code?: string;
+	correlation_strength?: number;
 }
 
 export interface PersistenceSummary {
@@ -67,25 +86,10 @@ export class AttainmentService {
 			cloMatchFailures: [],
 		};
 
-		const classSection = await prisma.classSection.findUnique({
-			where: { id: classSectionId },
-			select: {
-				course: {
-					select: {
-						id: true,
-						programId: true,
-					},
-				},
-			},
-		});
-
-		if (!classSection?.course?.programId) {
-			throw new Error(
-				`ClassSection with id ${classSectionId} not found, or its course is not linked to a Program.`,
-			);
-		}
-		const courseId = classSection.course.id;
-		const programId = classSection.course.programId;
+		const { programId, courseId } = await this.ensureAcademicChain(
+			classSectionId,
+			etlLoadedData,
+		);
 
 		const computationRun = await prisma.computationRun.create({
 			data: {
@@ -230,6 +234,261 @@ export class AttainmentService {
 
 		return summary;
 	}
+
+	/**
+	 * Ensures the academic records required for persistence exist for the given
+	 * class section, creating (and reusing) them when they are missing — e.g. on
+	 * a fresh database where the seed has not been run. All records are derived
+	 * deterministically from the uploaded workbook so repeat uploads are
+	 * idempotent.
+	 */
+	private async ensureAcademicChain(
+		classSectionId: string,
+		etlLoadedData: TypedEtlLoadedData,
+	): Promise<{ programId: string; courseId: string; termId: string }> {
+		const existing = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			select: {
+				termId: true,
+				course: {
+					select: { id: true, programId: true },
+				},
+			},
+		});
+
+		if (existing?.course?.programId) {
+			return {
+				programId: existing.course.programId,
+				courseId: existing.course.id,
+				termId: existing.termId,
+			};
+		}
+
+		const header = (etlLoadedData.header ?? {}) as ImportedHeader;
+		const courseCode = asOptionalString(header.course_code) ?? "IMPORTED";
+		const courseTitle =
+			asOptionalString(header.course_title) ?? "Imported Course";
+		const sectionCode = asOptionalString(header.section) ?? "A";
+
+		const programCode = `AUTO-${asSlug(courseCode)}`;
+		const departmentCode = `DEPT-${asSlug(courseCode)}`;
+
+		const semesterYearRaw = asOptionalString(header.semester_year);
+		let schoolYear: string;
+		let semester: string;
+		if (semesterYearRaw) {
+			const syMatch = semesterYearRaw.match(/(\d{4})\s*[-–&]?\s*(\d{4})/);
+			if (syMatch) {
+				schoolYear = `${syMatch[1]}-${syMatch[2]}`;
+				semester = semesterYearRaw.replace(syMatch[0], "").trim() || "Term 1";
+			} else {
+				const year = new Date().getFullYear();
+				schoolYear = `${year}-${year + 1}`;
+				semester = semesterYearRaw;
+			}
+		} else {
+			const year = new Date().getFullYear();
+			schoolYear = `${year}-${year + 1}`;
+			semester = "Term 1";
+		}
+
+		const department = await this.ensureRow(
+			() => prisma.department.findUnique({ where: { code: departmentCode } }),
+			() =>
+				prisma.department.create({
+					data: {
+						id: crypto.randomUUID(),
+						name: `Auto-imported (${departmentCode})`,
+						code: departmentCode,
+					},
+				}),
+		);
+
+		const program = await this.ensureRow(
+			() => prisma.program.findUnique({ where: { code: programCode } }),
+			() =>
+				prisma.program.create({
+					data: {
+						id: crypto.randomUUID(),
+						name: `Auto-imported program for ${courseCode}`,
+						code: programCode,
+						departmentId: department.id,
+					},
+				}),
+		);
+
+		const term = await this.ensureRow(
+			() =>
+				prisma.academicTerm.findUnique({
+					where: { schoolYear_semester: { schoolYear, semester } },
+				}),
+			() =>
+				prisma.academicTerm.create({
+					data: {
+						id: crypto.randomUUID(),
+						schoolYear,
+						semester,
+						isActive: true,
+					},
+				}),
+		);
+
+		const course = await this.ensureRow(
+			() =>
+				prisma.course.findFirst({
+					where: { programId: program.id, code: courseCode },
+				}),
+			() =>
+				prisma.course.create({
+					data: {
+						id: crypto.randomUUID(),
+						programId: program.id,
+						code: courseCode,
+						title: courseTitle,
+					},
+				}),
+		);
+
+		const classSection = await this.ensureRow(
+			() => prisma.classSection.findUnique({ where: { id: classSectionId } }),
+			() =>
+				prisma.classSection.create({
+					data: {
+						id: classSectionId,
+						courseId: course.id,
+						termId: term.id,
+						sectionCode,
+					},
+				}),
+		);
+
+		await this.ensureClosAndPlos(course.id, program.id, etlLoadedData);
+
+		console.log(
+			`[Bootstrap] Auto-created academic chain for class section ${classSectionId}: department=${department.code}, program=${program.code}, term=${term.schoolYear} ${term.semester}, course=${course.code}, section=${classSection.sectionCode}`,
+		);
+
+		return {
+			programId: program.id,
+			courseId: course.id,
+			termId: term.id,
+		};
+	}
+
+	/** Creates any CLOs/PLOs referenced by the workbook (plus the CLO-PLO map). */
+	private async ensureClosAndPlos(
+		courseId: string,
+		programId: string,
+		etlLoadedData: TypedEtlLoadedData,
+	): Promise<void> {
+		const cloCodes = new Set<string>();
+		for (const record of etlLoadedData.attainments) {
+			if (record.clo_code) cloCodes.add(record.clo_code);
+		}
+
+		const mapping = Array.isArray(etlLoadedData.clo_plo_mapping)
+			? (etlLoadedData.clo_plo_mapping as CloPloMappingEntry[])
+			: [];
+		for (const entry of mapping) {
+			if (entry.clo_code) cloCodes.add(entry.clo_code);
+		}
+
+		const cloByCode = new Map<string, string>();
+		for (const code of cloCodes) {
+			const clo = await this.ensureRow(
+				() => prisma.clo.findFirst({ where: { courseId, code } }),
+				() =>
+					prisma.clo.create({
+						data: {
+							id: crypto.randomUUID(),
+							courseId,
+							code,
+							description: `CLO ${code} (auto-imported)`,
+						},
+					}),
+			);
+			cloByCode.set(code, clo.id);
+		}
+
+		const ploByCode = new Map<string, string>();
+		for (const entry of mapping) {
+			const ploCode = entry.plo_code;
+			if (!ploCode) continue;
+
+			if (!ploByCode.has(ploCode)) {
+				const plo = await this.ensureRow(
+					() =>
+						prisma.plo.findFirst({
+							where: { programId, code: ploCode },
+						}),
+					() =>
+						prisma.plo.create({
+							data: {
+								id: crypto.randomUUID(),
+								programId,
+								code: ploCode,
+								description: `PLO ${ploCode} (auto-imported)`,
+							},
+						}),
+				);
+				ploByCode.set(ploCode, plo.id);
+			}
+
+			const cloCode = entry.clo_code;
+			if (!cloCode) continue;
+
+			const cloId = cloByCode.get(cloCode);
+			const ploId = ploByCode.get(ploCode);
+			if (!cloId || !ploId) continue;
+
+			await this.ensureRow(
+				() =>
+					prisma.cloToPloMap.findFirst({
+						where: { cloId, ploId },
+					}),
+				() =>
+					prisma.cloToPloMap.create({
+						data: {
+							id: crypto.randomUUID(),
+							cloId,
+							ploId,
+							weight: (entry.correlation_strength ?? 1) / 100,
+						},
+					}),
+			);
+		}
+	}
+
+	/** Find-first-then-create with a duplicate-safe re-find on a create race. */
+	private async ensureRow<T>(
+		find: () => Promise<T | null>,
+		create: () => Promise<T>,
+	): Promise<T> {
+		const existing = await find();
+		if (existing) return existing;
+
+		try {
+			return await create();
+		} catch (error) {
+			const retried = await find();
+			if (retried) return retried;
+			throw error;
+		}
+	}
+}
+
+function asOptionalString(value: unknown): string | undefined {
+	if (value === null || value === undefined) return undefined;
+	const text = String(value).trim();
+	return text || undefined;
+}
+
+function asSlug(value: string): string {
+	return value
+		.toUpperCase()
+		.replace(/[^A-Z0-9]+/g, "-")
+		.replace(/^-+|-+$/g, "")
+		.slice(0, 16);
 }
 
 export class IngestService {
@@ -253,10 +512,7 @@ export class IngestService {
 		classSectionId: string,
 		triggeredByUserId?: string,
 	) {
-		if (
-			!job.result?.loaded ||
-			!Array.isArray(job.result.loaded.attainments)
-		) {
+		if (!job.result?.loaded || !Array.isArray(job.result.loaded.attainments)) {
 			throw new MalformedEtlResultError(job.job_id);
 		}
 
@@ -285,9 +541,8 @@ export class IngestService {
 		triggeredByUserId?: string,
 	) {
 		// 1. Check if the job result is already in our cache.
-		if (jobCompletionCache.has(jobId)) {
-			return jobCompletionCache.get(jobId)!;
-		}
+		const cached = jobCompletionCache.get(jobId);
+		if (cached) return cached;
 
 		// 2. If not cached, get the current job status from python-server.
 		const job = await ingestClient.getJob(jobId);
@@ -312,12 +567,16 @@ export class IngestService {
 				jobCompletionCache.set(jobId, result); // Cache the success
 				return result;
 			} catch (error) {
+				console.error(`[Ingest] Persistence failed for job ${jobId}:`, error);
 				const result = {
 					status: "failed" as const,
 					error:
 						error instanceof MalformedEtlResultError
 							? { error_type: error.name, message: error.message }
-							: { error_type: "PersistenceFailed", message: (error as Error).message },
+							: {
+									error_type: "PersistenceFailed",
+									message: (error as Error).message,
+								},
 				};
 				jobCompletionCache.set(jobId, result); // Cache the failure
 				return result;

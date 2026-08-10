@@ -34,16 +34,12 @@ export const ingestPlugin = new Elysia({
 	)
 	.get(
 		"/upload/:jobId/status",
-		async ({ params, query, user, set }) => {
+		async ({ params, query, user }) => {
 			const result = await ingestService.getJobStatus(
 				params.jobId,
 				query.classSectionId,
 				user?.id,
 			);
-
-			if (result.status === "failed") {
-				set.status = 500;
-			}
 
 			return result;
 		},
