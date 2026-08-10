@@ -1,15 +1,18 @@
-FROM python:3.11
+FROM ghcr.io/astral-sh/uv:0.12.3-python3.13-slim
 
 WORKDIR /app
 
-COPY docker_requirements.txt .
-RUN pip install --no-cache-dir -r docker_requirements.txt
+ENV UV_COMPILE_BYTECODE=1 \
+  UV_LINK_MODE=copy
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-install-project --no-dev
 
 COPY . .
 
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app \
+  PATH="/app/.venv/bin:$PATH"
 
-# Expose the port your app runs on (usually 8000 for FastAPI)
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
