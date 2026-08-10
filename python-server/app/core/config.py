@@ -1,5 +1,7 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import Annotated, List
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -7,6 +9,7 @@ class Settings(BaseSettings):
     Application settings are managed by Pydantic's BaseSettings, which reads
     from environment variables and/or a .env file.
     """
+
     # --- Core Settings ---
     DEBUG: bool = False
     JOB_WORKER_COUNT: int = 2
@@ -21,7 +24,14 @@ class Settings(BaseSettings):
     # --- CORS Settings ---
     # A comma-separated list of allowed origins.
     # e.g., "http://localhost:3000,http://127.0.0.1:3000"
-    ALLOWED_ORIGINS: List[str] = ["*"]
+    ALLOWED_ORIGINS: Annotated[List[str], NoDecode] = ["*"]
+
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def split_origins(cls, v):
+        if isinstance(v, str):
+            return [o.strip() for o in v.split(",") if o.strip()]
+        return v
 
     # --- LLM API Key ---
     # The secret key for the LLM provider (e.g., Gemini, OpenAI).
