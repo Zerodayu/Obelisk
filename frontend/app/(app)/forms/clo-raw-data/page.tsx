@@ -1,3 +1,6 @@
+import { ScoreBandBars } from "@/components/charts/attainment-charts";
+import { ChartCard } from "@/components/charts/chart-card";
+import { AtRiskDonut } from "@/components/charts/governance-charts";
 import { ClassRecordUpload } from "@/components/forms/class-record-upload";
 import { ACADEMIC_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
@@ -21,6 +24,20 @@ export default async function CloRawDataPage() {
         </p>
       </div>
       <ClassRecordUpload />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ChartCard
+          title="Class score bands"
+          description="Distribution across the 4-tier rubric. Sample data until ingest lands."
+        >
+          <ScoreBandBars />
+        </ChartCard>
+        <ChartCard
+          title="At-risk watchlist"
+          description="Any CLO score below 70% auto-flags a student (server-computed)."
+        >
+          <AtRiskDonut />
+        </ChartCard>
+      </div>
     </div>
   );
 }

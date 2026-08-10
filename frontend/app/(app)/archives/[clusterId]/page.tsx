@@ -1,6 +1,10 @@
-import { PendingSection } from "@/components/dashboard/role-dashboard-shell";
-import { requireRole } from "@/server/auth";
+import {
+  PloAttainmentBars,
+  ScoreBandBars,
+} from "@/components/charts/attainment-charts";
+import { ChartCard } from "@/components/charts/chart-card";
 import { ARCHIVE_ROLES } from "@/lib/roles";
+import { requireRole } from "@/server/auth";
 
 /**
  * `/archives/[clusterId]` — read-only per-student compiled snapshots with
@@ -24,7 +28,20 @@ export default async function ClusterDetailPage({
           Permanent, read-only snapshot. No data here can be modified.
         </p>
       </div>
-      <PendingSection label="Per-student compiled snapshots" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ChartCard
+          title="PLO attainment"
+          description="Attained vs the ≥70% target for this cluster's cohort."
+        >
+          <PloAttainmentBars />
+        </ChartCard>
+        <ChartCard
+          title="Score distribution"
+          description="Students across the 4-tier rubric bands."
+        >
+          <ScoreBandBars />
+        </ChartCard>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
-import { PendingSection } from "@/components/dashboard/role-dashboard-shell";
-import { requireRole } from "@/server/auth";
+import { ChartCard } from "@/components/charts/chart-card";
+import { ClusterCompositionDonut } from "@/components/charts/governance-charts";
 import { ARCHIVE_ROLES } from "@/lib/roles";
+import { requireRole } from "@/server/auth";
 
 /**
  * `/archives` — graduation-cluster archive list (program, batch, status,
@@ -16,7 +17,14 @@ export default async function ArchivesIndexPage() {
           Compiled graduation clusters. Data here is permanent and read-only.
         </p>
       </div>
-      <PendingSection label="Graduation cluster list" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <ChartCard
+          title="Cluster composition"
+          description="Archived student statuses across compiled clusters. Sample data until the archival pipeline lands."
+        >
+          <ClusterCompositionDonut />
+        </ChartCard>
+      </div>
     </div>
   );
 }
