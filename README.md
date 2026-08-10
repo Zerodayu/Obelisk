@@ -10,7 +10,7 @@ This is a monorepo containing three services:
 | :--- | :--- | :--- | :--- |
 | Backend API | `backend/` | Bun · Elysia · Prisma + PostgreSQL (Neon) · better-auth · Zod | `8080` |
 | Web frontend | `frontend/` | Next.js 16 · React 19 · Tailwind CSS v4 · shadcn/ui | `3000` |
-| ETL & analytics | `python-server/` | FastAPI · Python (pure compute, no DB access) | `8000` |
+| ETL & analytics | `python-server/` | FastAPI · Python + uv (pure compute, no DB access) | `8000` |
 
 Each service has its own README and agent guide with deeper details:
 
@@ -25,8 +25,8 @@ Each service has its own README and agent guide with deeper details:
 ## Prerequisites
 
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
-- [Python](https://www.python.org) `3.11+` (`3.13` recommended) and [Poetry](https://python-poetry.org) — for running `python-server` locally
-- [Docker](https://www.docker.com) — optional, alternative way to run `python-server`
+- [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
+- [Docker](https://www.docker.com) — optional, alternative way to run `python-server` via Docker Compose
 - A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
 
 ---
@@ -94,20 +94,19 @@ Start services in dependency order. Each runs in its own terminal.
 
 ### 3a. python-server — ETL & analytics
 
-**Poetry (development):**
+**uv (development):**
 
 ```sh
 cd python-server
-poetry install
-poetry run uvicorn app.main:app --reload
+uv sync
+uv run uvicorn app.main:app --reload
 ```
 
-**Docker (production / easy setup):**
+**Docker Compose (production / easy setup):**
 
 ```sh
 cd python-server
-docker build -t obelisk-etl .
-docker run -p 8000:8000 obelisk-etl
+docker compose up --build -d
 ```
 
 Verify: <http://localhost:8000/health>
