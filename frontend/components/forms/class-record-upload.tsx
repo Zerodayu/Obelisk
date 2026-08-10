@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { AlertTriangle, Info, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   FileUpload,
   type FileUploadItem,
 } from "@/components/upload/file-upload";
 import { api, isApiError } from "@/lib/api-client";
-import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, Info } from "lucide-react";
 
 const ALLOWED_EXTENSIONS = [".csv", ".tsv", ".xls", ".xlsx"];
 const ALLOWED_MIME = [
@@ -59,6 +59,12 @@ export function ClassRecordUpload() {
 
   const file = items[0]?.file;
 
+  const patchItem = (patch: Partial<FileUploadItem>) => {
+    setItems((prev) =>
+      prev.length === 0 ? prev : [{ ...prev[0], ...patch }, ...prev.slice(1)],
+    );
+  };
+
   const pollJobStatus = (jobId: string) => {
     pollingInterval.current = setInterval(async () => {
       try {
@@ -70,24 +76,31 @@ export function ClassRecordUpload() {
         if (res.status === "completed") {
           clearInterval(pollingInterval.current!);
           setIsProcessing(false);
+          patchItem({ status: "success", progress: 100 });
           setUploadResult(res.persistence ?? null);
         } else if (res.status === "failed") {
           clearInterval(pollingInterval.current!);
           setIsProcessing(false);
+          patchItem({
+            status: "error",
+            error: res.error?.message || "Processing failed.",
+          });
           setUploadError(res.error?.message || "Processing failed.");
         }
-        // If 'running' or 'queued', do nothing and let the polling continue.
+        // If 'queued' or 'running', keep the item in the 'uploading' state and poll again.
       } catch (error) {
         clearInterval(pollingInterval.current!);
         setIsProcessing(false);
         if (isApiError(error)) {
-          setUploadError(
-            `Polling failed (status ${error.status}): ${
-              error.payload?.message || error.message
-            }`,
-          );
+          const message = `Polling failed (status ${error.status}): ${
+            error.payload?.message || error.message
+          }`;
+          patchItem({ status: "error", error: message });
+          setUploadError(message);
         } else {
-          setUploadError("An unexpected error occurred while polling.");
+          const message = "An unexpected error occurred while polling.";
+          patchItem({ status: "error", error: message });
+          setUploadError(message);
         }
       }
     }, POLL_INTERVAL_MS);
@@ -99,6 +112,7 @@ export function ClassRecordUpload() {
     setIsUploading(true);
     setUploadResult(null);
     setUploadError(null);
+    patchItem({ status: "uploading", error: undefined });
 
     try {
       // 1. Start the upload and get the job ID.
@@ -116,13 +130,15 @@ export function ClassRecordUpload() {
     } catch (error) {
       setIsUploading(false);
       if (isApiError(error)) {
-        setUploadError(
-          `Upload failed (status ${error.status}): ${
-            error.payload?.message || error.message
-          }`,
-        );
+        const message = `Upload failed (status ${error.status}): ${
+          error.payload?.message || error.message
+        }`;
+        patchItem({ status: "error", error: message });
+        setUploadError(message);
       } else {
-        setUploadError("An unexpected error occurred during upload.");
+        const message = "An unexpected error occurred during upload.";
+        patchItem({ status: "error", error: message });
+        setUploadError(message);
       }
       console.error(error);
     }
@@ -153,6 +169,7 @@ export function ClassRecordUpload() {
         title="Upload class record"
         description="CSV, Excel, or TSV class record sheets"
         disabled={isWorking}
+        onRetry={handleUpload}
       />
       {isMounted && (
         <div className="flex items-center gap-4">
@@ -189,9 +206,7 @@ export function ClassRecordUpload() {
             <ul className="text-sm space-y-1 list-disc list-inside">
               <li>Students processed: {summary.studentsProcessed}</li>
               <li>New students created: {summary.studentsCreated}</li>
-              <li>
-                CLO attainments recorded: {summary.cloAttainmentsCreated}
-              </li>
+              <li>CLO attainments recorded: {summary.cloAttainmentsCreated}</li>
               <li>Students flagged at-risk: {summary.atRiskFlagsCreated}</li>
             </ul>
           </div>
@@ -203,14 +218,14 @@ export function ClassRecordUpload() {
                 <div>
                   <p className="font-semibold">CLO Matching Failures</p>
                   <p className="text-sm mb-2">
-                    The following attainment records were skipped because the CLO
-                    code in the file does not exist for this course.
+                    The following attainment records were skipped because the
+                    CLO code in the file does not exist for this course.
                   </p>
                   <ul className="text-xs space-y-1 list-disc list-inside">
                     {summary.cloMatchFailures.map((failure, i) => (
                       <li key={i}>
-                        Student "{failure.studentName}" — CLO "
-                        {failure.cloCode}"
+                        Student "{failure.studentName}" — CLO "{failure.cloCode}
+                        "
                       </li>
                     ))}
                   </ul>

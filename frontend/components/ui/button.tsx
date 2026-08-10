@@ -10,6 +10,7 @@ export const buttonVariants = tv({
     "inline-flex shrink-0 items-center justify-center gap-2",
     "whitespace-nowrap font-medium text-sm",
     "rounded-2xl",
+    "hover:cursor-pointer",
     "transition-all",
     "outline-none focus-visible:ring-[3px] focus-visible:ring-ring/32",
     "disabled:pointer-events-none disabled:opacity-64",

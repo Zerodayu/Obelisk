@@ -2,8 +2,6 @@
 // beui.dev/components/blocks/file-upload
 
 import {
-  AlertCircle,
-  CheckCircle2,
   FileArchive,
   FileAudio,
   FileCode2,
@@ -12,13 +10,21 @@ import {
   FileSpreadsheet,
   FileText,
   FileVideo,
-  Loader2,
   RotateCcw,
   UploadCloud,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useId, useRef, useState } from "react";
+import {
+  Attachment,
+  AttachmentAction,
+  AttachmentActions,
+  AttachmentContent,
+  AttachmentDescription,
+  AttachmentMedia,
+  AttachmentTitle,
+} from "@/components/ui/attachment";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -73,18 +79,26 @@ const ROW_TRANSITION = { duration: 0.22, ease: EASE_OUT } as const;
 const FAST_TRANSITION = { duration: 0.16, ease: EASE_OUT } as const;
 
 const STATUS_LABEL: Record<FileUploadStatus, string> = {
-  queued: "Queued",
+  queued: "Ready to upload",
   uploading: "Uploading",
   success: "Uploaded",
-  error: "Failed",
+  error: "Upload failed",
 };
 
-const STATUS_TONE: Record<FileUploadStatus, string> = {
-  queued: "text-muted-foreground",
-  uploading: "text-foreground",
-  success: "text-emerald-600 dark:text-emerald-400",
-  error: "text-destructive",
-};
+function toAttachmentState(
+  status: FileUploadStatus,
+): "idle" | "uploading" | "processing" | "error" | "done" {
+  switch (status) {
+    case "queued":
+      return "idle";
+    case "uploading":
+      return "uploading";
+    case "success":
+      return "done";
+    case "error":
+      return "error";
+  }
+}
 
 function useControllableUpload({
   value,
@@ -202,55 +216,9 @@ export function FileUploadForm(file: File, index = 0): FileUploadItem {
     size: file.size,
     type: file.type,
     progress: 0,
-    status: "uploading",
+    status: "queued",
     file,
   };
-}
-
-function StatusIcon({
-  status,
-  reduce,
-}: {
-  status: FileUploadStatus;
-  reduce: boolean;
-}) {
-  const iconClassName = "h-4 w-4";
-
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.span
-        key={status}
-        initial={
-          reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(4px)" }
-        }
-        animate={{ opacity: 1, transform: "translateY(0px)" }}
-        exit={
-          reduce
-            ? { opacity: 0 }
-            : { opacity: 0, transform: "translateY(-4px)" }
-        }
-        transition={FAST_TRANSITION}
-        className={cn("grid h-6 w-6 place-items-center", STATUS_TONE[status])}
-      >
-        {status === "success" ? (
-          <CheckCircle2 className={iconClassName} />
-        ) : status === "error" ? (
-          <AlertCircle className={iconClassName} />
-        ) : status === "uploading" ? (
-          <Loader2
-            className={cn(
-              iconClassName,
-              "animate-spin",
-              reduce && "animate-none",
-            )}
-          />
-        ) : (
-          <FileIcon className={iconClassName} />
-        )}
-        <span className="sr-only">{STATUS_LABEL[status]}</span>
-      </motion.span>
-    </AnimatePresence>
-  );
 }
 
 function FileUploadRow({
@@ -266,10 +234,19 @@ function FileUploadRow({
 }) {
   const reduce = useReducedMotion() ?? false;
   const status = item.status ?? "queued";
-  const progress = clampProgress(item.progress, status);
-  const progressRatio = progress / 100;
-  const showProgress = status === "uploading" || status === "success";
+  const progress = Math.round(clampProgress(item.progress, status));
   const LeadingIcon = getFileIcon(item);
+
+  const meta = [
+    fileKind(item),
+    formatBytes(item.size),
+    status === "uploading"
+      ? `Uploading${progress > 0 ? ` · ${progress}%` : ""}`
+      : STATUS_LABEL[status],
+    status === "error" && item.error ? item.error : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <motion.li
@@ -282,103 +259,42 @@ function FileUploadRow({
         reduce ? { opacity: 0 } : { opacity: 0, transform: "translateY(-6px)" }
       }
       transition={ROW_TRANSITION}
-      className={cn(
-        "relative overflow-hidden rounded-2xl border border-border bg-background p-3",
-        classNames?.item,
-      )}
+      className={cn("w-full list-none", classNames?.item)}
     >
-      <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground",
-            classNames?.leading,
-          )}
-        >
-          <LeadingIcon className="h-5 w-5" />
-        </div>
-
-        <div className={cn("min-w-0 flex-1", classNames?.content)}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  "truncate text-sm font-medium text-foreground",
-                  classNames?.name,
-                )}
-              >
-                {item.name}
-              </p>
-              <p
-                className={cn(
-                  "mt-0.5 text-xs text-muted-foreground",
-                  classNames?.meta,
-                )}
-              >
-                {fileKind(item)} · {formatBytes(item.size)}
-                {status === "error" && item.error ? ` · ${item.error}` : null}
-              </p>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-              <StatusIcon status={status} reduce={reduce} />
-              {status === "error" ? (
-                <button
-                  type="button"
-                  onClick={() => onRetry(item)}
-                  aria-label={`Retry ${item.name}`}
-                  className={cn(
-                    "grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground active:scale-95",
-                    classNames?.action,
-                  )}
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => onRemove(item)}
-                aria-label={`Remove ${item.name}`}
-                className={cn(
-                  "grid h-7 w-7 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground active:scale-95",
-                  classNames?.action,
-                )}
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {showProgress ? (
-            <div
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progress)}
-              aria-label={`${item.name} upload progress`}
-              className={cn(
-                "mt-3 h-1.5 overflow-hidden rounded-full bg-muted",
-                classNames?.progress,
-              )}
+      <Attachment
+        state={toAttachmentState(status)}
+        className={cn("w-full", classNames?.item)}
+      >
+        <AttachmentMedia variant="icon" className={classNames?.leading}>
+          <LeadingIcon />
+        </AttachmentMedia>
+        <AttachmentContent className={classNames?.content}>
+          <AttachmentTitle className={classNames?.name}>
+            {item.name}
+          </AttachmentTitle>
+          <AttachmentDescription className={classNames?.meta}>
+            {meta}
+          </AttachmentDescription>
+        </AttachmentContent>
+        <AttachmentActions>
+          {status === "error" ? (
+            <AttachmentAction
+              aria-label={`Retry ${item.name}`}
+              onClick={() => onRetry(item)}
+              className={classNames?.action}
             >
-              <motion.div
-                className={cn(
-                  "h-full rounded-full",
-                  status === "success" ? "bg-emerald-500" : "bg-foreground",
-                )}
-                style={{
-                  transformOrigin: "left",
-                  transform: reduce ? `scaleX(${progressRatio})` : undefined,
-                }}
-                initial={false}
-                animate={
-                  reduce ? undefined : { transform: `scaleX(${progressRatio})` }
-                }
-                transition={{ duration: 0.28, ease: EASE_OUT }}
-              />
-            </div>
+              <RotateCcw />
+            </AttachmentAction>
           ) : null}
-        </div>
-      </div>
+          <AttachmentAction
+            aria-label={`Remove ${item.name}`}
+            onClick={() => onRemove(item)}
+            className={classNames?.action}
+          >
+            <X />
+          </AttachmentAction>
+        </AttachmentActions>
+      </Attachment>
     </motion.li>
   );
 }
