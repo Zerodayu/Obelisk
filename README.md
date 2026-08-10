@@ -99,7 +99,7 @@ Start services in dependency order. Each runs in its own terminal.
 ```sh
 cd python-server
 uv sync
-uv run uvicorn app.main:app --reload
+uv run dev
 ```
 
 **Docker Compose (production / easy setup):**

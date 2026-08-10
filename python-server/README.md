@@ -77,7 +77,7 @@ This method is ideal for active development.
 3.  **Start the development server:**
     The application will automatically load the `.env` file.
     ```sh
-    uv run uvicorn app.main:app --reload
+    uv run dev
     ```
 
 ---
