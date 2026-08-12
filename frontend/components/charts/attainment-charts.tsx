@@ -24,49 +24,49 @@ const FLOOR_NOTE =
 const attainmentConfig = {
   direct: {
     label: "Direct",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
   indirect: {
     label: "Indirect",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
   composite: {
     label: "Composite",
-    colors: { light: ["#db2777"], dark: ["#f472b6"] },
+    colors: { light: ["var(--chart-3)"] },
   },
 } satisfies ChartConfig;
 
 const floorConfig = {
-  met: { label: "MET ≥70%", colors: { light: ["#059669"], dark: ["#34d399"] } },
+  met: { label: "MET ≥70%", colors: { light: ["var(--success)"] } },
   notMet: {
     label: "NOT MET <70%",
-    colors: { light: ["#dc2626"], dark: ["#f87171"] },
+    colors: { light: ["var(--destructive)"] },
   },
 } satisfies ChartConfig;
 
 const ploConfig = {
   attained: {
     label: "Attained",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
   target: {
     label: "Target",
-    colors: { light: ["#475569"], dark: ["#94a3b8"] },
+    colors: { light: ["var(--muted-foreground)"] },
   },
 } satisfies ChartConfig;
 
 const bandConfig = {
   count: {
     label: "Students",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
 } satisfies ChartConfig;
 
 const cohortConfig = {
-  Y1: { label: "Year 1", colors: { light: ["#6d28d9"], dark: ["#a78bfa"] } },
-  Y2: { label: "Year 2", colors: { light: ["#db2777"], dark: ["#f472b6"] } },
-  Y3: { label: "Year 3", colors: { light: ["#d97706"], dark: ["#fbbf24"] } },
-  Y4: { label: "Year 4", colors: { light: ["#059669"], dark: ["#34d399"] } },
+  Y1: { label: "Year 1", colors: { light: ["var(--chart-1)"] } },
+  Y2: { label: "Year 2", colors: { light: ["var(--chart-3)"] } },
+  Y3: { label: "Year 3", colors: { light: ["var(--warning)"] } },
+  Y4: { label: "Year 4", colors: { light: ["var(--success)"] } },
 } satisfies LineConfig;
 
 /** Grouped bars of direct / indirect / composite CLO attainment (CHECK roll-up). */

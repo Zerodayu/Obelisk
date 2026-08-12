@@ -22,64 +22,64 @@ import {
 const gapConfig = {
   attained: {
     label: "Attained",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
   target: {
     label: "Target",
-    colors: { light: ["#475569"], dark: ["#94a3b8"] },
+    colors: { light: ["var(--muted-foreground)"] },
   },
 } satisfies ChartConfig;
 
 const actionConfig = {
   planned: {
     label: "Planned",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   completed: {
     label: "Completed",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
 } satisfies ChartConfig;
 
 const causeConfig = {
   "Curriculum Design": {
     label: "Curriculum Design",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
   "Instruction & Pedagogy": {
     label: "Instruction & Pedagogy",
-    colors: { light: ["#db2777"], dark: ["#f472b6"] },
+    colors: { light: ["var(--chart-3)"] },
   },
   "Assessment Design": {
     label: "Assessment Design",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   "Student Factors": {
     label: "Student Factors",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
   "Resources & Tools": {
     label: "Resources & Tools",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   "Industry & Field Alignment": {
     label: "Industry & Field Alignment",
-    colors: { light: ["#7c3aed"], dark: ["#c4b5fd"] },
+    colors: { light: ["var(--chart-2)"] },
   },
 } satisfies PieConfig;
 
 const loopConfig = {
   CLOSED: {
     label: "CLOSED",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   "OPEN — Re-assess": {
     label: "OPEN — Re-assess",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   "OPEN — Not Implemented": {
     label: "OPEN — Not Implemented",
-    colors: { light: ["#dc2626"], dark: ["#f87171"] },
+    colors: { light: ["var(--destructive)"] },
   },
 } satisfies PieConfig;
 
