@@ -1877,10 +1877,13 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
           live.animateExpand(expandableKey, null);
           return;
         }
-        // A grid finder returns [xValue, yValue]; on a category axis the x value IS
-        // the index. An xAxisIndex finder returns null for a 2D point.
+        // A grid finder returns [xValue, yValue]; the category index is the x value
+        // on vertical bars and the y value on horizontal ones. An xAxisIndex finder
+        // returns null for a 2D point.
         const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
-        const index = Array.isArray(converted) ? converted[0] : converted;
+        const index = Array.isArray(converted)
+          ? converted[live.handlers.isHorizontal ? 1 : 0]
+          : converted;
         live.animateExpand(
           expandableKey,
           typeof index === "number" ? Math.round(index) : null,
