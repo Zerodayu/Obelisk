@@ -3,8 +3,14 @@ import {
   CloAttainmentBars,
   ScoreBandBars,
 } from "@/components/charts/attainment-charts";
-import { ChartCard } from "@/components/charts/chart-card";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 export default function CloAttainmentSummaryPage() {
   return (
@@ -15,25 +21,46 @@ export default function CloAttainmentSummaryPage() {
       description="Full-term CLO attainment computed by cohort. Chart inputs mirror the backend schema; sample data until the rollup endpoint lands."
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="Composite CLO attainment"
-          description="Direct × 70% + Indirect × 30%. The ≥70% floor is enforced server-side."
-        >
-          <CloAttainmentBars />
-        </ChartCard>
-        <ChartCard
-          title="CLO status vs the ≥70% floor"
-          description="Server-flagged CLOs below threshold render red (NOT MET)."
-        >
-          <AttainmentFloorBars />
-        </ChartCard>
-        <ChartCard
-          title="Score distribution"
-          description="Students across the 4-tier rubric bands."
-          className="sm:col-span-2"
-        >
-          <ScoreBandBars />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Composite CLO attainment</FrameTitle>
+            <FrameDescription>
+              Direct × 70% + Indirect × 30%. The ≥70% floor is enforced
+              server-side.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <CloAttainmentBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>CLO status vs the ≥70% floor</FrameTitle>
+            <FrameDescription>
+              Server-flagged CLOs below threshold render red (NOT MET).
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <AttainmentFloorBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full sm:col-span-2">
+          <FrameHeader>
+            <FrameTitle>Score distribution</FrameTitle>
+            <FrameDescription>
+              Students across the 4-tier rubric bands.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ScoreBandBars />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </FormPlaceholder>
   );

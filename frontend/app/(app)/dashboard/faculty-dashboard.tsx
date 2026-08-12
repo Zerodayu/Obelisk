@@ -2,11 +2,17 @@ import {
   AttainmentFloorBars,
   CloAttainmentBars,
 } from "@/components/charts/attainment-charts";
-import { ChartCard } from "@/components/charts/chart-card";
 import {
   AtRiskDonut,
   FormStatusDonut,
 } from "@/components/charts/governance-charts";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 /**
  * Faculty dashboard — scoped to the faculty member's own class sections and
@@ -17,30 +23,58 @@ export function FacultyDashboard() {
   return (
     <section className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="CLO attainment — active class section"
-          description="Direct × 70% + Indirect × 30% composite per CLO."
-        >
-          <CloAttainmentBars />
-        </ChartCard>
-        <ChartCard
-          title="Attainment vs the ≥70% floor"
-          description="Server-flagged CLOs below threshold render red."
-        >
-          <AttainmentFloorBars />
-        </ChartCard>
-        <ChartCard
-          title="At-risk watchlist"
-          description="Any student with a CLO score below 70% is auto-flagged."
-        >
-          <AtRiskDonut />
-        </ChartCard>
-        <ChartCard
-          title="Course assessment report drafts"
-          description="Submission status across the term."
-        >
-          <FormStatusDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>CLO attainment — active class section</FrameTitle>
+            <FrameDescription>
+              Direct × 70% + Indirect × 30% composite per CLO.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <CloAttainmentBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Attainment vs the ≥70% floor</FrameTitle>
+            <FrameDescription>
+              Server-flagged CLOs below threshold render red.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <AttainmentFloorBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>At-risk watchlist</FrameTitle>
+            <FrameDescription>
+              Any student with a CLO score below 70% is auto-flagged.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <AtRiskDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Course assessment report drafts</FrameTitle>
+            <FrameDescription>
+              Submission status across the term.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <FormStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </section>
   );

@@ -1,5 +1,4 @@
 import { CohortTrendLines } from "@/components/charts/attainment-charts";
-import { ChartCard } from "@/components/charts/chart-card";
 import {
   GapAnalysisBars,
   RootCauseDonut,
@@ -8,6 +7,13 @@ import {
   ClusterCompositionDonut,
   FormStatusDonut,
 } from "@/components/charts/governance-charts";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 /**
  * AQAU dashboard — institution-wide QA oversight. Receives filings, tracks
@@ -18,36 +24,71 @@ export function AqauDashboard() {
   return (
     <section className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="Institution-wide filing queue"
-          description="Form submissions by status across all programs."
-        >
-          <FormStatusDonut />
-        </ChartCard>
-        <ChartCard
-          title="Cohort tracking oversight"
-          description="Longitudinal PLO/CLO attainment by cohort."
-        >
-          <CohortTrendLines />
-        </ChartCard>
-        <ChartCard
-          title="Graduation-cluster composition"
-          description="Archived student statuses in tracked clusters."
-        >
-          <ClusterCompositionDonut />
-        </ChartCard>
-        <ChartCard
-          title="Systemic gap monitoring"
-          description="Attained vs target with gap rows per PLO."
-        >
-          <GapAnalysisBars />
-        </ChartCard>
-        <ChartCard
-          title="Root-cause distribution"
-          description="Repeated 6-category root-cause analysis across gaps."
-        >
-          <RootCauseDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Institution-wide filing queue</FrameTitle>
+            <FrameDescription>
+              Form submissions by status across all programs.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <FormStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Cohort tracking oversight</FrameTitle>
+            <FrameDescription>
+              Longitudinal PLO/CLO attainment by cohort.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <CohortTrendLines />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Graduation-cluster composition</FrameTitle>
+            <FrameDescription>
+              Archived student statuses in tracked clusters.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ClusterCompositionDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Systemic gap monitoring</FrameTitle>
+            <FrameDescription>
+              Attained vs target with gap rows per PLO.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <GapAnalysisBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Root-cause distribution</FrameTitle>
+            <FrameDescription>
+              Repeated 6-category root-cause analysis across gaps.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <RootCauseDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </section>
   );

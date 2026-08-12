@@ -1,11 +1,17 @@
 import { RoleRequestsPanel } from "@/components/auth/role-requests-panel";
-import { ChartCard } from "@/components/charts/chart-card";
 import {
   AuditActivityBars,
   ClusterCompositionDonut,
   FormStatusDonut,
   RecommendationDonut,
 } from "@/components/charts/governance-charts";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 /**
  * System Admin dashboard — full platform visibility plus admin operations
@@ -17,30 +23,56 @@ export function SystemAdminDashboard() {
     <section className="space-y-6">
       <RoleRequestsPanel />
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="System-wide audit activity"
-          description="Audit-log events per module."
-        >
-          <AuditActivityBars />
-        </ChartCard>
-        <ChartCard
-          title="Submission volume by status"
-          description="All form submissions across the platform."
-        >
-          <FormStatusDonut />
-        </ChartCard>
-        <ChartCard
-          title="Graduation-cluster confirmation"
-          description="Archived cluster composition by student status."
-        >
-          <ClusterCompositionDonut />
-        </ChartCard>
-        <ChartCard
-          title="AI recommendation review"
-          description="Status of system-generated recommendations awaiting review."
-        >
-          <RecommendationDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>System-wide audit activity</FrameTitle>
+            <FrameDescription>Audit-log events per module.</FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <AuditActivityBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Submission volume by status</FrameTitle>
+            <FrameDescription>
+              All form submissions across the platform.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <FormStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Graduation-cluster confirmation</FrameTitle>
+            <FrameDescription>
+              Archived cluster composition by student status.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ClusterCompositionDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>AI recommendation review</FrameTitle>
+            <FrameDescription>
+              Status of system-generated recommendations awaiting review.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <RecommendationDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </section>
   );

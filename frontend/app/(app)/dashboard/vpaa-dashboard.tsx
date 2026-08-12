@@ -1,4 +1,3 @@
-import { ChartCard } from "@/components/charts/chart-card";
 import {
   CqiActionsBars,
   LoopStatusDonut,
@@ -7,6 +6,13 @@ import {
   ApprovalFlowBars,
   RecommendationDonut,
 } from "@/components/charts/governance-charts";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 /**
  * VPAA dashboard — institution-wide academic decisions: CAPA/budget
@@ -17,30 +23,58 @@ export function VpaaDashboard() {
   return (
     <section className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="Institutional CQI completion"
-          description="Planned vs completed CQI actions across the institution."
-        >
-          <CqiActionsBars />
-        </ChartCard>
-        <ChartCard
-          title="Closing-the-loop status"
-          description="Loop status is hard-computed server-side; display-only."
-        >
-          <LoopStatusDonut />
-        </ChartCard>
-        <ChartCard
-          title="CAPA plan approvals"
-          description="Approval-chain decisions on corrective & preventive actions."
-        >
-          <ApprovalFlowBars />
-        </ChartCard>
-        <ChartCard
-          title="Institutional management review (D1–D5)"
-          description="AI recommendation review status at the institutional level."
-        >
-          <RecommendationDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Institutional CQI completion</FrameTitle>
+            <FrameDescription>
+              Planned vs completed CQI actions across the institution.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <CqiActionsBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Closing-the-loop status</FrameTitle>
+            <FrameDescription>
+              Loop status is hard-computed server-side; display-only.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <LoopStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>CAPA plan approvals</FrameTitle>
+            <FrameDescription>
+              Approval-chain decisions on corrective & preventive actions.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ApprovalFlowBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Institutional management review (D1–D5)</FrameTitle>
+            <FrameDescription>
+              AI recommendation review status at the institutional level.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <RecommendationDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </section>
   );

@@ -1,5 +1,11 @@
-import { ChartCard } from "@/components/charts/chart-card";
 import { ClusterCompositionDonut } from "@/components/charts/governance-charts";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 import { ARCHIVE_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
@@ -18,12 +24,20 @@ export default async function ArchivesIndexPage() {
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="Cluster composition"
-          description="Archived student statuses across compiled clusters. Sample data until the archival pipeline lands."
-        >
-          <ClusterCompositionDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Cluster composition</FrameTitle>
+            <FrameDescription>
+              Archived student statuses across compiled clusters. Sample data
+              until the archival pipeline lands.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ClusterCompositionDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </div>
   );

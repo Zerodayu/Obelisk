@@ -2,8 +2,14 @@ import {
   CloAttainmentBars,
   ScoreBandBars,
 } from "@/components/charts/attainment-charts";
-import { ChartCard } from "@/components/charts/chart-card";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 import { ACADEMIC_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
@@ -18,18 +24,32 @@ export default async function CourseAssessmentReportPage() {
       description="Term-level hub consolidating a term's attainment into 7 parts. Chart inputs mirror the backend schema; sample data until the CAR endpoint lands."
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="CLO attainment"
-          description="Direct × 70% + Indirect × 30% composite per CLO."
-        >
-          <CloAttainmentBars />
-        </ChartCard>
-        <ChartCard
-          title="Score distribution"
-          description="Students across the 4-tier rubric bands."
-        >
-          <ScoreBandBars />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>CLO attainment</FrameTitle>
+            <FrameDescription>
+              Direct × 70% + Indirect × 30% composite per CLO.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <CloAttainmentBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Score distribution</FrameTitle>
+            <FrameDescription>
+              Students across the 4-tier rubric bands.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ScoreBandBars />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </FormPlaceholder>
   );

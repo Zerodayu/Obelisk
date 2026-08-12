@@ -1,6 +1,12 @@
-import { ChartCard } from "@/components/charts/chart-card";
 import { ScheduleLoadBars } from "@/components/charts/plan-charts";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 export default function AssessmentCalendarPage() {
   return (
@@ -11,13 +17,19 @@ export default function AssessmentCalendarPage() {
       description="Pre-seeded template rows; editable dates, non-deletable. Chart inputs mirror the backend schema; sample data until the calendar endpoint lands."
     >
       <div className="grid gap-4 sm:grid-cols-1">
-        <ChartCard
-          title="Assessment load by month"
-          description="Direct vs indirect assessment items scheduled per month."
-          className="h-80"
-        >
-          <ScheduleLoadBars />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Assessment load by month</FrameTitle>
+            <FrameDescription>
+              Direct vs indirect assessment items scheduled per month.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-80">
+              <ScheduleLoadBars />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </FormPlaceholder>
   );

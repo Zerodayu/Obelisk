@@ -1,6 +1,12 @@
-import { ChartCard } from "@/components/charts/chart-card";
 import { TargetSettingBars } from "@/components/charts/plan-charts";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 export default function TargetSettingMatrixPage() {
   return (
@@ -11,13 +17,19 @@ export default function TargetSettingMatrixPage() {
       description="Per-year targets with a ≥70% hard floor and rationale. Chart inputs mirror the backend schema; sample data until the targets endpoint lands."
     >
       <div className="grid gap-4 sm:grid-cols-1">
-        <ChartCard
-          title="Target vs current attainment"
-          description="Planned target floor per cohort vs the latest computed attainment."
-          className="h-80"
-        >
-          <TargetSettingBars />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Target vs current attainment</FrameTitle>
+            <FrameDescription>
+              Planned target floor per cohort vs the latest computed attainment.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-80">
+              <TargetSettingBars />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </FormPlaceholder>
   );

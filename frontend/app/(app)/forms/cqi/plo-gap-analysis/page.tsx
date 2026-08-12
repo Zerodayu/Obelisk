@@ -1,9 +1,15 @@
-import { ChartCard } from "@/components/charts/chart-card";
 import {
   GapAnalysisBars,
   RootCauseDonut,
 } from "@/components/charts/cqi-charts";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 
 export default function PloGapAnalysisPage() {
   return (
@@ -14,18 +20,32 @@ export default function PloGapAnalysisPage() {
       description="Gap row per NOT-MET PLO-cohort combo with root-cause categories. Chart inputs mirror the backend schema; sample data until the rollup endpoint lands."
     >
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="Attained vs target"
-          description="Positive gap = below the ≥70% target."
-        >
-          <GapAnalysisBars />
-        </ChartCard>
-        <ChartCard
-          title="Root-cause distribution"
-          description="Fixed 6-category root-cause analysis across NOT-MET rows."
-        >
-          <RootCauseDonut />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Attained vs target</FrameTitle>
+            <FrameDescription>
+              Positive gap = below the ≥70% target.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <GapAnalysisBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Root-cause distribution</FrameTitle>
+            <FrameDescription>
+              Fixed 6-category root-cause analysis across NOT-MET rows.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <RootCauseDonut />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </FormPlaceholder>
   );

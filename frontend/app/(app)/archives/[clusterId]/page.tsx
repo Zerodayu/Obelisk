@@ -2,7 +2,13 @@ import {
   PloAttainmentBars,
   ScoreBandBars,
 } from "@/components/charts/attainment-charts";
-import { ChartCard } from "@/components/charts/chart-card";
+import {
+  Frame,
+  FrameDescription,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/reui/frame";
 import { ARCHIVE_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
@@ -29,18 +35,32 @@ export default async function ClusterDetailPage({
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <ChartCard
-          title="PLO attainment"
-          description="Attained vs the ≥70% target for this cluster's cohort."
-        >
-          <PloAttainmentBars />
-        </ChartCard>
-        <ChartCard
-          title="Score distribution"
-          description="Students across the 4-tier rubric bands."
-        >
-          <ScoreBandBars />
-        </ChartCard>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>PLO attainment</FrameTitle>
+            <FrameDescription>
+              Attained vs the ≥70% target for this cluster's cohort.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <PloAttainmentBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Score distribution</FrameTitle>
+            <FrameDescription>
+              Students across the 4-tier rubric bands.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ScoreBandBars />
+            </div>
+          </FramePanel>
+        </Frame>
       </div>
     </div>
   );
