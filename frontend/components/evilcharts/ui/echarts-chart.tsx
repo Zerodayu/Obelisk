@@ -116,6 +116,25 @@ export function normalizeColor(value: string): string {
   return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
 }
 
+// Resolves a color that may reference a CSS custom property — e.g. a theme token
+// from globals.css (`var(--card)`) or a Frame variable (`var(--frame-panel-bg)`)
+// — into a concrete normalized rgba string the canvas can paint. The canvas
+// itself cannot resolve `var()`, so the value is applied to a probe span inside
+// the container and read back through the cascade (handles chained vars and
+// `.dark` overrides). Plain CSS colors pass straight through normalizeColor.
+export function resolveCssColor(value: string, container: HTMLElement): string {
+  const raw = value.trim();
+  if (!raw.startsWith("var(")) return normalizeColor(raw);
+  const probe = document.createElement("span");
+  probe.style.cssText =
+    "position:absolute;width:0;height:0;visibility:hidden;pointer-events:none;";
+  probe.style.color = raw;
+  container.appendChild(probe);
+  const resolved = normalizeColor(getComputedStyle(probe).color);
+  container.removeChild(probe);
+  return resolved;
+}
+
 // Scales the alpha of a normalized `rgba(r, g, b, a)` string. Multiplying (not
 // replacing) keeps translucent theme tokens honest: a border that is 10%-white
 // at `withAlpha(border, 0.5)` lands at 5%, matching Tailwind's `border/50`.

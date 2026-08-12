@@ -28,6 +28,7 @@ import {
   getColorsCount,
   type ResolvedColors,
   resolveColors,
+  resolveCssColor,
   withAlpha,
 } from "@/components/evilcharts/ui/echarts-chart";
 import {
@@ -99,9 +100,10 @@ const DEFAULT_END_ANGLE = 360;
 
 const FALLBACK_COLOR = "rgba(120, 120, 120, 1)";
 
-// Overlapping sectors (negative paddingAngle) get a background-colored border to
-// separate the petals — the canvas analogue of the Recharts twin's
-// `stroke="var(--background)" strokeWidth={5}`.
+// Overlapping sectors (negative paddingAngle) get a panel-background-colored
+// border to separate the petals — the canvas analogue of the Recharts twin's
+// `stroke="var(--background)" strokeWidth={5}`. The color resolves from the
+// enclosing frame panel (`--frame-panel-bg`) or a `<Pie borderColor>` override.
 const OVERLAP_BORDER_WIDTH = 5;
 
 // Selecting a sector pops it radially OUTWARD from the center — the offset-slice
@@ -115,26 +117,48 @@ const SELECTED_OFFSET = 12;
 // halving (its dimmed fill went 0.2 → 0.1 while the selected state stays full).
 const DIMMED_OPACITY = 0.15;
 
-// Positive gaps between sectors are drawn as a CONSTANT-WIDTH background-colored
-// border (px), NOT an angular padAngle. An angular pad tapers to a wedge toward
-// the center; a border keeps every gap parallel-edged all the way from the rim to
-// the center. The px width tracks the requested `paddingAngle` for familiar sizing.
+// Positive gaps between sectors are drawn as a CONSTANT-WIDTH separator border
+// (px), NOT an angular padAngle. An angular pad tapers to a wedge toward the
+// center; a border keeps every gap parallel-edged all the way from the rim to
+// the center. The px width tracks the requested `paddingAngle` for familiar
+// sizing. The border color defaults to the enclosing frame panel's background so
+// the gap is invisible on it; `<Pie borderColor>` overrides it.
 function gapBorderWidth(paddingAngle: number): number {
   return Math.max(paddingAngle, 0);
 }
 
 // Resolves each sector's separator border. Negative paddingAngle keeps the
 // overlapping-petal look (a real angular overlap plus a wide separator); positive
-// paddingAngle becomes a constant-width gap; zero draws no border at all.
+// paddingAngle becomes a constant-width gap; zero draws no border at all. The
+// `color` argument is already resolved to a concrete canvas-safe color.
 function sectorBorder(
   paddingAngle: number,
-  background: string,
+  color: string,
 ): { borderColor: string; borderWidth: number } | null {
   if (paddingAngle < 0)
-    return { borderColor: background, borderWidth: OVERLAP_BORDER_WIDTH };
+    return { borderColor: color, borderWidth: OVERLAP_BORDER_WIDTH };
   const width = gapBorderWidth(paddingAngle);
-  if (width > 0) return { borderColor: background, borderWidth: width };
+  if (width > 0) return { borderColor: color, borderWidth: width };
   return null;
+}
+
+// Resolves the sector separator color against the live DOM. An explicit `<Pie
+// borderColor>` wins; otherwise the enclosing frame panel's background
+// (`--frame-panel-bg`, set by the Frame parent) is used so the gaps blend into
+// the panel behind the chart. Falls back to the chart's background token when
+// the pie isn't inside a Frame.
+function resolveBorderColor(
+  pie: PieSlot | null,
+  container: HTMLElement,
+  background: string,
+): string {
+  if (pie?.borderColor) return resolveCssColor(pie.borderColor, container);
+  const panelBg = getComputedStyle(container)
+    .getPropertyValue("--frame-panel-bg")
+    .trim();
+  return panelBg
+    ? resolveCssColor("var(--frame-panel-bg)", container)
+    : background;
 }
 
 // Loading shimmer opacities (× the foreground token's own alpha). A sine-feathered
@@ -206,6 +230,7 @@ export interface PieProps {
   outerRadius?: number | string; // outer radius of the pie
   cornerRadius?: number; // border-radius of each sector in pixels
   paddingAngle?: number; // gap between sectors in degrees — negative overlaps them
+  borderColor?: string; // sector separator color — any CSS color or `var(--…)` theme token; defaults to the enclosing frame panel's background so gaps are invisible on it
   startAngle?: number; // angle the pie starts drawing from
   endAngle?: number; // angle the pie stops drawing at
   isClickable?: boolean; // lets sectors be selected by clicking them — the selected sector pops outward
@@ -267,6 +292,7 @@ type PieSlot = {
   outerRadius: number | string;
   cornerRadius: number;
   paddingAngle: number;
+  borderColor: string | null; // explicit separator color — null falls back to the frame panel background
   startAngle: number;
   endAngle: number;
   isClickable: boolean;
@@ -336,6 +362,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         outerRadius: props.outerRadius ?? DEFAULT_OUTER_RADIUS,
         cornerRadius: props.cornerRadius ?? DEFAULT_CORNER_RADIUS,
         paddingAngle: props.paddingAngle ?? DEFAULT_PADDING_ANGLE,
+        borderColor: props.borderColor ?? null,
         startAngle: props.startAngle ?? DEFAULT_START_ANGLE,
         endAngle: props.endAngle ?? DEFAULT_END_ANGLE,
         isClickable: props.isClickable ?? false,
@@ -690,6 +717,7 @@ type OptionBuildContext = {
   legendSlot: LegendSlot;
   isLoading: boolean;
   resolved: ResolvedColors;
+  borderColor: string | null; // resolved separator color — null falls back to the panel background
 };
 
 // The pie's vertical centre reserves room for the HTML legend overlay: a legend
@@ -768,7 +796,7 @@ function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
 
 // The pie series. Each row becomes a sector whose fill is its own color gradient,
 // dimmed when another sector is selected, and separated from its neighbors by a
-// constant-width background border (see sectorBorder). The selected sector pops
+// constant-width separator border (see sectorBorder). The selected sector pops
 // radially outward via ECharts' native select state (selectedOffset).
 function buildPieSeries(ctx: OptionBuildContext): PieSeriesOption[] {
   const {
@@ -780,12 +808,18 @@ function buildPieSeries(ctx: OptionBuildContext): PieSeriesOption[] {
     selectedSector,
     legendSlot,
     resolved,
+    borderColor,
   } = ctx;
   if (!pie) return [];
   const { tokens } = resolved;
   const hasSelection = selectedSector !== null;
-  // Selection (dim + pop-out) is only meaningful on a clickable pie.
-  const border = sectorBorder(pie.paddingAngle, tokens.background);
+  // Selection (dim + pop-out) is only meaningful on a clickable pie. The border
+  // defaults to the enclosing frame panel's background (invisible on it); an
+  // explicit `<Pie borderColor>` wins.
+  const border = sectorBorder(
+    pie.paddingAngle,
+    borderColor ?? tokens.background,
+  );
 
   const sectors = data.map((row) => {
     const name = String(row[nameKey]);
@@ -799,7 +833,7 @@ function buildPieSeries(ctx: OptionBuildContext): PieSeriesOption[] {
       opacity: isDimmed ? DIMMED_OPACITY : 1,
       borderRadius: pie.cornerRadius,
     };
-    // Constant-width background gap (positive paddingAngle) or overlap separator
+    // Constant-width separator gap (positive paddingAngle) or overlap separator
     // (negative). Parallel-edged from rim to center — no wedge-shaped taper.
     if (border) {
       itemStyle.borderColor = border.borderColor;
@@ -902,7 +936,7 @@ function buildPieSeries(ctx: OptionBuildContext): PieSeriesOption[] {
 // donut skeleton stays a donut. The per-sector color is a placeholder; the rAF
 // loop retints each sector every frame.
 function buildLoadingOption(ctx: OptionBuildContext): EChartsOption {
-  const { pie, legendSlot, resolved } = ctx;
+  const { pie, legendSlot, resolved, borderColor } = ctx;
   const { tokens } = resolved;
 
   const innerRadius = pie?.innerRadius ?? DEFAULT_INNER_RADIUS;
@@ -912,7 +946,7 @@ function buildLoadingOption(ctx: OptionBuildContext): EChartsOption {
   const startAngle = pie?.startAngle ?? DEFAULT_START_ANGLE;
   const endAngle = pie?.endAngle ?? DEFAULT_END_ANGLE;
 
-  const border = sectorBorder(paddingAngle, tokens.background);
+  const border = sectorBorder(paddingAngle, borderColor ?? tokens.background);
   const sectors = Array.from({ length: LOADING_SECTORS }, (_, i) => {
     const itemStyle: PieItemStyle = {
       color: withAlpha(tokens.foreground, LOADING_BASE_OPACITY),
@@ -959,6 +993,7 @@ function buildLoadingOption(ctx: OptionBuildContext): EChartsOption {
 
 type LiveState = {
   resolved: ResolvedColors | null; // colors read off the live DOM — feeds builds and rAF loops
+  borderColor: string | null; // resolved sector separator color — read off the DOM so `var(--…)` works
   hasRevealed: boolean; // the intro draw-in already played on this chart instance
   // Latest callbacks/flags for the imperative ECharts click handler.
   handlers: {
@@ -1011,6 +1046,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
   // for the component's lifetime.
   const live = useRef<LiveState>({
     resolved: null,
+    borderColor: null,
     hasRevealed: false,
     handlers: {
       isClickable: false,
@@ -1093,6 +1129,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
       legendSlot,
       isLoading,
       resolved,
+      borderColor: live.borderColor,
     };
 
     if (isLoading) return buildLoadingOption(ctx);
@@ -1187,6 +1224,11 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     // Colors come from the <style> committed just before this effect ran — read
     // them here, right before the push, rather than round-tripping through state.
     live.resolved = resolveColors(container, config, sectorKeys);
+    live.borderColor = resolveBorderColor(
+      pie,
+      container,
+      live.resolved.tokens.background,
+    );
 
     const push = (withEntrance: boolean) => {
       const option = buildOption();
@@ -1216,6 +1258,11 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     // .dark class changed) and push an update-style option.
     live.repush = () => {
       live.resolved = resolveColors(container, config, sectorKeys);
+      live.borderColor = resolveBorderColor(
+        pie,
+        container,
+        live.resolved.tokens.background,
+      );
       push(false);
     };
   }, [
@@ -1227,6 +1274,7 @@ export function EChartsPieChart<TData extends Record<string, unknown>>({
     shouldReduceMotion,
     config,
     sectorKeys,
+    pie,
   ]);
 
   // ── Default tooltip index — show a sector's tooltip with no hover ─────────────
