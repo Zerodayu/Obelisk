@@ -7,13 +7,19 @@
  */
 
 import {
+  type AssessmentTypeDatum,
   type BudgetLineDatum,
   type CurriculumCoverageDatum,
+  MOCK_ASSESSMENT_TYPES,
   MOCK_BUDGET_LINES,
   MOCK_CURRICULUM_COVERAGE,
+  MOCK_PLO_TO_PEO_COVERAGE,
   MOCK_SCHEDULE,
+  MOCK_STUDENT_YEAR_LEVELS,
   MOCK_TARGET_SETTINGS,
+  type PloToPeoCoverageDatum,
   type ScheduleDatum,
+  type StudentYearLevelDatum,
   type TargetSettingDatum,
 } from "@/components/charts/obe-sample-data";
 import { atomWithMockData } from "@/lib/store/async-atom";
@@ -39,3 +45,21 @@ export const {
   dataAtom: targetSettingsDataAtom,
   refreshAtom: refreshTargetSettingsAtom,
 } = atomWithMockData<TargetSettingDatum[]>(MOCK_TARGET_SETTINGS);
+
+/** PLO→PEO coverage matrix (`PloToPeoMap`). */
+export const {
+  dataAtom: ploToPeoCoverageDataAtom,
+  refreshAtom: refreshPloToPeoCoverageAtom,
+} = atomWithMockData<PloToPeoCoverageDatum[]>(MOCK_PLO_TO_PEO_COVERAGE);
+
+/** Assessment items by type (`AssessmentItem.type`). */
+export const {
+  dataAtom: assessmentTypesDataAtom,
+  refreshAtom: refreshAssessmentTypesAtom,
+} = atomWithMockData<AssessmentTypeDatum[]>(MOCK_ASSESSMENT_TYPES);
+
+/** Students by year level (`Student.yearLevel`). */
+export const {
+  dataAtom: studentYearLevelsDataAtom,
+  refreshAtom: refreshStudentYearLevelsAtom,
+} = atomWithMockData<StudentYearLevelDatum[]>(MOCK_STUDENT_YEAR_LEVELS);

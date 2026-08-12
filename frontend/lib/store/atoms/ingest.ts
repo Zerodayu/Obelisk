@@ -9,8 +9,14 @@
 
 import { atom } from "jotai";
 
+import {
+  type ComputationRunDatum,
+  MOCK_COMPUTATION_RUNS,
+  MOCK_UPLOAD_STATUSES,
+  type UploadStatusDatum,
+} from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
-import { atomWithAsyncData } from "@/lib/store/async-atom";
+import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 
 export type IngestStatus =
   | "idle"
@@ -110,3 +116,15 @@ export const {
 } = atomWithAsyncData<UploadHistoryRecord[]>([], () =>
   api.get<UploadHistoryRecord[]>("/ingest/history"),
 );
+
+/** Class-record upload status distribution (`UploadRecord.status`). */
+export const {
+  dataAtom: uploadStatusesDataAtom,
+  refreshAtom: refreshUploadStatusesAtom,
+} = atomWithMockData<UploadStatusDatum[]>(MOCK_UPLOAD_STATUSES);
+
+/** 70/30 computation-run volume per term (`ComputationRun`). */
+export const {
+  dataAtom: computationRunsDataAtom,
+  refreshAtom: refreshComputationRunsAtom,
+} = atomWithMockData<ComputationRunDatum[]>(MOCK_COMPUTATION_RUNS);

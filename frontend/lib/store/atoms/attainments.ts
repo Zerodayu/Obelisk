@@ -12,8 +12,10 @@ import {
   type CohortTrendDatum,
   MOCK_CLO_ATTAINMENTS,
   MOCK_COHORT_TRENDS,
+  MOCK_PEO_ATTAINMENTS,
   MOCK_PLO_ATTAINMENTS,
   MOCK_SCORE_BANDS,
+  type PeoAttainmentDatum,
   type PloAttainmentDatum,
   type ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
@@ -42,3 +44,9 @@ export const {
   dataAtom: scoreBandsDataAtom,
   refreshAtom: refreshScoreBandsAtom,
 } = atomWithMockData<ScoreBandDatum[]>(MOCK_SCORE_BANDS);
+
+/** Biennial PEO attainment vs target (`PeoAttainment` + `Peo`). */
+export const {
+  dataAtom: peoAttainmentsDataAtom,
+  refreshAtom: refreshPeoAttainmentsAtom,
+} = atomWithMockData<PeoAttainmentDatum[]>(MOCK_PEO_ATTAINMENTS);
