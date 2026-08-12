@@ -19,6 +19,7 @@ import {
   ingestStatusAtom,
   markProcessingAtom,
   persistenceSummaryAtom,
+  refreshUploadHistoryAtom,
   startUploadAtom,
 } from "@/lib/store/atoms/ingest";
 
@@ -64,6 +65,7 @@ export function ClassRecordUpload() {
   const setMarkProcessing = useSetAtom(markProcessingAtom);
   const setCompleteIngest = useSetAtom(completeIngestAtom);
   const setFailIngest = useSetAtom(failIngestAtom);
+  const setRefreshHistory = useSetAtom(refreshUploadHistoryAtom);
 
   useEffect(() => {
     setIsMounted(true);
@@ -94,10 +96,12 @@ export function ClassRecordUpload() {
         if (res.status === "completed") {
           patchItem({ status: "success", progress: 100 });
           setCompleteIngest(res.persistence ?? null);
+          setRefreshHistory();
         } else if (res.status === "failed") {
           const message = res.error?.message || "Processing failed.";
           patchItem({ status: "error", error: message });
           setFailIngest(message);
+          setRefreshHistory();
         }
         // If 'queued' or 'running', keep polling.
       } catch (error) {
@@ -109,6 +113,7 @@ export function ClassRecordUpload() {
           : "An unexpected error occurred while polling.";
         patchItem({ status: "error", error: message });
         setFailIngest(message);
+        setRefreshHistory();
       }
     }, POLL_INTERVAL_MS);
 
@@ -116,7 +121,14 @@ export function ClassRecordUpload() {
       disposed = true;
       clearInterval(interval);
     };
-  }, [jobId, status, patchItem, setCompleteIngest, setFailIngest]);
+  }, [
+    jobId,
+    status,
+    patchItem,
+    setCompleteIngest,
+    setFailIngest,
+    setRefreshHistory,
+  ]);
 
   async function handleUpload() {
     if (!file) return;
