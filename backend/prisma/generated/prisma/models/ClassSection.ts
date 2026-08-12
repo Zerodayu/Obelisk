@@ -197,6 +197,7 @@ export type ClassSectionWhereInput = {
   assessmentItems?: Prisma.AssessmentItemListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
+  uploadRecords?: Prisma.UploadRecordListRelationFilter
 }
 
 export type ClassSectionOrderByWithRelationInput = {
@@ -213,6 +214,7 @@ export type ClassSectionOrderByWithRelationInput = {
   assessmentItems?: Prisma.AssessmentItemOrderByRelationAggregateInput
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   formSubmissions?: Prisma.FormSubmissionOrderByRelationAggregateInput
+  uploadRecords?: Prisma.UploadRecordOrderByRelationAggregateInput
 }
 
 export type ClassSectionWhereUniqueInput = Prisma.AtLeast<{
@@ -233,6 +235,7 @@ export type ClassSectionWhereUniqueInput = Prisma.AtLeast<{
   assessmentItems?: Prisma.AssessmentItemListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
+  uploadRecords?: Prisma.UploadRecordListRelationFilter
 }, "id" | "courseId_termId_sectionCode">
 
 export type ClassSectionOrderByWithAggregationInput = {
@@ -270,6 +273,7 @@ export type ClassSectionCreateInput = {
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateInput = {
@@ -283,6 +287,7 @@ export type ClassSectionUncheckedCreateInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUpdateInput = {
@@ -296,6 +301,7 @@ export type ClassSectionUpdateInput = {
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateInput = {
@@ -309,6 +315,7 @@ export type ClassSectionUncheckedUpdateInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionCreateManyInput = {
@@ -558,6 +565,20 @@ export type ClassSectionUpdateOneWithoutFormSubmissionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.ClassSectionUpdateToOneWithWhereWithoutFormSubmissionsInput, Prisma.ClassSectionUpdateWithoutFormSubmissionsInput>, Prisma.ClassSectionUncheckedUpdateWithoutFormSubmissionsInput>
 }
 
+export type ClassSectionCreateNestedOneWithoutUploadRecordsInput = {
+  create?: Prisma.XOR<Prisma.ClassSectionCreateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedCreateWithoutUploadRecordsInput>
+  connectOrCreate?: Prisma.ClassSectionCreateOrConnectWithoutUploadRecordsInput
+  connect?: Prisma.ClassSectionWhereUniqueInput
+}
+
+export type ClassSectionUpdateOneRequiredWithoutUploadRecordsNestedInput = {
+  create?: Prisma.XOR<Prisma.ClassSectionCreateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedCreateWithoutUploadRecordsInput>
+  connectOrCreate?: Prisma.ClassSectionCreateOrConnectWithoutUploadRecordsInput
+  upsert?: Prisma.ClassSectionUpsertWithoutUploadRecordsInput
+  connect?: Prisma.ClassSectionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ClassSectionUpdateToOneWithWhereWithoutUploadRecordsInput, Prisma.ClassSectionUpdateWithoutUploadRecordsInput>, Prisma.ClassSectionUncheckedUpdateWithoutUploadRecordsInput>
+}
+
 export type ClassSectionCreateNestedOneWithoutCloAttainmentsInput = {
   create?: Prisma.XOR<Prisma.ClassSectionCreateWithoutCloAttainmentsInput, Prisma.ClassSectionUncheckedCreateWithoutCloAttainmentsInput>
   connectOrCreate?: Prisma.ClassSectionCreateOrConnectWithoutCloAttainmentsInput
@@ -582,6 +603,7 @@ export type ClassSectionCreateWithoutFacultyInput = {
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutFacultyInput = {
@@ -594,6 +616,7 @@ export type ClassSectionUncheckedCreateWithoutFacultyInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutFacultyInput = {
@@ -644,6 +667,7 @@ export type ClassSectionCreateWithoutTermInput = {
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutTermInput = {
@@ -656,6 +680,7 @@ export type ClassSectionUncheckedCreateWithoutTermInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutTermInput = {
@@ -694,6 +719,7 @@ export type ClassSectionCreateWithoutCourseInput = {
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutCourseInput = {
@@ -706,6 +732,7 @@ export type ClassSectionUncheckedCreateWithoutCourseInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutCourseInput = {
@@ -744,6 +771,7 @@ export type ClassSectionCreateWithoutEnrollmentsInput = {
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutEnrollmentsInput = {
@@ -756,6 +784,7 @@ export type ClassSectionUncheckedCreateWithoutEnrollmentsInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutEnrollmentsInput = {
@@ -784,6 +813,7 @@ export type ClassSectionUpdateWithoutEnrollmentsInput = {
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutEnrollmentsInput = {
@@ -796,6 +826,7 @@ export type ClassSectionUncheckedUpdateWithoutEnrollmentsInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionCreateWithoutAssessmentItemsInput = {
@@ -808,6 +839,7 @@ export type ClassSectionCreateWithoutAssessmentItemsInput = {
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutAssessmentItemsInput = {
@@ -820,6 +852,7 @@ export type ClassSectionUncheckedCreateWithoutAssessmentItemsInput = {
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutAssessmentItemsInput = {
@@ -848,6 +881,7 @@ export type ClassSectionUpdateWithoutAssessmentItemsInput = {
   enrollments?: Prisma.EnrollmentUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutAssessmentItemsInput = {
@@ -860,6 +894,7 @@ export type ClassSectionUncheckedUpdateWithoutAssessmentItemsInput = {
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionCreateWithoutFormSubmissionsInput = {
@@ -872,6 +907,7 @@ export type ClassSectionCreateWithoutFormSubmissionsInput = {
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutClassSectionInput
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutFormSubmissionsInput = {
@@ -884,6 +920,7 @@ export type ClassSectionUncheckedCreateWithoutFormSubmissionsInput = {
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutClassSectionInput
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutFormSubmissionsInput = {
@@ -912,6 +949,7 @@ export type ClassSectionUpdateWithoutFormSubmissionsInput = {
   enrollments?: Prisma.EnrollmentUpdateManyWithoutClassSectionNestedInput
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutFormSubmissionsInput = {
@@ -924,6 +962,75 @@ export type ClassSectionUncheckedUpdateWithoutFormSubmissionsInput = {
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutClassSectionNestedInput
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
+}
+
+export type ClassSectionCreateWithoutUploadRecordsInput = {
+  id: string
+  sectionCode: string
+  createdAt?: Date | string
+  course: Prisma.CourseCreateNestedOneWithoutClassSectionsInput
+  term: Prisma.AcademicTermCreateNestedOneWithoutClassSectionsInput
+  faculty?: Prisma.userCreateNestedOneWithoutClassSectionsAsFacultyInput
+  enrollments?: Prisma.EnrollmentCreateNestedManyWithoutClassSectionInput
+  assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutClassSectionInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+}
+
+export type ClassSectionUncheckedCreateWithoutUploadRecordsInput = {
+  id: string
+  courseId: string
+  termId: string
+  facultyId?: string | null
+  sectionCode: string
+  createdAt?: Date | string
+  enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutClassSectionInput
+  assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutClassSectionInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+}
+
+export type ClassSectionCreateOrConnectWithoutUploadRecordsInput = {
+  where: Prisma.ClassSectionWhereUniqueInput
+  create: Prisma.XOR<Prisma.ClassSectionCreateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedCreateWithoutUploadRecordsInput>
+}
+
+export type ClassSectionUpsertWithoutUploadRecordsInput = {
+  update: Prisma.XOR<Prisma.ClassSectionUpdateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedUpdateWithoutUploadRecordsInput>
+  create: Prisma.XOR<Prisma.ClassSectionCreateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedCreateWithoutUploadRecordsInput>
+  where?: Prisma.ClassSectionWhereInput
+}
+
+export type ClassSectionUpdateToOneWithWhereWithoutUploadRecordsInput = {
+  where?: Prisma.ClassSectionWhereInput
+  data: Prisma.XOR<Prisma.ClassSectionUpdateWithoutUploadRecordsInput, Prisma.ClassSectionUncheckedUpdateWithoutUploadRecordsInput>
+}
+
+export type ClassSectionUpdateWithoutUploadRecordsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  sectionCode?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  course?: Prisma.CourseUpdateOneRequiredWithoutClassSectionsNestedInput
+  term?: Prisma.AcademicTermUpdateOneRequiredWithoutClassSectionsNestedInput
+  faculty?: Prisma.userUpdateOneWithoutClassSectionsAsFacultyNestedInput
+  enrollments?: Prisma.EnrollmentUpdateManyWithoutClassSectionNestedInput
+  assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+}
+
+export type ClassSectionUncheckedUpdateWithoutUploadRecordsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  courseId?: Prisma.StringFieldUpdateOperationsInput | string
+  termId?: Prisma.StringFieldUpdateOperationsInput | string
+  facultyId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sectionCode?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutClassSectionNestedInput
+  assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionCreateWithoutCloAttainmentsInput = {
@@ -936,6 +1043,7 @@ export type ClassSectionCreateWithoutCloAttainmentsInput = {
   enrollments?: Prisma.EnrollmentCreateNestedManyWithoutClassSectionInput
   assessmentItems?: Prisma.AssessmentItemCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionUncheckedCreateWithoutCloAttainmentsInput = {
@@ -948,6 +1056,7 @@ export type ClassSectionUncheckedCreateWithoutCloAttainmentsInput = {
   enrollments?: Prisma.EnrollmentUncheckedCreateNestedManyWithoutClassSectionInput
   assessmentItems?: Prisma.AssessmentItemUncheckedCreateNestedManyWithoutClassSectionInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutClassSectionInput
+  uploadRecords?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutClassSectionInput
 }
 
 export type ClassSectionCreateOrConnectWithoutCloAttainmentsInput = {
@@ -976,6 +1085,7 @@ export type ClassSectionUpdateWithoutCloAttainmentsInput = {
   enrollments?: Prisma.EnrollmentUpdateManyWithoutClassSectionNestedInput
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutCloAttainmentsInput = {
@@ -988,6 +1098,7 @@ export type ClassSectionUncheckedUpdateWithoutCloAttainmentsInput = {
   enrollments?: Prisma.EnrollmentUncheckedUpdateManyWithoutClassSectionNestedInput
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionCreateManyFacultyInput = {
@@ -1008,6 +1119,7 @@ export type ClassSectionUpdateWithoutFacultyInput = {
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutFacultyInput = {
@@ -1020,6 +1132,7 @@ export type ClassSectionUncheckedUpdateWithoutFacultyInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateManyWithoutFacultyInput = {
@@ -1048,6 +1161,7 @@ export type ClassSectionUpdateWithoutTermInput = {
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutTermInput = {
@@ -1060,6 +1174,7 @@ export type ClassSectionUncheckedUpdateWithoutTermInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateManyWithoutTermInput = {
@@ -1088,6 +1203,7 @@ export type ClassSectionUpdateWithoutCourseInput = {
   assessmentItems?: Prisma.AssessmentItemUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateWithoutCourseInput = {
@@ -1100,6 +1216,7 @@ export type ClassSectionUncheckedUpdateWithoutCourseInput = {
   assessmentItems?: Prisma.AssessmentItemUncheckedUpdateManyWithoutClassSectionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutClassSectionNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutClassSectionNestedInput
+  uploadRecords?: Prisma.UploadRecordUncheckedUpdateManyWithoutClassSectionNestedInput
 }
 
 export type ClassSectionUncheckedUpdateManyWithoutCourseInput = {
@@ -1120,6 +1237,7 @@ export type ClassSectionCountOutputType = {
   assessmentItems: number
   cloAttainments: number
   formSubmissions: number
+  uploadRecords: number
 }
 
 export type ClassSectionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1127,6 +1245,7 @@ export type ClassSectionCountOutputTypeSelect<ExtArgs extends runtime.Types.Exte
   assessmentItems?: boolean | ClassSectionCountOutputTypeCountAssessmentItemsArgs
   cloAttainments?: boolean | ClassSectionCountOutputTypeCountCloAttainmentsArgs
   formSubmissions?: boolean | ClassSectionCountOutputTypeCountFormSubmissionsArgs
+  uploadRecords?: boolean | ClassSectionCountOutputTypeCountUploadRecordsArgs
 }
 
 /**
@@ -1167,6 +1286,13 @@ export type ClassSectionCountOutputTypeCountFormSubmissionsArgs<ExtArgs extends 
   where?: Prisma.FormSubmissionWhereInput
 }
 
+/**
+ * ClassSectionCountOutputType without action
+ */
+export type ClassSectionCountOutputTypeCountUploadRecordsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UploadRecordWhereInput
+}
+
 
 export type ClassSectionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1182,6 +1308,7 @@ export type ClassSectionSelect<ExtArgs extends runtime.Types.Extensions.Internal
   assessmentItems?: boolean | Prisma.ClassSection$assessmentItemsArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ClassSection$cloAttainmentsArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.ClassSection$formSubmissionsArgs<ExtArgs>
+  uploadRecords?: boolean | Prisma.ClassSection$uploadRecordsArgs<ExtArgs>
   _count?: boolean | Prisma.ClassSectionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["classSection"]>
 
@@ -1227,6 +1354,7 @@ export type ClassSectionInclude<ExtArgs extends runtime.Types.Extensions.Interna
   assessmentItems?: boolean | Prisma.ClassSection$assessmentItemsArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ClassSection$cloAttainmentsArgs<ExtArgs>
   formSubmissions?: boolean | Prisma.ClassSection$formSubmissionsArgs<ExtArgs>
+  uploadRecords?: boolean | Prisma.ClassSection$uploadRecordsArgs<ExtArgs>
   _count?: boolean | Prisma.ClassSectionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ClassSectionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1250,6 +1378,7 @@ export type $ClassSectionPayload<ExtArgs extends runtime.Types.Extensions.Intern
     assessmentItems: Prisma.$AssessmentItemPayload<ExtArgs>[]
     cloAttainments: Prisma.$CloAttainmentPayload<ExtArgs>[]
     formSubmissions: Prisma.$FormSubmissionPayload<ExtArgs>[]
+    uploadRecords: Prisma.$UploadRecordPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1659,6 +1788,7 @@ export interface Prisma__ClassSectionClient<T, Null = never, ExtArgs extends run
   assessmentItems<T extends Prisma.ClassSection$assessmentItemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassSection$assessmentItemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AssessmentItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   cloAttainments<T extends Prisma.ClassSection$cloAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassSection$cloAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   formSubmissions<T extends Prisma.ClassSection$formSubmissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassSection$formSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FormSubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  uploadRecords<T extends Prisma.ClassSection$uploadRecordsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ClassSection$uploadRecordsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UploadRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2207,6 +2337,30 @@ export type ClassSection$formSubmissionsArgs<ExtArgs extends runtime.Types.Exten
   take?: number
   skip?: number
   distinct?: Prisma.FormSubmissionScalarFieldEnum | Prisma.FormSubmissionScalarFieldEnum[]
+}
+
+/**
+ * ClassSection.uploadRecords
+ */
+export type ClassSection$uploadRecordsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UploadRecord
+   */
+  select?: Prisma.UploadRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UploadRecord
+   */
+  omit?: Prisma.UploadRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UploadRecordInclude<ExtArgs> | null
+  where?: Prisma.UploadRecordWhereInput
+  orderBy?: Prisma.UploadRecordOrderByWithRelationInput | Prisma.UploadRecordOrderByWithRelationInput[]
+  cursor?: Prisma.UploadRecordWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UploadRecordScalarFieldEnum | Prisma.UploadRecordScalarFieldEnum[]
 }
 
 /**

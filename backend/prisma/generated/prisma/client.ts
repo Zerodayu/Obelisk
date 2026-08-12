@@ -152,6 +152,15 @@ export type ApprovalStep = Prisma.ApprovalStepModel
  */
 export type ComputationRun = Prisma.ComputationRunModel
 /**
+ * Model UploadRecord
+ * *
+ *  * Per-upload audit/history for class-record ingestion. One row is created the
+ *  * moment a user uploads a file, then updated to `completed` or `failed` when
+ *  * the ETL job finishes — so the user's upload history (across devices) is
+ *  * recoverable even for failed attempts that never create a `ComputationRun`.
+ */
+export type UploadRecord = Prisma.UploadRecordModel
+/**
  * Model CloAttainment
  * 
  */

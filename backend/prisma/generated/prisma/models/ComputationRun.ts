@@ -239,6 +239,7 @@ export type ComputationRunWhereInput = {
   triggeredBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.userWhereInput> | null
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  uploadRecord?: Prisma.XOR<Prisma.UploadRecordNullableScalarRelationFilter, Prisma.UploadRecordWhereInput> | null
 }
 
 export type ComputationRunOrderByWithRelationInput = {
@@ -252,6 +253,7 @@ export type ComputationRunOrderByWithRelationInput = {
   triggeredBy?: Prisma.userOrderByWithRelationInput
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
+  uploadRecord?: Prisma.UploadRecordOrderByWithRelationInput
 }
 
 export type ComputationRunWhereUniqueInput = Prisma.AtLeast<{
@@ -268,6 +270,7 @@ export type ComputationRunWhereUniqueInput = Prisma.AtLeast<{
   triggeredBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.userWhereInput> | null
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
+  uploadRecord?: Prisma.XOR<Prisma.UploadRecordNullableScalarRelationFilter, Prisma.UploadRecordWhereInput> | null
 }, "id">
 
 export type ComputationRunOrderByWithAggregationInput = {
@@ -308,6 +311,7 @@ export type ComputationRunCreateInput = {
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunUncheckedCreateInput = {
@@ -320,6 +324,7 @@ export type ComputationRunUncheckedCreateInput = {
   runAt?: Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunUpdateInput = {
@@ -332,6 +337,7 @@ export type ComputationRunUpdateInput = {
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunUncheckedUpdateInput = {
@@ -344,6 +350,7 @@ export type ComputationRunUncheckedUpdateInput = {
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunCreateManyInput = {
@@ -425,6 +432,11 @@ export type ComputationRunSumOrderByAggregateInput = {
   indirectWeight?: Prisma.SortOrder
 }
 
+export type ComputationRunNullableScalarRelationFilter = {
+  is?: Prisma.ComputationRunWhereInput | null
+  isNot?: Prisma.ComputationRunWhereInput | null
+}
+
 export type ComputationRunScalarRelationFilter = {
   is?: Prisma.ComputationRunWhereInput
   isNot?: Prisma.ComputationRunWhereInput
@@ -472,6 +484,22 @@ export type ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput = {
   deleteMany?: Prisma.ComputationRunScalarWhereInput | Prisma.ComputationRunScalarWhereInput[]
 }
 
+export type ComputationRunCreateNestedOneWithoutUploadRecordInput = {
+  create?: Prisma.XOR<Prisma.ComputationRunCreateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedCreateWithoutUploadRecordInput>
+  connectOrCreate?: Prisma.ComputationRunCreateOrConnectWithoutUploadRecordInput
+  connect?: Prisma.ComputationRunWhereUniqueInput
+}
+
+export type ComputationRunUpdateOneWithoutUploadRecordNestedInput = {
+  create?: Prisma.XOR<Prisma.ComputationRunCreateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedCreateWithoutUploadRecordInput>
+  connectOrCreate?: Prisma.ComputationRunCreateOrConnectWithoutUploadRecordInput
+  upsert?: Prisma.ComputationRunUpsertWithoutUploadRecordInput
+  disconnect?: Prisma.ComputationRunWhereInput | boolean
+  delete?: Prisma.ComputationRunWhereInput | boolean
+  connect?: Prisma.ComputationRunWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ComputationRunUpdateToOneWithWhereWithoutUploadRecordInput, Prisma.ComputationRunUpdateWithoutUploadRecordInput>, Prisma.ComputationRunUncheckedUpdateWithoutUploadRecordInput>
+}
+
 export type ComputationRunCreateNestedOneWithoutCloAttainmentsInput = {
   create?: Prisma.XOR<Prisma.ComputationRunCreateWithoutCloAttainmentsInput, Prisma.ComputationRunUncheckedCreateWithoutCloAttainmentsInput>
   connectOrCreate?: Prisma.ComputationRunCreateOrConnectWithoutCloAttainmentsInput
@@ -509,6 +537,7 @@ export type ComputationRunCreateWithoutTriggeredByInput = {
   runAt?: Date | string
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunUncheckedCreateWithoutTriggeredByInput = {
@@ -520,6 +549,7 @@ export type ComputationRunUncheckedCreateWithoutTriggeredByInput = {
   runAt?: Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunCreateOrConnectWithoutTriggeredByInput = {
@@ -561,6 +591,70 @@ export type ComputationRunScalarWhereInput = {
   runAt?: Prisma.DateTimeFilter<"ComputationRun"> | Date | string
 }
 
+export type ComputationRunCreateWithoutUploadRecordInput = {
+  id: string
+  scope: string
+  formulaVersion?: string
+  directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  runAt?: Date | string
+  triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
+}
+
+export type ComputationRunUncheckedCreateWithoutUploadRecordInput = {
+  id: string
+  triggeredByUserId?: string | null
+  scope: string
+  formulaVersion?: string
+  directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  runAt?: Date | string
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+}
+
+export type ComputationRunCreateOrConnectWithoutUploadRecordInput = {
+  where: Prisma.ComputationRunWhereUniqueInput
+  create: Prisma.XOR<Prisma.ComputationRunCreateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedCreateWithoutUploadRecordInput>
+}
+
+export type ComputationRunUpsertWithoutUploadRecordInput = {
+  update: Prisma.XOR<Prisma.ComputationRunUpdateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedUpdateWithoutUploadRecordInput>
+  create: Prisma.XOR<Prisma.ComputationRunCreateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedCreateWithoutUploadRecordInput>
+  where?: Prisma.ComputationRunWhereInput
+}
+
+export type ComputationRunUpdateToOneWithWhereWithoutUploadRecordInput = {
+  where?: Prisma.ComputationRunWhereInput
+  data: Prisma.XOR<Prisma.ComputationRunUpdateWithoutUploadRecordInput, Prisma.ComputationRunUncheckedUpdateWithoutUploadRecordInput>
+}
+
+export type ComputationRunUpdateWithoutUploadRecordInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  formulaVersion?: Prisma.StringFieldUpdateOperationsInput | string
+  directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
+}
+
+export type ComputationRunUncheckedUpdateWithoutUploadRecordInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  triggeredByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  scope?: Prisma.StringFieldUpdateOperationsInput | string
+  formulaVersion?: Prisma.StringFieldUpdateOperationsInput | string
+  directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+}
+
 export type ComputationRunCreateWithoutCloAttainmentsInput = {
   id: string
   scope: string
@@ -570,6 +664,7 @@ export type ComputationRunCreateWithoutCloAttainmentsInput = {
   runAt?: Date | string
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunUncheckedCreateWithoutCloAttainmentsInput = {
@@ -581,6 +676,7 @@ export type ComputationRunUncheckedCreateWithoutCloAttainmentsInput = {
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunCreateOrConnectWithoutCloAttainmentsInput = {
@@ -608,6 +704,7 @@ export type ComputationRunUpdateWithoutCloAttainmentsInput = {
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunUncheckedUpdateWithoutCloAttainmentsInput = {
@@ -619,6 +716,7 @@ export type ComputationRunUncheckedUpdateWithoutCloAttainmentsInput = {
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunCreateWithoutPloAttainmentsInput = {
@@ -630,6 +728,7 @@ export type ComputationRunCreateWithoutPloAttainmentsInput = {
   runAt?: Date | string
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunUncheckedCreateWithoutPloAttainmentsInput = {
@@ -641,6 +740,7 @@ export type ComputationRunUncheckedCreateWithoutPloAttainmentsInput = {
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
+  uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
 
 export type ComputationRunCreateOrConnectWithoutPloAttainmentsInput = {
@@ -668,6 +768,7 @@ export type ComputationRunUpdateWithoutPloAttainmentsInput = {
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -679,6 +780,7 @@ export type ComputationRunUncheckedUpdateWithoutPloAttainmentsInput = {
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunCreateManyTriggeredByInput = {
@@ -699,6 +801,7 @@ export type ComputationRunUpdateWithoutTriggeredByInput = {
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunUncheckedUpdateWithoutTriggeredByInput = {
@@ -710,6 +813,7 @@ export type ComputationRunUncheckedUpdateWithoutTriggeredByInput = {
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
+  uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
 
 export type ComputationRunUncheckedUpdateManyWithoutTriggeredByInput = {
@@ -772,6 +876,7 @@ export type ComputationRunSelect<ExtArgs extends runtime.Types.Extensions.Intern
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.ComputationRun$ploAttainmentsArgs<ExtArgs>
+  uploadRecord?: boolean | Prisma.ComputationRun$uploadRecordArgs<ExtArgs>
   _count?: boolean | Prisma.ComputationRunCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["computationRun"]>
 
@@ -812,6 +917,7 @@ export type ComputationRunInclude<ExtArgs extends runtime.Types.Extensions.Inter
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.ComputationRun$ploAttainmentsArgs<ExtArgs>
+  uploadRecord?: boolean | Prisma.ComputationRun$uploadRecordArgs<ExtArgs>
   _count?: boolean | Prisma.ComputationRunCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ComputationRunIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -827,6 +933,7 @@ export type $ComputationRunPayload<ExtArgs extends runtime.Types.Extensions.Inte
     triggeredBy: Prisma.$userPayload<ExtArgs> | null
     cloAttainments: Prisma.$CloAttainmentPayload<ExtArgs>[]
     ploAttainments: Prisma.$PloAttainmentPayload<ExtArgs>[]
+    uploadRecord: Prisma.$UploadRecordPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1233,6 +1340,7 @@ export interface Prisma__ComputationRunClient<T, Null = never, ExtArgs extends r
   triggeredBy<T extends Prisma.ComputationRun$triggeredByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ComputationRun$triggeredByArgs<ExtArgs>>): Prisma.Prisma__userClient<runtime.Types.Result.GetResult<Prisma.$userPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   cloAttainments<T extends Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ploAttainments<T extends Prisma.ComputationRun$ploAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ComputationRun$ploAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  uploadRecord<T extends Prisma.ComputationRun$uploadRecordArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ComputationRun$uploadRecordArgs<ExtArgs>>): Prisma.Prisma__UploadRecordClient<runtime.Types.Result.GetResult<Prisma.$UploadRecordPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1734,6 +1842,25 @@ export type ComputationRun$ploAttainmentsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.PloAttainmentScalarFieldEnum | Prisma.PloAttainmentScalarFieldEnum[]
+}
+
+/**
+ * ComputationRun.uploadRecord
+ */
+export type ComputationRun$uploadRecordArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UploadRecord
+   */
+  select?: Prisma.UploadRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UploadRecord
+   */
+  omit?: Prisma.UploadRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UploadRecordInclude<ExtArgs> | null
+  where?: Prisma.UploadRecordWhereInput
 }
 
 /**

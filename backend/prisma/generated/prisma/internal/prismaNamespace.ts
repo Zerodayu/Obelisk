@@ -419,6 +419,7 @@ export const ModelName = {
   FormSubmission: 'FormSubmission',
   ApprovalStep: 'ApprovalStep',
   ComputationRun: 'ComputationRun',
+  UploadRecord: 'UploadRecord',
   CloAttainment: 'CloAttainment',
   PloAttainment: 'PloAttainment',
   PeoAttainment: 'PeoAttainment',
@@ -443,7 +444,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry"
+    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "uploadRecord" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2075,6 +2076,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UploadRecord: {
+      payload: Prisma.$UploadRecordPayload<ExtArgs>
+      fields: Prisma.UploadRecordFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UploadRecordFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UploadRecordFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        findFirst: {
+          args: Prisma.UploadRecordFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UploadRecordFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        findMany: {
+          args: Prisma.UploadRecordFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>[]
+        }
+        create: {
+          args: Prisma.UploadRecordCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        createMany: {
+          args: Prisma.UploadRecordCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.UploadRecordCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>[]
+        }
+        delete: {
+          args: Prisma.UploadRecordDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        update: {
+          args: Prisma.UploadRecordUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        deleteMany: {
+          args: Prisma.UploadRecordDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UploadRecordUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.UploadRecordUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>[]
+        }
+        upsert: {
+          args: Prisma.UploadRecordUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UploadRecordPayload>
+        }
+        aggregate: {
+          args: Prisma.UploadRecordAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUploadRecord>
+        }
+        groupBy: {
+          args: Prisma.UploadRecordGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UploadRecordGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UploadRecordCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UploadRecordCountAggregateOutputType> | number
+        }
+      }
+    }
     CloAttainment: {
       payload: Prisma.$CloAttainmentPayload<ExtArgs>
       fields: Prisma.CloAttainmentFieldRefs
@@ -3059,6 +3134,23 @@ export const ComputationRunScalarFieldEnum = {
 export type ComputationRunScalarFieldEnum = (typeof ComputationRunScalarFieldEnum)[keyof typeof ComputationRunScalarFieldEnum]
 
 
+export const UploadRecordScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  classSectionId: 'classSectionId',
+  filename: 'filename',
+  status: 'status',
+  error: 'error',
+  etlJobId: 'etlJobId',
+  computationRunId: 'computationRunId',
+  summary: 'summary',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UploadRecordScalarFieldEnum = (typeof UploadRecordScalarFieldEnum)[keyof typeof UploadRecordScalarFieldEnum]
+
+
 export const CloAttainmentScalarFieldEnum = {
   id: 'id',
   classSectionId: 'classSectionId',
@@ -3204,6 +3296,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {
@@ -3409,6 +3509,20 @@ export type EnumApprovalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<
  * Reference to a field of type 'ApprovalDecision[]'
  */
 export type ListEnumApprovalDecisionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ApprovalDecision[]'>
+    
+
+
+/**
+ * Reference to a field of type 'UploadStatus'
+ */
+export type EnumUploadStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UploadStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'UploadStatus[]'
+ */
+export type ListEnumUploadStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'UploadStatus[]'>
     
 
 
@@ -3640,6 +3754,7 @@ export type GlobalOmitConfig = {
   formSubmission?: Prisma.FormSubmissionOmit
   approvalStep?: Prisma.ApprovalStepOmit
   computationRun?: Prisma.ComputationRunOmit
+  uploadRecord?: Prisma.UploadRecordOmit
   cloAttainment?: Prisma.CloAttainmentOmit
   ploAttainment?: Prisma.PloAttainmentOmit
   peoAttainment?: Prisma.PeoAttainmentOmit

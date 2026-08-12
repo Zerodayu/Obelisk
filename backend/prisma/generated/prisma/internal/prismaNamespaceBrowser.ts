@@ -73,6 +73,7 @@ export const ModelName = {
   FormSubmission: 'FormSubmission',
   ApprovalStep: 'ApprovalStep',
   ComputationRun: 'ComputationRun',
+  UploadRecord: 'UploadRecord',
   CloAttainment: 'CloAttainment',
   PloAttainment: 'PloAttainment',
   PeoAttainment: 'PeoAttainment',
@@ -379,6 +380,23 @@ export const ComputationRunScalarFieldEnum = {
 export type ComputationRunScalarFieldEnum = (typeof ComputationRunScalarFieldEnum)[keyof typeof ComputationRunScalarFieldEnum]
 
 
+export const UploadRecordScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  classSectionId: 'classSectionId',
+  filename: 'filename',
+  status: 'status',
+  error: 'error',
+  etlJobId: 'etlJobId',
+  computationRunId: 'computationRunId',
+  summary: 'summary',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UploadRecordScalarFieldEnum = (typeof UploadRecordScalarFieldEnum)[keyof typeof UploadRecordScalarFieldEnum]
+
+
 export const CloAttainmentScalarFieldEnum = {
   id: 'id',
   classSectionId: 'classSectionId',
@@ -524,6 +542,14 @@ export const JsonNullValueInput = {
 } as const
 
 export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const QueryMode = {

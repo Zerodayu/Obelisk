@@ -108,3 +108,12 @@ export const GraduationClusterStatus = {
 } as const
 
 export type GraduationClusterStatus = (typeof GraduationClusterStatus)[keyof typeof GraduationClusterStatus]
+
+
+export const UploadStatus = {
+  queued: 'queued',
+  completed: 'completed',
+  failed: 'failed'
+} as const
+
+export type UploadStatus = (typeof UploadStatus)[keyof typeof UploadStatus]

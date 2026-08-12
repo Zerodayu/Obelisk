@@ -264,6 +264,7 @@ export type userWhereInput = {
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   approvalSteps?: Prisma.ApprovalStepListRelationFilter
   computationRuns?: Prisma.ComputationRunListRelationFilter
+  uploads?: Prisma.UploadRecordListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
   aiRecommendationsReviewed?: Prisma.AiRecommendationListRelationFilter
   reportExports?: Prisma.ReportExportListRelationFilter
@@ -295,6 +296,7 @@ export type userOrderByWithRelationInput = {
   formSubmissions?: Prisma.FormSubmissionOrderByRelationAggregateInput
   approvalSteps?: Prisma.ApprovalStepOrderByRelationAggregateInput
   computationRuns?: Prisma.ComputationRunOrderByRelationAggregateInput
+  uploads?: Prisma.UploadRecordOrderByRelationAggregateInput
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationOrderByRelationAggregateInput
   reportExports?: Prisma.ReportExportOrderByRelationAggregateInput
@@ -329,6 +331,7 @@ export type userWhereUniqueInput = Prisma.AtLeast<{
   formSubmissions?: Prisma.FormSubmissionListRelationFilter
   approvalSteps?: Prisma.ApprovalStepListRelationFilter
   computationRuns?: Prisma.ComputationRunListRelationFilter
+  uploads?: Prisma.UploadRecordListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
   aiRecommendationsReviewed?: Prisma.AiRecommendationListRelationFilter
   reportExports?: Prisma.ReportExportListRelationFilter
@@ -398,6 +401,7 @@ export type userCreateInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -427,6 +431,7 @@ export type userUncheckedCreateInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -456,6 +461,7 @@ export type userUpdateInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -485,6 +491,7 @@ export type userUncheckedUpdateInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -847,6 +854,22 @@ export type userUpdateOneWithoutComputationRunsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.userUpdateToOneWithWhereWithoutComputationRunsInput, Prisma.userUpdateWithoutComputationRunsInput>, Prisma.userUncheckedUpdateWithoutComputationRunsInput>
 }
 
+export type userCreateNestedOneWithoutUploadsInput = {
+  create?: Prisma.XOR<Prisma.userCreateWithoutUploadsInput, Prisma.userUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.userCreateOrConnectWithoutUploadsInput
+  connect?: Prisma.userWhereUniqueInput
+}
+
+export type userUpdateOneWithoutUploadsNestedInput = {
+  create?: Prisma.XOR<Prisma.userCreateWithoutUploadsInput, Prisma.userUncheckedCreateWithoutUploadsInput>
+  connectOrCreate?: Prisma.userCreateOrConnectWithoutUploadsInput
+  upsert?: Prisma.userUpsertWithoutUploadsInput
+  disconnect?: Prisma.userWhereInput | boolean
+  delete?: Prisma.userWhereInput | boolean
+  connect?: Prisma.userWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.userUpdateToOneWithWhereWithoutUploadsInput, Prisma.userUpdateWithoutUploadsInput>, Prisma.userUncheckedUpdateWithoutUploadsInput>
+}
+
 export type userCreateNestedOneWithoutAuditLogsInput = {
   create?: Prisma.XOR<Prisma.userCreateWithoutAuditLogsInput, Prisma.userUncheckedCreateWithoutAuditLogsInput>
   connectOrCreate?: Prisma.userCreateOrConnectWithoutAuditLogsInput
@@ -933,6 +956,7 @@ export type userCreateWithoutSessionsInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -961,6 +985,7 @@ export type userUncheckedCreateWithoutSessionsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1005,6 +1030,7 @@ export type userUpdateWithoutSessionsInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1033,6 +1059,7 @@ export type userUncheckedUpdateWithoutSessionsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1061,6 +1088,7 @@ export type userCreateWithoutAccountsInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1089,6 +1117,7 @@ export type userUncheckedCreateWithoutAccountsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1133,6 +1162,7 @@ export type userUpdateWithoutAccountsInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1161,6 +1191,7 @@ export type userUncheckedUpdateWithoutAccountsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1189,6 +1220,7 @@ export type userCreateWithoutDepartmentsAsDeanInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1217,6 +1249,7 @@ export type userUncheckedCreateWithoutDepartmentsAsDeanInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1250,6 +1283,7 @@ export type userCreateWithoutDepartmentInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1278,6 +1312,7 @@ export type userUncheckedCreateWithoutDepartmentInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1327,6 +1362,7 @@ export type userUpdateWithoutDepartmentsAsDeanInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1355,6 +1391,7 @@ export type userUncheckedUpdateWithoutDepartmentsAsDeanInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1419,6 +1456,7 @@ export type userCreateWithoutProgramsAsChairInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1447,6 +1485,7 @@ export type userUncheckedCreateWithoutProgramsAsChairInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1480,6 +1519,7 @@ export type userCreateWithoutProgramInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1508,6 +1548,7 @@ export type userUncheckedCreateWithoutProgramInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1557,6 +1598,7 @@ export type userUpdateWithoutProgramsAsChairInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1585,6 +1627,7 @@ export type userUncheckedUpdateWithoutProgramsAsChairInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1629,6 +1672,7 @@ export type userCreateWithoutClassSectionsAsFacultyInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1657,6 +1701,7 @@ export type userUncheckedCreateWithoutClassSectionsAsFacultyInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1701,6 +1746,7 @@ export type userUpdateWithoutClassSectionsAsFacultyInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1729,6 +1775,7 @@ export type userUncheckedUpdateWithoutClassSectionsAsFacultyInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1757,6 +1804,7 @@ export type userCreateWithoutFormSubmissionsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionCreateNestedManyWithoutFacultyInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1785,6 +1833,7 @@ export type userUncheckedCreateWithoutFormSubmissionsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutFacultyInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1829,6 +1878,7 @@ export type userUpdateWithoutFormSubmissionsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUpdateManyWithoutFacultyNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1857,6 +1907,7 @@ export type userUncheckedUpdateWithoutFormSubmissionsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedUpdateManyWithoutFacultyNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -1885,6 +1936,7 @@ export type userCreateWithoutApprovalStepsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionCreateNestedManyWithoutFacultyInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -1913,6 +1965,7 @@ export type userUncheckedCreateWithoutApprovalStepsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutFacultyInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -1957,6 +2010,7 @@ export type userUpdateWithoutApprovalStepsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUpdateManyWithoutFacultyNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -1985,6 +2039,7 @@ export type userUncheckedUpdateWithoutApprovalStepsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedUpdateManyWithoutFacultyNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -2013,6 +2068,7 @@ export type userCreateWithoutComputationRunsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionCreateNestedManyWithoutFacultyInput
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -2041,6 +2097,7 @@ export type userUncheckedCreateWithoutComputationRunsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutFacultyInput
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -2085,6 +2142,7 @@ export type userUpdateWithoutComputationRunsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUpdateManyWithoutFacultyNestedInput
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -2113,6 +2171,139 @@ export type userUncheckedUpdateWithoutComputationRunsInput = {
   classSectionsAsFaculty?: Prisma.ClassSectionUncheckedUpdateManyWithoutFacultyNestedInput
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
+}
+
+export type userCreateWithoutUploadsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  requestedRole?: $Enums.UserRole | null
+  roleRequestStatus?: $Enums.RoleRequestStatus
+  employeeId?: string | null
+  isActive?: boolean
+  program?: Prisma.ProgramCreateNestedOneWithoutUsersInput
+  department?: Prisma.DepartmentCreateNestedOneWithoutUsersInput
+  sessions?: Prisma.sessionCreateNestedManyWithoutUserInput
+  accounts?: Prisma.accountCreateNestedManyWithoutUserInput
+  departmentsAsDean?: Prisma.DepartmentCreateNestedManyWithoutDeanInput
+  programsAsChair?: Prisma.ProgramCreateNestedManyWithoutProgramChairInput
+  classSectionsAsFaculty?: Prisma.ClassSectionCreateNestedManyWithoutFacultyInput
+  formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
+  computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
+}
+
+export type userUncheckedCreateWithoutUploadsInput = {
+  id?: string
+  name: string
+  email: string
+  emailVerified?: boolean
+  image?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  role?: $Enums.UserRole
+  requestedRole?: $Enums.UserRole | null
+  roleRequestStatus?: $Enums.RoleRequestStatus
+  employeeId?: string | null
+  programId?: string | null
+  departmentId?: string | null
+  isActive?: boolean
+  sessions?: Prisma.sessionUncheckedCreateNestedManyWithoutUserInput
+  accounts?: Prisma.accountUncheckedCreateNestedManyWithoutUserInput
+  departmentsAsDean?: Prisma.DepartmentUncheckedCreateNestedManyWithoutDeanInput
+  programsAsChair?: Prisma.ProgramUncheckedCreateNestedManyWithoutProgramChairInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUncheckedCreateNestedManyWithoutFacultyInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
+  computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
+  clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
+}
+
+export type userCreateOrConnectWithoutUploadsInput = {
+  where: Prisma.userWhereUniqueInput
+  create: Prisma.XOR<Prisma.userCreateWithoutUploadsInput, Prisma.userUncheckedCreateWithoutUploadsInput>
+}
+
+export type userUpsertWithoutUploadsInput = {
+  update: Prisma.XOR<Prisma.userUpdateWithoutUploadsInput, Prisma.userUncheckedUpdateWithoutUploadsInput>
+  create: Prisma.XOR<Prisma.userCreateWithoutUploadsInput, Prisma.userUncheckedCreateWithoutUploadsInput>
+  where?: Prisma.userWhereInput
+}
+
+export type userUpdateToOneWithWhereWithoutUploadsInput = {
+  where?: Prisma.userWhereInput
+  data: Prisma.XOR<Prisma.userUpdateWithoutUploadsInput, Prisma.userUncheckedUpdateWithoutUploadsInput>
+}
+
+export type userUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  requestedRole?: Prisma.NullableEnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole | null
+  roleRequestStatus?: Prisma.EnumRoleRequestStatusFieldUpdateOperationsInput | $Enums.RoleRequestStatus
+  employeeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  program?: Prisma.ProgramUpdateOneWithoutUsersNestedInput
+  department?: Prisma.DepartmentUpdateOneWithoutUsersNestedInput
+  sessions?: Prisma.sessionUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.accountUpdateManyWithoutUserNestedInput
+  departmentsAsDean?: Prisma.DepartmentUpdateManyWithoutDeanNestedInput
+  programsAsChair?: Prisma.ProgramUpdateManyWithoutProgramChairNestedInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUpdateManyWithoutFacultyNestedInput
+  formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
+  computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
+  aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
+  clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
+}
+
+export type userUncheckedUpdateWithoutUploadsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  role?: Prisma.EnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole
+  requestedRole?: Prisma.NullableEnumUserRoleFieldUpdateOperationsInput | $Enums.UserRole | null
+  roleRequestStatus?: Prisma.EnumRoleRequestStatusFieldUpdateOperationsInput | $Enums.RoleRequestStatus
+  employeeId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  departmentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  sessions?: Prisma.sessionUncheckedUpdateManyWithoutUserNestedInput
+  accounts?: Prisma.accountUncheckedUpdateManyWithoutUserNestedInput
+  departmentsAsDean?: Prisma.DepartmentUncheckedUpdateManyWithoutDeanNestedInput
+  programsAsChair?: Prisma.ProgramUncheckedUpdateManyWithoutProgramChairNestedInput
+  classSectionsAsFaculty?: Prisma.ClassSectionUncheckedUpdateManyWithoutFacultyNestedInput
+  formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
+  computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -2142,6 +2333,7 @@ export type userCreateWithoutAuditLogsInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
   clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
@@ -2170,6 +2362,7 @@ export type userUncheckedCreateWithoutAuditLogsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
@@ -2214,6 +2407,7 @@ export type userUpdateWithoutAuditLogsInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
@@ -2242,6 +2436,7 @@ export type userUncheckedUpdateWithoutAuditLogsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
@@ -2270,6 +2465,7 @@ export type userCreateWithoutAiRecommendationsReviewedInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
   clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
@@ -2298,6 +2494,7 @@ export type userUncheckedCreateWithoutAiRecommendationsReviewedInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
@@ -2342,6 +2539,7 @@ export type userUpdateWithoutAiRecommendationsReviewedInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
@@ -2370,6 +2568,7 @@ export type userUncheckedUpdateWithoutAiRecommendationsReviewedInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
@@ -2398,6 +2597,7 @@ export type userCreateWithoutReportExportsInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   clustersConfirmed?: Prisma.GraduationClusterCreateNestedManyWithoutConfirmedByInput
@@ -2426,6 +2626,7 @@ export type userUncheckedCreateWithoutReportExportsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedCreateNestedManyWithoutConfirmedByInput
@@ -2470,6 +2671,7 @@ export type userUpdateWithoutReportExportsInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUpdateManyWithoutConfirmedByNestedInput
@@ -2498,6 +2700,7 @@ export type userUncheckedUpdateWithoutReportExportsInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   clustersConfirmed?: Prisma.GraduationClusterUncheckedUpdateManyWithoutConfirmedByNestedInput
@@ -2526,6 +2729,7 @@ export type userCreateWithoutClustersConfirmedInput = {
   formSubmissions?: Prisma.FormSubmissionCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutExportedByInput
@@ -2554,6 +2758,7 @@ export type userUncheckedCreateWithoutClustersConfirmedInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedCreateNestedManyWithoutSubmittedByInput
   approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutApproverInput
   computationRuns?: Prisma.ComputationRunUncheckedCreateNestedManyWithoutTriggeredByInput
+  uploads?: Prisma.UploadRecordUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutUserInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutReviewedByInput
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutExportedByInput
@@ -2598,6 +2803,7 @@ export type userUpdateWithoutClustersConfirmedInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -2626,6 +2832,7 @@ export type userUncheckedUpdateWithoutClustersConfirmedInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -2669,6 +2876,7 @@ export type userUpdateWithoutDepartmentInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -2697,6 +2905,7 @@ export type userUncheckedUpdateWithoutDepartmentInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -2757,6 +2966,7 @@ export type userUpdateWithoutProgramInput = {
   formSubmissions?: Prisma.FormSubmissionUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUpdateManyWithoutExportedByNestedInput
@@ -2785,6 +2995,7 @@ export type userUncheckedUpdateWithoutProgramInput = {
   formSubmissions?: Prisma.FormSubmissionUncheckedUpdateManyWithoutSubmittedByNestedInput
   approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutApproverNestedInput
   computationRuns?: Prisma.ComputationRunUncheckedUpdateManyWithoutTriggeredByNestedInput
+  uploads?: Prisma.UploadRecordUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutUserNestedInput
   aiRecommendationsReviewed?: Prisma.AiRecommendationUncheckedUpdateManyWithoutReviewedByNestedInput
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutExportedByNestedInput
@@ -2821,6 +3032,7 @@ export type UserCountOutputType = {
   formSubmissions: number
   approvalSteps: number
   computationRuns: number
+  uploads: number
   auditLogs: number
   aiRecommendationsReviewed: number
   reportExports: number
@@ -2836,6 +3048,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   formSubmissions?: boolean | UserCountOutputTypeCountFormSubmissionsArgs
   approvalSteps?: boolean | UserCountOutputTypeCountApprovalStepsArgs
   computationRuns?: boolean | UserCountOutputTypeCountComputationRunsArgs
+  uploads?: boolean | UserCountOutputTypeCountUploadsArgs
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
   aiRecommendationsReviewed?: boolean | UserCountOutputTypeCountAiRecommendationsReviewedArgs
   reportExports?: boolean | UserCountOutputTypeCountReportExportsArgs
@@ -2911,6 +3124,13 @@ export type UserCountOutputTypeCountComputationRunsArgs<ExtArgs extends runtime.
 /**
  * UserCountOutputType without action
  */
+export type UserCountOutputTypeCountUploadsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UploadRecordWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
 export type UserCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.AuditLogWhereInput
 }
@@ -2962,6 +3182,7 @@ export type userSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   formSubmissions?: boolean | Prisma.user$formSubmissionsArgs<ExtArgs>
   approvalSteps?: boolean | Prisma.user$approvalStepsArgs<ExtArgs>
   computationRuns?: boolean | Prisma.user$computationRunsArgs<ExtArgs>
+  uploads?: boolean | Prisma.user$uploadsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.user$auditLogsArgs<ExtArgs>
   aiRecommendationsReviewed?: boolean | Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>
   reportExports?: boolean | Prisma.user$reportExportsArgs<ExtArgs>
@@ -3036,6 +3257,7 @@ export type userInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   formSubmissions?: boolean | Prisma.user$formSubmissionsArgs<ExtArgs>
   approvalSteps?: boolean | Prisma.user$approvalStepsArgs<ExtArgs>
   computationRuns?: boolean | Prisma.user$computationRunsArgs<ExtArgs>
+  uploads?: boolean | Prisma.user$uploadsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.user$auditLogsArgs<ExtArgs>
   aiRecommendationsReviewed?: boolean | Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>
   reportExports?: boolean | Prisma.user$reportExportsArgs<ExtArgs>
@@ -3064,6 +3286,7 @@ export type $userPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     formSubmissions: Prisma.$FormSubmissionPayload<ExtArgs>[]
     approvalSteps: Prisma.$ApprovalStepPayload<ExtArgs>[]
     computationRuns: Prisma.$ComputationRunPayload<ExtArgs>[]
+    uploads: Prisma.$UploadRecordPayload<ExtArgs>[]
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     aiRecommendationsReviewed: Prisma.$AiRecommendationPayload<ExtArgs>[]
     reportExports: Prisma.$ReportExportPayload<ExtArgs>[]
@@ -3488,6 +3711,7 @@ export interface Prisma__userClient<T, Null = never, ExtArgs extends runtime.Typ
   formSubmissions<T extends Prisma.user$formSubmissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$formSubmissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FormSubmissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   approvalSteps<T extends Prisma.user$approvalStepsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$approvalStepsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ApprovalStepPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   computationRuns<T extends Prisma.user$computationRunsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$computationRunsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComputationRunPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  uploads<T extends Prisma.user$uploadsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$uploadsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UploadRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   auditLogs<T extends Prisma.user$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   aiRecommendationsReviewed<T extends Prisma.user$aiRecommendationsReviewedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$aiRecommendationsReviewedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reportExports<T extends Prisma.user$reportExportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.user$reportExportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReportExportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -4163,6 +4387,30 @@ export type user$computationRunsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.ComputationRunScalarFieldEnum | Prisma.ComputationRunScalarFieldEnum[]
+}
+
+/**
+ * user.uploads
+ */
+export type user$uploadsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UploadRecord
+   */
+  select?: Prisma.UploadRecordSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UploadRecord
+   */
+  omit?: Prisma.UploadRecordOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UploadRecordInclude<ExtArgs> | null
+  where?: Prisma.UploadRecordWhereInput
+  orderBy?: Prisma.UploadRecordOrderByWithRelationInput | Prisma.UploadRecordOrderByWithRelationInput[]
+  cursor?: Prisma.UploadRecordWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UploadRecordScalarFieldEnum | Prisma.UploadRecordScalarFieldEnum[]
 }
 
 /**
