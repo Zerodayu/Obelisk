@@ -57,47 +57,47 @@
   --color-invert: var(--invert);
   --animate-indeterminate: indeterminate 1.5s ease-in-out infinite;
   @keyframes indeterminate {
-  0% {
-    transform: translateX(-100%);
+    0% {
+      transform: translateX(-100%);
     }
-  100% {
-    transform: translateX(400%);
+    100% {
+      transform: translateX(400%);
     }
   }
 }
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0.008 326);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0.008 326);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0.008 326);
+  --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.496 0.265 301.924);
   --primary-foreground: oklch(0.977 0.014 308.299);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.96 0.003 325.6);
-  --muted-foreground: oklch(0.542 0.034 322.5);
-  --accent: oklch(0.96 0.003 325.6);
-  --accent-foreground: oklch(0.212 0.019 322.12);
-  --border: oklch(0.922 0.005 325.62);
-  --input: oklch(0.922 0.005 325.62);
-  --ring: oklch(0.711 0.019 323.02);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.496 0.265 301.924);
+  --accent-foreground: oklch(0.977 0.014 308.299);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.827 0.119 306.383);
   --chart-2: oklch(0.627 0.265 303.9);
   --chart-3: oklch(0.558 0.288 302.321);
   --chart-4: oklch(0.496 0.265 301.924);
   --chart-5: oklch(0.438 0.218 303.724);
-  --radius: 0.625rem;
+  --radius: 0.875rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0.008 326);
+  --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.558 0.288 302.321);
   --sidebar-primary-foreground: oklch(0.977 0.014 308.299);
-  --sidebar-accent: oklch(0.96 0.003 325.6);
-  --sidebar-accent-foreground: oklch(0.212 0.019 322.12);
-  --sidebar-border: oklch(0.922 0.005 325.62);
-  --sidebar-ring: oklch(0.711 0.019 323.02);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 
   --destructive: var(--color-red-500);
   --destructive-foreground: var(--color-red-700);
@@ -112,36 +112,36 @@
 }
 
 .dark {
-  --background: oklch(0.145 0.008 326);
+  --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.212 0.019 322.12);
+  --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.212 0.019 322.12);
+  --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.438 0.218 303.724);
   --primary-foreground: oklch(0.977 0.014 308.299);
   --secondary: oklch(0.274 0.006 286.033);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.263 0.024 320.12);
-  --muted-foreground: oklch(0.711 0.019 323.02);
-  --accent: oklch(0.263 0.024 320.12);
-  --accent-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.438 0.218 303.724);
+  --accent-foreground: oklch(0.977 0.014 308.299);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.542 0.034 322.5);
+  --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.827 0.119 306.383);
   --chart-2: oklch(0.627 0.265 303.9);
   --chart-3: oklch(0.558 0.288 302.321);
   --chart-4: oklch(0.496 0.265 301.924);
   --chart-5: oklch(0.438 0.218 303.724);
-  --sidebar: oklch(0.212 0.019 322.12);
+  --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.627 0.265 303.9);
   --sidebar-primary-foreground: oklch(0.977 0.014 308.299);
-  --sidebar-accent: oklch(0.263 0.024 320.12);
+  --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.542 0.034 322.5);
+  --sidebar-ring: oklch(0.556 0 0);
 
   --destructive: var(--color-red-500);
   --destructive-foreground: var(--color-red-700);
