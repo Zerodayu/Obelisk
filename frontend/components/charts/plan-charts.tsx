@@ -8,14 +8,11 @@ import type {
   ScheduleDatum,
   TargetSettingDatum,
 } from "@/components/charts/obe-sample-data";
+import { PieDonutLayout } from "@/components/charts/pie-donut-layout";
 import {
   type ChartConfig,
   EChartsBarChart,
 } from "@/components/evilcharts/charts/echarts-bar-chart";
-import {
-  EChartsPieChart,
-  type ChartConfig as PieConfig,
-} from "@/components/evilcharts/charts/echarts-pie-chart";
 import {
   budgetLinesDataAtom,
   curriculumCoverageDataAtom,
@@ -65,7 +62,7 @@ const phaseConfig = {
   DO: { label: "DO", colors: { light: ["var(--warning)"] } },
   CHECK: { label: "CHECK", colors: { light: ["var(--chart-3)"] } },
   ACT: { label: "ACT", colors: { light: ["var(--success)"] } },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 /** Planned vs spent budget per line item (PHP thousands). */
 export function BudgetVsActualBars({
@@ -115,19 +112,13 @@ export function BudgetPhaseDonut({
     planned,
   }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={phaseConfig}
       dataKey="planned"
       nameKey="phase"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="58%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="planned" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total budget (PHP)"
+    />
   );
 }
 

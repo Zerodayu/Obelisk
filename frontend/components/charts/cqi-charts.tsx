@@ -8,14 +8,11 @@ import type {
   PloGapDatum,
   RootCauseDatum,
 } from "@/components/charts/obe-sample-data";
+import { PieDonutLayout } from "@/components/charts/pie-donut-layout";
 import {
   type ChartConfig,
   EChartsBarChart,
 } from "@/components/evilcharts/charts/echarts-bar-chart";
-import {
-  EChartsPieChart,
-  type ChartConfig as PieConfig,
-} from "@/components/evilcharts/charts/echarts-pie-chart";
 import {
   cqiActionsDataAtom,
   loopStatusesDataAtom,
@@ -70,7 +67,7 @@ const causeConfig = {
     label: "Industry & Field Alignment",
     colors: { light: ["var(--chart-2)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 const loopConfig = {
   CLOSED: {
@@ -85,7 +82,7 @@ const loopConfig = {
     label: "OPEN — Not Implemented",
     colors: { light: ["var(--destructive)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 /** Attained vs target bars with the gap shown (ACT phase gap analysis). */
 export function GapAnalysisBars({ data: override }: { data?: PloGapDatum[] }) {
@@ -130,19 +127,13 @@ export function RootCauseDonut({
     count: r.count,
   }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={causeConfig}
       dataKey="count"
       nameKey="category"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="62%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total root causes"
+    />
   );
 }
 
@@ -187,18 +178,12 @@ export function LoopStatusDonut({
   const data = override ?? atomData;
   const rows = data.map((l) => ({ status: l.status, count: l.count }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={loopConfig}
       dataKey="count"
       nameKey="status"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="60%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total forms"
+    />
   );
 }

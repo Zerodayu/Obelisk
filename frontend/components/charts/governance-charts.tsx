@@ -10,14 +10,11 @@ import type {
   FormStatusDatum,
   RecommendationStatusDatum,
 } from "@/components/charts/obe-sample-data";
+import { PieDonutLayout } from "@/components/charts/pie-donut-layout";
 import {
   type ChartConfig,
   EChartsBarChart,
 } from "@/components/evilcharts/charts/echarts-bar-chart";
-import {
-  EChartsPieChart,
-  type ChartConfig as PieConfig,
-} from "@/components/evilcharts/charts/echarts-pie-chart";
 import {
   approvalFlowDataAtom,
   atRiskDataAtom,
@@ -45,7 +42,7 @@ const statusConfig = {
     label: "Archived",
     colors: { light: ["var(--chart-1)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 const flowConfig = {
   approved: {
@@ -79,7 +76,7 @@ const riskConfig = {
     label: "Multiple CLOs <70%",
     colors: { light: ["var(--chart-3)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 const recommendationConfig = {
   pending_review: {
@@ -98,7 +95,7 @@ const recommendationConfig = {
     label: "Dismissed",
     colors: { light: ["var(--muted-foreground)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 const clusterConfig = {
   graduated: {
@@ -113,7 +110,7 @@ const clusterConfig = {
     label: "Withdrawn",
     colors: { light: ["var(--destructive)"] },
   },
-} satisfies PieConfig;
+} satisfies ChartConfig;
 
 /** Donut of form submission statuses (draft → archived) — real DB counts. */
 export function FormStatusDonut({
@@ -125,19 +122,13 @@ export function FormStatusDonut({
   const data = override ?? atomData;
   const rows = data.map((f) => ({ status: f.status, count: f.count }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={statusConfig}
       dataKey="count"
       nameKey="status"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="58%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total forms"
+    />
   );
 }
 
@@ -206,19 +197,13 @@ export function AtRiskDonut({ data: override }: { data?: AtRiskDatum[] }) {
   const data = override ?? atomData;
   const rows = data.map((r) => ({ reason: r.reason, count: r.studentCount }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={riskConfig}
       dataKey="count"
       nameKey="reason"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="60%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="At-risk students"
+    />
   );
 }
 
@@ -232,19 +217,13 @@ export function RecommendationDonut({
   const data = override ?? atomData;
   const rows = data.map((r) => ({ status: r.status, count: r.count }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={recommendationConfig}
       dataKey="count"
       nameKey="status"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="58%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total recommendations"
+    />
   );
 }
 
@@ -258,18 +237,12 @@ export function ClusterCompositionDonut({
   const data = override ?? atomData;
   const rows = data.map((c) => ({ status: c.status, count: c.studentCount }));
   return (
-    <EChartsPieChart
+    <PieDonutLayout
       data={rows}
       config={clusterConfig}
       dataKey="count"
       nameKey="status"
-      className="h-full w-full"
-    >
-      <EChartsPieChart.Pie innerRadius="60%" paddingAngle={2} cornerRadius={4}>
-        <EChartsPieChart.Label position="inside" dataKey="count" />
-      </EChartsPieChart.Pie>
-      <EChartsPieChart.Tooltip />
-      <EChartsPieChart.Legend align="center" />
-    </EChartsPieChart>
+      caption="Total students"
+    />
   );
 }
