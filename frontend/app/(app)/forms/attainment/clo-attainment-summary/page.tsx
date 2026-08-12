@@ -4,7 +4,6 @@ import {
   ScoreBandBars,
 } from "@/components/charts/attainment-charts";
 import { ChartCard } from "@/components/charts/chart-card";
-import { MOCK_CLO_ATTAINMENTS } from "@/components/charts/obe-sample-data";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 
 export default function CloAttainmentSummaryPage() {
@@ -26,13 +25,7 @@ export default function CloAttainmentSummaryPage() {
           title="CLO status vs the ≥70% floor"
           description="Server-flagged CLOs below threshold render red (NOT MET)."
         >
-          <AttainmentFloorBars
-            data={MOCK_CLO_ATTAINMENTS.map((c) => ({
-              label: c.cloCode,
-              pct: c.compositeScorePct,
-              isBelow: c.isBelowThreshold,
-            }))}
-          />
+          <AttainmentFloorBars />
         </ChartCard>
         <ChartCard
           title="Score distribution"

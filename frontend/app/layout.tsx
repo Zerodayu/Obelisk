@@ -4,6 +4,7 @@ import "./globals.css";
 import { FaviconSync } from "@/components/branding/favicon";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { StoreProvider } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { app } from "@/utils/app-info";
 
@@ -85,12 +86,14 @@ export default function RootLayout({
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme-init script, no user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <ThemeProvider>
-        <FaviconSync />
-        <TooltipProvider>
-          <body className="min-h-full flex flex-col">{children}</body>
-        </TooltipProvider>
-      </ThemeProvider>
+      <StoreProvider>
+        <ThemeProvider>
+          <FaviconSync />
+          <TooltipProvider>
+            <body className="min-h-full flex flex-col">{children}</body>
+          </TooltipProvider>
+        </ThemeProvider>
+      </StoreProvider>
     </html>
   );
 }

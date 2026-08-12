@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
+import { SessionInitializer } from "@/lib/store/session-initializer";
 import { requireUser } from "@/server/auth";
 
 /**
@@ -19,5 +20,10 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
-  return <AppShell user={user}>{children}</AppShell>;
+  return (
+    <>
+      <SessionInitializer user={user} />
+      <AppShell user={user}>{children}</AppShell>
+    </>
+  );
 }

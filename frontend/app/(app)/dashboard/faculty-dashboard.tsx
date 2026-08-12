@@ -7,7 +7,6 @@ import {
   AtRiskDonut,
   FormStatusDonut,
 } from "@/components/charts/governance-charts";
-import { MOCK_CLO_ATTAINMENTS } from "@/components/charts/obe-sample-data";
 
 /**
  * Faculty dashboard — scoped to the faculty member's own class sections and
@@ -28,13 +27,7 @@ export function FacultyDashboard() {
           title="Attainment vs the ≥70% floor"
           description="Server-flagged CLOs below threshold render red."
         >
-          <AttainmentFloorBars
-            data={MOCK_CLO_ATTAINMENTS.map((c) => ({
-              label: c.cloCode,
-              pct: c.compositeScorePct,
-              isBelow: c.isBelowThreshold,
-            }))}
-          />
+          <AttainmentFloorBars />
         </ChartCard>
         <ChartCard
           title="At-risk watchlist"
