@@ -3,9 +3,12 @@
 import { useAtomValue } from "jotai";
 
 import type {
+  AssessmentTypeDatum,
   BudgetLineDatum,
   CurriculumCoverageDatum,
+  PloToPeoCoverageDatum,
   ScheduleDatum,
+  StudentYearLevelDatum,
   TargetSettingDatum,
 } from "@/components/charts/obe-sample-data";
 import { PieDonutLayout } from "@/components/charts/pie-donut-layout";
@@ -14,9 +17,12 @@ import {
   EChartsBarChart,
 } from "@/components/evilcharts/charts/echarts-bar-chart";
 import {
+  assessmentTypesDataAtom,
   budgetLinesDataAtom,
   curriculumCoverageDataAtom,
+  ploToPeoCoverageDataAtom,
   scheduleDataAtom,
+  studentYearLevelsDataAtom,
   targetSettingsDataAtom,
 } from "@/lib/store/atoms/plan";
 
@@ -46,6 +52,31 @@ const coverageConfig = {
   mapped: {
     label: "Mapped CLOs",
     colors: { light: ["var(--primary)"] },
+  },
+} satisfies ChartConfig;
+
+const peoCoverageConfig = {
+  mapped: {
+    label: "Mapped PEOs",
+    colors: { light: ["var(--chart-2)"] },
+  },
+} satisfies ChartConfig;
+
+const assessmentTypeConfig = {
+  direct: {
+    label: "Direct",
+    colors: { light: ["var(--chart-1)"] },
+  },
+  indirect: {
+    label: "Indirect",
+    colors: { light: ["var(--info)"] },
+  },
+} satisfies ChartConfig;
+
+const yearLevelConfig = {
+  count: {
+    label: "Students",
+    colors: { light: ["var(--chart-3)"] },
   },
 } satisfies ChartConfig;
 
@@ -217,6 +248,86 @@ export function ScheduleLoadBars({
       <EChartsBarChart.Legend />
       <EChartsBarChart.Bar dataKey="direct" />
       <EChartsBarChart.Bar dataKey="indirect" />
+    </EChartsBarChart>
+  );
+}
+
+/** Mapped PEO coverage per PLO from the PLO-PEO matrix (`PloToPeoMap`). */
+export function PloToPeoCoverageBars({
+  data: override,
+}: {
+  data?: PloToPeoCoverageDatum[];
+}) {
+  const atomData = useAtomValue(ploToPeoCoverageDataAtom);
+  const data = override ?? atomData;
+  const byPlo = data.reduce<Record<string, number>>((acc, m) => {
+    acc[m.ploCode] = (acc[m.ploCode] ?? 0) + (m.mapped ? 1 : 0);
+    return acc;
+  }, {});
+  const rows = Object.entries(byPlo).map(([ploCode, mapped]) => ({
+    ploCode,
+    mapped,
+  }));
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={peoCoverageConfig}
+      xDataKey="ploCode"
+      className="h-full w-full"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="ploCode" />
+      <EChartsBarChart.YAxis label="PEOs" />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Bar dataKey="mapped" variant="expandable" />
+    </EChartsBarChart>
+  );
+}
+
+/** Donut of assessment items by type (direct vs indirect). */
+export function AssessmentTypeDonut({
+  data: override,
+}: {
+  data?: AssessmentTypeDatum[];
+}) {
+  const atomData = useAtomValue(assessmentTypesDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((a) => ({ type: a.type, count: a.itemCount }));
+  return (
+    <PieDonutLayout
+      data={rows}
+      config={assessmentTypeConfig}
+      dataKey="count"
+      nameKey="type"
+      caption="Assessment items"
+    />
+  );
+}
+
+/** Distribution of students across year levels (Y1-Y4). */
+export function StudentYearLevelBars({
+  data: override,
+}: {
+  data?: StudentYearLevelDatum[];
+}) {
+  const atomData = useAtomValue(studentYearLevelsDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((s) => ({
+    yearLevel: `Y${s.yearLevel}`,
+    count: s.studentCount,
+  }));
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={yearLevelConfig}
+      xDataKey="yearLevel"
+      className="h-full w-full"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="yearLevel" />
+      <EChartsBarChart.YAxis label="Students" />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
     </EChartsBarChart>
   );
 }

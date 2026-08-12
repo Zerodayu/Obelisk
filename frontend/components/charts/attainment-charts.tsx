@@ -5,6 +5,7 @@ import { useAtomValue } from "jotai";
 import type {
   CloAttainmentDatum,
   CohortTrendDatum,
+  PeoAttainmentDatum,
   PloAttainmentDatum,
   ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
@@ -19,6 +20,7 @@ import {
 import {
   cloAttainmentsDataAtom,
   cohortTrendsDataAtom,
+  peoAttainmentsDataAtom,
   ploAttainmentsDataAtom,
   scoreBandsDataAtom,
 } from "@/lib/store/atoms/attainments";
@@ -53,6 +55,17 @@ const ploConfig = {
   attained: {
     label: "Attained",
     colors: { light: ["var(--chart-1)"] },
+  },
+  target: {
+    label: "Target",
+    colors: { light: ["var(--muted-foreground)"] },
+  },
+} satisfies ChartConfig;
+
+const peoConfig = {
+  attained: {
+    label: "Attained",
+    colors: { light: ["var(--chart-2)"] },
   },
   target: {
     label: "Target",
@@ -136,6 +149,42 @@ export function PloAttainmentBars({
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="ploCode" />
+      <EChartsBarChart.YAxis
+        tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+        label="Attainment"
+      />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Legend />
+      <EChartsBarChart.Bar dataKey="attained" />
+      <EChartsBarChart.Bar dataKey="target" />
+    </EChartsBarChart>
+  );
+}
+
+/** Grouped bars of PEO attainment vs the configured target (biennial). */
+export function PeoAttainmentBars({
+  data: override,
+}: {
+  data?: PeoAttainmentDatum[];
+}) {
+  const atomData = useAtomValue(peoAttainmentsDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((p) => ({
+    peoCode: p.peoCode,
+    attained: p.attainedPct,
+    target: p.targetAttainmentPct,
+  }));
+
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={peoConfig}
+      xDataKey="peoCode"
+      className="h-full w-full"
+      stackType="stacked"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="peoCode" />
       <EChartsBarChart.YAxis
         tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
         label="Attainment"

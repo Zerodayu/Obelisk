@@ -7,8 +7,12 @@ import type {
   AtRiskDatum,
   AuditActivityDatum,
   ClusterCompositionDatum,
+  ClusterStatusDatum,
+  ExportFormatDatum,
   FormStatusDatum,
+  FormTypeStageDatum,
   RecommendationStatusDatum,
+  UserRoleDatum,
 } from "@/components/charts/obe-sample-data";
 import { PieDonutLayout } from "@/components/charts/pie-donut-layout";
 import {
@@ -20,8 +24,12 @@ import {
   atRiskDataAtom,
   auditActivityDataAtom,
   clusterCompositionDataAtom,
+  clusterStatusesDataAtom,
+  exportFormatsDataAtom,
   formStatusCountsAtom,
+  formTypeStagesDataAtom,
   recommendationsDataAtom,
+  userRolesDataAtom,
 } from "@/lib/store/atoms/governance";
 
 const statusConfig = {
@@ -110,6 +118,27 @@ const clusterConfig = {
     label: "Withdrawn",
     colors: { light: ["var(--destructive)"] },
   },
+} satisfies ChartConfig;
+
+const exportConfig = {
+  count: { label: "Exports", colors: { light: ["var(--primary)"] } },
+} satisfies ChartConfig;
+
+const formTypeStageConfig = {
+  PLAN: { label: "PLAN", colors: { light: ["var(--info)"] } },
+  DO: { label: "DO", colors: { light: ["var(--warning)"] } },
+  CHECK: { label: "CHECK", colors: { light: ["var(--chart-3)"] } },
+  ACT: { label: "ACT", colors: { light: ["var(--success)"] } },
+} satisfies ChartConfig;
+
+const userRoleConfig = {
+  count: { label: "Users", colors: { light: ["var(--info)"] } },
+} satisfies ChartConfig;
+
+const clusterStatusConfig = {
+  open: { label: "Open", colors: { light: ["var(--info)"] } },
+  compiling: { label: "Compiling", colors: { light: ["var(--warning)"] } },
+  archived: { label: "Archived", colors: { light: ["var(--success)"] } },
 } satisfies ChartConfig;
 
 /** Donut of form submission statuses (draft → archived) — real DB counts. */
@@ -244,6 +273,102 @@ export function ClusterCompositionDonut({
       dataKey="count"
       nameKey="status"
       caption="Total students"
+    />
+  );
+}
+
+/** Horizontal bars of report exports by format (`ReportExport.format`). */
+export function ExportFormatBars({
+  data: override,
+}: {
+  data?: ExportFormatDatum[];
+}) {
+  const atomData = useAtomValue(exportFormatsDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((e) => ({ format: e.format, count: e.count }));
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={exportConfig}
+      xDataKey="format"
+      className="h-full w-full"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="format" />
+      <EChartsBarChart.YAxis dataKey="count" label="Exports" />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
+    </EChartsBarChart>
+  );
+}
+
+/** Bars of the 28-form catalog by PDCA stage (`FormType.pdcaStage`). */
+export function FormTypeStageBars({
+  data: override,
+}: {
+  data?: FormTypeStageDatum[];
+}) {
+  const atomData = useAtomValue(formTypeStagesDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((f) => ({ stage: f.stage, count: f.formTypeCount }));
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={formTypeStageConfig}
+      xDataKey="stage"
+      className="h-full w-full"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="stage" />
+      <EChartsBarChart.YAxis label="Form types" />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Legend />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
+    </EChartsBarChart>
+  );
+}
+
+/** Horizontal bars of platform users by role (`user.role`). */
+export function UserRoleBars({ data: override }: { data?: UserRoleDatum[] }) {
+  const atomData = useAtomValue(userRolesDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((r) => ({
+    role: r.role.replace("_", " "),
+    count: r.userCount,
+  }));
+  return (
+    <EChartsBarChart
+      data={rows}
+      config={userRoleConfig}
+      xDataKey="role"
+      layout="horizontal"
+      className="h-full w-full"
+    >
+      <EChartsBarChart.Grid />
+      <EChartsBarChart.XAxis dataKey="role" />
+      <EChartsBarChart.YAxis dataKey="count" label="Users" />
+      <EChartsBarChart.Tooltip />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
+    </EChartsBarChart>
+  );
+}
+
+/** Donut of graduation-cluster lifecycle statuses (`GraduationCluster.status`). */
+export function ClusterStatusDonut({
+  data: override,
+}: {
+  data?: ClusterStatusDatum[];
+}) {
+  const atomData = useAtomValue(clusterStatusesDataAtom);
+  const data = override ?? atomData;
+  const rows = data.map((c) => ({ status: c.status, count: c.clusterCount }));
+  return (
+    <PieDonutLayout
+      data={rows}
+      config={clusterStatusConfig}
+      dataKey="count"
+      nameKey="status"
+      caption="Total clusters"
     />
   );
 }
