@@ -152,6 +152,7 @@ export function ApprovalFlowBars({
       config={flowConfig}
       xDataKey="approverRole"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="approverRole" />

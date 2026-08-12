@@ -100,6 +100,7 @@ export function GapAnalysisBars({ data: override }: { data?: PloGapDatum[] }) {
       config={gapConfig}
       xDataKey="ploCode"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="ploCode" />
@@ -108,8 +109,8 @@ export function GapAnalysisBars({ data: override }: { data?: PloGapDatum[] }) {
       />
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="target" variant="stripped" />
-      <EChartsBarChart.Bar dataKey="attained" variant="gradient" />
+      <EChartsBarChart.Bar dataKey="target" />
+      <EChartsBarChart.Bar dataKey="attained" />
     </EChartsBarChart>
   );
 }
@@ -156,6 +157,7 @@ export function CqiActionsBars({
       config={actionConfig}
       xDataKey="rootCause"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="rootCause" />

@@ -83,6 +83,7 @@ export function BudgetVsActualBars({
       config={budgetConfig}
       xDataKey="lineItem"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="lineItem" />
@@ -141,6 +142,7 @@ export function TargetSettingBars({
       config={targetConfig}
       xDataKey="yearLevel"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="yearLevel" />
@@ -149,7 +151,7 @@ export function TargetSettingBars({
       />
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="target" variant="stripped" />
+      <EChartsBarChart.Bar dataKey="target" />
       <EChartsBarChart.Bar dataKey="current" />
     </EChartsBarChart>
   );
@@ -206,6 +208,7 @@ export function ScheduleLoadBars({
       config={scheduleConfig}
       xDataKey="month"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="month" />

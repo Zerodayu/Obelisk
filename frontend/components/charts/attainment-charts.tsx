@@ -95,6 +95,7 @@ export function CloAttainmentBars({
       config={attainmentConfig}
       xDataKey="cloCode"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="cloCode" />
@@ -131,6 +132,7 @@ export function PloAttainmentBars({
       config={ploConfig}
       xDataKey="ploCode"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="ploCode" />
@@ -140,8 +142,8 @@ export function PloAttainmentBars({
       />
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="attained" variant="gradient" />
-      <EChartsBarChart.Bar dataKey="target" variant="stripped" />
+      <EChartsBarChart.Bar dataKey="attained" />
+      <EChartsBarChart.Bar dataKey="target" />
     </EChartsBarChart>
   );
 }
@@ -165,6 +167,7 @@ export function AttainmentFloorBars() {
       config={floorConfig}
       xDataKey="label"
       className="h-full w-full"
+      stackType="stacked"
     >
       <EChartsBarChart.Grid />
       <EChartsBarChart.XAxis dataKey="label" />
