@@ -198,7 +198,10 @@ export function ClassRecordUpload() {
           )}
           {isWorking && (
             <Field className="w-full max-w-xs">
-              <Progress indeterminate>
+              <Progress
+                indeterminate
+                className="flex justify-center items-center"
+              >
                 <FieldLabel>{progressLabel}</FieldLabel>
 
                 <ProgressValue />
