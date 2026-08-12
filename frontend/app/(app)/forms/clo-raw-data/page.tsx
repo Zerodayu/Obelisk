@@ -2,6 +2,7 @@ import { ScoreBandBars } from "@/components/charts/attainment-charts";
 import { ChartCard } from "@/components/charts/chart-card";
 import { AtRiskDonut } from "@/components/charts/governance-charts";
 import { ClassRecordUpload } from "@/components/forms/class-record-upload";
+import { UploadHistoryTable } from "@/components/forms/upload-history-table";
 import { ACADEMIC_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
@@ -24,6 +25,7 @@ export default async function CloRawDataPage() {
         </p>
       </div>
       <ClassRecordUpload />
+      <UploadHistoryTable />
       <div className="grid gap-4 sm:grid-cols-2">
         <ChartCard
           title="Class score bands"
