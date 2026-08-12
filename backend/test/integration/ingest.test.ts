@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import type { TypedEtlLoadedData } from "@v1/ingest/service";
-import { attainmentService } from "@v1/ingest/service";
+import { attainmentService, ingestService } from "@v1/ingest/service";
 
 const db = await isDbReachable();
 
@@ -14,6 +14,8 @@ const IDS = {
 	classSection: "it-ingest-section",
 	existingStudent: "it-ingest-student-existing",
 	existingStudentNumber: "IT-INGEST-0001",
+	userA: "it-ingest-user-a",
+	userB: "it-ingest-user-b",
 };
 
 describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
@@ -198,6 +200,130 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			await prisma.academicTerm.delete({ where: { id: IDS.term } });
 			await prisma.program.delete({ where: { id: IDS.program } });
 			await prisma.department.delete({ where: { id: IDS.department } });
+		}
+	});
+
+	it("listHistory returns only the current user's uploads, newest first", async () => {
+		await prisma.user.create({
+			data: { id: IDS.userA, name: "User A", email: "a@ingest.test" },
+		});
+		await prisma.user.create({
+			data: { id: IDS.userB, name: "User B", email: "b@ingest.test" },
+		});
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2099-2100",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "T1",
+			},
+		});
+
+		const recordIds: string[] = [];
+		const older = await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-older",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				filename: "older.csv",
+				status: "completed",
+				createdAt: new Date("2020-01-01T00:00:00Z"),
+				summary: {
+					studentsProcessed: 4,
+					studentsCreated: 1,
+					cloAttainmentsCreated: 3,
+					atRiskFlagsCreated: 1,
+					cloMatchFailures: [],
+				},
+			},
+		});
+		recordIds.push(older.id);
+		const newer = await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-newer",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				filename: "newer.xlsx",
+				status: "failed",
+				error: "CLO code 'CLO999' not found",
+			},
+		});
+		recordIds.push(newer.id);
+		await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-other-user",
+				userId: IDS.userB,
+				classSectionId: IDS.classSection,
+				filename: "other.csv",
+				status: "queued",
+			},
+		});
+		recordIds.push("it-ingest-upload-other-user");
+
+		try {
+			const history = await ingestService.listHistory(IDS.userA);
+
+			expect(history).toHaveLength(2);
+			expect(history.map((r) => r.id)).toEqual([
+				"it-ingest-upload-newer",
+				"it-ingest-upload-older",
+			]);
+			expect(history[0].filename).toBe("newer.xlsx");
+			expect(history[0].status).toBe("failed");
+			expect(history[0].error).toContain("CLO999");
+			expect(history[1].status).toBe("completed");
+			expect(history[1].summary).toMatchObject({
+				studentsProcessed: 4,
+				cloAttainmentsCreated: 3,
+			});
+			expect(history[0].classSection).toMatchObject({
+				sectionCode: "T1",
+				course: { code: "IT-101", title: "Integration Test Course" },
+				term: { schoolYear: "2099-2100", semester: "1st" },
+			});
+		} finally {
+			await prisma.uploadRecord.deleteMany({
+				where: { id: { in: recordIds } },
+			});
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+			await prisma.user.deleteMany({
+				where: { id: { in: [IDS.userA, IDS.userB] } },
+			});
 		}
 	});
 });

@@ -62,6 +62,8 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 `ComputationRun` (`scope`, `formulaVersion` default `70_30_v1`, `directWeight` 0.70, `indirectWeight` 0.30), `CloAttainment` (unique `[classSectionId, cloId, studentId, computationRunId]`, `directScorePct`, `indirectScorePct`, `compositeScorePct`, `isBelowThreshold`), `PloAttainment` (unique `[ploId, programId, termId, computationRunId]`, `attainedPct`, `studentsBelowTargetCount`), `PeoAttainment` (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`, `formSubmissionId?`).
 
+`UploadRecord` (`UploadStatus` queued/completed/failed; `userId`, `classSectionId`, `filename`, optional `etlJobId`/`computationRunId`, `summary Json` carrying the persistence summary, `error`; index `[userId, createdAt]`). One row is created when a user uploads a class record and updated when the ETL job finishes — this is the per-user upload history surfaced by `GET /ingest/history`, and it records failed attempts that never produce a `ComputationRun`.
+
 ### 2.7 Monitoring — `08-monitoring.prisma`
 
 `AuditLog`, `AtRiskFlag` (links student + optional `CloAttainment`, `reason`), `AiRecommendation` (`status`, `sourceDataSnapshot Json`).
@@ -126,8 +128,10 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/forms/:id/approve/:role` | `auth: true` | approve the current pending step for the given role; advances the chain or `submitted → approved` |
 | POST | `/api/v1/forms/:id/return` | `auth: true` | return the current pending step (`submitted → returned`) |
 | POST | `/api/v1/forms/:id/archive` | `auth: true` | archive an approved submission (`approved → archived`) |
-| POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, runs ETL, and persists attainment results. Returns `{ etl, persistence }`. |
-| GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job |
+| POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, starts ETL, returns `{ jobId }`. Records an `UploadRecord` (`queued`) for the user's history. |
+| GET | `/api/v1/ingest/upload/:jobId/status` | `auth: true` | poll an ETL job; on completion triggers persistence and marks the `UploadRecord` `completed`/`failed`. |
+| GET | `/api/v1/ingest/history` | `auth: true` | List the current user's upload history (any class section), newest first, including failed attempts. |
+| GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
 > **Status machine** (enforced in `lib/forms/state-machine.ts`): `draft → submitted → returned → approved → archived`. `returned` is re-submittable; edits are restricted to `draft`/`returned`; approval chains must ascend the canonical role order (`program_chair → dean → aqau → vpaa`, skipping allowed). Every lifecycle action writes an `AuditLog` row (`forms` module).
@@ -218,7 +222,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 ### Implemented
 - **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
-- **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.uploadAndPersist`: orchestrates the `POST /upload` flow, calls `ingestClient` to forward the file to python-server, polls for completion, runtime-validates the nested ETL result (`MalformedEtlResultError`), then delegates persistence to `attainment-service`.
+- **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.startUpload` records an `UploadRecord` (`queued`) then forwards the file to python-server; `getJobStatus` polls the ETL job, triggers persistence once, and marks the matching `UploadRecord` `completed` (with `computationRunId` + persistence `summary`) or `failed`; `listHistory` returns the current user's upload records (any class section) newest first.
 - **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records, and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`.
 
 ### Planned
