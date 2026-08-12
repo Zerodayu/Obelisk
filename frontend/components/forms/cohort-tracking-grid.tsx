@@ -6,6 +6,7 @@ import {
   type SortingState,
   useTable,
 } from "@tanstack/react-table";
+import Avatar from "boring-avatars";
 import {
   CalendarClockIcon,
   CircleAlertIcon,
@@ -33,7 +34,6 @@ import {
   type FilterFieldConfig,
   Filters,
 } from "@/components/reui/filters";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -45,7 +45,6 @@ interface CohortStudent {
   id: string;
   name: string;
   studentId: string;
-  avatar: string;
   program: string;
   cohort: YearKey;
   term: string;
@@ -62,21 +61,6 @@ const COHORT_COLORS: Record<YearKey, string> = {
 
 const PROGRAMS = ["BSIT", "BSCS", "BSCpE", "BSCE"];
 const TERMS = ["2023-1S", "2023-2S", "2024-1S", "2024-2S"];
-
-const AVATARS = [
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1584308972272-9e4e7685e80f?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1485893086445-ed75865251e0?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1543299750-19d1d6297053?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1620075225255-8c2051b6c015?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1485206412256-701ccc5b93ca?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1542595913-85d69b0edbaf?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=96&h=96&dpr=2&q=80",
-  "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&dpr=2&q=80",
-];
 
 const STUDENT_NAMES = [
   "Alyza Santos",
@@ -127,7 +111,6 @@ function buildDemoData(): CohortStudent[] {
       id: String(index + 1),
       name,
       studentId: `2023-${(1000 + index * 13).toString()}`,
-      avatar: AVATARS[index % AVATARS.length],
       program: PROGRAMS[index % PROGRAMS.length],
       cohort,
       term,
@@ -315,15 +298,7 @@ export function CohortTrackingGrid() {
         header: "Student",
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
-            <Avatar className="size-8">
-              <AvatarImage src={row.original.avatar} alt={row.original.name} />
-              <AvatarFallback>
-                {row.original.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
+            <Avatar name={row.original.name} variant="beam" size={32} />
             <div className="space-y-px">
               <div className="text-foreground font-medium">
                 {row.original.name}
