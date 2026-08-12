@@ -87,6 +87,7 @@ model ClassSection {
   assessmentItems AssessmentItem[]
   cloAttainments  CloAttainment[]
   formSubmissions FormSubmission[]
+  uploadRecords   UploadRecord[]
 
   @@unique([courseId, termId, sectionCode])
   @@map("class_section")

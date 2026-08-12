@@ -10,8 +10,36 @@ model ComputationRun {
   triggeredBy    user?           @relation("TriggeredBy", fields: [triggeredByUserId], references: [id], onDelete: SetNull)
   cloAttainments CloAttainment[]
   ploAttainments PloAttainment[]
+  uploadRecord   UploadRecord?
 
   @@map("computation_run")
+}
+
+/**
+ * Per-upload audit/history for class-record ingestion. One row is created the
+ * moment a user uploads a file, then updated to `completed` or `failed` when
+ * the ETL job finishes — so the user's upload history (across devices) is
+ * recoverable even for failed attempts that never create a `ComputationRun`.
+ */
+model UploadRecord {
+  id               String       @id @default(cuid())
+  userId           String       @map("user_id")
+  classSectionId   String       @map("class_section_id")
+  filename         String
+  status           UploadStatus @default(queued)
+  error            String?      @db.Text
+  etlJobId         String?      @map("etl_job_id")
+  computationRunId String?      @unique @map("computation_run_id")
+  summary          Json?
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  user           user?           @relation("Uploads", fields: [userId], references: [id], onDelete: Cascade)
+  classSection   ClassSection    @relation(fields: [classSectionId], references: [id], onDelete: Cascade)
+  computationRun ComputationRun? @relation(fields: [computationRunId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@map("upload_record")
 }
 
 model CloAttainment {

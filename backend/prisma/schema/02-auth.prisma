@@ -29,6 +29,7 @@ model user {
   formSubmissions           FormSubmission[]    @relation("Submitter")
   approvalSteps             ApprovalStep[]      @relation("Approver")
   computationRuns           ComputationRun[]    @relation("TriggeredBy")
+  uploads                   UploadRecord[]      @relation("Uploads")
   auditLogs                 AuditLog[]          @relation("AuditUser")
   aiRecommendationsReviewed AiRecommendation[]  @relation("Reviewer")
   reportExports             ReportExport[]      @relation("Exporter")

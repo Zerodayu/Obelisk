@@ -68,3 +68,9 @@ enum GraduationClusterStatus {
   compiling
   archived
 }
+
+enum UploadStatus {
+  queued
+  completed
+  failed
+}
