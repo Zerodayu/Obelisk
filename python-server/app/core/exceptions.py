@@ -98,3 +98,17 @@ class QueueOverloadedError(OBELISKError):
                 "max_size": self.max_size,
             },
         }
+
+
+class JobNotFound(OBELISKError):
+    def __init__(self, job_id: str):
+        self.job_id = job_id
+        message = f"Job with ID '{job_id}' not found."
+        super().__init__(message)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "error_type": "JobNotFound",
+            "message": str(self),
+            "details": {"job_id": self.job_id},
+        }

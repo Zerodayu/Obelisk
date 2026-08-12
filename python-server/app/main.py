@@ -8,7 +8,6 @@ from app.api.routes.etl import router as etl_router
 from app.api.routes.jobs import router as jobs_router
 from app.api.routes.health import router as health_router
 from app.api.routes.analytics import router as analytics_router
-from app.services.job_queue import job_queue
 from app.workers.worker import start_worker
 
 app = FastAPI(title="OBELISK ETL (placeholder)")
@@ -29,7 +28,7 @@ app.include_router(upload_router, prefix="", tags=["upload"])
 app.include_router(etl_router, prefix="/etl", tags=["etl"])
 app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
 app.include_router(health_router, prefix="/health", tags=["health"])
-app.include_router(analytics_router, prefix="/analytics", tags=["analytics"]) # Correct prefix is here
+app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 
 _worker_tasks: list[asyncio.Task] = []
 
@@ -39,7 +38,7 @@ async def startup_event():
     worker_count = max(1, settings.JOB_WORKER_COUNT)
     logger.info("startup", message="Starting background workers", worker_count=worker_count)
     _worker_tasks = [
-        asyncio.create_task(start_worker(job_queue, worker_id=index + 1))
+        asyncio.create_task(start_worker(worker_id=index + 1))
         for index in range(worker_count)
     ]
 

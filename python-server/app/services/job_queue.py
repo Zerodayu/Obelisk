@@ -1,104 +1,124 @@
-import asyncio
 import uuid
+import orjson
+import redis
 from datetime import datetime
-from typing import Dict, Any, List
-from app.utils.types import JobStatus
-from app.core.logging import logger
+from typing import Dict, Any, List, Optional
+
 from app.core.config import settings
-from app.core.exceptions import OBELISKError, QueueOverloadedError
-from app.etl.abstracts import run_full_pipeline
-from app.etl.extract.extractor import ExcelExtractor
-from app.etl.transform.transformer import SimpleTransformer
-from app.etl.load.loader import DummyLoader
+from app.core.exceptions import QueueOverloadedError, JobNotFound
+from app.core.logging import logger
+from app.utils.types import JobStatus
 
+# --- Redis Client Setup ---
+# This single client instance will be reused across the application.
+try:
+    redis_client = redis.Redis(
+        host=settings.REDIS_HOST,
+        port=settings.REDIS_PORT,
+        db=0,
+        decode_responses=True  # Decode responses to UTF-8 automatically
+    )
+    redis_client.ping()
+    logger.info("redis_connected", host=settings.REDIS_HOST, port=settings.REDIS_PORT)
+except redis.exceptions.ConnectionError as e:
+    logger.error("redis_connection_failed", error=str(e))
+    redis_client = None
 
-class InMemoryJobQueue:
-    def __init__(self):
-        self._queue: asyncio.Queue[str] = asyncio.Queue(maxsize=settings.JOB_QUEUE_MAXSIZE)
-        self._jobs: Dict[str, Dict[str, Any]] = {}
+# --- Constants for Redis Keys ---
+JOB_QUEUE_KEY = "obelisk:job_queue"
+JOB_HASH_KEY_PREFIX = "obelisk:job:"
 
-    async def enqueue(self, job_type: str = "etl", payload: Dict[str, Any] | None = None) -> str:
-        job_id = str(uuid.uuid4())
-        now = datetime.utcnow()
-        job = {
-            "job_id": job_id,
-            "type": job_type,
-            "status": JobStatus.QUEUED.value,
-            "payload": payload,
-            "created_at": now,
-            "updated_at": now,
-            "error": None,
-            "result": None,
-        }
-        if self._queue.full():
-            raise QueueOverloadedError(queue_size=self._queue.qsize(), max_size=self._queue.maxsize)
+def _get_job_key(job_id: str) -> str:
+    return f"{JOB_HASH_KEY_PREFIX}{job_id}"
 
-        self._jobs[job_id] = job
-        try:
-            self._queue.put_nowait(job_id)
-        except asyncio.QueueFull:
-            self._jobs.pop(job_id, None)
-            raise QueueOverloadedError(queue_size=self._queue.qsize(), max_size=self._queue.maxsize)
-        
-        logger.info("job_queued", job_id=job_id)
-        return job_id
+async def enqueue(job_type: str = "etl", payload: Optional[Dict[str, Any]] = None) -> str:
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
 
-    async def get_job(self, job_id: str) -> Dict[str, Any] | None:
-        return self._jobs.get(job_id)
+    # Check if the queue is full
+    current_queue_size = redis_client.llen(JOB_QUEUE_KEY)
+    if current_queue_size >= settings.JOB_QUEUE_MAXSIZE:
+        raise QueueOverloadedError(queue_size=current_queue_size, max_size=settings.JOB_QUEUE_MAXSIZE)
 
-    async def list_job_ids(self) -> List[str]:
-        return list(self._jobs.keys())
+    job_id = str(uuid.uuid4())
+    now = datetime.utcnow()
+    job = {
+        "job_id": job_id,
+        "type": job_type,
+        "status": JobStatus.QUEUED.value,
+        "payload": payload,
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "error": None,
+        "result": None,
+    }
 
-    async def list_jobs(self) -> List[Dict[str, Any]]:
-        return list(self._jobs.values())
+    # Store the job data as a JSON string in a Redis hash
+    job_key = _get_job_key(job_id)
+    redis_client.set(job_key, orjson.dumps(job))
 
-    async def _set_status(self, job_id: str, status: JobStatus):
-        job = self._jobs.get(job_id)
-        if job:
-            job["status"] = status.value
-            job["updated_at"] = datetime.utcnow()
+    # Add the job_id to the queue (a Redis list)
+    redis_client.lpush(JOB_QUEUE_KEY, job_id)
 
-    async def process_next(self):
-        job_id = await self._queue.get()
-        job = self._jobs.get(job_id)
-        if not job:
-            self._queue.task_done()
-            return
+    logger.info("job_queued", job_id=job_id, queue_size=current_queue_size + 1)
+    return job_id
 
-        try:
-            await self._set_status(job_id, JobStatus.RUNNING)
-            logger.info("job_running", job_id=job_id)
-            
-            extractor = ExcelExtractor()
-            transformer = SimpleTransformer()
-            loader = DummyLoader()
-            
-            result = await run_full_pipeline(extractor, transformer, loader, job.get("payload"))
-            job["result"] = result
-            await self._set_status(job_id, JobStatus.COMPLETED)
-            logger.info("job_completed", job_id=job_id)
+async def get_job(job_id: str) -> Optional[Dict[str, Any]]:
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
 
-        except OBELISKError as exc:
-            logger.error("job_failed_structured", job_id=job_id, error_type=exc.__class__.__name__, details=exc.to_dict())
-            job["error"] = exc.to_dict()
-            await self._set_status(job_id, JobStatus.FAILED)
-        except Exception as exc:
-            logger.error("job_failed_unexpected", job_id=job_id, error=str(exc))
-            job["error"] = {
-                "error_type": "UnexpectedError",
-                "message": f"An unexpected error occurred: {str(exc)}",
-                "details": {},
-            }
-            await self._set_status(job_id, JobStatus.FAILED)
-        finally:
-            self._queue.task_done()
+    job_key = _get_job_key(job_id)
+    job_data = redis_client.get(job_key)
 
-    async def queue_stats(self) -> Dict[str, int]:
-        return {
-            "size": self._queue.qsize(),
-            "maxsize": self._queue.maxsize,
-        }
+    if not job_data:
+        return None
+    
+    return orjson.loads(job_data)
 
+async def update_job(job_id: str, updates: Dict[str, Any]):
+    """Helper to update specific fields of a job in Redis."""
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
 
-# Single global instance
-job_queue = InMemoryJobQueue()
+    job = await get_job(job_id)
+    if not job:
+        raise JobNotFound(job_id=job_id)
+
+    job.update(updates)
+    job["updated_at"] = datetime.utcnow().isoformat()
+    
+    job_key = _get_job_key(job_id)
+    redis_client.set(job_key, orjson.dumps(job))
+
+async def list_job_ids() -> List[str]:
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
+    
+    # This can be slow on large numbers of jobs. Use with caution.
+    keys = redis_client.keys(f"{JOB_HASH_KEY_PREFIX}*")
+    return [key.split(':')[-1] for key in keys]
+
+async def list_jobs() -> List[Dict[str, Any]]:
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
+
+    job_ids = await list_job_ids()
+    if not job_ids:
+        return []
+
+    pipe = redis_client.pipeline()
+    for job_id in job_ids:
+        pipe.get(_get_job_key(job_id))
+    
+    job_data_list = pipe.execute()
+    return [orjson.loads(job_data) for job_data in job_data_list if job_data]
+
+async def queue_stats() -> Dict[str, int]:
+    if not redis_client:
+        raise ConnectionError("Redis client is not available.")
+    
+    return {
+        "size": redis_client.llen(JOB_QUEUE_KEY),
+        "maxsize": settings.JOB_QUEUE_MAXSIZE,
+        "total_jobs_tracked": len(redis_client.keys(f"{JOB_HASH_KEY_PREFIX}*"))
+    }

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status
-from app.services.job_queue import job_queue
+from app.services import job_queue
 from app.analytics.cqi_recommender import generate_cqi_recommendation
 from app.analytics.institutional_summary import generate_institutional_summary, compute_summary_only
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment

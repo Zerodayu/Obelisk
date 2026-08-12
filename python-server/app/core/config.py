@@ -12,8 +12,12 @@ class Settings(BaseSettings):
 
     # --- Core Settings ---
     DEBUG: bool = False
-    JOB_WORKER_COUNT: int = 2
-    JOB_QUEUE_MAXSIZE: int = 100
+    JOB_WORKER_COUNT: int = 4
+    JOB_QUEUE_MAXSIZE: int = 200
+
+    # --- Redis Settings ---
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
 
     # --- Upload Service Settings ---
     MAX_CONCURRENT_UPLOAD_WRITES: int = 5

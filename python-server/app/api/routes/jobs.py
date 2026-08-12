@@ -1,38 +1,23 @@
 from fastapi import APIRouter, HTTPException
-from app.services.job_queue import job_queue
+from app.services import job_queue
 from app.core.logging import logger
 
 router = APIRouter()
 
 
 @router.get("/")
-async def list_jobs():
+async def list_all_jobs():
+    """Lists all jobs currently tracked in Redis."""
     logger.info("api_list_jobs")
     jobs = await job_queue.list_jobs()
-    # Convert datetime objects to isoformat for JSON serialization
-    serialized = []
-    for j in jobs:
-        job = j.copy()
-        if job.get("created_at"):
-            job["created_at"] = job["created_at"].isoformat()
-        if job.get("updated_at"):
-            job["updated_at"] = job["updated_at"].isoformat()
-        serialized.append(job)
-    return serialized
+    return jobs
 
 
 @router.get("/{job_id}")
-async def get_job(job_id: str):
+async def get_job_by_id(job_id: str):
+    """Gets the status and details of a specific job."""
     logger.info("api_get_job", job_id=job_id)
     job = await job_queue.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    
-    # Convert datetime objects for JSON serialization
-    serialized_job = job.copy()
-    if serialized_job.get("created_at"):
-        serialized_job["created_at"] = serialized_job["created_at"].isoformat()
-    if serialized_job.get("updated_at"):
-        serialized_job["updated_at"] = serialized_job["updated_at"].isoformat()
-        
-    return serialized_job
+    return job

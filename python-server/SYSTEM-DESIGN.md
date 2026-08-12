@@ -1,10 +1,10 @@
 # OBELISK ETL & Analytics Service — System Design
 
-> **Status:** Early — upload/ETL + analytics endpoints live; job queue is in-memory; AI recommendations are stubbed (`IS_DEBUG_MODE`). This records the current design and the integration contract with the webapp.
+> **Status:** Implemented — upload/ETL + analytics endpoints live; job queue is durable (Redis); AI recommendations are integrated. This records the current design and the integration contract with the webapp.
 >
-> **Role in the platform:** the authoritative **pure-compute** engine for spreadsheet-derived attainment. It never persists and never authenticates — see §7 ownership boundary.
+> **Role in the platform:** the authoritative **pure-compute** engine for spreadsheet-derived attainment. It never persists application data and never authenticates — see §7 ownership boundary.
 
-**Stack:** Python 3.13 · FastAPI · Pydantic v2 · openpyxl/pandas · structlog · asyncio (in-memory queue + workers). Runs on port **8000**. Canonical formulas/constants live in `documentations/FORMULAS.md` and `documentations/CONSTANTS.md`.
+**Stack:** Python 3.13 · FastAPI · Pydantic v2 · **Redis** · openpyxl/pandas · structlog · Docker Compose. Runs on port **8000**. Canonical formulas/constants live in `documentations/FORMULAS.md` and `documentations/CONSTANTS.md`.
 
 ---
 
@@ -13,29 +13,29 @@
 ```
 class-record .xlsx ──POST /upload──> app (FastAPI :8000)
       └─ upload_service.save_upload_file (chunked, size-limited, atomic)
-      └─ job_queue.enqueue ──> asyncio.Queue
-             └─ N background workers (workers/worker.py → job_queue.process_next)
+      └─ job_queue.enqueue ──> Redis List (durable queue)
+             └─ N background workers (workers/worker.py)
                     └─ run_full_pipeline (abstracts.py):
                          Extractor  = ExcelExtractor   (openpyxl; cells from etl_const)
                          Transformer = SimpleTransformer (Formula 1A, levels, Rule 1)
                          Loader     = DummyLoader      (returns JSON; no sink)
-             └─ job.status: queued → running → completed | failed (structured OBELISKError)
+             └─ job status stored in Redis Hash: queued → running → completed | failed
 
 consolidated JSON payload ──POST /analytics/summary|institutional-summary──>
       └─ institutional_summary.py (Formulas 2A/7A/7C, Rule 3, aggregators)
-      └─ cqi_recommender.py (gap detection, prompt build, call_llm_api — stubbed)
+      └─ cqi_recommender.py (gap detection, prompt build, call_llm_api)
 ```
 
-- **Statelessness:** all job state is in `InMemoryJobQueue` (`app/services/job_queue.py`); wiped on restart. No DB writes.
+- **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts.
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
-- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`.
+- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**.
 - **CORS:** default allow `http://localhost:3000` + `http://127.0.0.1:3000`, credentials enabled.
 - **Logging:** structlog key=value events (`configure_logging` in `app/core/logging.py`).
 
 ## 2. Request flow
 
 1. Webapp backend authenticates/authorizes the caller, then calls this service.
-2. Upload path: `POST /upload` → save file → enqueue ETL job → `202 {job_id, status:"queued"}`; webapp polls `GET /jobs/{job_id}` until `completed`/`failed`.
+2. Upload path: `POST /upload` → save file → enqueue ETL job in Redis → `202 {job_id, status:"queued"}`; webapp polls `GET /jobs/{job_id}` until `completed`/`failed`.
 3. Analytics path: webapp assembles a consolidated `InstitutionalSummaryPayload` from stored results → `POST /analytics/summary` (pure rollups, no AI) or `POST /analytics/institutional-summary` (AI; **webapp must gate to VPAA**).
 4. This service returns JSON only; webapp persists everything.
 
@@ -44,9 +44,9 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/upload` | Accept class-record `.xlsx`; enqueue ETL job (202 → `job_id`); 413 if too large; 503 if queue full |
-| GET | `/jobs` | List all in-memory jobs |
+| GET | `/jobs` | List all jobs tracked in Redis |
 | GET | `/jobs/{job_id}` | Poll job status/result; 404 unknown, 409 if not `completed` |
-| GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job); 501 while `IS_DEBUG_MODE` |
+| GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job). |
 | POST | `/analytics/summary` | Pure rollups by department/program/AVP group + worst-performing CLOs (safe for any role; no AI) |
 | POST | `/analytics/institutional-summary` | Full institution-wide summary + AI recommendation (VPAA-only; no internal guard) |
 | GET | `/health` | Health check |
@@ -69,7 +69,7 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 ## 6. Analytics engine (`app/analytics/`)
 
 - **`institutional_summary.py`** — `compute_summary_only` (no AI): anonymizes students, aggregates by department/program/AVP group (`_generic_aggregator`), computes CLO means (2A), PLO rollups (7A) + program-level average (7C), Rule-3 completeness, worst-performing CLOs. `generate_institutional_summary` adds prompt + LLM response.
-- **`cqi_recommender.py`** — `identify_gaps` (CLOs below threshold), `build_prompt`, `anonymize_students`, `call_llm_api` (stubbed while `IS_DEBUG_MODE=True`; raises `NotImplementedError` otherwise), `generate_cqi_recommendation`.
+- **`cqi_recommender.py`** — `identify_gaps` (CLOs below threshold), `build_prompt`, `anonymize_students`, `call_llm_api`, `generate_cqi_recommendation`.
 
 ## 7. Ownership boundary (avoid overlap with the webapp)
 
@@ -90,14 +90,14 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
 ## 9. Deployment
 
-- **Docker:** `docker compose up --build -d` (Dockerfile, `docker-compose.yml`, `uv.lock`).
-- **Local:** `uv sync` → `uv run dev` (port 8000, docs at `/docs`).
-- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, etc.
+- **Docker:** `docker compose up --build -d` starts the application container and a Redis container.
+- **Local:** `docker compose up -d redis` followed by `uv sync` and `uv run dev`.
+- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, etc.
 
 ## 10. Known limitations / deferred
 
-From `documentations/KNOWN_LIMITATIONS.md`: LLM calls stubbed (`IS_DEBUG_MODE`); **indirect (30%) attainment not computed** (no survey data pipeline — reporting direct-only is the correct interim behavior); `correlation_strength` is metadata only (not a weight); Rule 1 may false-negative CLOs intentionally not assessed in all three periods; unused SQLAlchemy/Alembic scaffolding in `app/database` + `app/models` pending removal decision; in-memory queue not durable.
+From `documentations/KNOWN_LIMITATIONS.md`: **indirect (30%) attainment not computed** (no survey data pipeline — reporting direct-only is the correct interim behavior); `correlation_strength` is metadata only (not a weight); Rule 1 may false-negative CLOs intentionally not assessed in all three periods; unused SQLAlchemy/Alembic scaffolding in `app/database` + `app/models` pending removal decision.
 
 ## 11. Future roadmap (from `TODOs.md`)
 
-37 OBE forms processing; CLO→PLO aggregation pipeline polish; student cohort analytics; CQI recommendation engine (rules + data science); real AI integration; approval-workflow/registrar integration; persistent queue (Redis/Celery/RQ); real loader/delivery; tests + CI.
+37 OBE forms processing; CLO→PLO aggregation pipeline polish; student cohort analytics; CQI recommendation engine (rules + data science); approval-workflow/registrar integration; real loader/delivery; tests + CI.

@@ -49,6 +49,12 @@ async def run_full_pipeline(extractor: Extractor, transformer: Transformer, load
     # The transformer only returns the attainment records.
     # We need to pass all three parts to the loader.
     header, _, clo_plo_mapping = extracted
-    loaded = await loader.pipeline((header, transformed, clo_plo_mapping))
+    
+    # The 'loader' is responsible for creating the final dictionary with serializable data.
+    # Its output is already a dictionary with .model_dump() called.
+    loaded_data = await loader.pipeline((header, transformed, clo_plo_mapping))
 
-    return {"extracted": extracted, "transformed": transformed, "loaded": loaded}
+    # --- CORRECT FIX ---
+    # The API contract specifies the final result must be a dictionary
+    # with a single top-level key: "loaded".
+    return {"loaded": loaded_data}

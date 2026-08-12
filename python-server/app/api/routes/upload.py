@@ -3,7 +3,7 @@ import os
 from app.core.logging import logger
 from app.core.exceptions import QueueOverloadedError
 from app.services.upload_service import save_upload_file
-from app.services.job_queue import job_queue
+from app.services.job_queue import enqueue
 
 router = APIRouter()
 
@@ -22,7 +22,7 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
         raise HTTPException(status_code=500, detail="Unable to save uploaded file")
 
     try:
-        job_id = await job_queue.enqueue(job_type="etl", payload={"file_path": path, "filename": file.filename})
+        job_id = await enqueue(job_type="etl", payload={"file_path": str(path), "filename": file.filename})
     except QueueOverloadedError as exc:
         if os.path.exists(path):
             os.remove(path)
@@ -30,4 +30,3 @@ async def upload_file(file: UploadFile = File(...)) -> dict:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
 
     return {"job_id": job_id, "status": "queued"}
-
