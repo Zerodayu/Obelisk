@@ -1,9 +1,11 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { AlertTriangle, Info, Loader2 } from "lucide-react";
+import { AlertTriangle, Info } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Progress, ProgressValue } from "@/components/ui/progress";
 import {
   FileUpload,
   type FileUploadItem,
@@ -150,6 +152,10 @@ export function ClassRecordUpload() {
 
   const summary = uploadResult;
   const isWorking = status === "uploading" || status === "processing";
+  const isUploading = status === "uploading";
+  const progressLabel = isUploading
+    ? "Uploading class record…"
+    : "Processing class record…";
   const buttonText =
     status === "uploading"
       ? "Uploading..."
@@ -172,20 +178,21 @@ export function ClassRecordUpload() {
         onRetry={handleUpload}
       />
       {isMounted && (
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={handleUpload}
-            disabled={!file || isWorking}
-            className="w-40"
-          >
-            {isWorking ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : null}
-            {buttonText}
-          </Button>
-          <p className="text-xs text-muted-foreground">
-            Uploads to class section: {TEST_CLASS_SECTION_ID}
-          </p>
+        <div className="flex w-full justify-center items-center gap-4">
+          {!isWorking && (
+            <Button onClick={handleUpload} disabled={!file} className="w-40">
+              {buttonText}
+            </Button>
+          )}
+          {isWorking && (
+            <Field className="w-full max-w-xs">
+              <Progress indeterminate>
+                <FieldLabel>{progressLabel}</FieldLabel>
+
+                <ProgressValue />
+              </Progress>
+            </Field>
+          )}
         </div>
       )}
 
