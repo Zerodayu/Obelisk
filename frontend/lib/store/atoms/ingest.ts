@@ -9,6 +9,9 @@
 
 import { atom } from "jotai";
 
+import { api } from "@/lib/api-client";
+import { atomWithAsyncData } from "@/lib/store/async-atom";
+
 export type IngestStatus =
   | "idle"
   | "uploading"
@@ -28,6 +31,26 @@ export interface PersistenceSummary {
     studentName: string;
     reason: string;
   }[];
+}
+
+/** Mirrors the backend `UploadRecord` JSON contract from `GET /ingest/history`. */
+export interface UploadHistoryRecord {
+  id: string;
+  userId: string;
+  classSectionId: string;
+  filename: string;
+  status: "queued" | "completed" | "failed";
+  error: string | null;
+  etlJobId: string | null;
+  computationRunId: string | null;
+  summary: PersistenceSummary | null;
+  createdAt: string;
+  updatedAt: string;
+  classSection: {
+    sectionCode: string;
+    course: { code: string; title: string };
+    term: { schoolYear: string; semester: string };
+  } | null;
 }
 
 export const ingestStatusAtom = atom<IngestStatus>("idle");
@@ -74,3 +97,16 @@ export const resetIngestAtom = atom(null, (_get, set) => {
   set(persistenceSummaryAtom, null);
   set(ingestErrorAtom, null);
 });
+
+/**
+ * DB-backed upload history (`GET /ingest/history`): every upload attempt by the
+ * signed-in user across devices, newest first, including failed ones. Records
+ * are created server-side on each upload and updated on ETL completion.
+ */
+export const {
+  dataAtom: uploadsHistoryDataAtom,
+  stateAtom: uploadsHistoryStateAtom,
+  refreshAtom: refreshUploadHistoryAtom,
+} = atomWithAsyncData<UploadHistoryRecord[]>([], () =>
+  api.get<UploadHistoryRecord[]>("/ingest/history"),
+);
