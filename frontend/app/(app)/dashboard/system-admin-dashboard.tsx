@@ -2,8 +2,12 @@ import { RoleRequestsPanel } from "@/components/auth/role-requests-panel";
 import {
   AuditActivityBars,
   ClusterCompositionDonut,
+  ClusterStatusDonut,
+  ExportFormatBars,
   FormStatusDonut,
+  FormTypeStageBars,
   RecommendationDonut,
+  UserRoleBars,
 } from "@/components/charts/governance-charts";
 import {
   Frame,
@@ -70,6 +74,58 @@ export function SystemAdminDashboard() {
           <FramePanel>
             <div className="h-72">
               <RecommendationDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Report exports by format</FrameTitle>
+            <FrameDescription>
+              PDF / Excel / Word exports across the platform.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ExportFormatBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Form catalog by PDCA stage</FrameTitle>
+            <FrameDescription>
+              The 28 WIN-OBE form types across PLAN/DO/CHECK/ACT.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <FormTypeStageBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Platform users by role</FrameTitle>
+            <FrameDescription>
+              User distribution across the approval chain.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <UserRoleBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Graduation-cluster lifecycle</FrameTitle>
+            <FrameDescription>
+              Open / compiling / archived clusters.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ClusterStatusDonut />
             </div>
           </FramePanel>
         </Frame>

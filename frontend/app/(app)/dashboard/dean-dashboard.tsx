@@ -1,5 +1,6 @@
 import {
   CohortTrendLines,
+  PeoAttainmentBars,
   PloAttainmentBars,
 } from "@/components/charts/attainment-charts";
 import { ApprovalFlowBars } from "@/components/charts/governance-charts";
@@ -34,6 +35,19 @@ export function DeanDashboard() {
           <FramePanel>
             <div className="h-72">
               <PloAttainmentBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Program educational objectives</FrameTitle>
+            <FrameDescription>
+              Biennial PEO attainment vs target.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <PeoAttainmentBars />
             </div>
           </FramePanel>
         </Frame>

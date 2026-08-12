@@ -7,6 +7,10 @@ import {
   FormStatusDonut,
 } from "@/components/charts/governance-charts";
 import {
+  ComputationRunBars,
+  UploadStatusDonut,
+} from "@/components/charts/ingest-charts";
+import {
   Frame,
   FrameDescription,
   FrameHeader,
@@ -72,6 +76,32 @@ export function FacultyDashboard() {
           <FramePanel>
             <div className="h-72">
               <FormStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Class-record upload status</FrameTitle>
+            <FrameDescription>
+              Queued / completed / failed upload attempts.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <UploadStatusDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Attainment computation runs</FrameTitle>
+            <FrameDescription>
+              70/30 computation runs per term.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <ComputationRunBars />
             </div>
           </FramePanel>
         </Frame>

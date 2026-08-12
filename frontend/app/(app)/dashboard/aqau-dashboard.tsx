@@ -7,6 +7,7 @@ import {
   ClusterCompositionDonut,
   FormStatusDonut,
 } from "@/components/charts/governance-charts";
+import { StudentYearLevelBars } from "@/components/charts/plan-charts";
 import {
   Frame,
   FrameDescription,
@@ -60,6 +61,19 @@ export function AqauDashboard() {
           <FramePanel>
             <div className="h-72">
               <ClusterCompositionDonut />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Student distribution by year level</FrameTitle>
+            <FrameDescription>
+              Active program students across Y1-Y4.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <StudentYearLevelBars />
             </div>
           </FramePanel>
         </Frame>

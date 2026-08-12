@@ -7,7 +7,11 @@ import {
   GapAnalysisBars,
 } from "@/components/charts/cqi-charts";
 import { ApprovalFlowBars } from "@/components/charts/governance-charts";
-import { CurriculumCoverageBars } from "@/components/charts/plan-charts";
+import {
+  AssessmentTypeDonut,
+  CurriculumCoverageBars,
+  PloToPeoCoverageBars,
+} from "@/components/charts/plan-charts";
 import {
   Frame,
   FrameDescription,
@@ -61,6 +65,32 @@ export function ProgramChairDashboard() {
           <FramePanel>
             <div className="h-72">
               <CurriculumCoverageBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>PLO-PEO coverage</FrameTitle>
+            <FrameDescription>
+              Number of PEOs mapped to each PLO.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <PloToPeoCoverageBars />
+            </div>
+          </FramePanel>
+        </Frame>
+        <Frame className="w-full">
+          <FrameHeader>
+            <FrameTitle>Assessment items by type</FrameTitle>
+            <FrameDescription>
+              Direct vs indirect assessment-item counts.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="h-72">
+              <AssessmentTypeDonut />
             </div>
           </FramePanel>
         </Frame>
