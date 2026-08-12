@@ -45,7 +45,7 @@ const targetConfig = {
 const coverageConfig = {
   mapped: {
     label: "Mapped CLOs",
-    colors: { light: ["var(--chart-1)"] },
+    colors: { light: ["var(--primary)"] },
   },
 } satisfies ChartConfig;
 
@@ -184,7 +184,7 @@ export function CurriculumCoverageBars({
       <EChartsBarChart.XAxis dataKey="ploCode" />
       <EChartsBarChart.YAxis label="CLOs" />
       <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Bar dataKey="mapped" />
+      <EChartsBarChart.Bar dataKey="mapped" variant="expandable" />
     </EChartsBarChart>
   );
 }

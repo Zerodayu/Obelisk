@@ -63,7 +63,7 @@ const ploConfig = {
 const bandConfig = {
   count: {
     label: "Students",
-    colors: { light: ["var(--info)"] },
+    colors: { light: ["var(--primary)"] },
   },
 } satisfies ChartConfig;
 
@@ -244,7 +244,7 @@ export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
       />
       <EChartsBarChart.YAxis label="Students" />
       <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Bar dataKey="count" />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
     </EChartsBarChart>
   );
 }

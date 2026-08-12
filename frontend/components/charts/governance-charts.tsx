@@ -60,7 +60,7 @@ const flowConfig = {
 } satisfies ChartConfig;
 
 const auditConfig = {
-  count: { label: "Events", colors: { light: ["var(--chart-1)"] } },
+  count: { label: "Events", colors: { light: ["var(--primary)"] } },
 } satisfies ChartConfig;
 
 const riskConfig = {
@@ -187,7 +187,7 @@ export function AuditActivityBars({
       <EChartsBarChart.XAxis dataKey="module" />
       <EChartsBarChart.YAxis dataKey="count" label="Events" />
       <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Bar dataKey="count" />
+      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
     </EChartsBarChart>
   );
 }
