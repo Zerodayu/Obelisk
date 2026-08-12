@@ -1,18 +1,14 @@
 "use client";
 
-import {
-  type ApprovalFlowDatum,
-  type AtRiskDatum,
-  type AuditActivityDatum,
-  type ClusterCompositionDatum,
-  type FormStatusDatum,
-  MOCK_APPROVAL_FLOW,
-  MOCK_AT_RISK,
-  MOCK_AUDIT_ACTIVITY,
-  MOCK_CLUSTER_COMPOSITION,
-  MOCK_FORM_STATUSES,
-  MOCK_RECOMMENDATIONS,
-  type RecommendationStatusDatum,
+import { useAtomValue } from "jotai";
+
+import type {
+  ApprovalFlowDatum,
+  AtRiskDatum,
+  AuditActivityDatum,
+  ClusterCompositionDatum,
+  FormStatusDatum,
+  RecommendationStatusDatum,
 } from "@/components/charts/obe-sample-data";
 import {
   type ChartConfig,
@@ -22,6 +18,14 @@ import {
   EChartsPieChart,
   type ChartConfig as PieConfig,
 } from "@/components/evilcharts/charts/echarts-pie-chart";
+import {
+  approvalFlowDataAtom,
+  atRiskDataAtom,
+  auditActivityDataAtom,
+  clusterCompositionDataAtom,
+  formStatusCountsAtom,
+  recommendationsDataAtom,
+} from "@/lib/store/atoms/governance";
 
 const statusConfig = {
   draft: { label: "Draft", colors: { light: ["var(--muted-foreground)"] } },
@@ -111,12 +115,14 @@ const clusterConfig = {
   },
 } satisfies PieConfig;
 
-/** Donut of form submission statuses (draft → archived). */
+/** Donut of form submission statuses (draft → archived) — real DB counts. */
 export function FormStatusDonut({
-  data = MOCK_FORM_STATUSES,
+  data: override,
 }: {
   data?: FormStatusDatum[];
 }) {
+  const atomData = useAtomValue(formStatusCountsAtom);
+  const data = override ?? atomData;
   const rows = data.map((f) => ({ status: f.status, count: f.count }));
   return (
     <EChartsPieChart
@@ -137,10 +143,12 @@ export function FormStatusDonut({
 
 /** Stacked bar of the approval chain: pending / approved / returned per role. */
 export function ApprovalFlowBars({
-  data = MOCK_APPROVAL_FLOW,
+  data: override,
 }: {
   data?: ApprovalFlowDatum[];
 }) {
+  const atomData = useAtomValue(approvalFlowDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((a) => ({
     approverRole: a.approverRole.replace("_", " "),
     approved: a.approved,
@@ -168,10 +176,12 @@ export function ApprovalFlowBars({
 
 /** Horizontal bars of audit-trial activity per module. */
 export function AuditActivityBars({
-  data = MOCK_AUDIT_ACTIVITY,
+  data: override,
 }: {
   data?: AuditActivityDatum[];
 }) {
+  const atomData = useAtomValue(auditActivityDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((a) => ({ module: a.module, count: a.count }));
   return (
     <EChartsBarChart
@@ -191,7 +201,9 @@ export function AuditActivityBars({
 }
 
 /** Donut of the at-risk watchlist grouped by flag reason. */
-export function AtRiskDonut({ data = MOCK_AT_RISK }: { data?: AtRiskDatum[] }) {
+export function AtRiskDonut({ data: override }: { data?: AtRiskDatum[] }) {
+  const atomData = useAtomValue(atRiskDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((r) => ({ reason: r.reason, count: r.studentCount }));
   return (
     <EChartsPieChart
@@ -212,10 +224,12 @@ export function AtRiskDonut({ data = MOCK_AT_RISK }: { data?: AtRiskDatum[] }) {
 
 /** Donut of AI recommendation review statuses. */
 export function RecommendationDonut({
-  data = MOCK_RECOMMENDATIONS,
+  data: override,
 }: {
   data?: RecommendationStatusDatum[];
 }) {
+  const atomData = useAtomValue(recommendationsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((r) => ({ status: r.status, count: r.count }));
   return (
     <EChartsPieChart
@@ -236,10 +250,12 @@ export function RecommendationDonut({
 
 /** Donut of graduation-cluster composition by archived student status. */
 export function ClusterCompositionDonut({
-  data = MOCK_CLUSTER_COMPOSITION,
+  data: override,
 }: {
   data?: ClusterCompositionDatum[];
 }) {
+  const atomData = useAtomValue(clusterCompositionDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((c) => ({ status: c.status, count: c.studentCount }));
   return (
     <EChartsPieChart

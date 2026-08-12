@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  type BudgetLineDatum,
-  type CurriculumCoverageDatum,
-  MOCK_BUDGET_LINES,
-  MOCK_CURRICULUM_COVERAGE,
-  MOCK_SCHEDULE,
-  MOCK_TARGET_SETTINGS,
-  type ScheduleDatum,
-  type TargetSettingDatum,
+import { useAtomValue } from "jotai";
+
+import type {
+  BudgetLineDatum,
+  CurriculumCoverageDatum,
+  ScheduleDatum,
+  TargetSettingDatum,
 } from "@/components/charts/obe-sample-data";
 import {
   type ChartConfig,
@@ -18,6 +16,12 @@ import {
   EChartsPieChart,
   type ChartConfig as PieConfig,
 } from "@/components/evilcharts/charts/echarts-pie-chart";
+import {
+  budgetLinesDataAtom,
+  curriculumCoverageDataAtom,
+  scheduleDataAtom,
+  targetSettingsDataAtom,
+} from "@/lib/store/atoms/plan";
 
 const scheduleConfig = {
   direct: {
@@ -65,10 +69,12 @@ const phaseConfig = {
 
 /** Planned vs spent budget per line item (PHP thousands). */
 export function BudgetVsActualBars({
-  data = MOCK_BUDGET_LINES,
+  data: override,
 }: {
   data?: BudgetLineDatum[];
 }) {
+  const atomData = useAtomValue(budgetLinesDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((b) => ({
     lineItem: b.lineItem.split(" ")[0],
     planned: Math.round(b.planned / 1000),
@@ -94,10 +100,12 @@ export function BudgetVsActualBars({
 
 /** Donut of the approved budget allocation by PDCA phase. */
 export function BudgetPhaseDonut({
-  data = MOCK_BUDGET_LINES,
+  data: override,
 }: {
   data?: BudgetLineDatum[];
 }) {
+  const atomData = useAtomValue(budgetLinesDataAtom);
+  const data = override ?? atomData;
   const byPhase = data.reduce<Record<string, number>>((acc, line) => {
     acc[line.phase] = (acc[line.phase] ?? 0) + line.planned;
     return acc;
@@ -125,10 +133,12 @@ export function BudgetPhaseDonut({
 
 /** Target vs current attainment per year level (target-setting matrix). */
 export function TargetSettingBars({
-  data = MOCK_TARGET_SETTINGS,
+  data: override,
 }: {
   data?: TargetSettingDatum[];
 }) {
+  const atomData = useAtomValue(targetSettingsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((t) => ({
     yearLevel: t.yearLevel,
     target: t.targetAttainmentPct,
@@ -156,10 +166,12 @@ export function TargetSettingBars({
 
 /** Mapped CLO coverage per PLO from the CLO-PLO curriculum matrix. */
 export function CurriculumCoverageBars({
-  data = MOCK_CURRICULUM_COVERAGE,
+  data: override,
 }: {
   data?: CurriculumCoverageDatum[];
 }) {
+  const atomData = useAtomValue(curriculumCoverageDataAtom);
+  const data = override ?? atomData;
   const byPlo = data.reduce<Record<string, number>>((acc, m) => {
     acc[m.ploCode] = (acc[m.ploCode] ?? 0) + 1;
     return acc;
@@ -186,10 +198,12 @@ export function CurriculumCoverageBars({
 
 /** Direct vs indirect assessment load across the calendar months. */
 export function ScheduleLoadBars({
-  data = MOCK_SCHEDULE,
+  data: override,
 }: {
   data?: ScheduleDatum[];
 }) {
+  const atomData = useAtomValue(scheduleDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((s) => ({
     month: s.month,
     direct: s.directAssessments,

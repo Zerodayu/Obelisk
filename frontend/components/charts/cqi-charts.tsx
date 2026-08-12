@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  type CqiActionDatum,
-  type LoopStatusDatum,
-  MOCK_CQI_ACTIONS,
-  MOCK_LOOP_STATUSES,
-  MOCK_PLO_GAPS,
-  MOCK_ROOT_CAUSES,
-  type PloGapDatum,
-  type RootCauseDatum,
+import { useAtomValue } from "jotai";
+
+import type {
+  CqiActionDatum,
+  LoopStatusDatum,
+  PloGapDatum,
+  RootCauseDatum,
 } from "@/components/charts/obe-sample-data";
 import {
   type ChartConfig,
@@ -18,6 +16,12 @@ import {
   EChartsPieChart,
   type ChartConfig as PieConfig,
 } from "@/components/evilcharts/charts/echarts-pie-chart";
+import {
+  cqiActionsDataAtom,
+  loopStatusesDataAtom,
+  ploGapsDataAtom,
+  rootCausesDataAtom,
+} from "@/lib/store/atoms/cqi";
 
 const gapConfig = {
   attained: {
@@ -84,11 +88,9 @@ const loopConfig = {
 } satisfies PieConfig;
 
 /** Attained vs target bars with the gap shown (ACT phase gap analysis). */
-export function GapAnalysisBars({
-  data = MOCK_PLO_GAPS,
-}: {
-  data?: PloGapDatum[];
-}) {
+export function GapAnalysisBars({ data: override }: { data?: PloGapDatum[] }) {
+  const atomData = useAtomValue(ploGapsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((g) => ({
     ploCode: g.ploCode,
     attained: g.attainedPct,
@@ -117,10 +119,12 @@ export function GapAnalysisBars({
 
 /** Donut of the 6-category root-cause distribution (gap & systemic analysis). */
 export function RootCauseDonut({
-  data = MOCK_ROOT_CAUSES,
+  data: override,
 }: {
   data?: RootCauseDatum[];
 }) {
+  const atomData = useAtomValue(rootCausesDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((r) => ({
     category: r.category,
     count: r.count,
@@ -144,10 +148,12 @@ export function RootCauseDonut({
 
 /** Planned vs completed CQI actions per root-cause category. */
 export function CqiActionsBars({
-  data = MOCK_CQI_ACTIONS,
+  data: override,
 }: {
   data?: CqiActionDatum[];
 }) {
+  const atomData = useAtomValue(cqiActionsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((a) => ({
     rootCause: a.rootCause.split(" ")[0],
     planned: a.planned,
@@ -173,10 +179,12 @@ export function CqiActionsBars({
 
 /** Donut of Closing-the-Loop statuses (computed server-side). */
 export function LoopStatusDonut({
-  data = MOCK_LOOP_STATUSES,
+  data: override,
 }: {
   data?: LoopStatusDatum[];
 }) {
+  const atomData = useAtomValue(loopStatusesDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((l) => ({ status: l.status, count: l.count }));
   return (
     <EChartsPieChart

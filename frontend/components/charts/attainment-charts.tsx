@@ -1,13 +1,12 @@
 "use client";
 
-import {
-  type CloAttainmentDatum,
-  MOCK_CLO_ATTAINMENTS,
-  MOCK_COHORT_TRENDS,
-  MOCK_PLO_ATTAINMENTS,
-  MOCK_SCORE_BANDS,
-  type PloAttainmentDatum,
-  type ScoreBandDatum,
+import { useAtomValue } from "jotai";
+
+import type {
+  CloAttainmentDatum,
+  CohortTrendDatum,
+  PloAttainmentDatum,
+  ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
 import {
   type ChartConfig,
@@ -17,6 +16,12 @@ import {
   EChartsLineChart,
   type ChartConfig as LineConfig,
 } from "@/components/evilcharts/charts/echarts-line-chart";
+import {
+  cloAttainmentsDataAtom,
+  cohortTrendsDataAtom,
+  ploAttainmentsDataAtom,
+  scoreBandsDataAtom,
+} from "@/lib/store/atoms/attainments";
 
 const FLOOR_NOTE =
   "Composite = Direct × 70% + Indirect × 30%. The ≥70% floor is enforced server-side.";
@@ -71,10 +76,12 @@ const cohortConfig = {
 
 /** Grouped bars of direct / indirect / composite CLO attainment (CHECK roll-up). */
 export function CloAttainmentBars({
-  data = MOCK_CLO_ATTAINMENTS,
+  data: override,
 }: {
   data?: CloAttainmentDatum[];
 }) {
+  const atomData = useAtomValue(cloAttainmentsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((c) => ({
     cloCode: c.cloCode,
     direct: c.directScorePct,
@@ -106,10 +113,12 @@ export function CloAttainmentBars({
 
 /** Grouped bars of PLO attainment vs the configured target (≥70% floor). */
 export function PloAttainmentBars({
-  data = MOCK_PLO_ATTAINMENTS,
+  data: override,
 }: {
   data?: PloAttainmentDatum[];
 }) {
+  const atomData = useAtomValue(ploAttainmentsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((p) => ({
     ploCode: p.ploCode,
     attained: p.attainedPct,
@@ -138,18 +147,16 @@ export function PloAttainmentBars({
 }
 
 /**
- * Split bars that color each category MET (green) / NOT MET (red) against the
+ * Split bars that color each CLO MET (green) / NOT MET (red) against the
  * ≥70% hard floor — the two series hold nulls so a single value shows per label.
+ * Data derives from the shared CLO-attainment atom (server-flagged threshold).
  */
-export function AttainmentFloorBars({
-  data,
-}: {
-  data: { label: string; pct: number; isBelow: boolean }[];
-}) {
-  const rows = data.map((d) => ({
-    label: d.label,
-    met: d.isBelow ? null : d.pct,
-    notMet: d.isBelow ? d.pct : null,
+export function AttainmentFloorBars() {
+  const data = useAtomValue(cloAttainmentsDataAtom);
+  const rows = data.map((c) => ({
+    label: c.cloCode,
+    met: c.isBelowThreshold ? null : c.compositeScorePct,
+    notMet: c.isBelowThreshold ? c.compositeScorePct : null,
   }));
 
   return (
@@ -174,10 +181,12 @@ export function AttainmentFloorBars({
 
 /** Longitudinal per-cohort composite attainment across terms (cohort tracking). */
 export function CohortTrendLines({
-  data = MOCK_COHORT_TRENDS,
+  data: override,
 }: {
-  data?: typeof MOCK_COHORT_TRENDS;
+  data?: CohortTrendDatum[];
 }) {
+  const atomData = useAtomValue(cohortTrendsDataAtom);
+  const data = override ?? atomData;
   const terms = [...new Set(data.map((d) => d.term))];
   const rows = terms.map((term) => {
     const row: Record<string, unknown> = { term };
@@ -214,11 +223,9 @@ export function CohortTrendLines({
 }
 
 /** Distribution of students across the 4-tier rubric bands. */
-export function ScoreBandBars({
-  data = MOCK_SCORE_BANDS,
-}: {
-  data?: ScoreBandDatum[];
-}) {
+export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
+  const atomData = useAtomValue(scoreBandsDataAtom);
+  const data = override ?? atomData;
   const rows = data.map((b) => ({ band: b.band, count: b.studentCount }));
   return (
     <EChartsBarChart

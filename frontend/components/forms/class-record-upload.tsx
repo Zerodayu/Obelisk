@@ -1,13 +1,24 @@
 "use client";
 
+import { useAtomValue, useSetAtom } from "jotai";
 import { AlertTriangle, Info, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FileUpload,
   type FileUploadItem,
 } from "@/components/upload/file-upload";
 import { api, isApiError } from "@/lib/api-client";
+import {
+  completeIngestAtom,
+  failIngestAtom,
+  ingestErrorAtom,
+  ingestJobIdAtom,
+  ingestStatusAtom,
+  markProcessingAtom,
+  persistenceSummaryAtom,
+  startUploadAtom,
+} from "@/lib/store/atoms/ingest";
 
 const ALLOWED_EXTENSIONS = [".csv", ".tsv", ".xls", ".xlsx"];
 const ALLOWED_MIME = [
@@ -20,126 +31,114 @@ const ALLOWED_MIME = [
 const TEST_CLASS_SECTION_ID = "clv92a9f1000108l3d26b52b3";
 const POLL_INTERVAL_MS = 2000;
 
-interface PersistenceSummary {
-  computationRunId: string;
-  studentsProcessed: number;
-  studentsCreated: number;
-  cloAttainmentsCreated: number;
-  atRiskFlagsCreated: number;
-  cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
-}
-
 interface StatusResponse {
   status: "queued" | "running" | "completed" | "failed";
   etl?: unknown;
-  persistence?: PersistenceSummary;
+  persistence?: {
+    computationRunId: string;
+    studentsProcessed: number;
+    studentsCreated: number;
+    cloAttainmentsCreated: number;
+    atRiskFlagsCreated: number;
+    cloMatchFailures: {
+      cloCode: string;
+      studentName: string;
+      reason: string;
+    }[];
+  };
   error?: { message?: string };
 }
 
 export function ClassRecordUpload() {
   const [items, setItems] = useState<FileUploadItem[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [uploadResult, setUploadResult] = useState<PersistenceSummary | null>(
-    null,
-  );
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+
+  const status = useAtomValue(ingestStatusAtom);
+  const jobId = useAtomValue(ingestJobIdAtom);
+  const uploadResult = useAtomValue(persistenceSummaryAtom);
+  const uploadError = useAtomValue(ingestErrorAtom);
+
+  const setStartUpload = useSetAtom(startUploadAtom);
+  const setMarkProcessing = useSetAtom(markProcessingAtom);
+  const setCompleteIngest = useSetAtom(completeIngestAtom);
+  const setFailIngest = useSetAtom(failIngestAtom);
 
   useEffect(() => {
     setIsMounted(true);
-    // Cleanup interval on unmount
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-    };
   }, []);
 
   const file = items[0]?.file;
 
-  const patchItem = (patch: Partial<FileUploadItem>) => {
+  const patchItem = useCallback((patch: Partial<FileUploadItem>) => {
     setItems((prev) =>
       prev.length === 0 ? prev : [{ ...prev[0], ...patch }, ...prev.slice(1)],
     );
-  };
+  }, []);
 
-  const pollJobStatus = (jobId: string) => {
-    pollingInterval.current = setInterval(async () => {
+  // Poll the ETL job while it is `processing`; write results into the ingest
+  // atoms so any consumer (charts, dashboards) can react to completion.
+  useEffect(() => {
+    if (!jobId || status !== "processing") return;
+
+    let disposed = false;
+    const interval = setInterval(async () => {
       try {
         const res = await api.get<StatusResponse>(
           `/ingest/upload/${jobId}/status`,
           { query: { classSectionId: TEST_CLASS_SECTION_ID } },
         );
 
+        if (disposed) return;
         if (res.status === "completed") {
-          clearInterval(pollingInterval.current!);
-          setIsProcessing(false);
           patchItem({ status: "success", progress: 100 });
-          setUploadResult(res.persistence ?? null);
+          setCompleteIngest(res.persistence ?? null);
         } else if (res.status === "failed") {
-          clearInterval(pollingInterval.current!);
-          setIsProcessing(false);
-          patchItem({
-            status: "error",
-            error: res.error?.message || "Processing failed.",
-          });
-          setUploadError(res.error?.message || "Processing failed.");
+          const message = res.error?.message || "Processing failed.";
+          patchItem({ status: "error", error: message });
+          setFailIngest(message);
         }
-        // If 'queued' or 'running', keep the item in the 'uploading' state and poll again.
+        // If 'queued' or 'running', keep polling.
       } catch (error) {
-        clearInterval(pollingInterval.current!);
-        setIsProcessing(false);
-        if (isApiError(error)) {
-          const message = `Polling failed (status ${error.status}): ${
-            error.payload?.message || error.message
-          }`;
-          patchItem({ status: "error", error: message });
-          setUploadError(message);
-        } else {
-          const message = "An unexpected error occurred while polling.";
-          patchItem({ status: "error", error: message });
-          setUploadError(message);
-        }
+        if (disposed) return;
+        const message = isApiError(error)
+          ? `Polling failed (status ${error.status}): ${
+              error.payload?.message || error.message
+            }`
+          : "An unexpected error occurred while polling.";
+        patchItem({ status: "error", error: message });
+        setFailIngest(message);
       }
     }, POLL_INTERVAL_MS);
-  };
+
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+    };
+  }, [jobId, status, patchItem, setCompleteIngest, setFailIngest]);
 
   async function handleUpload() {
     if (!file) return;
 
-    setIsUploading(true);
-    setUploadResult(null);
-    setUploadError(null);
+    setStartUpload();
     patchItem({ status: "uploading", error: undefined });
 
     try {
       // 1. Start the upload and get the job ID.
-      const { jobId } = await api.upload<{ jobId: string }>(
+      const { jobId: nextJobId } = await api.upload<{ jobId: string }>(
         "/ingest/upload",
         file,
-        {
-          classSectionId: TEST_CLASS_SECTION_ID,
-        },
+        { classSectionId: TEST_CLASS_SECTION_ID },
       );
-      // 2. Start polling for the job status.
-      setIsUploading(false);
-      setIsProcessing(true);
-      pollJobStatus(jobId);
+      // 2. Move to the polling phase; the effect above takes over.
+      setMarkProcessing(nextJobId);
     } catch (error) {
-      setIsUploading(false);
-      if (isApiError(error)) {
-        const message = `Upload failed (status ${error.status}): ${
-          error.payload?.message || error.message
-        }`;
-        patchItem({ status: "error", error: message });
-        setUploadError(message);
-      } else {
-        const message = "An unexpected error occurred during upload.";
-        patchItem({ status: "error", error: message });
-        setUploadError(message);
-      }
+      const message = isApiError(error)
+        ? `Upload failed (status ${error.status}): ${
+            error.payload?.message || error.message
+          }`
+        : "An unexpected error occurred during upload.";
+      patchItem({ status: "error", error: message });
+      setFailIngest(message);
       console.error(error);
     }
   }
@@ -150,12 +149,13 @@ export function ClassRecordUpload() {
   }
 
   const summary = uploadResult;
-  const isWorking = isUploading || isProcessing;
-  const buttonText = isUploading
-    ? "Uploading..."
-    : isProcessing
-      ? "Processing..."
-      : "Upload & Process";
+  const isWorking = status === "uploading" || status === "processing";
+  const buttonText =
+    status === "uploading"
+      ? "Uploading..."
+      : status === "processing"
+        ? "Processing..."
+        : "Upload & Process";
 
   return (
     <section className="space-y-4">
@@ -222,8 +222,8 @@ export function ClassRecordUpload() {
                     CLO code in the file does not exist for this course.
                   </p>
                   <ul className="text-xs space-y-1 list-disc list-inside">
-                    {summary.cloMatchFailures.map((failure, i) => (
-                      <li key={i}>
+                    {summary.cloMatchFailures.map((failure) => (
+                      <li key={`${failure.studentName}:${failure.cloCode}`}>
                         Student "{failure.studentName}" — CLO "{failure.cloCode}
                         "
                       </li>
