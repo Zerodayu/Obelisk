@@ -107,6 +107,34 @@ Build once, reuse across all forms (defined in `frontend/AGENTS.md`):
 
 ## 5. Data Flow
 
+### 5.0 Client state (Jotai store)
+
+Frontend client state is managed with **Jotai** (`lib/store/`). The graph is
+mounted by `StoreProvider` in the root layout; atoms live in
+`lib/store/atoms/` grouped by domain (`user`, `forms`, `ingest`,
+`attainments`, `governance`, `plan`, `cqi`).
+
+- **Reads** use `useAtomValue(atom)`; **writes** use `useSetAtom(actionAtom)`;
+  `useAtom` is only used when a component genuinely needs both.
+- **`lib/store/async-atom.ts`** provides `atomWithAsyncData(initial, fetcher)`
+  (auto-fetch on first subscription, `unwrap`-based sync fallback, write-only
+  `refreshAtom`) and `atomWithMockData(seed)` for datasets whose rollup
+  endpoint does not exist yet — swapping to real data is a one-line change.
+- **Mock data** stays in `components/charts/obe-sample-data.ts` and is read by
+  the atoms, not by components directly. Chart components accept an optional
+  `data` override prop that wins over the atom value.
+- **DB-backed now:** `formSubmissionsDataAtom` fetches `GET /forms`
+  (cookie auth, browser-only — never during SSR) and `formStatusCountsAtom`
+  derives the status donut from it (mock fallback only while loading/error).
+  `userAtom` is seeded from the server-resolved session via
+  `SessionInitializer` in `app/(app)/layout.tsx`.
+- **Ingest state** (`atoms/ingest.ts`) holds upload/polling/result state as
+  atoms + action atoms; `ClassRecordUpload` polls and writes results into them
+  so any consumer can react to a completed import.
+- **Mutations stay server-side**: Server Actions (`server/actions/`) remain the
+  only path for authenticated writes; Jotai mirrors the resulting state on the
+  next navigation (e.g. `userAtom` re-seeded after a role change).
+
 ### 5.1 Form submission
 
 ```
