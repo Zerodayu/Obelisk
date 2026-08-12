@@ -1,5 +1,6 @@
 import { CohortTrendLines } from "@/components/charts/attainment-charts";
 import { ChartCard } from "@/components/charts/chart-card";
+import { CohortTrackingGrid } from "@/components/forms/cohort-tracking-grid";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 
 export default function CohortTrackingPage() {
@@ -10,7 +11,7 @@ export default function CohortTrackingPage() {
       pdcaStage="CHECK"
       description="Permanent longitudinal record; strict audit trail. Chart inputs mirror the backend schema; sample data until the cohort endpoint lands."
     >
-      <div className="grid gap-4 sm:grid-cols-1">
+      <div className="space-y-6">
         <ChartCard
           title="Composite attainment by cohort"
           description="Longitudinal CLO/PLO attainment per cohort across terms."
@@ -18,6 +19,7 @@ export default function CohortTrackingPage() {
         >
           <CohortTrendLines />
         </ChartCard>
+        <CohortTrackingGrid />
       </div>
     </FormPlaceholder>
   );

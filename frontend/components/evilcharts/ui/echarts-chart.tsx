@@ -58,6 +58,16 @@ export function distributeColors(colors: string[], maxCount: number): string[] {
   return result;
 }
 
+// Series keys become CSS custom-property names (`--color-{key}-{n}`). A config
+// keyed by a human label — e.g. "Curriculum Design" — would otherwise produce an
+// invalid declaration the browser silently drops (whitespace, `&`, …), leaving
+// that series with no injected color. Collapse any run of non-identifier
+// characters to a single dash; every site that emits OR reads the var must use
+// the same transform.
+export function cssVarKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9_-]+/g, "-");
+}
+
 // Emits the same CSS <ChartStyle> would: `--color-{key}-{n}` scoped to
 // `[data-chart={id}]` (light) and `.dark [data-chart={id}]` (dark).
 export function buildChartCss(id: string, config: ChartConfig): string {
@@ -70,7 +80,7 @@ export function buildChartCss(id: string, config: ChartConfig): string {
         const authored = item.colors?.[theme];
         if (!authored || authored.length === 0) return [];
         return distributeColors(authored, getColorsCount(item)).map(
-          (color, index) => `  --color-${key}-${index}: ${color};`,
+          (color, index) => `  --color-${cssVarKey(key)}-${index}: ${color};`,
         );
       })
       .join("\n");
@@ -142,7 +152,9 @@ export function resolveColors(
     const count = getColorsCount(config[key] ?? {});
     const slots: string[] = [];
     for (let n = 0; n < count; n++) {
-      const raw = computed.getPropertyValue(`--color-${key}-${n}`).trim();
+      const raw = computed
+        .getPropertyValue(`--color-${cssVarKey(key)}-${n}`)
+        .trim();
       slots.push(raw ? normalizeColor(raw) : "rgba(120, 120, 120, 1)");
     }
     series[key] = slots;
@@ -184,10 +196,11 @@ export function seriesPaint(
 // Solid var / gradient of vars for a series indicator — mirrors getIndicatorColorStyle.
 // Used by BOTH the tooltip rows and the legend indicators.
 export function indicatorBackground(key: string, colorsCount: number): string {
-  if (colorsCount <= 1) return `var(--color-${key}-0)`;
+  const varKey = cssVarKey(key);
+  if (colorsCount <= 1) return `var(--color-${varKey}-0)`;
   const stops = Array.from({ length: colorsCount }, (_, i) => {
     const offset = (i / (colorsCount - 1)) * 100;
-    return `var(--color-${key}-${i}) ${offset}%`;
+    return `var(--color-${varKey}-${i}) ${offset}%`;
   }).join(", ");
   return `linear-gradient(to right, ${stops})`;
 }

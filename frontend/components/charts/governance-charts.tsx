@@ -24,90 +24,90 @@ import {
 } from "@/components/evilcharts/charts/echarts-pie-chart";
 
 const statusConfig = {
-  draft: { label: "Draft", colors: { light: ["#64748b"], dark: ["#94a3b8"] } },
+  draft: { label: "Draft", colors: { light: ["var(--muted-foreground)"] } },
   submitted: {
     label: "Submitted",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
   returned: {
     label: "Returned",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   approved: {
     label: "Approved",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   archived: {
     label: "Archived",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
 } satisfies PieConfig;
 
 const flowConfig = {
   approved: {
     label: "Approved",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   pending: {
     label: "Pending",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
   returned: {
     label: "Returned",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
 } satisfies ChartConfig;
 
 const auditConfig = {
-  count: { label: "Events", colors: { light: ["#6d28d9"], dark: ["#a78bfa"] } },
+  count: { label: "Events", colors: { light: ["var(--chart-1)"] } },
 } satisfies ChartConfig;
 
 const riskConfig = {
   "Below 70% in direct CLO score": {
     label: "Direct <70%",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   "Below 70% in indirect CLO score": {
     label: "Indirect <70%",
-    colors: { light: ["#dc2626"], dark: ["#f87171"] },
+    colors: { light: ["var(--destructive)"] },
   },
   "Multiple CLOs under threshold": {
     label: "Multiple CLOs <70%",
-    colors: { light: ["#db2777"], dark: ["#f472b6"] },
+    colors: { light: ["var(--chart-3)"] },
   },
 } satisfies PieConfig;
 
 const recommendationConfig = {
   pending_review: {
     label: "Pending review",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
   acknowledged: {
     label: "Acknowledged",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   actioned: {
     label: "Actioned",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   dismissed: {
     label: "Dismissed",
-    colors: { light: ["#64748b"], dark: ["#94a3b8"] },
+    colors: { light: ["var(--muted-foreground)"] },
   },
 } satisfies PieConfig;
 
 const clusterConfig = {
   graduated: {
     label: "Graduated",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
   transferee: {
     label: "Transferee",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
   withdrawn: {
     label: "Withdrawn",
-    colors: { light: ["#dc2626"], dark: ["#f87171"] },
+    colors: { light: ["var(--destructive)"] },
   },
 } satisfies PieConfig;
 

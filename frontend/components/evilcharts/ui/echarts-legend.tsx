@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import {
   type ChartConfig,
+  cssVarKey,
   getColorsCount,
   indicatorBackground,
 } from "@/components/evilcharts/ui/echarts-chart";
@@ -26,7 +27,8 @@ export function legendFillStyle(
   key: string,
   colorsCount: number,
 ): CSSProperties {
-  if (colorsCount <= 1) return { backgroundColor: `var(--color-${key}-0)` };
+  if (colorsCount <= 1)
+    return { backgroundColor: `var(--color-${cssVarKey(key)}-0)` };
   return { background: indicatorBackground(key, colorsCount) };
 }
 

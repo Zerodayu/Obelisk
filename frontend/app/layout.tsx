@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { FaviconSync } from "@/components/branding/favicon";
 import { ThemeProvider } from "@/components/theme/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { app } from "@/utils/app-info";
 
@@ -86,7 +87,9 @@ export default function RootLayout({
       </head>
       <ThemeProvider>
         <FaviconSync />
-        <body className="min-h-full flex flex-col">{children}</body>
+        <TooltipProvider>
+          <body className="min-h-full flex flex-col">{children}</body>
+        </TooltipProvider>
       </ThemeProvider>
     </html>
   );

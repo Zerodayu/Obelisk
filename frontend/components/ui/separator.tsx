@@ -1,34 +1,25 @@
-"use client";
+"use client"
 
-import { ark } from "@ark-ui/react/factory";
-import { cn } from "@/lib/utils";
+import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"
 
-interface SeparatorProps extends React.ComponentProps<typeof ark.div> {
-  /**
-   * The orientation of the separator.
-   *
-   * @default "horizontal"
-   */
-  orientation?: "horizontal" | "vertical";
-}
+import { cn } from "@/lib/utils"
 
-export const Separator = (props: SeparatorProps) => {
-  const { orientation = "horizontal", className, ...rest } = props;
-
+function Separator({
+  className,
+  orientation = "horizontal",
+  ...props
+}: SeparatorPrimitive.Props) {
   return (
-    <ark.div
-      aria-orientation={orientation}
+    <SeparatorPrimitive
+      data-slot="separator"
+      orientation={orientation}
       className={cn(
-        "shrink-0",
-        "bg-input",
-        "data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full",
-        "data-[orientation=vertical]:w-px data-[orientation=vertical]:not-[[class^='h-']]:not-[[class*='_h-']]:self-stretch",
+        "shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
         className
       )}
-      data-orientation={orientation}
-      data-slot="separator"
-      role="separator"
-      {...rest}
+      {...props}
     />
-  );
-};
+  )
+}
+
+export { Separator }

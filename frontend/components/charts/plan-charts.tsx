@@ -22,45 +22,45 @@ import {
 const scheduleConfig = {
   direct: {
     label: "Direct",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
   indirect: {
     label: "Indirect",
-    colors: { light: ["#2563eb"], dark: ["#60a5fa"] },
+    colors: { light: ["var(--info)"] },
   },
 } satisfies ChartConfig;
 
 const targetConfig = {
   target: {
     label: "Target",
-    colors: { light: ["#475569"], dark: ["#94a3b8"] },
+    colors: { light: ["var(--muted-foreground)"] },
   },
   current: {
     label: "Current",
-    colors: { light: ["#059669"], dark: ["#34d399"] },
+    colors: { light: ["var(--success)"] },
   },
 } satisfies ChartConfig;
 
 const coverageConfig = {
   mapped: {
     label: "Mapped CLOs",
-    colors: { light: ["#6d28d9"], dark: ["#a78bfa"] },
+    colors: { light: ["var(--chart-1)"] },
   },
 } satisfies ChartConfig;
 
 const budgetConfig = {
   planned: {
     label: "Planned",
-    colors: { light: ["#d97706"], dark: ["#fbbf24"] },
+    colors: { light: ["var(--warning)"] },
   },
-  spent: { label: "Spent", colors: { light: ["#6d28d9"], dark: ["#a78bfa"] } },
+  spent: { label: "Spent", colors: { light: ["var(--chart-1)"] } },
 } satisfies ChartConfig;
 
 const phaseConfig = {
-  PLAN: { label: "PLAN", colors: { light: ["#2563eb"], dark: ["#60a5fa"] } },
-  DO: { label: "DO", colors: { light: ["#d97706"], dark: ["#fbbf24"] } },
-  CHECK: { label: "CHECK", colors: { light: ["#db2777"], dark: ["#f472b6"] } },
-  ACT: { label: "ACT", colors: { light: ["#059669"], dark: ["#34d399"] } },
+  PLAN: { label: "PLAN", colors: { light: ["var(--info)"] } },
+  DO: { label: "DO", colors: { light: ["var(--warning)"] } },
+  CHECK: { label: "CHECK", colors: { light: ["var(--chart-3)"] } },
+  ACT: { label: "ACT", colors: { light: ["var(--success)"] } },
 } satisfies PieConfig;
 
 /** Planned vs spent budget per line item (PHP thousands). */
