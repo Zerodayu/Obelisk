@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { FaviconSync } from "@/components/branding/favicon";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/lib/store";
@@ -48,20 +47,6 @@ const THEME_INIT_SCRIPT = `(function () {
 export const metadata: Metadata = {
   title: app.legalTitle,
   description: app.description,
-  icons: {
-    icon: [
-      {
-        url: app.logo.light,
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: app.logo.dark,
-        type: "image/svg+xml",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
-  },
 };
 
 export default function RootLayout({
@@ -87,8 +72,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <StoreProvider>
-        <ThemeProvider>
-          <FaviconSync />
+        <ThemeProvider enableSystem={true}>
           <TooltipProvider>
             <body className="min-h-full flex flex-col">{children}</body>
           </TooltipProvider>
