@@ -46,14 +46,14 @@ interface CloPloMappingEntry {
 	correlation_strength?: number;
 }
 
-export interface PersistenceSummary {
+export type PersistenceSummary = {
 	computationRunId: string;
 	studentsProcessed: number;
 	studentsCreated: number;
 	cloAttainmentsCreated: number;
 	atRiskFlagsCreated: number;
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
-}
+};
 
 // --- Custom Error ---
 
@@ -494,13 +494,75 @@ function asSlug(value: string): string {
 export class IngestService {
 	/**
 	 * Starts the ETL process by uploading the file to the python-server.
-	 * Does not wait for completion.
+	 * Does not wait for completion. Records the attempt in `UploadRecord` so
+	 * the user's cross-device upload history includes it from the start.
 	 * @returns The job ID for polling.
 	 */
-	async startUpload(file: File, filename: string): Promise<{ jobId: string }> {
-		const blob = new Blob([file]);
-		const jobId = await ingestClient.upload(blob, filename);
-		return { jobId };
+	async startUpload(
+		file: File,
+		filename: string,
+		classSectionId: string,
+		userId: string,
+	): Promise<{ jobId: string }> {
+		const record = await prisma.uploadRecord.create({
+			data: {
+				userId,
+				classSectionId,
+				filename,
+				status: "queued",
+			},
+		});
+
+		try {
+			const blob = new Blob([file]);
+			const jobId = await ingestClient.upload(blob, filename);
+			await prisma.uploadRecord.update({
+				where: { id: record.id },
+				data: { etlJobId: jobId },
+			});
+			return { jobId };
+		} catch (error) {
+			await this.markUploadFailed(record.id, error);
+			throw error;
+		}
+	}
+
+	/** Returns the upload history for a user, newest first. */
+	async listHistory(userId: string) {
+		return prisma.uploadRecord.findMany({
+			where: { userId },
+			orderBy: { createdAt: "desc" },
+			include: {
+				classSection: {
+					select: {
+						sectionCode: true,
+						course: {
+							select: { code: true, title: true },
+						},
+						term: {
+							select: { schoolYear: true, semester: true },
+						},
+					},
+				},
+			},
+		});
+	}
+
+	/** Marks the upload record for a python job as failed (if one exists). */
+	private async markUploadFailed(
+		recordId: string,
+		error: unknown,
+	): Promise<void> {
+		const message = error instanceof Error ? error.message : String(error);
+		await prisma.uploadRecord.update({
+			where: { id: recordId },
+			data: { status: "failed", error: message },
+		});
+	}
+
+	/** Finds the `UploadRecord` that started the given python ETL job, if any. */
+	private async findRecordByJob(jobId: string) {
+		return prisma.uploadRecord.findFirst({ where: { etlJobId: jobId } });
 	}
 
 	/**
@@ -533,7 +595,8 @@ export class IngestService {
 
 	/**
 	 * Checks the status of a job, and if complete, triggers the persistence step.
-	 * Caches results to ensure idempotency.
+	 * Caches results to ensure idempotency. The matching `UploadRecord` is
+	 * updated to `completed`/`failed` so the user's history stays accurate.
 	 */
 	async getJobStatus(
 		jobId: string,
@@ -554,6 +617,12 @@ export class IngestService {
 		if (job.status === "failed") {
 			const result = { status: "failed" as const, error: job.error };
 			jobCompletionCache.set(jobId, result); // Cache the failure
+
+			const record = await this.findRecordByJob(jobId);
+			if (record) {
+				await this.markUploadFailed(record.id, job.error ?? job.status);
+			}
+
 			return result;
 		}
 
@@ -565,6 +634,19 @@ export class IngestService {
 					triggeredByUserId,
 				);
 				jobCompletionCache.set(jobId, result); // Cache the success
+
+				const record = await this.findRecordByJob(jobId);
+				if (record && result.status === "completed") {
+					await prisma.uploadRecord.update({
+						where: { id: record.id },
+						data: {
+							status: "completed",
+							computationRunId: result.persistence.computationRunId,
+							summary: result.persistence,
+						},
+					});
+				}
+
 				return result;
 			} catch (error) {
 				console.error(`[Ingest] Persistence failed for job ${jobId}:`, error);
@@ -579,6 +661,12 @@ export class IngestService {
 								},
 				};
 				jobCompletionCache.set(jobId, result); // Cache the failure
+
+				const record = await this.findRecordByJob(jobId);
+				if (record) {
+					await this.markUploadFailed(record.id, error);
+				}
+
 				return result;
 			}
 		}

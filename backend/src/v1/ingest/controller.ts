@@ -12,9 +12,14 @@ export const ingestPlugin = new Elysia({
 	.use(authPlugin)
 	.post(
 		"/upload",
-		async ({ body }) => {
+		async ({ body, user }) => {
 			// Start the ETL job but do not wait for it to complete.
-			return ingestService.startUpload(body.file, body.file.name);
+			return ingestService.startUpload(
+				body.file,
+				body.file.name,
+				body.classSectionId,
+				user.id,
+			);
 		},
 		{
 			auth: true,
@@ -28,6 +33,27 @@ export const ingestPlugin = new Elysia({
 					200: { description: "ETL job started successfully." },
 					401: { description: "Unauthorized" },
 					500: { description: "Python server failure on job creation." },
+				},
+			},
+		},
+	)
+	.get(
+		"/history",
+		async ({ user }) => {
+			return ingestService.listHistory(user.id);
+		},
+		{
+			auth: true,
+			detail: {
+				summary: "List the current user's class-record upload history",
+				description:
+					"Returns every upload attempt by the signed-in user (any class section), newest first, including failed ones.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: {
+						description: "List of upload records for the current user.",
+					},
+					401: { description: "Unauthorized" },
 				},
 			},
 		},
