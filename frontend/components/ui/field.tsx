@@ -8,8 +8,8 @@ import {
 import { Fieldset as ArkFieldset } from "@ark-ui/react/fieldset";
 import type React from "react";
 import { tv, type VariantProps } from "tailwind-variants";
-import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export const useField = useArkFieldContext;
 
@@ -75,7 +75,7 @@ export const Field = (props: FieldProps) => {
 };
 
 export const FieldSet = (
-  props: React.ComponentProps<typeof ArkFieldset.Root>
+  props: React.ComponentProps<typeof ArkFieldset.Root>,
 ) => {
   const { className, ...rest } = props;
 
@@ -84,7 +84,7 @@ export const FieldSet = (
       className={cn(
         "flex flex-col gap-6",
         "has-[>[data-slot=checkbox-group]]:gap-3 has-[>[data-slot=radio-group]]:gap-3",
-        className
+        className,
       )}
       data-slot="field-set"
       {...rest}
@@ -109,7 +109,7 @@ export const FieldLegend = (props: FieldLegendProps) => {
         "mb-3 font-medium",
         "data-[variant=legend]:text-base",
         "data-[variant=label]:text-sm",
-        className
+        className,
       )}
       data-slot="field-legend"
       data-variant={variant}
@@ -128,7 +128,7 @@ export const FieldGroup = (props: React.ComponentProps<typeof ark.div>) => {
         "flex w-full flex-col gap-4",
         "data-[data-slot=checkbox-group]:gap-3",
         "*:data-[slot=field-group]:gap-4",
-        className
+        className,
       )}
       data-slot="field-group"
       {...rest}
@@ -145,7 +145,7 @@ export const FieldContent = (props: React.ComponentProps<typeof ark.div>) => {
         "group/field-content",
         "flex flex-1 flex-col gap-1.5",
         "leading-snug",
-        className
+        className,
       )}
       data-slot="field-content"
       {...rest}
@@ -154,7 +154,7 @@ export const FieldContent = (props: React.ComponentProps<typeof ark.div>) => {
 };
 
 export const FieldLabel = (
-  props: React.ComponentProps<typeof ArkField.Label>
+  props: React.ComponentProps<typeof ArkField.Label>,
 ) => {
   const { className, ...rest } = props;
 
@@ -162,13 +162,13 @@ export const FieldLabel = (
     <ArkField.Label
       className={cn(
         "group/field-label peer/field-label",
-        "select-none font-medium text-sm leading-snug",
+        "select-none font-medium text-sm text-foreground leading-snug",
         "flex w-fit gap-1",
         "has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col has-[>[data-slot=field]]:rounded-xl has-[>[data-slot=field]]:border *:data-[slot=field]:p-2.5",
         "has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5",
         "group-data-disabled/field:opacity-64",
         "dark:has-data-[state=checked]:bg-primary/10",
-        className
+        className,
       )}
       data-slot="field-label"
       {...rest}
@@ -177,7 +177,7 @@ export const FieldLabel = (
 };
 
 export const FieldRequiredIndicator = (
-  props: React.ComponentProps<typeof ark.span>
+  props: React.ComponentProps<typeof ark.span>,
 ) => {
   const { className, children, ...rest } = props;
 
@@ -187,7 +187,7 @@ export const FieldRequiredIndicator = (
       className={cn(
         "select-none text-destructive text-sm",
         "dark:text-destructive-foreground",
-        className
+        className,
       )}
       data-slot="field-required-indicator"
       {...rest}
@@ -207,7 +207,7 @@ export const FieldTitle = (props: React.ComponentProps<typeof ark.div>) => {
         "flex items-center gap-2",
         "font-medium text-sm leading-snug",
         "group-data-[disabled=true]/field:opacity-64",
-        className
+        className,
       )}
       data-slot="field-title"
       {...rest}
@@ -228,7 +228,7 @@ export const FieldDescription = (props: React.ComponentProps<typeof ark.p>) => {
         "nth-last-2:-mt-1 last:mt-0 [[data-variant=legend]+&]:-mt-1.5",
         "in-[[data-slot=field]:has([data-slot=radio-group-item])]:ms-6 in-[[data-slot=field]:has([data-slot=radio-group-item])]:-mt-1.5!",
         "[&>a:hover]:text-primary [&>a]:underline [&>a]:underline-offset-4",
-        className
+        className,
       )}
       data-slot="field-description"
       {...rest}
@@ -246,7 +246,7 @@ export const FieldSeparator = (props: React.ComponentProps<typeof ark.div>) => {
         "h-5",
         "-my-2 group-data-[variant=outline]/field-group:-mb-2",
         "text-sm",
-        className
+        className,
       )}
       data-content={!!children}
       data-slot="field-separator"
@@ -261,7 +261,7 @@ export const FieldSeparator = (props: React.ComponentProps<typeof ark.div>) => {
             "w-fit",
             "mx-auto px-2",
             "bg-background",
-            "text-muted-foreground text-sm"
+            "text-muted-foreground text-sm",
           )}
         >
           {children}
@@ -272,7 +272,7 @@ export const FieldSeparator = (props: React.ComponentProps<typeof ark.div>) => {
 };
 
 export const FieldHelper = (
-  props: React.ComponentProps<typeof ArkField.HelperText>
+  props: React.ComponentProps<typeof ArkField.HelperText>,
 ) => {
   const { className, ...rest } = props;
 
@@ -286,7 +286,7 @@ export const FieldHelper = (
 };
 
 export const FieldError = (
-  props: React.ComponentProps<typeof ArkField.ErrorText>
+  props: React.ComponentProps<typeof ArkField.ErrorText>,
 ) => {
   const { className, ...rest } = props;
 
@@ -295,7 +295,7 @@ export const FieldError = (
       className={cn(
         "font-normal text-destructive text-sm",
         "dark:text-destructive-foreground",
-        className
+        className,
       )}
       data-slot="field-error"
       {...rest}
