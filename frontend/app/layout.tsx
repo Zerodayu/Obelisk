@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { Variant } from "material-shadcn";
 import { Theme } from "@/components/theme";
+import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,7 @@ export default function RootLayout({
           storageKey={"obelisk-theme"}
         >
           <TooltipProvider>
+            <Toaster />
             <body className="min-h-full flex flex-col">{children}</body>
           </TooltipProvider>
         </Theme>
