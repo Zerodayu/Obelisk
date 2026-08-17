@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { Variant } from "material-shadcn";
+import { generateTheme, tokensToCssVars, Variant } from "material-shadcn";
 import { Theme } from "@/components/theme";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/lib/store";
+import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 import { cn } from "@/lib/utils";
 import { app } from "@/utils/app-info";
 
@@ -22,18 +23,45 @@ const geistMono = Geist_Mono({
 });
 
 /**
- * Applies the persisted/system theme to <html> before first paint to prevent a
- * light→dark flash on every load. Mirrors the material-shadcn `<Theme>`
- * provider (storageKey "material-shadcn-theme", JSON {seed, variant,
- * colorMode}, .dark class strategy). Falls back to the legacy "theme" key
- * (light/dark/system) for existing visitors.
+ * The material-shadcn theme (seed/variant/contrast are fixed in the layout —
+ * no UI changes them), generated once on the server and rendered into a
+ * `<style>` in <head> so the FIRST paint already uses the real themed palette
+ * (both modes), not the plain globals.css fallback colors. The tiny inline
+ * script below only has to flip the `.dark`/`.light` class + colorScheme
+ * before paint to pick which palette applies. After hydration the
+ * material-shadcn `<Theme>` provider re-applies identical values (idempotent).
+ */
+const theme = generateTheme({
+  seed: "#5a1f4c",
+  variant: Variant.VIBRANT,
+  contrast: 0,
+});
+
+const LIGHT_VARS = tokensToCssVars(theme.light);
+const DARK_VARS = tokensToCssVars(theme.dark);
+
+function varsToCss(selector: string, vars: Record<string, string>): string {
+  const body = Object.entries(vars)
+    .map(([key, value]) => `${key}:${value};`)
+    .join("");
+  return `${selector}{${body}}`;
+}
+
+// `html:root` / `html.dark` out-specify globals.css's `:root` / `.dark` (both
+// (0,1,0)) regardless of stylesheet order, so our tokens always win pre-paint.
+const THEME_CSS = `${varsToCss("html:root", LIGHT_VARS)}${varsToCss("html.dark", DARK_VARS)}`;
+
+/**
+ * Resolves the persisted/system mode and applies the `.dark`/`.light` class +
+ * `colorScheme` to <html> before first paint so the browser paints the correct
+ * pre-rendered palette above. Reads THEME_STORAGE_KEY (JSON {seed, variant,
+ * colorMode}) and falls back to the legacy "theme" key (light/dark/system).
  */
 const THEME_INIT_SCRIPT = `(function () {
   try {
-    var root = document.documentElement;
     var stored = null;
     try {
-      var ms = JSON.parse(localStorage.getItem("material-shadcn-theme"));
+      var ms = JSON.parse(localStorage.getItem("${THEME_STORAGE_KEY}"));
       if (ms && (ms.colorMode === "light" || ms.colorMode === "dark" || ms.colorMode === "system")) {
         stored = ms.colorMode;
       }
@@ -42,6 +70,7 @@ const THEME_INIT_SCRIPT = `(function () {
       var legacy = localStorage.getItem("theme");
       stored = legacy === "light" || legacy === "dark" || legacy === "system" ? legacy : "system";
     }
+    var root = document.documentElement;
     var resolved =
       stored === "system"
         ? window.matchMedia("(prefers-color-scheme: dark)").matches
@@ -78,22 +107,25 @@ export default function RootLayout({
       )}
     >
       <head>
+        {/* Themed tokens for both modes, present in the first HTML paint. */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static generated CSS vars, no user input */}
+        <style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
         {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme-init script, no user input */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <StoreProvider>
-        <Theme
-          seed="#5a1f4c"
-          variant={Variant.VIBRANT}
-          colorMode="system"
-          storageKey={"obelisk-theme"}
-        >
+      <Theme
+        seed="#5a1f4c"
+        variant={Variant.VIBRANT}
+        colorMode="system"
+        storageKey={THEME_STORAGE_KEY}
+      >
+        <StoreProvider>
           <TooltipProvider>
             <Toaster />
             <body className="min-h-full flex flex-col">{children}</body>
           </TooltipProvider>
-        </Theme>
-      </StoreProvider>
+        </StoreProvider>
+      </Theme>
     </html>
   );
 }

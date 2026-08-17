@@ -21,6 +21,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 
 // ---------------------------------------------------------------------------
 // Context
@@ -158,7 +159,7 @@ function RootTheme({
   variant: variantProp = Variant.TONAL_SPOT,
   contrast = 0,
   colorMode: colorModeProp = "system",
-  storageKey = "material-shadcn-theme",
+  storageKey = THEME_STORAGE_KEY,
   children,
 }: ThemeRootProps) {
   const defaults: StoredSettings = {
