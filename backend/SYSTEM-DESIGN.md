@@ -8,7 +8,7 @@
 ## 1. Architecture & Runtime
 
 - **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (Google OAuth for new accounts — restricted to the organization's Workspace domain; email/password sign-in kept for existing accounts, new email sign-ups disabled). **Validation:** Elysia `t` (backend) and Zod.
-- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client).
+- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
 - **App bootstrap** `src/index.ts`:
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
   2. `@elysia/cors` — origins from `FRONTEND_URL` + `http://localhost:3000`, credentials enabled.
@@ -131,6 +131,9 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, starts ETL, returns `{ jobId }`. Records an `UploadRecord` (`queued`) for the user's history. |
 | GET | `/api/v1/ingest/upload/:jobId/status` | `auth: true` | poll an ETL job; on completion triggers persistence and marks the `UploadRecord` `completed`/`failed`. |
 | GET | `/api/v1/ingest/history` | `auth: true` | List the current user's upload history (any class section), newest first, including failed attempts. |
+| GET | `/api/v1/ingest/attainments` | `auth: true` | List per-student CLO attainment rows (editable roster) for a class section's computation run (latest by default). |
+| PUT | `/api/v1/ingest/attainments` | `auth: true` | Manually edit per-student CLO direct scores; recomputes composite/threshold and reconciles at-risk flags (computed, never manual). |
+| POST | `/api/v1/ingest/attainments/reimport` | `auth: true` | Re-import scores from a wide-format roster CSV/TSV (`student_name, student_id?, CLO1, CLO2, …`); upserts `CloAttainment` rows and reconciles at-risk flags. |
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
@@ -223,7 +226,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 ### Implemented
 - **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
 - **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.startUpload` records an `UploadRecord` (`queued`) then forwards the file to python-server; `getJobStatus` polls the ETL job, triggers persistence once, and marks the matching `UploadRecord` `completed` (with `computationRunId` + persistence `summary`) or `failed`; `listHistory` returns the current user's upload records (any class section) newest first.
-- **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records, and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`.
+- **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records, and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`. Also exposes the editable-roster flows: `listAttainments` (returns the per-student CLO attainment rows for a class section's computation run, each with its student, CLO, scores, and at-risk state), `updateScores` (manually edits direct scores, recomputes `compositeScorePct` via `direct×0.70 + indirect×0.30` and `isBelowThreshold`, and reconciles `AtRiskFlag` rows — computed, never manual), and `reimportScores` (parses a wide-format roster CSV/TSV via `lib/ingest/csv.ts`, finds-or-creates students by student id or normalized name, upserts the matching `CloAttainment` rows, and reconciles at-risk flags).
 
 ### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
