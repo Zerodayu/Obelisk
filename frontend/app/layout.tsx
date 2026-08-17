@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme/theme-provider";
+import { Variant } from "material-shadcn";
+import { Theme } from "@/components/theme";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StoreProvider } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -21,23 +22,31 @@ const geistMono = Geist_Mono({
 
 /**
  * Applies the persisted/system theme to <html> before first paint to prevent a
- * light→dark flash on every load. Mirrors `theme-provider.tsx` (storageKey
- * "theme", values light/dark/system, class strategy).
+ * light→dark flash on every load. Mirrors the material-shadcn `<Theme>`
+ * provider (storageKey "material-shadcn-theme", JSON {seed, variant,
+ * colorMode}, .dark class strategy). Falls back to the legacy "theme" key
+ * (light/dark/system) for existing visitors.
  */
 const THEME_INIT_SCRIPT = `(function () {
   try {
     var root = document.documentElement;
-    var stored = localStorage.getItem("theme");
-    var theme =
-      stored === "light" || stored === "dark" || stored === "system"
-        ? stored
-        : "system";
+    var stored = null;
+    try {
+      var ms = JSON.parse(localStorage.getItem("material-shadcn-theme"));
+      if (ms && (ms.colorMode === "light" || ms.colorMode === "dark" || ms.colorMode === "system")) {
+        stored = ms.colorMode;
+      }
+    } catch (e) {}
+    if (!stored) {
+      var legacy = localStorage.getItem("theme");
+      stored = legacy === "light" || legacy === "dark" || legacy === "system" ? legacy : "system";
+    }
     var resolved =
-      theme === "system"
+      stored === "system"
         ? window.matchMedia("(prefers-color-scheme: dark)").matches
           ? "dark"
           : "light"
-        : theme;
+        : stored;
     root.classList.remove("light", "dark");
     root.classList.add(resolved);
     root.style.colorScheme = resolved;
@@ -72,11 +81,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <StoreProvider>
-        <ThemeProvider enableSystem={true}>
+        <Theme
+          seed="#5a1f4c"
+          variant={Variant.VIBRANT}
+          colorMode="system"
+          storageKey={"obelisk-theme"}
+        >
           <TooltipProvider>
             <body className="min-h-full flex flex-col">{children}</body>
           </TooltipProvider>
-        </ThemeProvider>
+        </Theme>
       </StoreProvider>
     </html>
   );
