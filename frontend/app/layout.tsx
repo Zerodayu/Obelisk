@@ -121,8 +121,10 @@ export default function RootLayout({
       >
         <StoreProvider>
           <TooltipProvider>
-            <Toaster />
-            <body className="min-h-full flex flex-col">{children}</body>
+            <body className="min-h-full flex flex-col">
+              <Toaster />
+              {children}
+            </body>
           </TooltipProvider>
         </StoreProvider>
       </Theme>
