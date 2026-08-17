@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 import { LoginForm } from "@/components/auth/login-form";
+import { PageNotice } from "@/components/auth/page-notice";
 import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { Separator } from "@/components/ui/separator";
 import { requireGuest } from "@/server/auth";
@@ -69,18 +70,21 @@ const SignIn = async ({
       </div>
 
       {registered === "1" && (
-        <div className="absolute inset-x-0 bottom-6 mx-auto flex w-fit max-w-md items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm">
-          <span className="size-2 shrink-0 rounded-full bg-primary" />
-          Account created. An administrator must approve your role request
-          before you get access.
-        </div>
+        <PageNotice
+          id="auth:registered"
+          type="success"
+          title="Account created"
+          description="An administrator must approve your role request before you get access."
+        />
       )}
 
       {error && (
-        <div className="absolute inset-x-0 bottom-6 mx-auto flex w-fit max-w-md items-center gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm">
-          <span className="size-2 shrink-0 rounded-full bg-destructive" />
-          Sign-in failed. Make sure you use your organization account.
-        </div>
+        <PageNotice
+          id="auth:login-error"
+          type="error"
+          title="Sign-in failed"
+          description="Make sure you use your organization account."
+        />
       )}
     </div>
   );

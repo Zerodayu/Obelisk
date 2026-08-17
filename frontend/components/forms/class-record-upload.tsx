@@ -1,11 +1,11 @@
 "use client";
 
 import { useAtomValue, useSetAtom } from "jotai";
-import { AlertTriangle, Info } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Progress, ProgressValue } from "@/components/ui/progress";
+import { toast, toastError } from "@/components/ui/toast";
 import {
   FileUpload,
   type FileUploadItem,
@@ -14,11 +14,9 @@ import { api, isApiError } from "@/lib/api-client";
 import {
   completeIngestAtom,
   failIngestAtom,
-  ingestErrorAtom,
   ingestJobIdAtom,
   ingestStatusAtom,
   markProcessingAtom,
-  persistenceSummaryAtom,
   refreshUploadHistoryAtom,
   startUploadAtom,
 } from "@/lib/store/atoms/ingest";
@@ -58,8 +56,6 @@ export function ClassRecordUpload() {
 
   const status = useAtomValue(ingestStatusAtom);
   const jobId = useAtomValue(ingestJobIdAtom);
-  const uploadResult = useAtomValue(persistenceSummaryAtom);
-  const uploadError = useAtomValue(ingestErrorAtom);
 
   const setStartUpload = useSetAtom(startUploadAtom);
   const setMarkProcessing = useSetAtom(markProcessingAtom);
@@ -94,14 +90,38 @@ export function ClassRecordUpload() {
 
         if (disposed) return;
         if (res.status === "completed") {
+          const summary = res.persistence;
           patchItem({ status: "success", progress: 100 });
-          setCompleteIngest(res.persistence ?? null);
+          setCompleteIngest(summary ?? null);
           setRefreshHistory();
+          if (summary) {
+            toast.success({
+              id: "ingest:complete",
+              title: "Processing Complete",
+              description: [
+                `${summary.studentsProcessed} students processed`,
+                `${summary.cloAttainmentsCreated} CLO records recorded`,
+                `${summary.atRiskFlagsCreated} at-risk students flagged`,
+              ].join(" · "),
+            });
+            if (summary.cloMatchFailures.length > 0) {
+              toast.warning({
+                id: "ingest:clo-match-warning",
+                title: "CLO Matching Failures",
+                description: `${summary.cloMatchFailures.length} attainment record${summary.cloMatchFailures.length === 1 ? "" : "s"} skipped (unmatched CLO codes).`,
+              });
+            }
+          }
         } else if (res.status === "failed") {
           const message = res.error?.message || "Processing failed.";
           patchItem({ status: "error", error: message });
           setFailIngest(message);
           setRefreshHistory();
+          toastError({
+            scope: "ingest",
+            title: "Upload Failed",
+            description: message,
+          });
         }
         // If 'queued' or 'running', keep polling.
       } catch (error) {
@@ -114,6 +134,12 @@ export function ClassRecordUpload() {
         patchItem({ status: "error", error: message });
         setFailIngest(message);
         setRefreshHistory();
+        toastError({
+          status: isApiError(error) ? error.status : undefined,
+          scope: "ingest",
+          title: "Upload Failed",
+          description: message,
+        });
       }
     }, POLL_INTERVAL_MS);
 
@@ -153,6 +179,12 @@ export function ClassRecordUpload() {
         : "An unexpected error occurred during upload.";
       patchItem({ status: "error", error: message });
       setFailIngest(message);
+      toastError({
+        status: isApiError(error) ? error.status : undefined,
+        scope: "ingest",
+        title: "Upload Failed",
+        description: message,
+      });
       console.error(error);
     }
   }
@@ -162,7 +194,6 @@ export function ClassRecordUpload() {
     return ALLOWED_EXTENSIONS.includes(ext) || ALLOWED_MIME.includes(file.type);
   }
 
-  const summary = uploadResult;
   const isWorking = status === "uploading" || status === "processing";
   const isUploading = status === "uploading";
   const progressLabel = isUploading
@@ -207,53 +238,6 @@ export function ClassRecordUpload() {
                 <ProgressValue />
               </Progress>
             </Field>
-          )}
-        </div>
-      )}
-
-      {uploadError && (
-        <div className="p-4 rounded-md bg-destructive/10 text-destructive flex items-start gap-3">
-          <AlertTriangle className="h-5 w-5 mt-0.5" />
-          <div>
-            <p className="font-semibold">Upload Failed</p>
-            <p className="text-sm">{uploadError}</p>
-          </div>
-        </div>
-      )}
-
-      {summary && (
-        <div className="p-4 rounded-md bg-muted/50 space-y-4">
-          <div>
-            <h3 className="font-semibold mb-2">Processing Complete</h3>
-            <ul className="text-sm space-y-1 list-disc list-inside">
-              <li>Students processed: {summary.studentsProcessed}</li>
-              <li>New students created: {summary.studentsCreated}</li>
-              <li>CLO attainments recorded: {summary.cloAttainmentsCreated}</li>
-              <li>Students flagged at-risk: {summary.atRiskFlagsCreated}</li>
-            </ul>
-          </div>
-
-          {summary.cloMatchFailures.length > 0 && (
-            <div className="p-4 rounded-md bg-amber-400/20 text-amber-900 dark:text-amber-200 dark:bg-amber-900/20">
-              <div className="flex items-start gap-3">
-                <Info className="h-5 w-5 mt-0.5" />
-                <div>
-                  <p className="font-semibold">CLO Matching Failures</p>
-                  <p className="text-sm mb-2">
-                    The following attainment records were skipped because the
-                    CLO code in the file does not exist for this course.
-                  </p>
-                  <ul className="text-xs space-y-1 list-disc list-inside">
-                    {summary.cloMatchFailures.map((failure) => (
-                      <li key={`${failure.studentName}:${failure.cloCode}`}>
-                        Student "{failure.studentName}" — CLO "{failure.cloCode}
-                        "
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
           )}
         </div>
       )}

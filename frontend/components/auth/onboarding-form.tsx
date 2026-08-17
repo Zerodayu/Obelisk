@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SelectRole } from "@/components/auth/select-role";
 import { Button } from "@/components/ui/button";
+import { toast, toastError } from "@/components/ui/toast";
 import { fileRoleRequest } from "@/server/actions/auth";
 
 /**
@@ -18,7 +19,13 @@ export const OnboardingForm = () => {
 
   async function onSubmit() {
     if (!requestedRole) {
-      setError("Select the role you are applying for.");
+      const message = "Select the role you are applying for.";
+      setError(message);
+      toastError({
+        scope: "onboarding",
+        title: "Role required",
+        description: message,
+      });
       return;
     }
     setSubmitting(true);
@@ -26,7 +33,13 @@ export const OnboardingForm = () => {
     const result = await fileRoleRequest(requestedRole);
     if (!result.ok) {
       setError(result.error);
+      toastError({
+        scope: "onboarding",
+        title: "Request failed",
+        description: result.error,
+      });
     } else {
+      toast.success({ title: "Role request submitted" });
       router.refresh();
     }
     setSubmitting(false);

@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toastError } from "@/components/ui/toast";
 import { signInWithEmail } from "@/server/actions/auth";
 
 const formSchema = z.object({
@@ -47,6 +48,11 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
     if (!result.ok) {
       setError(result.error);
       setSubmitting(false);
+      toastError({
+        scope: "auth:login",
+        title: "Sign-in failed",
+        description: result.error,
+      });
     }
   }
 

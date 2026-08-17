@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GoogleLogo } from "@/components/branding/icons";
 import { Button } from "@/components/ui/button";
+import { toastError } from "@/components/ui/toast";
 import { authClient } from "@/lib/auth-client";
 
 interface GoogleSignInButtonProps {
@@ -38,9 +39,14 @@ export const GoogleSignInButton = ({
     });
     if (error) {
       setSubmitting(false);
-      setError(
-        error.message ?? "Could not start Google sign-in. Please try again.",
-      );
+      const message =
+        error.message ?? "Could not start Google sign-in. Please try again.";
+      setError(message);
+      toastError({
+        scope: "auth:google",
+        title: "Google sign-in failed",
+        description: message,
+      });
       return;
     }
     if (data?.url && !data.redirect) {

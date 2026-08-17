@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { toast, toastError } from "@/components/ui/toast";
 import { ApiError, api } from "@/lib/api-client";
 import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { decideRoleRequest } from "@/server/actions/auth";
@@ -44,9 +45,15 @@ export function RoleRequestsPanel() {
     try {
       setRequests(await api.get<RoleRequestUser[]>("/auth/role-requests"));
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Could not load role requests.",
-      );
+      const message =
+        err instanceof ApiError ? err.message : "Could not load role requests.";
+      setError(message);
+      toastError({
+        status: err instanceof ApiError ? err.status : undefined,
+        scope: "role-requests",
+        title: "Could not load role requests",
+        description: message,
+      });
     } finally {
       setLoading(false);
     }
@@ -62,7 +69,18 @@ export function RoleRequestsPanel() {
     const result = await decideRoleRequest(userId, action);
     if (!result.ok) {
       setError(result.error);
+      toastError({
+        scope: "role-requests:decide",
+        title: "Request failed",
+        description: result.error,
+      });
     } else {
+      toast.success({
+        title:
+          action === "approve"
+            ? "Role request approved"
+            : "Role request denied",
+      });
       await load();
     }
     setBusyId(null);
