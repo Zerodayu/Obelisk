@@ -1,7 +1,13 @@
+import { csvPercent, parseCsv } from "@lib/ingest/csv";
 import type { ETLJob, EtlLoadedData } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
+import {
+	computeEditedAttainment,
+	reconcileAtRisk,
+} from "@lib/ingest/score-edit";
 import { prisma } from "@lib/prisma";
+import type { Prisma } from "@prisma/generated/prisma/client";
 
 // --- In-memory Cache for Idempotency ---
 // This ensures that even if the client polls a completed job multiple times,
@@ -55,6 +61,35 @@ export type PersistenceSummary = {
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
 };
 
+export type AttainmentRosterRow = {
+	id: string;
+	studentId: string;
+	studentName: string;
+	studentNumber: string;
+	cloCode: string;
+	directScorePct: number;
+	compositeScorePct: number;
+	isBelowThreshold: boolean;
+	atRisk: boolean;
+};
+
+export type ScoreUpdateSummary = {
+	updated: number;
+	flagsCreated: number;
+	flagsRemoved: number;
+	failures: { attainmentId: string; reason: string }[];
+};
+
+export type ReimportSummary = {
+	computationRunId: string;
+	studentsCreated: number;
+	attainmentsCreated: number;
+	attainmentsUpdated: number;
+	flagsCreated: number;
+	flagsRemoved: number;
+	skipped: { row: number; reason: string }[];
+};
+
 // --- Custom Error ---
 
 export class MalformedEtlResultError extends Error {
@@ -66,6 +101,24 @@ export class MalformedEtlResultError extends Error {
 		);
 		this.name = "MalformedEtlResultError";
 		this.etlJobId = etlJobId;
+	}
+}
+
+export class ComputationRunNotFoundError extends Error {
+	constructor(classSectionId: string) {
+		super(
+			`No computation run found for class section '${classSectionId}'. Upload a class record first.`,
+		);
+		this.name = "ComputationRunNotFoundError";
+	}
+}
+
+export class MalformedRosterCsvError extends Error {
+	constructor() {
+		super(
+			"The roster CSV must have a header row with a student name column and at least one CLO column (e.g. 'CLO1').",
+		);
+		this.name = "MalformedRosterCsvError";
 	}
 }
 
@@ -108,67 +161,24 @@ export class AttainmentService {
 		for (const record of etlLoadedData.attainments) {
 			summary.studentsProcessed++;
 
-			let student: { id: string } | null = null;
-			if (record.student_id) {
-				student = await prisma.student.findUnique({
-					where: { studentNumber: record.student_id },
-					select: { id: true },
-				});
-			}
-
-			if (!student) {
-				const { lastName, firstName } = parseStudentName(record.student_name);
-				const normalizedRecordName = normalizeName(firstName + lastName);
-
-				const potentialMatches = await prisma.student.findMany({
-					where: {
-						lastName: { contains: lastName, mode: "insensitive" },
-						programId: programId,
-					},
-					select: { id: true, firstName: true, lastName: true },
-				});
-
-				for (const pStudent of potentialMatches) {
-					const normalizedDbName = normalizeName(
-						pStudent.firstName + pStudent.lastName,
-					);
-					if (normalizedDbName === normalizedRecordName) {
-						student = { id: pStudent.id };
-						break;
-					}
-				}
-			}
-
-			if (!student) {
-				const { lastName, firstName } = parseStudentName(record.student_name);
-				const newStudent = await prisma.student.create({
-					data: {
-						id: crypto.randomUUID(),
-						firstName,
-						lastName,
-						studentNumber:
-							record.student_id ||
-							`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-						anonymizedId: crypto.randomUUID(),
-						program: {
-							connect: { id: programId },
-						},
-					},
-					select: { id: true },
-				});
-				student = newStudent;
-				summary.studentsCreated++;
-				console.log(
-					`Created new student: ${firstName} ${lastName} (ID: ${student.id}) from record name "${record.student_name}"`,
-				);
-			}
-
-			if (!student) {
+			const resolved = await this.resolveOrCreateStudent(
+				record.student_name,
+				record.student_id,
+				programId,
+			);
+			if (!resolved) {
 				console.warn(
 					`[Critical] Failed to find or create a student for record: ${record.student_name}. This record will be skipped.`,
 				);
 				continue;
 			}
+			if (resolved.created) {
+				summary.studentsCreated++;
+				console.log(
+					`Created new student: ${resolved.firstName} ${resolved.lastName} from record name "${record.student_name}"`,
+				);
+			}
+			const student = { id: resolved.id };
 
 			let clo: { id: string } | null;
 			const cachedClo = cloCache.get(record.clo_code);
@@ -233,6 +243,444 @@ export class AttainmentService {
 		}
 
 		return summary;
+	}
+
+	/**
+	 * Lists the per-student CLO attainment rows for a class section's compute
+	 * run — the editable roster backing the `clo_raw_data` table. `atRisk`
+	 * reflects whether an `AtRiskFlag` currently points at the attainment.
+	 */
+	async listAttainments(
+		classSectionId: string,
+		computationRunId?: string,
+	): Promise<AttainmentRosterRow[]> {
+		const run = await this.resolveRun(classSectionId, computationRunId);
+		const rows = await prisma.cloAttainment.findMany({
+			where: { classSectionId, computationRunId: run.id },
+			include: {
+				student: {
+					select: {
+						id: true,
+						firstName: true,
+						lastName: true,
+						studentNumber: true,
+					},
+				},
+				clo: { select: { code: true } },
+				atRiskFlags: { select: { id: true } },
+			},
+			orderBy: [{ student: { lastName: "asc" } }, { clo: { code: "asc" } }],
+		});
+
+		return rows.map((row) => ({
+			id: row.id,
+			studentId: row.student.id,
+			studentName: `${row.student.lastName}, ${row.student.firstName}`.trim(),
+			studentNumber: row.student.studentNumber,
+			cloCode: row.clo.code,
+			directScorePct: Number(row.directScorePct ?? row.compositeScorePct),
+			compositeScorePct: Number(row.compositeScorePct),
+			isBelowThreshold: row.isBelowThreshold,
+			atRisk: row.atRiskFlags.length > 0,
+		}));
+	}
+
+	/**
+	 * Manually edits one or more per-student CLO scores for a class section.
+	 * Derived fields (`compositeScorePct`, `isBelowThreshold`) are recomputed
+	 * and the `AtRiskFlag` is reconciled to match the ≥70% rule — flags are
+	 * computed, never hand-entered. Writes an audit trail.
+	 */
+	async updateScores(
+		classSectionId: string,
+		updates: { attainmentId: string; directScorePct: number }[],
+		triggeredByUserId?: string,
+	): Promise<ScoreUpdateSummary> {
+		const run = await this.resolveRun(classSectionId);
+		const summary: ScoreUpdateSummary = {
+			updated: 0,
+			flagsCreated: 0,
+			flagsRemoved: 0,
+			failures: [],
+		};
+
+		const existing = await prisma.cloAttainment.findMany({
+			where: {
+				computationRunId: run.id,
+				id: { in: updates.map((u) => u.attainmentId) },
+			},
+			select: { id: true },
+		});
+		const existingIds = new Set(existing.map((row) => row.id));
+
+		for (const update of updates) {
+			if (!existingIds.has(update.attainmentId)) {
+				summary.failures.push({
+					attainmentId: update.attainmentId,
+					reason: "Attainment not found in this section's computation run.",
+				});
+				continue;
+			}
+
+			const edited = computeEditedAttainment(update.directScorePct);
+			const attainment = await prisma.cloAttainment.update({
+				where: { id: update.attainmentId },
+				data: {
+					directScorePct: edited.compositeScorePct,
+					compositeScorePct: edited.compositeScorePct,
+					isBelowThreshold: edited.isBelowThreshold,
+				},
+				include: { atRiskFlags: { select: { id: true } } },
+			});
+			summary.updated++;
+
+			const reconcile = reconcileAtRisk(
+				edited.isBelowThreshold,
+				attainment.atRiskFlags.length > 0,
+			);
+			if (reconcile.shouldCreate) {
+				await prisma.atRiskFlag.create({
+					data: {
+						id: crypto.randomUUID(),
+						studentId: attainment.studentId,
+						cloAttainmentId: attainment.id,
+						reason: `Below institutional threshold on edited score: ${edited.compositeScorePct.toFixed(1)}%`,
+					},
+				});
+				summary.flagsCreated++;
+			}
+			if (reconcile.shouldPrune) {
+				const deleted = await prisma.atRiskFlag.deleteMany({
+					where: { cloAttainmentId: attainment.id },
+				});
+				summary.flagsRemoved += deleted.count;
+			}
+		}
+
+		if (triggeredByUserId && summary.updated > 0) {
+			await this.audit(triggeredByUserId, "clo_raw_data.scores_updated", {
+				classSectionId,
+				computationRunId: run.id,
+				updated: summary.updated,
+				flagsCreated: summary.flagsCreated,
+				flagsRemoved: summary.flagsRemoved,
+			});
+		}
+
+		return summary;
+	}
+
+	/**
+	 * Re-imports a wide-format roster CSV (header: `student_name, student_id,
+	 * CLO1, CLO2, ...`) for a class section. Per-cell non-blank values are
+	 * matched to the section's course CLOs by header code; the target
+	 * `CloAttainment` is created or updated with recomputed derived fields and
+	 * a reconciled at-risk flag. Returns a per-row skip list for unknowns.
+	 */
+	async reimportScores(
+		file: File,
+		classSectionId: string,
+		computationRunId?: string,
+	): Promise<ReimportSummary> {
+		const run = await this.resolveRun(classSectionId, computationRunId);
+		const text = await file.text();
+		const parsed = parseCsv(text);
+
+		const summary: ReimportSummary = {
+			computationRunId: run.id,
+			studentsCreated: 0,
+			attainmentsCreated: 0,
+			attainmentsUpdated: 0,
+			flagsCreated: 0,
+			flagsRemoved: 0,
+			skipped: [],
+		};
+
+		if (parsed.length === 0) return summary;
+		const [header, ...dataRows] = parsed;
+
+		const nameIdx = header.findIndex((h) => /name/i.test(h));
+		const idIdx = header.findIndex(
+			(h, i) => i !== nameIdx && /(id|number|no\.?)$/i.test(h),
+		);
+		const cloColumns = header
+			.map((code, idx) => ({ code: code.trim().toUpperCase(), idx }))
+			.filter(
+				({ idx, code }) =>
+					idx !== nameIdx &&
+					idx !== idIdx &&
+					code !== "" &&
+					/^CLO\d+$/i.test(code),
+			);
+
+		if (nameIdx === -1 || cloColumns.length === 0) {
+			throw new MalformedRosterCsvError();
+		}
+
+		const cloByCode = await this.resolveClos(
+			classSectionId,
+			cloColumns.map((c) => c.code),
+		);
+		const section = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			select: { course: { select: { programId: true } } },
+		});
+		const programId = section?.course.programId ?? null;
+		const studentCache = new Map<string, { id: string; created: boolean }>();
+
+		for (let rowIdx = 0; rowIdx < dataRows.length; rowIdx += 1) {
+			const cells = dataRows[rowIdx];
+			const studentName = cells[nameIdx]?.trim();
+			if (!studentName) {
+				summary.skipped.push({
+					row: rowIdx + 2,
+					reason: "Blank student name.",
+				});
+				continue;
+			}
+			const studentId = idIdx >= 0 ? cells[idIdx]?.trim() || null : null;
+
+			const cached = studentCache.get(`${studentName}|${studentId ?? ""}`);
+			let student: { id: string; created: boolean } | null = cached ?? null;
+			if (!student) {
+				const resolved = await this.resolveOrCreateStudent(
+					studentName,
+					studentId,
+					programId,
+				);
+				if (!resolved) {
+					summary.skipped.push({
+						row: rowIdx + 2,
+						reason: "Could not resolve student.",
+					});
+					continue;
+				}
+				student = { id: resolved.id, created: resolved.created };
+				studentCache.set(`${studentName}|${studentId ?? ""}`, student);
+				if (student.created) summary.studentsCreated++;
+			}
+
+			for (const { code, idx } of cloColumns) {
+				const raw = csvPercent(cells[idx]);
+				if (raw === undefined) continue; // blank cell — leave untouched
+
+				const clo = cloByCode.get(code);
+				if (!clo) {
+					summary.skipped.push({
+						row: rowIdx + 2,
+						reason: `CLO '${code}' not found for this section's course.`,
+					});
+					continue;
+				}
+
+				const edited = computeEditedAttainment(raw);
+				const existing = await prisma.cloAttainment.findUnique({
+					where: {
+						classSectionId_cloId_studentId_computationRunId: {
+							classSectionId,
+							cloId: clo.id,
+							studentId: student.id,
+							computationRunId: run.id,
+						},
+					},
+					include: { atRiskFlags: { select: { id: true } } },
+				});
+
+				let attainmentId: string;
+				if (existing) {
+					attainmentId = existing.id;
+					summary.attainmentsUpdated++;
+				} else {
+					const created = await prisma.cloAttainment.create({
+						data: {
+							id: crypto.randomUUID(),
+							classSectionId,
+							cloId: clo.id,
+							studentId: student.id,
+							computationRunId: run.id,
+							directScorePct: edited.compositeScorePct,
+							compositeScorePct: edited.compositeScorePct,
+							isBelowThreshold: edited.isBelowThreshold,
+						},
+						select: { id: true },
+					});
+					attainmentId = created.id;
+					summary.attainmentsCreated++;
+				}
+
+				if (existing) {
+					const reconcile = reconcileAtRisk(
+						edited.isBelowThreshold,
+						existing.atRiskFlags.length > 0,
+					);
+					if (reconcile.shouldPrune) {
+						summary.flagsRemoved += (
+							await prisma.atRiskFlag.deleteMany({
+								where: { cloAttainmentId: attainmentId },
+							})
+						).count;
+					}
+					await prisma.cloAttainment.update({
+						where: { id: attainmentId },
+						data: {
+							directScorePct: edited.compositeScorePct,
+							compositeScorePct: edited.compositeScorePct,
+							isBelowThreshold: edited.isBelowThreshold,
+						},
+					});
+				}
+				if (edited.isBelowThreshold) {
+					const flagExists = existing ? existing.atRiskFlags.length > 0 : false;
+					if (!flagExists) {
+						await prisma.atRiskFlag.create({
+							data: {
+								id: crypto.randomUUID(),
+								studentId: student.id,
+								cloAttainmentId: attainmentId,
+								reason: `Below institutional threshold on imported ${code}: ${edited.compositeScorePct.toFixed(1)}%`,
+							},
+						});
+						summary.flagsCreated++;
+					}
+				}
+			}
+		}
+
+		return summary;
+	}
+
+	/** Resolves the computation run for a class section (or verifies one). */
+	private async resolveRun(
+		classSectionId: string,
+		computationRunId?: string,
+	): Promise<{ id: string }> {
+		if (computationRunId) {
+			const run = await prisma.computationRun.findFirst({
+				where: { id: computationRunId, scope: classSectionId },
+				select: { id: true },
+			});
+			if (!run) {
+				throw new ComputationRunNotFoundError(classSectionId);
+			}
+			return run;
+		}
+
+		const run = await prisma.computationRun.findFirst({
+			where: { scope: classSectionId },
+			orderBy: { runAt: "desc" },
+			select: { id: true },
+		});
+		if (!run) {
+			throw new ComputationRunNotFoundError(classSectionId);
+		}
+		return run;
+	}
+
+	/** Loads the section's course CLOs by code. */
+	private async resolveClos(
+		classSectionId: string,
+		codes: string[],
+	): Promise<Map<string, { id: string }>> {
+		const section = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			select: { courseId: true },
+		});
+		if (!section) return new Map();
+
+		const clos = await prisma.clo.findMany({
+			where: {
+				courseId: section.courseId,
+				code: { in: codes },
+			},
+			select: { id: true, code: true },
+		});
+		return new Map(clos.map((clo) => [clo.code.toUpperCase(), clo]));
+	}
+
+	/**
+	 * Finds an existing student by student number or normalized name within the
+	 * given program; creates one when neither matches. `programId: null` skips
+	 * the program filter for name matching.
+	 */
+	private async resolveOrCreateStudent(
+		studentName: string,
+		studentId: string | null,
+		programId: string | null,
+	): Promise<{
+		id: string;
+		firstName: string;
+		lastName: string;
+		created: boolean;
+	} | null> {
+		if (studentId) {
+			const existing = await prisma.student.findUnique({
+				where: { studentNumber: studentId },
+				select: { id: true, firstName: true, lastName: true },
+			});
+			if (existing) {
+				return { ...existing, created: false };
+			}
+		}
+
+		const { lastName, firstName } = parseStudentName(studentName);
+		const normalizedRecordName = normalizeName(firstName + lastName);
+
+		const potentialMatches = await prisma.student.findMany({
+			where: {
+				lastName: { contains: lastName, mode: "insensitive" },
+				...(programId ? { programId } : {}),
+			},
+			select: { id: true, firstName: true, lastName: true },
+		});
+		for (const candidate of potentialMatches) {
+			if (
+				normalizeName(candidate.firstName + candidate.lastName) ===
+				normalizedRecordName
+			) {
+				return { ...candidate, created: false };
+			}
+		}
+
+		if (!programId) {
+			throw new Error(
+				`Cannot create student '${studentName}' without a program.`,
+			);
+		}
+
+		const created = await prisma.student.create({
+			data: {
+				id: crypto.randomUUID(),
+				firstName,
+				lastName,
+				studentNumber:
+					studentId ||
+					`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+				anonymizedId: crypto.randomUUID(),
+				program: { connect: { id: programId } },
+			},
+			select: { id: true, firstName: true, lastName: true },
+		});
+		return { ...created, created: true };
+	}
+
+	private async audit(
+		userId: string,
+		action: string,
+		details: Record<string, unknown>,
+	): Promise<void> {
+		await prisma.auditLog.create({
+			data: {
+				id: crypto.randomUUID(),
+				userId,
+				action,
+				moduleAffected: "ingest",
+				targetRecordId:
+					typeof details.classSectionId === "string"
+						? details.classSectionId
+						: null,
+				details: details as Prisma.InputJsonValue,
+			},
+		});
 	}
 
 	/**

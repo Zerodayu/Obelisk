@@ -1,8 +1,18 @@
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
-import { UploadClassRecordSchema } from "./model";
-import { ingestService } from "./service";
+import {
+	ListAttainmentsSchema,
+	ReimportScoresSchema,
+	UpdateAttainmentsSchema,
+	UploadClassRecordSchema,
+} from "./model";
+import {
+	attainmentService,
+	ComputationRunNotFoundError,
+	ingestService,
+	MalformedRosterCsvError,
+} from "./service";
 
 export const ingestPlugin = new Elysia({
 	prefix: "/ingest",
@@ -52,6 +62,106 @@ export const ingestPlugin = new Elysia({
 				responses: {
 					200: {
 						description: "List of upload records for the current user.",
+					},
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/attainments",
+		async ({ query }) => {
+			return attainmentService.listAttainments(
+				query.classSectionId,
+				query.computationRunId,
+			);
+		},
+		{
+			auth: true,
+			query: ListAttainmentsSchema,
+			detail: {
+				summary: "List per-student CLO attainment rows (editable roster)",
+				description:
+					"Returns the per-student CLO attainment rows for a class section's computation run (latest by default) with each row's id, student, CLO, scores, and at-risk state.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "List of attainment roster rows" },
+					401: { description: "Unauthorized" },
+					404: {
+						description: "No computation run found for the class section",
+					},
+				},
+			},
+		},
+	)
+	.put(
+		"/attainments",
+		async ({ body, user, set }) => {
+			try {
+				return await attainmentService.updateScores(
+					body.classSectionId,
+					body.updates,
+					user.id,
+				);
+			} catch (error) {
+				if (error instanceof ComputationRunNotFoundError) {
+					set.status = 404;
+					return { error: error.message };
+				}
+				throw error;
+			}
+		},
+		{
+			auth: true,
+			body: UpdateAttainmentsSchema,
+			detail: {
+				summary: "Manually edit per-student CLO scores",
+				description:
+					"Updates direct scores for the given CloAttainment rows, recomputes composite/threshold, and reconciles at-risk flags (computed, never manual).",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Score update summary" },
+					401: { description: "Unauthorized" },
+					404: {
+						description: "No computation run found for the class section",
+					},
+				},
+			},
+		},
+	)
+	.post(
+		"/attainments/reimport",
+		async ({ body, set }) => {
+			try {
+				return await attainmentService.reimportScores(
+					body.file,
+					body.classSectionId,
+					body.computationRunId,
+				);
+			} catch (error) {
+				if (
+					error instanceof ComputationRunNotFoundError ||
+					error instanceof MalformedRosterCsvError
+				) {
+					set.status = 400;
+					return { error: error.message };
+				}
+				throw error;
+			}
+		},
+		{
+			auth: true,
+			body: ReimportScoresSchema,
+			detail: {
+				summary: "Re-import per-student scores from a roster CSV/TSV",
+				description:
+					"Parses a wide-format roster (student_name, student_id?, CLO1, CLO2, …), upserts the matching CloAttainment rows, and reconciles at-risk flags.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Re-import summary" },
+					400: {
+						description:
+							"Malformed roster or no computation run for the class section",
 					},
 					401: { description: "Unauthorized" },
 				},
