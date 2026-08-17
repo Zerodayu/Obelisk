@@ -29,6 +29,7 @@
     "echarts": "^6.1.0",
     "jotai": "^2.20.2",
     "lucide-react": "^1.27.0",
+    "material-shadcn": "^0.0.1-alpha.2",
     "motion": "^12.43.0",
     "next": "16.2.12",
     "next-themes": "^0.4.6",
