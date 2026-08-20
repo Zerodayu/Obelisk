@@ -27,6 +27,10 @@ export interface AttainmentRecord {
 	clo_code: string;
 	direct_clo_attainment_pct: number;
 	met_threshold: boolean;
+	tla_pct?: number | null;
+	at_pct?: number | null;
+	exam_pct?: number | null;
+	output_pct?: number | null;
 }
 
 export interface TypedEtlLoadedData extends EtlLoadedData {
@@ -218,6 +222,10 @@ export class AttainmentService {
 					directScorePct: directScore,
 					indirectScorePct: null,
 					compositeScorePct: directScore,
+					examPct: asNullablePct(record.exam_pct),
+					atPct: asNullablePct(record.at_pct),
+					tlaPct: asNullablePct(record.tla_pct),
+					outputPct: asNullablePct(record.output_pct),
 					isBelowThreshold,
 					classSectionId: classSectionId,
 					cloId: clo.id,
@@ -929,6 +937,12 @@ function asOptionalString(value: unknown): string | undefined {
 	if (value === null || value === undefined) return undefined;
 	const text = String(value).trim();
 	return text || undefined;
+}
+
+/** Converts an ETL 0–1 fraction to a 0–100 percentage, or null when absent. */
+function asNullablePct(value: number | null | undefined): number | null {
+	if (value === null || value === undefined) return null;
+	return Math.round(value * 10000) / 100;
 }
 
 function asSlug(value: string): string {
