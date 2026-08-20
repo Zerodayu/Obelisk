@@ -60,7 +60,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 ### 2.6 Attainment & Computation — `07-attainment.prisma`
 
-`ComputationRun` (`scope`, `formulaVersion` default `70_30_v1`, `directWeight` 0.70, `indirectWeight` 0.30), `CloAttainment` (unique `[classSectionId, cloId, studentId, computationRunId]`, `directScorePct`, `indirectScorePct`, `compositeScorePct`, `isBelowThreshold`, per-assessment-category percentages `exam_pct`, `at_pct`, `tla_pct`, `output_pct` — populated by ETL, consumed by the CAR part-2 assessment-type means), `PloAttainment` (unique `[ploId, programId, termId, computationRunId]`, `attainedPct`, `studentsBelowTargetCount`), `PeoAttainment` (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`, `formSubmissionId?`).
+`ComputationRun` (`scope`, `formulaVersion` default `70_30_v1`, `directWeight` 0.70, `indirectWeight` 0.30, `etlSnapshotJson Json?` — the raw `{header, attainments, clo_plo_mapping}` written at persist time, so the roll-up feed can reproduce the exact `StudentCLOAttainment` records that produced the run), `CloAttainment` (unique `[classSectionId, cloId, studentId, computationRunId]`, `directScorePct`, `indirectScorePct`, `compositeScorePct`, `isBelowThreshold`, per-assessment-category percentages `exam_pct`, `at_pct`, `tla_pct`, `output_pct` — populated by ETL, consumed by the CAR part-2 assessment-type means; index `[classSectionId, computationRunId]`), `PloAttainment` (unique `[ploId, programId, termId, computationRunId]`, `attainedPct`, `studentsBelowTargetCount`, index `[programId, termId]` for the term-level roll-up feed), `PeoAttainment` (unique `[peoId, termId]`, `attainedPct`, `evidenceJson`, `formSubmissionId?`).
 
 `UploadRecord` (`UploadStatus` queued/completed/failed; `userId`, `classSectionId`, `filename`, optional `etlJobId`/`computationRunId`, `summary Json` carrying the persistence summary, `error`; index `[userId, createdAt]`). One row is created when a user uploads a class record and updated when the ETL job finishes — this is the per-user upload history surfaced by `GET /ingest/history`, and it records failed attempts that never produce a `ComputationRun`.
 
@@ -138,6 +138,16 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | GET | `/api/v1/car` | `auth: true` | List CAR submissions (optional `classSectionId` filter), newest first. |
 | GET | `/api/v1/car/:id` | `auth: true` | Assemble a CAR from its submission id (re-derives 2/3/4, merges saved 1/5/6/7). |
 | PUT | `/api/v1/car/:id` | `auth: true` | Save editable parts (1/5/6/7 only) into CAR `formData`; allowed while `draft`/`returned`. |
+| POST | `/api/v1/rollup/clo-attainment-summary/generate` | `auth: true` | F14 — ensure the section's CLO-summary draft and assemble the full-term per-CLO attainment summary (defaults to the section's latest computation run). |
+| GET | `/api/v1/rollup/clo-attainment-summary` | `auth: true` | List CLO attainment summary submissions (optional `classSectionId`/`programId` filter), newest first. |
+| GET | `/api/v1/rollup/clo-attainment-summary/:id` | `auth: true` | Re-assemble a CLO summary from its submission id. |
+| POST | `/api/v1/rollup/plo-attainment-summary/generate` | `auth: true` | F15 — feed the program+term section ETL snapshots to python-server `/analytics/summary`, persist PLO roll-ups into `PloAttainment` under a fresh `ComputationRun` (`scope plo:<program>:<term>`). |
+| GET | `/api/v1/rollup/plo-attainment-summary` | `auth: true` | List PLO attainment summary submissions (optional `programId` filter), newest first. |
+| GET | `/api/v1/rollup/plo-attainment-summary/:id` | `auth: true` | Re-run the PLO roll-up for the submission's program+term and return the assembled payload. |
+| POST | `/api/v1/rollup/cohort-tracking/generate` | `auth: true` | F16 — assemble the longitudinal per-year-level CLO grid (+ PLO roll-ups) and snapshot it into the program's cohort-tracking submission (**Permanent retention**, audited). |
+| GET | `/api/v1/rollup/cohort-tracking` | `auth: true` | List cohort tracking submissions (optional `programId` filter), newest first. |
+| GET | `/api/v1/rollup/cohort-tracking/:id` | `auth: true` | Re-assemble a cohort tracking sheet from its submission id. |
+| PUT | `/api/v1/rollup/cohort-tracking/:id` | `auth: true` | Save CQI follow-up annotations into the sheet's `formData` (**audited**); `draft`/`returned` only. |
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
@@ -150,7 +160,7 @@ Per feature module `src/v1/{feature}/{controller,service,model}.ts`, mounted in 
 - `forms` — form CRUD, submit, approval actions, computed-field resolution, auto-population across related forms.
 - `attainment` — run `ComputationRun`, compute CLO/PLO attainment, diagnostics (divergence, at-risk).
 - `survey` — survey/feedback tabulation (indirect evidence).
-- `rollups` — cohort/program rollup + longitudinal (`cohort_tracking`), dashboards, report exports.
+- `rollups` — cohort/program rollup + longitudinal (`cohort_tracking`) **implemented** (F14/F15/F16 under `/api/v1/rollup`); dashboards + report exports remain planned.
 - `monitoring` — audit-trail queries, systemic-gap trigger, CAPA lifecycle.
 
 ## 5. Form Catalog & Data Mapping (target)
@@ -172,9 +182,9 @@ Each row: **stable code → title → primary models → status / rules to enfor
 | `exhibition_feedback` | Portfolio Exhibition Industry Feedback | `FormSubmission` | **Min 3 industry guests (validation);** per-PLO rating (0-10) × guests, Mean computed; OVERALL MEAN computed. |
 | `clo_perception_survey` | CLO Achievement Perception Survey Tabulation | `FormSubmission`, refs direct attainment | 5-pt Likert tabulation; Mean + % rating 4+5 computed (target ≥80%); **divergence auto-flag** vs direct CLO attainment. |
 | `course_assessment_report` | Course Assessment Report (CAR) | `FormSubmission`, `CloAttainment`, `PloAttainment`, `AtRiskFlag` | **Hub form, 7 parts.** Part 2 rolls up assessment-category means (`exam`/`rubric`/`perf.tasks`/`portfolio` vs ≥70%); Part 3 auto-populates from stored attainment grouped by year-level cohort; Part 4 at-risk watchlist derives from `isBelowThreshold`; Part 5 CQI entries feed `plo_gap_analysis`/`cqi_action_plan`. Effects: `ensureDraft` + `generate` + `save` (parts 1/5/6/7 only), `generateFromSubmission`. |
-| `clo_attainment_summary` | CLO Attainment Summary (Full Term) | `CloAttainment`, `FormSubmission` | Reusable Year block (×4); full-term CLO attainment computed; cohort avg. |
-| `plo_attainment_summary` | PLO Attainment Summary | `PloAttainment`, `ComputationRun`, `FormSubmission` | Aggregates CARs; Full-Year PLO attainment computed; status vs ≥70%. |
-| `cohort_tracking` | Cohort CLO/PLO Attainment Tracking Sheet | `Plo`, `PloAttainment`, `CloAttainment`, `ComputationRun`, `FormSubmission` | **Permanent retention + strict audit trail.** Longitudinal columns per Year 1-4; Trend (↑/↓/→) + CQI-triggered flag. Cited by many later forms. |
+| `clo_attainment_summary` | CLO Attainment Summary (Full Term) | `CloAttainment`, `FormSubmission` | **Implemented (F14).** Per section: assembles the full-term per-CLO attainment (category means + composite vs ≥70%) from the section's computation run, groupable by year-level cohort; snapshots `computed {generatedAt, summary, rows}` into `formData` and audits. Effects: `ensureDraft`, `generate`/`generateFromSubmission`. |
+| `plo_attainment_summary` | PLO Attainment Summary | `PloAttainment`, `ComputationRun`, `FormSubmission` | **Implemented (F15).** Per program+term: feeds the program's section `etlSnapshotJson` to python-server `/analytics/summary` (Formula 7A/7C + Rule 3 — never re-implemented locally), persists the returned PLO roll-ups into `PloAttainment` under a fresh `ComputationRun` (`scope plo:<program>:<term>`), reports status vs each PLO's `targetAttainmentPct` and the students-below-target count; snapshots `computed` + audits. |
+| `cohort_tracking` | Cohort CLO/PLO Attainment Tracking Sheet | `Plo`, `PloAttainment`, `CloAttainment`, `ComputationRun`, `FormSubmission` | **Implemented (F16). Permanent retention + strict audit trail.** Longitudinal per-year-level CLO grid (Year 1-4), Trend (↑/↓/→) computed from consecutive term averages, CQI-triggered flag when any CLO in the latest term is NOT MET, plus stored PLO roll-ups; `generate` snapshots `computed {generatedAt, lines, plos}` and `save` merges CQI annotations into `formData` — every write audits. Cited by many later forms. |
 | `student_exit_survey` | Student Exit Survey Tabulation | `FormSubmission` | Response rate target ≥70%; tabulation by PLO × cohort; divergence flag OK/FLAG. |
 | `portfolio_assessment_record` | Portfolio Assessment Record with CLO Evidence | `FormSubmission` | Assessor panel (2 faculty + industry where required); rubric consensus score; attainment % computed. |
 | `capstone_panel_evaluation` | Capstone/Culminating Panel Evaluation | `FormSubmission` | **Min 2 faculty + 1 industry panelist (validation);** 10-pt PLO scoring; consensus + attainment computed; Program-Readiness declaration. |
@@ -196,7 +206,7 @@ The manual's provisional form IDs (`F01`–`F28`) map 1:1 onto the stable codes 
 
 Treated as future/placeholder topics only — do not fabricate codes: portfolio/consolidation schedules and specialty forms without a defined field structure in the manual (the manual itself marks several early `F##` numbers as referenced-not-defined). Confirm scope with the product owner before designing.
 
-## 6. Cross-Form Data Flow (target)
+## 6. Cross-Form Data Flow
 
 ```
 curriculum_map ──┬──> portfolio_roadmap (if portfolio program)
@@ -213,6 +223,8 @@ course_assessment_report ──┬──> clo_attainment_summary
                            └──> Part 5 CQI entries ──> plo_gap_analysis / cqi_action_plan
 
 clo_attainment_summary ──> plo_attainment_summary ──> cohort_tracking ──permanent──> annual_program_report
+
+**Implemented (Phase 3):** `clo_attainment_summary` (F14, per section) → `plo_attainment_summary` (F15, per program+term, feeds registered section `etlSnapshotJson` + persists `PloAttainment`) → `cohort_tracking` (F16, longitudinal, Permanent retention).
 
 plo_gap_analysis ──> cqi_action_plan ──┬──> resource_monitoring §3
                                        └──> closing_the_loop
@@ -232,6 +244,12 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 - **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.startUpload` records an `UploadRecord` (`queued`) then forwards the file to python-server; `getJobStatus` polls the ETL job, triggers persistence once, and marks the matching `UploadRecord` `completed` (with `computationRunId` + persistence `summary`) or `failed`; `listHistory` returns the current user's upload records (any class section) newest first.
 - **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records (persisting the per-assessment-category percentages `exam_pct`/`at_pct`/`tla_pct`/`output_pct` as 0–100), and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`. Also exposes the editable-roster flows: `listAttainments` (returns the per-student CLO attainment rows for a class section's computation run, each with its student, CLO, scores, and at-risk state), `updateScores` (manually edits direct scores, recomputes `compositeScorePct` via `direct×0.70 + indirect×0.30` and `isBelowThreshold`, and reconciles `AtRiskFlag` rows — computed, never manual), and `reimportScores` (parses a wide-format roster CSV/TSV via `lib/ingest/csv.ts`, finds-or-creates students by student id or normalized name, upserts the matching `CloAttainment` rows, and reconciles at-risk flags).
 - **`car-service`** *(src/v1/car/service.ts)* — `CarService.buildPart1/2/3/4/5/6/7`: assembles the 7-part CAR by rolling up the section's stored `CloAttainment` rows from the computation run into a Decimal-free `NormalizedRow` shape. `ensureDraft` find-or-creates the `course_assessment_report` form type and the section's CAR submission (recording `computationRunId`); `generate` derives parts 2/3/4 live (assessment-category means vs the ≥70% floor, year-level cohort summaries, at-risk watchlist) and merges saved parts 1/5/6/7 from `formData`; `save` writes those parts (guarded: idempotent JSON merge, root-cause categories validated, `draft`/`returned` only, `AuditLog` written); `generateFromSubmission` reassembles a CAR from a submission id.
+- **`rollup-service`** *(src/v1/rollup/{service,compute,controller}.ts)* — the roll-up chain F14→F15→F16:
+  - `compute.ts` — pure cohort primitives (no DB): `cohortMeanPct`, `trendBetween` (↑/↓/→), `cohortCqiTriggered`, `attainmentStatus`, `buildCohortLines` (groups per-year-level entries into chronological terms, sorts rows by CLO code, computes per-term average, trend across the last two terms, flags the latest term's NOT-MET) —
+  - `CloSummaryService` F14 — per section: `ensureDraft`/`generate` assemble full-term per-CLO attainment rows (`buildCloRows`, category means + composite via `aggregateClo`, below-benchmark vs ≥70%, level), snapshot `computed` into the submission's `formData`, audit `clo_attainment_summary.generated`.
+  - `PloSummaryService` F15 — per program+term: links each section's **latest** `ComputationRun.etlSnapshotJson` into `AnalyticsCourseSubmission`s, POSTs to python-server `/analytics/summary` (never re-implementing Formula 7A/7C), then `persistPloAttainment` writes a fresh `ComputationRun` (`scope plo:<program>:<term>`) + `PloAttainment.createMany` (per-PLO attained %, students-below-target from stored `CloAttainment`), snapshot `computed` + audit `plo_attainment_summary.generated`. The fetcher is constructor-injectable (`AnalyticsSummaryFetcher`) for test stubbing.
+  - `CohortTrackingService` F16 — per program (optionally scoped to a term): builds the longitudinal year-level CLO grid from stored `CloAttainment` (`buildCohortEntries` → `buildCohortLines`) plus stored `PloAttainment`, snapshot `computed {generatedAt, lines, plos}` + audit `cohort_tracking.generated`; `save` merges CQI annotations (guarded `draft`/`returned`, audit `cohort_tracking.annotations_saved`). **Permanent retention + strict audit.**
+  - `listRollupSubmissions` / `ensureRollupFormType` (race-safe `clo_attainment_summary` seq 14, `plo_attainment_summary` seq 15, `cohort_tracking` seq 16, `pdcaStage` CHECK) / `snapshotFormData` / module-level `audit` shared by the three services.
 
 ### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
@@ -246,7 +264,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 - **`python-server/`** — the authoritative pure-compute engine for spreadsheet-derived attainment (FastAPI, port 8000; no DB, no auth). It parses class-record `.xlsx` (Formula 1A direct CLO attainment, 4-tier levels, Rule-1 completeness) and provides program/department/AVP rollups (Formulas 2A/7A/7C) + AI CQI recommendations. Docs: `../python-server/AGENTS.md`, `../python-server/SYSTEM-DESIGN.md`, `../python-server/documentations/INTEGRATION.md`.
 
-  **Ownership boundary (see `python-server/SYSTEM-DESIGN.md` §7):** this backend is the **sole persister** — it stores python-server's results into `CloAttainment`/`PloAttainment`/`ComputationRun` (recording formula version/weights) and performs all auth/RBAC, approvals, form lifecycle, audit, exports. It must **not** re-implement Formula 1A or the rollups. It calls python-server via `POST /upload` → poll `GET /jobs/{job_id}`, then the `attainment-service` persists the results directly to the `CloAttainment` table.
+  **Ownership boundary (see `python-server/SYSTEM-DESIGN.md` §7):** this backend is the **sole persister** — it stores python-server's results into `CloAttainment`/`PloAttainment`/`ComputationRun` (recording formula version/weights) and performs all auth/RBAC, approvals, form lifecycle, audit, exports. It must **not** re-implement Formula 1A or the rollups. It calls python-server via `POST /upload` → poll `GET /jobs/{job_id}`, then the `attainment-service` persists the results directly to the `CloAttainment` table; the `rollup-service` additionally calls the synchronous `POST /analytics/summary` (via `lib/ingest/ingest-client.ts` `analyticsSummary`, no auth/polling) during F15 generation.
 
 ## 9. Deferred / Open Questions
 

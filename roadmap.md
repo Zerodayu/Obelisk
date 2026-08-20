@@ -97,11 +97,13 @@ The term-level hub that consolidates a term's data.
 
 `clo_attainment_summary` → `plo_attainment_summary` → `cohort_tracking`
 
-- [ ] **Backend: `clo_attainment_summary`** — full-term CLO attainment by cohort (reusable year block ×4)
-- [ ] **Backend: `plo_attainment_summary`** — aggregate CARs via python-server `/analytics/summary`, persist into `PloAttainment`
-- [ ] **Backend: `cohort_tracking`** — longitudinal tracking (permanent retention, strict audit trail), trend + CQI-triggered flags
-- [ ] **Tests:** rollup correctness (CLO → PLO → cohort), audit-trail writes
-- [ ] **Exit check:** program-level PLO attainment visible end-to-end from uploaded records
+- [x] **Backend: `clo_attainment_summary`** — full-term CLO attainment by cohort (reusable year block ×4)
+- [x] **Backend: `plo_attainment_summary`** — aggregate CARs via python-server `/analytics/summary`, persist into `PloAttainment`
+- [x] **Backend: `cohort_tracking`** — longitudinal tracking (permanent retention, strict audit trail), trend + CQI-triggered flags
+- [x] **Tests:** rollup correctness (CLO → PLO → cohort), audit-trail writes
+- [x] **Exit check:** program-level PLO attainment visible end-to-end from uploaded records
+
+**Done (Phase 3):** the roll-up chain ships as `src/v1/rollup/` exposed under `/api/v1/rollup` (`rollup-plugin`). `computation_run.etl_snapshot_json` now persists the raw `{header, attainments, clo_plo_mapping}` at ingest time so F15 can reproduce the exact source records when feeding python-server; `plo_attainment` indexes `[program_id, term_id]` and `clo_attainment` indexes `[class_section_id, computation_run_id]`. Migration `20260822000000_add_etl_snapshot_and_rollup_indexes` (apply with `bun run db:migrate`, then `bun run db:generate`). Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 84 tests).
 
 ---
 
