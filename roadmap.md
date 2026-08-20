@@ -32,7 +32,7 @@ dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
 - **Aug 11 (Tue)** — `AtRiskFlag` auto-derivation + verify: real upload → DB rows match hand-verified Python output `[x]` — verified: 36/50 correctly flagged, cross-checked against `isBelowThreshold`, no false positives on passing attainments
 - **Aug 12 (Wed)** — wire `/forms/clo-raw-data` panel to upload + polling; render real attainment `[x]` — required an unplanned rework: sync long-poll → async job-id + polling (fixed a false-401 display bug), plus a working dev-auth seed user. Verified visually in UI: "Processing Complete — 50 CLO attainments recorded, 36 at-risk"
 - **Aug 13 (Thu)** — Gemini API integration in `call_llm_api()` + verify end-to-end against real gap data `[ ]`
-- **Aug 14 (Fri)** — CAR Part 3 (consolidated CLO summary) + Part 4 (at-risk watchlist) auto-populate `[ ]`
+- **Aug 14 (Fri)** — CAR Part 3 (consolidated CLO summary) + Part 4 (at-risk watchlist) auto-populate `[x]` — all 7 parts built in the `car` module: assessment-type means (Part 2), year-level cohort summaries (Part 3), at-risk watchlist from `isBelowThreshold` (Part 4), CQI entries (Part 5); integration test persists attainment → generates all 7 parts → saves Part 5 → regenerates
 - **Aug 15 (Sat)** — `plo_attainment_summary` via `/analytics/summary`, persisted to `PloAttainment` — **soft target: full data pipeline complete** `[ ]`
 - **Aug 16 (Sun)** — wire `FormSubmission` creation on persist → route through existing approval chain to VPAA `[ ]`
 - **Aug 17 (Mon)** — verify full chain end-to-end (upload → ... → visible at every approval step incl. VPAA); dashboard check — **hard target: done** `[ ]`
@@ -40,7 +40,7 @@ dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
 
 **Aug 18–23** — buffer: demo prep, client/adviser conversations, fix whatever broke. No new scope unless Aug 17 slipped.
 
-**Explicitly deferred, unscheduled:** CAR Parts 1–2/5–7; `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phases 6, 7. (Manual edit + CSV re-import and the ingest test suite are now done — see Phase 1.)
+**Explicitly deferred, unscheduled:** `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phases 6, 7. (CAR is now done — see Phase 2. Manual edit + CSV re-import and the ingest test suite are done — see Phase 1.)
 
 **Exit criteria:** upload → compute → persist → CAR → PLO rollup → AI recommendation → routed through full approval chain to VPAA, no manual re-entry.
 
@@ -85,11 +85,11 @@ The foundational data-capture form; exercises the full 3-service integration.
 
 The term-level hub that consolidates a term's data.
 
-- [ ] **Backend: CAR service** — parts 1–7, auto-populate Part 3 from stored attainment (no re-entry)
-- [ ] **Backend: assessment-type breakdown** (2.1–2.4) + weighted CLO avg
-- [ ] **Backend: at-risk watchlist** (Part 4) + **CQI entries** (Part 5) → feeds gap analysis/CQI
-- [ ] **Tests:** CAR generation from Phase 1 data (no manual re-entry); watchlist/CQI wiring
-- [ ] **Exit check:** CAR generates from Phase 1 data without manual re-entry
+- [x] **Backend: CAR service** — parts 1–7, auto-populate Part 3 from stored attainment (no re-entry) — `src/v1/car` (`compute.ts`/`model.ts`/`service.ts`/`controller.ts`), mounted at `/api/v1/car/*`
+- [x] **Backend: assessment-type breakdown** (2.1–2.4) + weighted CLO avg — `exam`/`rubric`/`perf.tasks`/`portfolio` means from the persisted `CloAttainment` category pct columns
+- [x] **Backend: at-risk watchlist** (Part 4) + **CQI entries** (Part 5) → feeds gap analysis/CQI — watchlist derives from `isBelowThreshold` (computed, never manual)
+- [x] **Tests:** CAR generation from Phase 1 data (no manual re-entry); watchlist/CQI wiring — `test/integration/car.test.ts` + `test/unit/car.compute.test.ts` green
+- [x] **Exit check:** CAR generates from Phase 1 data without manual re-entry
 
 ---
 
@@ -228,6 +228,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] Role request workflow — `requestedRole`/`roleRequestStatus` on `user`; system_admin-only list/approve/deny endpoints
 - [x] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators, forms module, ingest client)
 - [ ] Feature routes (all forms) — see Phases 1–6
+  - [x] CAR routes (`/api/v1/car/*`) — submit-time assembly, per-section CAR resolution, editable-parts save (Phases 1–2)
 - [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
 - [ ] Archival pipeline — see Phase 7
 
