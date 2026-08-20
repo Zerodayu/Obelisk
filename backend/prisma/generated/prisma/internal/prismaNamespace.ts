@@ -3128,7 +3128,8 @@ export const ComputationRunScalarFieldEnum = {
   formulaVersion: 'formulaVersion',
   directWeight: 'directWeight',
   indirectWeight: 'indirectWeight',
-  runAt: 'runAt'
+  runAt: 'runAt',
+  etlSnapshotJson: 'etlSnapshotJson'
 } as const
 
 export type ComputationRunScalarFieldEnum = (typeof ComputationRunScalarFieldEnum)[keyof typeof ComputationRunScalarFieldEnum]

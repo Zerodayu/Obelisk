@@ -64,6 +64,7 @@ export type ComputationRunCountAggregateOutputType = {
   directWeight: number
   indirectWeight: number
   runAt: number
+  etlSnapshotJson: number
   _all: number
 }
 
@@ -106,6 +107,7 @@ export type ComputationRunCountAggregateInputType = {
   directWeight?: true
   indirectWeight?: true
   runAt?: true
+  etlSnapshotJson?: true
   _all?: true
 }
 
@@ -203,6 +205,7 @@ export type ComputationRunGroupByOutputType = {
   directWeight: runtime.Decimal
   indirectWeight: runtime.Decimal
   runAt: Date
+  etlSnapshotJson: runtime.JsonValue | null
   _count: ComputationRunCountAggregateOutputType | null
   _avg: ComputationRunAvgAggregateOutputType | null
   _sum: ComputationRunSumAggregateOutputType | null
@@ -236,6 +239,7 @@ export type ComputationRunWhereInput = {
   directWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFilter<"ComputationRun"> | Date | string
+  etlSnapshotJson?: Prisma.JsonNullableFilter<"ComputationRun">
   triggeredBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.userWhereInput> | null
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
@@ -250,6 +254,7 @@ export type ComputationRunOrderByWithRelationInput = {
   directWeight?: Prisma.SortOrder
   indirectWeight?: Prisma.SortOrder
   runAt?: Prisma.SortOrder
+  etlSnapshotJson?: Prisma.SortOrderInput | Prisma.SortOrder
   triggeredBy?: Prisma.userOrderByWithRelationInput
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
@@ -267,6 +272,7 @@ export type ComputationRunWhereUniqueInput = Prisma.AtLeast<{
   directWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFilter<"ComputationRun"> | Date | string
+  etlSnapshotJson?: Prisma.JsonNullableFilter<"ComputationRun">
   triggeredBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.userWhereInput> | null
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
@@ -281,6 +287,7 @@ export type ComputationRunOrderByWithAggregationInput = {
   directWeight?: Prisma.SortOrder
   indirectWeight?: Prisma.SortOrder
   runAt?: Prisma.SortOrder
+  etlSnapshotJson?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.ComputationRunCountOrderByAggregateInput
   _avg?: Prisma.ComputationRunAvgOrderByAggregateInput
   _max?: Prisma.ComputationRunMaxOrderByAggregateInput
@@ -299,6 +306,7 @@ export type ComputationRunScalarWhereWithAggregatesInput = {
   directWeight?: Prisma.DecimalWithAggregatesFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalWithAggregatesFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeWithAggregatesFilter<"ComputationRun"> | Date | string
+  etlSnapshotJson?: Prisma.JsonNullableWithAggregatesFilter<"ComputationRun">
 }
 
 export type ComputationRunCreateInput = {
@@ -308,6 +316,7 @@ export type ComputationRunCreateInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
@@ -322,6 +331,7 @@ export type ComputationRunUncheckedCreateInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
@@ -334,6 +344,7 @@ export type ComputationRunUpdateInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
@@ -348,6 +359,7 @@ export type ComputationRunUncheckedUpdateInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
@@ -361,6 +373,7 @@ export type ComputationRunCreateManyInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ComputationRunUpdateManyMutationInput = {
@@ -370,6 +383,7 @@ export type ComputationRunUpdateManyMutationInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ComputationRunUncheckedUpdateManyInput = {
@@ -380,6 +394,7 @@ export type ComputationRunUncheckedUpdateManyInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ComputationRunListRelationFilter = {
@@ -400,6 +415,7 @@ export type ComputationRunCountOrderByAggregateInput = {
   directWeight?: Prisma.SortOrder
   indirectWeight?: Prisma.SortOrder
   runAt?: Prisma.SortOrder
+  etlSnapshotJson?: Prisma.SortOrder
 }
 
 export type ComputationRunAvgOrderByAggregateInput = {
@@ -535,6 +551,7 @@ export type ComputationRunCreateWithoutTriggeredByInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
@@ -547,6 +564,7 @@ export type ComputationRunUncheckedCreateWithoutTriggeredByInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
@@ -589,6 +607,7 @@ export type ComputationRunScalarWhereInput = {
   directWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFilter<"ComputationRun"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFilter<"ComputationRun"> | Date | string
+  etlSnapshotJson?: Prisma.JsonNullableFilter<"ComputationRun">
 }
 
 export type ComputationRunCreateWithoutUploadRecordInput = {
@@ -598,6 +617,7 @@ export type ComputationRunCreateWithoutUploadRecordInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
@@ -611,6 +631,7 @@ export type ComputationRunUncheckedCreateWithoutUploadRecordInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
 }
@@ -638,6 +659,7 @@ export type ComputationRunUpdateWithoutUploadRecordInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
@@ -651,6 +673,7 @@ export type ComputationRunUncheckedUpdateWithoutUploadRecordInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
 }
@@ -662,6 +685,7 @@ export type ComputationRunCreateWithoutCloAttainmentsInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
@@ -675,6 +699,7 @@ export type ComputationRunUncheckedCreateWithoutCloAttainmentsInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
@@ -702,6 +727,7 @@ export type ComputationRunUpdateWithoutCloAttainmentsInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
@@ -715,6 +741,7 @@ export type ComputationRunUncheckedUpdateWithoutCloAttainmentsInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
@@ -726,6 +753,7 @@ export type ComputationRunCreateWithoutPloAttainmentsInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userCreateNestedOneWithoutComputationRunsInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordCreateNestedOneWithoutComputationRunInput
@@ -739,6 +767,7 @@ export type ComputationRunUncheckedCreateWithoutPloAttainmentsInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutComputationRunInput
   uploadRecord?: Prisma.UploadRecordUncheckedCreateNestedOneWithoutComputationRunInput
 }
@@ -766,6 +795,7 @@ export type ComputationRunUpdateWithoutPloAttainmentsInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   triggeredBy?: Prisma.userUpdateOneWithoutComputationRunsNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
@@ -779,6 +809,7 @@ export type ComputationRunUncheckedUpdateWithoutPloAttainmentsInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
 }
@@ -790,6 +821,7 @@ export type ComputationRunCreateManyTriggeredByInput = {
   directWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 export type ComputationRunUpdateWithoutTriggeredByInput = {
@@ -799,6 +831,7 @@ export type ComputationRunUpdateWithoutTriggeredByInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUpdateOneWithoutComputationRunNestedInput
@@ -811,6 +844,7 @@ export type ComputationRunUncheckedUpdateWithoutTriggeredByInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutComputationRunNestedInput
   uploadRecord?: Prisma.UploadRecordUncheckedUpdateOneWithoutComputationRunNestedInput
@@ -823,6 +857,7 @@ export type ComputationRunUncheckedUpdateManyWithoutTriggeredByInput = {
   directWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   indirectWeight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   runAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  etlSnapshotJson?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
 }
 
 
@@ -873,6 +908,7 @@ export type ComputationRunSelect<ExtArgs extends runtime.Types.Extensions.Intern
   directWeight?: boolean
   indirectWeight?: boolean
   runAt?: boolean
+  etlSnapshotJson?: boolean
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.ComputationRun$ploAttainmentsArgs<ExtArgs>
@@ -888,6 +924,7 @@ export type ComputationRunSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   directWeight?: boolean
   indirectWeight?: boolean
   runAt?: boolean
+  etlSnapshotJson?: boolean
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
 }, ExtArgs["result"]["computationRun"]>
 
@@ -899,6 +936,7 @@ export type ComputationRunSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   directWeight?: boolean
   indirectWeight?: boolean
   runAt?: boolean
+  etlSnapshotJson?: boolean
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
 }, ExtArgs["result"]["computationRun"]>
 
@@ -910,9 +948,10 @@ export type ComputationRunSelectScalar = {
   directWeight?: boolean
   indirectWeight?: boolean
   runAt?: boolean
+  etlSnapshotJson?: boolean
 }
 
-export type ComputationRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "triggeredByUserId" | "scope" | "formulaVersion" | "directWeight" | "indirectWeight" | "runAt", ExtArgs["result"]["computationRun"]>
+export type ComputationRunOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "triggeredByUserId" | "scope" | "formulaVersion" | "directWeight" | "indirectWeight" | "runAt" | "etlSnapshotJson", ExtArgs["result"]["computationRun"]>
 export type ComputationRunInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   triggeredBy?: boolean | Prisma.ComputationRun$triggeredByArgs<ExtArgs>
   cloAttainments?: boolean | Prisma.ComputationRun$cloAttainmentsArgs<ExtArgs>
@@ -943,6 +982,7 @@ export type $ComputationRunPayload<ExtArgs extends runtime.Types.Extensions.Inte
     directWeight: runtime.Decimal
     indirectWeight: runtime.Decimal
     runAt: Date
+    etlSnapshotJson: runtime.JsonValue | null
   }, ExtArgs["result"]["computationRun"]>
   composites: {}
 }
@@ -1377,6 +1417,7 @@ export interface ComputationRunFieldRefs {
   readonly directWeight: Prisma.FieldRef<"ComputationRun", 'Decimal'>
   readonly indirectWeight: Prisma.FieldRef<"ComputationRun", 'Decimal'>
   readonly runAt: Prisma.FieldRef<"ComputationRun", 'DateTime'>
+  readonly etlSnapshotJson: Prisma.FieldRef<"ComputationRun", 'Json'>
 }
     
 

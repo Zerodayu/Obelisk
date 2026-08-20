@@ -460,13 +460,6 @@ export type EnumApprovalDecisionWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumApprovalDecisionFilter<$PrismaModel>
 }
 
-export type EnumUploadStatusFilter<$PrismaModel = never> = {
-  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel> | $Enums.UploadStatus
-}
-
 export type JsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<JsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<JsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -489,16 +482,6 @@ export type JsonNullableFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
-}
-
-export type EnumUploadStatusWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel> | $Enums.UploadStatus
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
 }
 
 export type JsonNullableWithAggregatesFilter<$PrismaModel = never> =
@@ -526,6 +509,23 @@ export type JsonNullableWithAggregatesFilterBase<$PrismaModel = never> = {
   _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedJsonNullableFilter<$PrismaModel>
   _max?: Prisma.NestedJsonNullableFilter<$PrismaModel>
+}
+
+export type EnumUploadStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel> | $Enums.UploadStatus
+}
+
+export type EnumUploadStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel> | $Enums.UploadStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
 }
 
 export type EnumRecommendationStatusFilter<$PrismaModel = never> = {
@@ -1011,23 +1011,6 @@ export type NestedEnumApprovalDecisionWithAggregatesFilter<$PrismaModel = never>
   _max?: Prisma.NestedEnumApprovalDecisionFilter<$PrismaModel>
 }
 
-export type NestedEnumUploadStatusFilter<$PrismaModel = never> = {
-  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel> | $Enums.UploadStatus
-}
-
-export type NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
-  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel> | $Enums.UploadStatus
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
-}
-
 export type NestedJsonNullableFilter<$PrismaModel = never> =
 | Prisma.PatchUndefined<
     Prisma.Either<Required<NestedJsonNullableFilterBase<$PrismaModel>>, Exclude<keyof Required<NestedJsonNullableFilterBase<$PrismaModel>>, 'path'>>,
@@ -1050,6 +1033,23 @@ export type NestedJsonNullableFilterBase<$PrismaModel = never> = {
   gt?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   gte?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel>
   not?: runtime.InputJsonValue | Prisma.JsonFieldRefInput<$PrismaModel> | Prisma.JsonNullValueFilter
+}
+
+export type NestedEnumUploadStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel> | $Enums.UploadStatus
+}
+
+export type NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.UploadStatus | Prisma.EnumUploadStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.UploadStatus[] | Prisma.ListEnumUploadStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumUploadStatusWithAggregatesFilter<$PrismaModel> | $Enums.UploadStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumUploadStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumRecommendationStatusFilter<$PrismaModel = never> = {
