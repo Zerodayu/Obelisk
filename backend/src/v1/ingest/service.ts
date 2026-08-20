@@ -155,6 +155,7 @@ export class AttainmentService {
 				formulaVersion: "70_30_v1",
 				directWeight: 0.7,
 				indirectWeight: 0.3,
+				etlSnapshotJson: etlLoadedData as unknown as Prisma.InputJsonValue,
 				...(triggeredByUserId ? { triggeredByUserId } : {}),
 			},
 		});

@@ -37,6 +37,78 @@ export interface IngestResult {
 	result?: EtlResultData | null;
 }
 
+// --- Analytics summary (/analytics/summary) --------------------------
+// Contract mirrors python-server app/schemas/institutional_summary.py +
+// app/analytics/institutional_summary.py (pure rollups, synchronous, no auth).
+
+export type SummaryPeriodType = "semester" | "year" | "custom";
+
+export type SummaryPeriod = {
+	type: SummaryPeriodType;
+	label: string;
+};
+
+export interface AnalyticsCourseSubmission {
+	department?: string | null;
+	program?: string | null;
+	avp_group?: string | null;
+	course_code?: string | null;
+	section?: string | null;
+	header: Record<string, unknown>;
+	attainments: Record<string, unknown>[];
+	clo_plo_mapping: Record<string, unknown>[];
+}
+
+export interface AnalyticsSubmissionsPayload {
+	period: SummaryPeriod;
+	submissions: AnalyticsCourseSubmission[];
+}
+
+export interface AnalyticsMappedCloSummary {
+	clo_code: string;
+	mean_attainment_pct: number;
+	rule1_met: boolean;
+}
+
+export interface AnalyticsPloSummary {
+	plo_attainment_direct_only: number;
+	plo_completeness_pct: number;
+	plo_rule3_met: boolean;
+	mapped_clos: AnalyticsMappedCloSummary[];
+}
+
+export interface AnalyticsCloSummary {
+	mean_attainment_pct: number;
+	record_count: number;
+	rule1_met: boolean;
+}
+
+export interface AnalyticsLevelSummary {
+	total_attainment_records: number;
+	clos: Record<string, AnalyticsCloSummary>;
+	plos: Record<string, AnalyticsPloSummary>;
+}
+
+export interface AnalyticsProgramSummary extends AnalyticsLevelSummary {
+	program_plo_average: number;
+}
+
+export interface AnalyticsWorstPerformer {
+	group_name: string;
+	key: string;
+	clo_code: string;
+	mean_attainment_pct: number;
+	record_count: number;
+}
+
+export interface AnalyticsSummaryResponse {
+	period: SummaryPeriod;
+	department_summary: Record<string, AnalyticsLevelSummary>;
+	program_summary: Record<string, AnalyticsProgramSummary>;
+	avp_group_summary: Record<string, AnalyticsLevelSummary>;
+	worst_performing_clos: AnalyticsWorstPerformer[];
+}
+
 export class PythonServerError extends Error {
 	public readonly error_type: string;
 	public readonly details?: Record<string, unknown>;
@@ -147,6 +219,43 @@ class IngestClient {
 	async ingest(file: Blob, filename: string): Promise<IngestResult> {
 		const jobId = await this.upload(file, filename);
 		return this.waitForCompletion(jobId);
+	}
+
+	/**
+	 * Requests Python-Formula 2A/7A/7C rollups from the python-server's
+	 * synchronous `/analytics/summary` endpoint. The payload's per-student CLO
+	 * records are the raw ETL `StudentCLOAttainment` rows (0–1 fraction scale);
+	 * the webapp assembles them from its persisted `etlSnapshotJson`.
+	 */
+	async analyticsSummary(
+		payload: AnalyticsSubmissionsPayload,
+	): Promise<AnalyticsSummaryResponse> {
+		const response = await fetch(`${this.baseUrl}/analytics/summary`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(payload),
+		});
+
+		if (!response.ok) {
+			try {
+				const errorBody = (await response.json()) as {
+					detail: StructuredError;
+				};
+				if (errorBody.detail) {
+					throw new PythonServerError(errorBody.detail);
+				}
+			} catch (error) {
+				if (error instanceof PythonServerError) throw error;
+				throw new Error(
+					`Analytics summary failed with status ${response.status}`,
+				);
+			}
+			throw new Error(
+				`Analytics summary failed with status ${response.status}`,
+			);
+		}
+
+		return (await response.json()) as AnalyticsSummaryResponse;
 	}
 }
 
