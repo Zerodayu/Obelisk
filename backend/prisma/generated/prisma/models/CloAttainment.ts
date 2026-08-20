@@ -30,12 +30,20 @@ export type CloAttainmentAvgAggregateOutputType = {
   directScorePct: runtime.Decimal | null
   indirectScorePct: runtime.Decimal | null
   compositeScorePct: runtime.Decimal | null
+  examPct: runtime.Decimal | null
+  atPct: runtime.Decimal | null
+  tlaPct: runtime.Decimal | null
+  outputPct: runtime.Decimal | null
 }
 
 export type CloAttainmentSumAggregateOutputType = {
   directScorePct: runtime.Decimal | null
   indirectScorePct: runtime.Decimal | null
   compositeScorePct: runtime.Decimal | null
+  examPct: runtime.Decimal | null
+  atPct: runtime.Decimal | null
+  tlaPct: runtime.Decimal | null
+  outputPct: runtime.Decimal | null
 }
 
 export type CloAttainmentMinAggregateOutputType = {
@@ -46,6 +54,10 @@ export type CloAttainmentMinAggregateOutputType = {
   directScorePct: runtime.Decimal | null
   indirectScorePct: runtime.Decimal | null
   compositeScorePct: runtime.Decimal | null
+  examPct: runtime.Decimal | null
+  atPct: runtime.Decimal | null
+  tlaPct: runtime.Decimal | null
+  outputPct: runtime.Decimal | null
   isBelowThreshold: boolean | null
   computationRunId: string | null
   formSubmissionId: string | null
@@ -59,6 +71,10 @@ export type CloAttainmentMaxAggregateOutputType = {
   directScorePct: runtime.Decimal | null
   indirectScorePct: runtime.Decimal | null
   compositeScorePct: runtime.Decimal | null
+  examPct: runtime.Decimal | null
+  atPct: runtime.Decimal | null
+  tlaPct: runtime.Decimal | null
+  outputPct: runtime.Decimal | null
   isBelowThreshold: boolean | null
   computationRunId: string | null
   formSubmissionId: string | null
@@ -72,6 +88,10 @@ export type CloAttainmentCountAggregateOutputType = {
   directScorePct: number
   indirectScorePct: number
   compositeScorePct: number
+  examPct: number
+  atPct: number
+  tlaPct: number
+  outputPct: number
   isBelowThreshold: number
   computationRunId: number
   formSubmissionId: number
@@ -83,12 +103,20 @@ export type CloAttainmentAvgAggregateInputType = {
   directScorePct?: true
   indirectScorePct?: true
   compositeScorePct?: true
+  examPct?: true
+  atPct?: true
+  tlaPct?: true
+  outputPct?: true
 }
 
 export type CloAttainmentSumAggregateInputType = {
   directScorePct?: true
   indirectScorePct?: true
   compositeScorePct?: true
+  examPct?: true
+  atPct?: true
+  tlaPct?: true
+  outputPct?: true
 }
 
 export type CloAttainmentMinAggregateInputType = {
@@ -99,6 +127,10 @@ export type CloAttainmentMinAggregateInputType = {
   directScorePct?: true
   indirectScorePct?: true
   compositeScorePct?: true
+  examPct?: true
+  atPct?: true
+  tlaPct?: true
+  outputPct?: true
   isBelowThreshold?: true
   computationRunId?: true
   formSubmissionId?: true
@@ -112,6 +144,10 @@ export type CloAttainmentMaxAggregateInputType = {
   directScorePct?: true
   indirectScorePct?: true
   compositeScorePct?: true
+  examPct?: true
+  atPct?: true
+  tlaPct?: true
+  outputPct?: true
   isBelowThreshold?: true
   computationRunId?: true
   formSubmissionId?: true
@@ -125,6 +161,10 @@ export type CloAttainmentCountAggregateInputType = {
   directScorePct?: true
   indirectScorePct?: true
   compositeScorePct?: true
+  examPct?: true
+  atPct?: true
+  tlaPct?: true
+  outputPct?: true
   isBelowThreshold?: true
   computationRunId?: true
   formSubmissionId?: true
@@ -225,6 +265,10 @@ export type CloAttainmentGroupByOutputType = {
   directScorePct: runtime.Decimal | null
   indirectScorePct: runtime.Decimal | null
   compositeScorePct: runtime.Decimal
+  examPct: runtime.Decimal | null
+  atPct: runtime.Decimal | null
+  tlaPct: runtime.Decimal | null
+  outputPct: runtime.Decimal | null
   isBelowThreshold: boolean
   computationRunId: string
   formSubmissionId: string | null
@@ -261,6 +305,10 @@ export type CloAttainmentWhereInput = {
   directScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFilter<"CloAttainment"> | boolean
   computationRunId?: Prisma.StringFilter<"CloAttainment"> | string
   formSubmissionId?: Prisma.StringNullableFilter<"CloAttainment"> | string | null
@@ -280,6 +328,10 @@ export type CloAttainmentOrderByWithRelationInput = {
   directScorePct?: Prisma.SortOrderInput | Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrderInput | Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  atPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  tlaPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  outputPct?: Prisma.SortOrderInput | Prisma.SortOrder
   isBelowThreshold?: Prisma.SortOrder
   computationRunId?: Prisma.SortOrder
   formSubmissionId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -303,6 +355,10 @@ export type CloAttainmentWhereUniqueInput = Prisma.AtLeast<{
   directScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFilter<"CloAttainment"> | boolean
   computationRunId?: Prisma.StringFilter<"CloAttainment"> | string
   formSubmissionId?: Prisma.StringNullableFilter<"CloAttainment"> | string | null
@@ -322,6 +378,10 @@ export type CloAttainmentOrderByWithAggregationInput = {
   directScorePct?: Prisma.SortOrderInput | Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrderInput | Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  atPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  tlaPct?: Prisma.SortOrderInput | Prisma.SortOrder
+  outputPct?: Prisma.SortOrderInput | Prisma.SortOrder
   isBelowThreshold?: Prisma.SortOrder
   computationRunId?: Prisma.SortOrder
   formSubmissionId?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -343,6 +403,10 @@ export type CloAttainmentScalarWhereWithAggregatesInput = {
   directScorePct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.DecimalNullableWithAggregatesFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolWithAggregatesFilter<"CloAttainment"> | boolean
   computationRunId?: Prisma.StringWithAggregatesFilter<"CloAttainment"> | string
   formSubmissionId?: Prisma.StringNullableWithAggregatesFilter<"CloAttainment"> | string | null
@@ -353,6 +417,10 @@ export type CloAttainmentCreateInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
@@ -370,6 +438,10 @@ export type CloAttainmentUncheckedCreateInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -381,6 +453,10 @@ export type CloAttainmentUpdateInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -398,6 +474,10 @@ export type CloAttainmentUncheckedUpdateInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -412,6 +492,10 @@ export type CloAttainmentCreateManyInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -422,6 +506,10 @@ export type CloAttainmentUpdateManyMutationInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
 }
 
@@ -433,6 +521,10 @@ export type CloAttainmentUncheckedUpdateManyInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -463,6 +555,10 @@ export type CloAttainmentCountOrderByAggregateInput = {
   directScorePct?: Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrder
+  atPct?: Prisma.SortOrder
+  tlaPct?: Prisma.SortOrder
+  outputPct?: Prisma.SortOrder
   isBelowThreshold?: Prisma.SortOrder
   computationRunId?: Prisma.SortOrder
   formSubmissionId?: Prisma.SortOrder
@@ -472,6 +568,10 @@ export type CloAttainmentAvgOrderByAggregateInput = {
   directScorePct?: Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrder
+  atPct?: Prisma.SortOrder
+  tlaPct?: Prisma.SortOrder
+  outputPct?: Prisma.SortOrder
 }
 
 export type CloAttainmentMaxOrderByAggregateInput = {
@@ -482,6 +582,10 @@ export type CloAttainmentMaxOrderByAggregateInput = {
   directScorePct?: Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrder
+  atPct?: Prisma.SortOrder
+  tlaPct?: Prisma.SortOrder
+  outputPct?: Prisma.SortOrder
   isBelowThreshold?: Prisma.SortOrder
   computationRunId?: Prisma.SortOrder
   formSubmissionId?: Prisma.SortOrder
@@ -495,6 +599,10 @@ export type CloAttainmentMinOrderByAggregateInput = {
   directScorePct?: Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrder
+  atPct?: Prisma.SortOrder
+  tlaPct?: Prisma.SortOrder
+  outputPct?: Prisma.SortOrder
   isBelowThreshold?: Prisma.SortOrder
   computationRunId?: Prisma.SortOrder
   formSubmissionId?: Prisma.SortOrder
@@ -504,6 +612,10 @@ export type CloAttainmentSumOrderByAggregateInput = {
   directScorePct?: Prisma.SortOrder
   indirectScorePct?: Prisma.SortOrder
   compositeScorePct?: Prisma.SortOrder
+  examPct?: Prisma.SortOrder
+  atPct?: Prisma.SortOrder
+  tlaPct?: Prisma.SortOrder
+  outputPct?: Prisma.SortOrder
 }
 
 export type CloAttainmentNullableScalarRelationFilter = {
@@ -742,6 +854,10 @@ export type CloAttainmentCreateWithoutClassSectionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
   student: Prisma.StudentCreateNestedOneWithoutCloAttainmentsInput
@@ -757,6 +873,10 @@ export type CloAttainmentUncheckedCreateWithoutClassSectionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -800,6 +920,10 @@ export type CloAttainmentScalarWhereInput = {
   directScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.DecimalNullableFilter<"CloAttainment"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFilter<"CloAttainment"> | boolean
   computationRunId?: Prisma.StringFilter<"CloAttainment"> | string
   formSubmissionId?: Prisma.StringNullableFilter<"CloAttainment"> | string | null
@@ -810,6 +934,10 @@ export type CloAttainmentCreateWithoutStudentInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
@@ -825,6 +953,10 @@ export type CloAttainmentUncheckedCreateWithoutStudentInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -862,6 +994,10 @@ export type CloAttainmentCreateWithoutCloInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   student: Prisma.StudentCreateNestedOneWithoutCloAttainmentsInput
@@ -877,6 +1013,10 @@ export type CloAttainmentUncheckedCreateWithoutCloInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -914,6 +1054,10 @@ export type CloAttainmentCreateWithoutFormSubmissionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
@@ -930,6 +1074,10 @@ export type CloAttainmentUncheckedCreateWithoutFormSubmissionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutCloAttainmentInput
@@ -966,6 +1114,10 @@ export type CloAttainmentCreateWithoutComputationRunInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
@@ -982,6 +1134,10 @@ export type CloAttainmentUncheckedCreateWithoutComputationRunInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   formSubmissionId?: string | null
   atRiskFlags?: Prisma.AtRiskFlagUncheckedCreateNestedManyWithoutCloAttainmentInput
@@ -1018,6 +1174,10 @@ export type CloAttainmentCreateWithoutAtRiskFlagsInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   classSection: Prisma.ClassSectionCreateNestedOneWithoutCloAttainmentsInput
   clo: Prisma.CloCreateNestedOneWithoutCloAttainmentsInput
@@ -1034,6 +1194,10 @@ export type CloAttainmentUncheckedCreateWithoutAtRiskFlagsInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -1060,6 +1224,10 @@ export type CloAttainmentUpdateWithoutAtRiskFlagsInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1076,6 +1244,10 @@ export type CloAttainmentUncheckedUpdateWithoutAtRiskFlagsInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1088,6 +1260,10 @@ export type CloAttainmentCreateManyClassSectionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -1098,6 +1274,10 @@ export type CloAttainmentUpdateWithoutClassSectionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
   student?: Prisma.StudentUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1113,6 +1293,10 @@ export type CloAttainmentUncheckedUpdateWithoutClassSectionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1126,6 +1310,10 @@ export type CloAttainmentUncheckedUpdateManyWithoutClassSectionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1138,6 +1326,10 @@ export type CloAttainmentCreateManyStudentInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -1148,6 +1340,10 @@ export type CloAttainmentUpdateWithoutStudentInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1163,6 +1359,10 @@ export type CloAttainmentUncheckedUpdateWithoutStudentInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1176,6 +1376,10 @@ export type CloAttainmentUncheckedUpdateManyWithoutStudentInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1188,6 +1392,10 @@ export type CloAttainmentCreateManyCloInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
   formSubmissionId?: string | null
@@ -1198,6 +1406,10 @@ export type CloAttainmentUpdateWithoutCloInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   student?: Prisma.StudentUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1213,6 +1425,10 @@ export type CloAttainmentUncheckedUpdateWithoutCloInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1226,6 +1442,10 @@ export type CloAttainmentUncheckedUpdateManyWithoutCloInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1239,6 +1459,10 @@ export type CloAttainmentCreateManyFormSubmissionInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   computationRunId: string
 }
@@ -1248,6 +1472,10 @@ export type CloAttainmentUpdateWithoutFormSubmissionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1264,6 +1492,10 @@ export type CloAttainmentUncheckedUpdateWithoutFormSubmissionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutCloAttainmentNestedInput
@@ -1277,6 +1509,10 @@ export type CloAttainmentUncheckedUpdateManyWithoutFormSubmissionInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   computationRunId?: Prisma.StringFieldUpdateOperationsInput | string
 }
@@ -1289,6 +1525,10 @@ export type CloAttainmentCreateManyComputationRunInput = {
   directScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct: runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: boolean
   formSubmissionId?: string | null
 }
@@ -1298,6 +1538,10 @@ export type CloAttainmentUpdateWithoutComputationRunInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   classSection?: Prisma.ClassSectionUpdateOneRequiredWithoutCloAttainmentsNestedInput
   clo?: Prisma.CloUpdateOneRequiredWithoutCloAttainmentsNestedInput
@@ -1314,6 +1558,10 @@ export type CloAttainmentUncheckedUpdateWithoutComputationRunInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   atRiskFlags?: Prisma.AtRiskFlagUncheckedUpdateManyWithoutCloAttainmentNestedInput
@@ -1327,6 +1575,10 @@ export type CloAttainmentUncheckedUpdateManyWithoutComputationRunInput = {
   directScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   indirectScorePct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   compositeScorePct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  examPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  atPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  tlaPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  outputPct?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   isBelowThreshold?: Prisma.BoolFieldUpdateOperationsInput | boolean
   formSubmissionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
@@ -1370,6 +1622,10 @@ export type CloAttainmentSelect<ExtArgs extends runtime.Types.Extensions.Interna
   directScorePct?: boolean
   indirectScorePct?: boolean
   compositeScorePct?: boolean
+  examPct?: boolean
+  atPct?: boolean
+  tlaPct?: boolean
+  outputPct?: boolean
   isBelowThreshold?: boolean
   computationRunId?: boolean
   formSubmissionId?: boolean
@@ -1390,6 +1646,10 @@ export type CloAttainmentSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   directScorePct?: boolean
   indirectScorePct?: boolean
   compositeScorePct?: boolean
+  examPct?: boolean
+  atPct?: boolean
+  tlaPct?: boolean
+  outputPct?: boolean
   isBelowThreshold?: boolean
   computationRunId?: boolean
   formSubmissionId?: boolean
@@ -1408,6 +1668,10 @@ export type CloAttainmentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   directScorePct?: boolean
   indirectScorePct?: boolean
   compositeScorePct?: boolean
+  examPct?: boolean
+  atPct?: boolean
+  tlaPct?: boolean
+  outputPct?: boolean
   isBelowThreshold?: boolean
   computationRunId?: boolean
   formSubmissionId?: boolean
@@ -1426,12 +1690,16 @@ export type CloAttainmentSelectScalar = {
   directScorePct?: boolean
   indirectScorePct?: boolean
   compositeScorePct?: boolean
+  examPct?: boolean
+  atPct?: boolean
+  tlaPct?: boolean
+  outputPct?: boolean
   isBelowThreshold?: boolean
   computationRunId?: boolean
   formSubmissionId?: boolean
 }
 
-export type CloAttainmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "classSectionId" | "cloId" | "studentId" | "directScorePct" | "indirectScorePct" | "compositeScorePct" | "isBelowThreshold" | "computationRunId" | "formSubmissionId", ExtArgs["result"]["cloAttainment"]>
+export type CloAttainmentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "classSectionId" | "cloId" | "studentId" | "directScorePct" | "indirectScorePct" | "compositeScorePct" | "examPct" | "atPct" | "tlaPct" | "outputPct" | "isBelowThreshold" | "computationRunId" | "formSubmissionId", ExtArgs["result"]["cloAttainment"]>
 export type CloAttainmentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   classSection?: boolean | Prisma.ClassSectionDefaultArgs<ExtArgs>
   clo?: boolean | Prisma.CloDefaultArgs<ExtArgs>
@@ -1474,6 +1742,10 @@ export type $CloAttainmentPayload<ExtArgs extends runtime.Types.Extensions.Inter
     directScorePct: runtime.Decimal | null
     indirectScorePct: runtime.Decimal | null
     compositeScorePct: runtime.Decimal
+    examPct: runtime.Decimal | null
+    atPct: runtime.Decimal | null
+    tlaPct: runtime.Decimal | null
+    outputPct: runtime.Decimal | null
     isBelowThreshold: boolean
     computationRunId: string
     formSubmissionId: string | null
@@ -1913,6 +2185,10 @@ export interface CloAttainmentFieldRefs {
   readonly directScorePct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
   readonly indirectScorePct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
   readonly compositeScorePct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
+  readonly examPct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
+  readonly atPct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
+  readonly tlaPct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
+  readonly outputPct: Prisma.FieldRef<"CloAttainment", 'Decimal'>
   readonly isBelowThreshold: Prisma.FieldRef<"CloAttainment", 'Boolean'>
   readonly computationRunId: Prisma.FieldRef<"CloAttainment", 'String'>
   readonly formSubmissionId: Prisma.FieldRef<"CloAttainment", 'String'>

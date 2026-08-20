@@ -405,6 +405,10 @@ export const CloAttainmentScalarFieldEnum = {
   directScorePct: 'directScorePct',
   indirectScorePct: 'indirectScorePct',
   compositeScorePct: 'compositeScorePct',
+  examPct: 'examPct',
+  atPct: 'atPct',
+  tlaPct: 'tlaPct',
+  outputPct: 'outputPct',
   isBelowThreshold: 'isBelowThreshold',
   computationRunId: 'computationRunId',
   formSubmissionId: 'formSubmissionId'
