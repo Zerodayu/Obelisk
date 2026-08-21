@@ -111,12 +111,14 @@ The term-level hub that consolidates a term's data.
 
 `plo_gap_analysis` → `cqi_action_plan` → `closing_the_loop`
 
-- [ ] **Backend: `plo_gap_analysis`** — gap row per NOT-MET PLO-cohort combo, 6-category root cause
-- [ ] **Backend: `cqi_action_plan`** — stateful two-phase lifecycle (planned → tracked-to-completion)
-- [ ] **Backend: `closing_the_loop`** — CTL report with **hard-computed loop status** (CLOSED only if 5 conditions met)
-- [ ] **Backend: `annual_program_report` validation gate** — blocked if `cohort_tracking` absent
-- [ ] **Tests:** 5-condition CLOSED computation; APAR gate; gap → plan → loop trace
-- [ ] **Exit check:** a gap traced from analysis → CQI plan → loop closure with computed status
+- [x] **Backend: `plo_gap_analysis`** — gap row per NOT-MET PLO-cohort combo, 6-category root cause
+- [x] **Backend: `cqi_action_plan`** — stateful two-phase lifecycle (planned → tracked-to-completion)
+- [x] **Backend: `closing_the_loop`** — CTL report with **hard-computed loop status** (CLOSED only if 5 conditions met)
+- [x] **Backend: `annual_program_report` validation gate** — blocked if `cohort_tracking` absent
+- [x] **Tests:** 5-condition CLOSED computation; APAR gate; gap → plan → loop trace
+- [x] **Exit check:** a gap traced from analysis → CQI plan → loop closure with computed status
+
+**Done (Phase 4):** the CQI / ACT loop ships as `src/v1/cqi/` exposed under `/api/v1/cqi` (`cqi-plugin`). Dedicated `gap_row` / `cqi_entry` / `ctl_row` tables (migration `20260820193045_add_cqi_act_models`) back the stateful lifecycle: `plo_gap_analysis` derives per-PLO-per-cohort attainment from stored `clo_attainment` (via the CLO→PLO map and `student.year_level`) and reconciles one gap row per NOT-MET combo with 6-category root cause; `cqi_action_plan` moves entries from planned → tracked-to-completion; `closing_the_loop` hard-computes loop status (CLOSED only when all five conditions hold, else OPEN — Re-assess / OPEN — Not Implemented) with the mandatory Identify step; `annual_program_report` blocks submission when the Cohort Tracking Sheet isn't attached (submit-gate registry in `lib/forms/submit-gates.ts`). Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 106 tests).
 
 ---
 
