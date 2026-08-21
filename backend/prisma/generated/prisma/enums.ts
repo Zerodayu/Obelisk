@@ -117,3 +117,38 @@ export const UploadStatus = {
 } as const
 
 export type UploadStatus = (typeof UploadStatus)[keyof typeof UploadStatus]
+
+
+export const PloStatus = {
+  all_met: 'all_met',
+  partial: 'partial',
+  not_met: 'not_met'
+} as const
+
+export type PloStatus = (typeof PloStatus)[keyof typeof PloStatus]
+
+
+export const LoopStatus = {
+  closed: 'closed',
+  open_reassess: 'open_reassess',
+  open_not_implemented: 'open_not_implemented'
+} as const
+
+export type LoopStatus = (typeof LoopStatus)[keyof typeof LoopStatus]
+
+
+export const CqiEntryStatus = {
+  planned: 'planned',
+  tracked: 'tracked'
+} as const
+
+export type CqiEntryStatus = (typeof CqiEntryStatus)[keyof typeof CqiEntryStatus]
+
+
+export const InterventionStatus = {
+  yes: 'yes',
+  partial: 'partial',
+  no: 'no'
+} as const
+
+export type InterventionStatus = (typeof InterventionStatus)[keyof typeof InterventionStatus]

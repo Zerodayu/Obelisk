@@ -428,7 +428,10 @@ export const ModelName = {
   AiRecommendation: 'AiRecommendation',
   ReportExport: 'ReportExport',
   GraduationCluster: 'GraduationCluster',
-  GraduationClusterEntry: 'GraduationClusterEntry'
+  GraduationClusterEntry: 'GraduationClusterEntry',
+  GapRow: 'GapRow',
+  CqiEntry: 'CqiEntry',
+  CtlRow: 'CtlRow'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -444,7 +447,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "uploadRecord" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry"
+    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "uploadRecord" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry" | "gapRow" | "cqiEntry" | "ctlRow"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2816,6 +2819,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    GapRow: {
+      payload: Prisma.$GapRowPayload<ExtArgs>
+      fields: Prisma.GapRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GapRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GapRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        findFirst: {
+          args: Prisma.GapRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GapRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        findMany: {
+          args: Prisma.GapRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>[]
+        }
+        create: {
+          args: Prisma.GapRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        createMany: {
+          args: Prisma.GapRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GapRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>[]
+        }
+        delete: {
+          args: Prisma.GapRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        update: {
+          args: Prisma.GapRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.GapRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GapRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GapRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.GapRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GapRowPayload>
+        }
+        aggregate: {
+          args: Prisma.GapRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGapRow>
+        }
+        groupBy: {
+          args: Prisma.GapRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GapRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GapRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GapRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    CqiEntry: {
+      payload: Prisma.$CqiEntryPayload<ExtArgs>
+      fields: Prisma.CqiEntryFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CqiEntryFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CqiEntryFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        findFirst: {
+          args: Prisma.CqiEntryFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CqiEntryFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        findMany: {
+          args: Prisma.CqiEntryFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>[]
+        }
+        create: {
+          args: Prisma.CqiEntryCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        createMany: {
+          args: Prisma.CqiEntryCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CqiEntryCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>[]
+        }
+        delete: {
+          args: Prisma.CqiEntryDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        update: {
+          args: Prisma.CqiEntryUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        deleteMany: {
+          args: Prisma.CqiEntryDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CqiEntryUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CqiEntryUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>[]
+        }
+        upsert: {
+          args: Prisma.CqiEntryUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CqiEntryPayload>
+        }
+        aggregate: {
+          args: Prisma.CqiEntryAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCqiEntry>
+        }
+        groupBy: {
+          args: Prisma.CqiEntryGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CqiEntryGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CqiEntryCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CqiEntryCountAggregateOutputType> | number
+        }
+      }
+    }
+    CtlRow: {
+      payload: Prisma.$CtlRowPayload<ExtArgs>
+      fields: Prisma.CtlRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CtlRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CtlRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        findFirst: {
+          args: Prisma.CtlRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CtlRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        findMany: {
+          args: Prisma.CtlRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>[]
+        }
+        create: {
+          args: Prisma.CtlRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        createMany: {
+          args: Prisma.CtlRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CtlRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>[]
+        }
+        delete: {
+          args: Prisma.CtlRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        update: {
+          args: Prisma.CtlRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.CtlRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CtlRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CtlRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.CtlRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CtlRowPayload>
+        }
+        aggregate: {
+          args: Prisma.CtlRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCtlRow>
+        }
+        groupBy: {
+          args: Prisma.CtlRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CtlRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CtlRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CtlRowCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3288,6 +3513,59 @@ export const GraduationClusterEntryScalarFieldEnum = {
 export type GraduationClusterEntryScalarFieldEnum = (typeof GraduationClusterEntryScalarFieldEnum)[keyof typeof GraduationClusterEntryScalarFieldEnum]
 
 
+export const GapRowScalarFieldEnum = {
+  id: 'id',
+  ploGapAnalysisId: 'ploGapAnalysisId',
+  ploId: 'ploId',
+  cohortYearLevel: 'cohortYearLevel',
+  attainmentPct: 'attainmentPct',
+  rootCauseCategory: 'rootCauseCategory',
+  rootCauseAnalysis: 'rootCauseAnalysis',
+  namedOwner: 'namedOwner',
+  cqiActionPlanEntryId: 'cqiActionPlanEntryId'
+} as const
+
+export type GapRowScalarFieldEnum = (typeof GapRowScalarFieldEnum)[keyof typeof GapRowScalarFieldEnum]
+
+
+export const CqiEntryScalarFieldEnum = {
+  id: 'id',
+  cqiActionPlanId: 'cqiActionPlanId',
+  ploId: 'ploId',
+  cohortYearLevel: 'cohortYearLevel',
+  evidenceSource: 'evidenceSource',
+  priorAttainmentPct: 'priorAttainmentPct',
+  rootCauseCategory: 'rootCauseCategory',
+  intervention: 'intervention',
+  owner: 'owner',
+  ownerRole: 'ownerRole',
+  timelineAndKpi: 'timelineAndKpi',
+  status: 'status',
+  interventionImplemented: 'interventionImplemented',
+  currentAttainmentPct: 'currentAttainmentPct'
+} as const
+
+export type CqiEntryScalarFieldEnum = (typeof CqiEntryScalarFieldEnum)[keyof typeof CqiEntryScalarFieldEnum]
+
+
+export const CtlRowScalarFieldEnum = {
+  id: 'id',
+  closingTheLoopId: 'closingTheLoopId',
+  cqiEntryId: 'cqiEntryId',
+  gapFindingAndEvidence: 'gapFindingAndEvidence',
+  interventionImplementedText: 'interventionImplementedText',
+  priorAttainmentPct: 'priorAttainmentPct',
+  currentAttainmentPct: 'currentAttainmentPct',
+  conditions12Met: 'conditions12Met',
+  condition3Met: 'condition3Met',
+  condition4Met: 'condition4Met',
+  condition5Met: 'condition5Met',
+  loopStatus: 'loopStatus'
+} as const
+
+export type CtlRowScalarFieldEnum = (typeof CtlRowScalarFieldEnum)[keyof typeof CtlRowScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3574,6 +3852,48 @@ export type ListEnumGraduationClusterStatusFieldRefInput<$PrismaModel> = FieldRe
 
 
 /**
+ * Reference to a field of type 'CqiEntryStatus'
+ */
+export type EnumCqiEntryStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CqiEntryStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CqiEntryStatus[]'
+ */
+export type ListEnumCqiEntryStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CqiEntryStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'InterventionStatus'
+ */
+export type EnumInterventionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InterventionStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'InterventionStatus[]'
+ */
+export type ListEnumInterventionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'InterventionStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'LoopStatus'
+ */
+export type EnumLoopStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LoopStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'LoopStatus[]'
+ */
+export type ListEnumLoopStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LoopStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -3769,6 +4089,9 @@ export type GlobalOmitConfig = {
   reportExport?: Prisma.ReportExportOmit
   graduationCluster?: Prisma.GraduationClusterOmit
   graduationClusterEntry?: Prisma.GraduationClusterEntryOmit
+  gapRow?: Prisma.GapRowOmit
+  cqiEntry?: Prisma.CqiEntryOmit
+  ctlRow?: Prisma.CtlRowOmit
 }
 
 /* Types for Logging */

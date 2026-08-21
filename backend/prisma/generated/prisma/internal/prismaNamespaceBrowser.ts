@@ -82,7 +82,10 @@ export const ModelName = {
   AiRecommendation: 'AiRecommendation',
   ReportExport: 'ReportExport',
   GraduationCluster: 'GraduationCluster',
-  GraduationClusterEntry: 'GraduationClusterEntry'
+  GraduationClusterEntry: 'GraduationClusterEntry',
+  GapRow: 'GapRow',
+  CqiEntry: 'CqiEntry',
+  CtlRow: 'CtlRow'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -532,6 +535,59 @@ export const GraduationClusterEntryScalarFieldEnum = {
 } as const
 
 export type GraduationClusterEntryScalarFieldEnum = (typeof GraduationClusterEntryScalarFieldEnum)[keyof typeof GraduationClusterEntryScalarFieldEnum]
+
+
+export const GapRowScalarFieldEnum = {
+  id: 'id',
+  ploGapAnalysisId: 'ploGapAnalysisId',
+  ploId: 'ploId',
+  cohortYearLevel: 'cohortYearLevel',
+  attainmentPct: 'attainmentPct',
+  rootCauseCategory: 'rootCauseCategory',
+  rootCauseAnalysis: 'rootCauseAnalysis',
+  namedOwner: 'namedOwner',
+  cqiActionPlanEntryId: 'cqiActionPlanEntryId'
+} as const
+
+export type GapRowScalarFieldEnum = (typeof GapRowScalarFieldEnum)[keyof typeof GapRowScalarFieldEnum]
+
+
+export const CqiEntryScalarFieldEnum = {
+  id: 'id',
+  cqiActionPlanId: 'cqiActionPlanId',
+  ploId: 'ploId',
+  cohortYearLevel: 'cohortYearLevel',
+  evidenceSource: 'evidenceSource',
+  priorAttainmentPct: 'priorAttainmentPct',
+  rootCauseCategory: 'rootCauseCategory',
+  intervention: 'intervention',
+  owner: 'owner',
+  ownerRole: 'ownerRole',
+  timelineAndKpi: 'timelineAndKpi',
+  status: 'status',
+  interventionImplemented: 'interventionImplemented',
+  currentAttainmentPct: 'currentAttainmentPct'
+} as const
+
+export type CqiEntryScalarFieldEnum = (typeof CqiEntryScalarFieldEnum)[keyof typeof CqiEntryScalarFieldEnum]
+
+
+export const CtlRowScalarFieldEnum = {
+  id: 'id',
+  closingTheLoopId: 'closingTheLoopId',
+  cqiEntryId: 'cqiEntryId',
+  gapFindingAndEvidence: 'gapFindingAndEvidence',
+  interventionImplementedText: 'interventionImplementedText',
+  priorAttainmentPct: 'priorAttainmentPct',
+  currentAttainmentPct: 'currentAttainmentPct',
+  conditions12Met: 'conditions12Met',
+  condition3Met: 'condition3Met',
+  condition4Met: 'condition4Met',
+  condition5Met: 'condition5Met',
+  loopStatus: 'loopStatus'
+} as const
+
+export type CtlRowScalarFieldEnum = (typeof CtlRowScalarFieldEnum)[keyof typeof CtlRowScalarFieldEnum]
 
 
 export const SortOrder = {

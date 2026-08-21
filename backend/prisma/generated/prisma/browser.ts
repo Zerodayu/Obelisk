@@ -181,3 +181,18 @@ export type GraduationCluster = Prisma.GraduationClusterModel
  * 
  */
 export type GraduationClusterEntry = Prisma.GraduationClusterEntryModel
+/**
+ * Model GapRow
+ * 
+ */
+export type GapRow = Prisma.GapRowModel
+/**
+ * Model CqiEntry
+ * 
+ */
+export type CqiEntry = Prisma.CqiEntryModel
+/**
+ * Model CtlRow
+ * 
+ */
+export type CtlRow = Prisma.CtlRowModel

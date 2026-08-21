@@ -236,6 +236,9 @@ export type FormSubmissionWhereInput = {
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
   peoAttainments?: Prisma.PeoAttainmentListRelationFilter
+  gapRows?: Prisma.GapRowListRelationFilter
+  cqiEntries?: Prisma.CqiEntryListRelationFilter
+  ctlRows?: Prisma.CtlRowListRelationFilter
 }
 
 export type FormSubmissionOrderByWithRelationInput = {
@@ -260,6 +263,9 @@ export type FormSubmissionOrderByWithRelationInput = {
   cloAttainments?: Prisma.CloAttainmentOrderByRelationAggregateInput
   ploAttainments?: Prisma.PloAttainmentOrderByRelationAggregateInput
   peoAttainments?: Prisma.PeoAttainmentOrderByRelationAggregateInput
+  gapRows?: Prisma.GapRowOrderByRelationAggregateInput
+  cqiEntries?: Prisma.CqiEntryOrderByRelationAggregateInput
+  ctlRows?: Prisma.CtlRowOrderByRelationAggregateInput
 }
 
 export type FormSubmissionWhereUniqueInput = Prisma.AtLeast<{
@@ -287,6 +293,9 @@ export type FormSubmissionWhereUniqueInput = Prisma.AtLeast<{
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
   ploAttainments?: Prisma.PloAttainmentListRelationFilter
   peoAttainments?: Prisma.PeoAttainmentListRelationFilter
+  gapRows?: Prisma.GapRowListRelationFilter
+  cqiEntries?: Prisma.CqiEntryListRelationFilter
+  ctlRows?: Prisma.CtlRowListRelationFilter
 }, "id">
 
 export type FormSubmissionOrderByWithAggregationInput = {
@@ -340,6 +349,9 @@ export type FormSubmissionCreateInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateInput = {
@@ -359,6 +371,9 @@ export type FormSubmissionUncheckedCreateInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUpdateInput = {
@@ -378,6 +393,9 @@ export type FormSubmissionUpdateInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateInput = {
@@ -397,6 +415,9 @@ export type FormSubmissionUncheckedUpdateInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionCreateManyInput = {
@@ -792,6 +813,48 @@ export type FormSubmissionUpdateOneWithoutReportExportsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutReportExportsInput, Prisma.FormSubmissionUpdateWithoutReportExportsInput>, Prisma.FormSubmissionUncheckedUpdateWithoutReportExportsInput>
 }
 
+export type FormSubmissionCreateNestedOneWithoutGapRowsInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutGapRowsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutGapRowsInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+}
+
+export type FormSubmissionUpdateOneRequiredWithoutGapRowsNestedInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutGapRowsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutGapRowsInput
+  upsert?: Prisma.FormSubmissionUpsertWithoutGapRowsInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutGapRowsInput, Prisma.FormSubmissionUpdateWithoutGapRowsInput>, Prisma.FormSubmissionUncheckedUpdateWithoutGapRowsInput>
+}
+
+export type FormSubmissionCreateNestedOneWithoutCqiEntriesInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedCreateWithoutCqiEntriesInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutCqiEntriesInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+}
+
+export type FormSubmissionUpdateOneRequiredWithoutCqiEntriesNestedInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedCreateWithoutCqiEntriesInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutCqiEntriesInput
+  upsert?: Prisma.FormSubmissionUpsertWithoutCqiEntriesInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutCqiEntriesInput, Prisma.FormSubmissionUpdateWithoutCqiEntriesInput>, Prisma.FormSubmissionUncheckedUpdateWithoutCqiEntriesInput>
+}
+
+export type FormSubmissionCreateNestedOneWithoutCtlRowsInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutCtlRowsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutCtlRowsInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+}
+
+export type FormSubmissionUpdateOneRequiredWithoutCtlRowsNestedInput = {
+  create?: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutCtlRowsInput>
+  connectOrCreate?: Prisma.FormSubmissionCreateOrConnectWithoutCtlRowsInput
+  upsert?: Prisma.FormSubmissionUpsertWithoutCtlRowsInput
+  connect?: Prisma.FormSubmissionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.FormSubmissionUpdateToOneWithWhereWithoutCtlRowsInput, Prisma.FormSubmissionUpdateWithoutCtlRowsInput>, Prisma.FormSubmissionUncheckedUpdateWithoutCtlRowsInput>
+}
+
 export type FormSubmissionCreateWithoutSubmittedByInput = {
   id: string
   status?: $Enums.SubmissionStatus
@@ -808,6 +871,9 @@ export type FormSubmissionCreateWithoutSubmittedByInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutSubmittedByInput = {
@@ -826,6 +892,9 @@ export type FormSubmissionUncheckedCreateWithoutSubmittedByInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutSubmittedByInput = {
@@ -887,6 +956,9 @@ export type FormSubmissionCreateWithoutProgramInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutProgramInput = {
@@ -905,6 +977,9 @@ export type FormSubmissionUncheckedCreateWithoutProgramInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutProgramInput = {
@@ -949,6 +1024,9 @@ export type FormSubmissionCreateWithoutTermInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutTermInput = {
@@ -967,6 +1045,9 @@ export type FormSubmissionUncheckedCreateWithoutTermInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutTermInput = {
@@ -1011,6 +1092,9 @@ export type FormSubmissionCreateWithoutClassSectionInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutClassSectionInput = {
@@ -1029,6 +1113,9 @@ export type FormSubmissionUncheckedCreateWithoutClassSectionInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutClassSectionInput = {
@@ -1073,6 +1160,9 @@ export type FormSubmissionCreateWithoutFormTypeInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutFormTypeInput = {
@@ -1091,6 +1181,9 @@ export type FormSubmissionUncheckedCreateWithoutFormTypeInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutFormTypeInput = {
@@ -1135,6 +1228,9 @@ export type FormSubmissionCreateWithoutApprovalStepsInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutApprovalStepsInput = {
@@ -1153,6 +1249,9 @@ export type FormSubmissionUncheckedCreateWithoutApprovalStepsInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutApprovalStepsInput = {
@@ -1187,6 +1286,9 @@ export type FormSubmissionUpdateWithoutApprovalStepsInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutApprovalStepsInput = {
@@ -1205,6 +1307,9 @@ export type FormSubmissionUncheckedUpdateWithoutApprovalStepsInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionCreateWithoutCloAttainmentsInput = {
@@ -1223,6 +1328,9 @@ export type FormSubmissionCreateWithoutCloAttainmentsInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutCloAttainmentsInput = {
@@ -1241,6 +1349,9 @@ export type FormSubmissionUncheckedCreateWithoutCloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutCloAttainmentsInput = {
@@ -1275,6 +1386,9 @@ export type FormSubmissionUpdateWithoutCloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutCloAttainmentsInput = {
@@ -1293,6 +1407,9 @@ export type FormSubmissionUncheckedUpdateWithoutCloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionCreateWithoutPloAttainmentsInput = {
@@ -1311,6 +1428,9 @@ export type FormSubmissionCreateWithoutPloAttainmentsInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutPloAttainmentsInput = {
@@ -1329,6 +1449,9 @@ export type FormSubmissionUncheckedCreateWithoutPloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutPloAttainmentsInput = {
@@ -1363,6 +1486,9 @@ export type FormSubmissionUpdateWithoutPloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -1381,6 +1507,9 @@ export type FormSubmissionUncheckedUpdateWithoutPloAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionCreateWithoutPeoAttainmentsInput = {
@@ -1399,6 +1528,9 @@ export type FormSubmissionCreateWithoutPeoAttainmentsInput = {
   reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput = {
@@ -1417,6 +1549,9 @@ export type FormSubmissionUncheckedCreateWithoutPeoAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutPeoAttainmentsInput = {
@@ -1451,6 +1586,9 @@ export type FormSubmissionUpdateWithoutPeoAttainmentsInput = {
   reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput = {
@@ -1469,6 +1607,9 @@ export type FormSubmissionUncheckedUpdateWithoutPeoAttainmentsInput = {
   reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionCreateWithoutReportExportsInput = {
@@ -1487,6 +1628,9 @@ export type FormSubmissionCreateWithoutReportExportsInput = {
   cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionUncheckedCreateWithoutReportExportsInput = {
@@ -1505,6 +1649,9 @@ export type FormSubmissionUncheckedCreateWithoutReportExportsInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
 }
 
 export type FormSubmissionCreateOrConnectWithoutReportExportsInput = {
@@ -1539,6 +1686,9 @@ export type FormSubmissionUpdateWithoutReportExportsInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutReportExportsInput = {
@@ -1557,6 +1707,309 @@ export type FormSubmissionUncheckedUpdateWithoutReportExportsInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
+}
+
+export type FormSubmissionCreateWithoutGapRowsInput = {
+  id: string
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  formType: Prisma.FormTypeCreateNestedOneWithoutFormSubmissionsInput
+  classSection?: Prisma.ClassSectionCreateNestedOneWithoutFormSubmissionsInput
+  program?: Prisma.ProgramCreateNestedOneWithoutFormSubmissionsInput
+  term: Prisma.AcademicTermCreateNestedOneWithoutFormSubmissionsInput
+  submittedBy?: Prisma.userCreateNestedOneWithoutFormSubmissionsInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
+}
+
+export type FormSubmissionUncheckedCreateWithoutGapRowsInput = {
+  id: string
+  formTypeId: string
+  classSectionId?: string | null
+  programId?: string | null
+  termId: string
+  submittedByUserId?: string | null
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
+}
+
+export type FormSubmissionCreateOrConnectWithoutGapRowsInput = {
+  where: Prisma.FormSubmissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutGapRowsInput>
+}
+
+export type FormSubmissionUpsertWithoutGapRowsInput = {
+  update: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedUpdateWithoutGapRowsInput>
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutGapRowsInput>
+  where?: Prisma.FormSubmissionWhereInput
+}
+
+export type FormSubmissionUpdateToOneWithWhereWithoutGapRowsInput = {
+  where?: Prisma.FormSubmissionWhereInput
+  data: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutGapRowsInput, Prisma.FormSubmissionUncheckedUpdateWithoutGapRowsInput>
+}
+
+export type FormSubmissionUpdateWithoutGapRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  formType?: Prisma.FormTypeUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  classSection?: Prisma.ClassSectionUpdateOneWithoutFormSubmissionsNestedInput
+  program?: Prisma.ProgramUpdateOneWithoutFormSubmissionsNestedInput
+  term?: Prisma.AcademicTermUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  submittedBy?: Prisma.userUpdateOneWithoutFormSubmissionsNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
+}
+
+export type FormSubmissionUncheckedUpdateWithoutGapRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  formTypeId?: Prisma.StringFieldUpdateOperationsInput | string
+  classSectionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termId?: Prisma.StringFieldUpdateOperationsInput | string
+  submittedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
+}
+
+export type FormSubmissionCreateWithoutCqiEntriesInput = {
+  id: string
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  formType: Prisma.FormTypeCreateNestedOneWithoutFormSubmissionsInput
+  classSection?: Prisma.ClassSectionCreateNestedOneWithoutFormSubmissionsInput
+  program?: Prisma.ProgramCreateNestedOneWithoutFormSubmissionsInput
+  term: Prisma.AcademicTermCreateNestedOneWithoutFormSubmissionsInput
+  submittedBy?: Prisma.userCreateNestedOneWithoutFormSubmissionsInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  ctlRows?: Prisma.CtlRowCreateNestedManyWithoutClosingTheLoopInput
+}
+
+export type FormSubmissionUncheckedCreateWithoutCqiEntriesInput = {
+  id: string
+  formTypeId: string
+  classSectionId?: string | null
+  programId?: string | null
+  termId: string
+  submittedByUserId?: string | null
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  ctlRows?: Prisma.CtlRowUncheckedCreateNestedManyWithoutClosingTheLoopInput
+}
+
+export type FormSubmissionCreateOrConnectWithoutCqiEntriesInput = {
+  where: Prisma.FormSubmissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedCreateWithoutCqiEntriesInput>
+}
+
+export type FormSubmissionUpsertWithoutCqiEntriesInput = {
+  update: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedUpdateWithoutCqiEntriesInput>
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedCreateWithoutCqiEntriesInput>
+  where?: Prisma.FormSubmissionWhereInput
+}
+
+export type FormSubmissionUpdateToOneWithWhereWithoutCqiEntriesInput = {
+  where?: Prisma.FormSubmissionWhereInput
+  data: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutCqiEntriesInput, Prisma.FormSubmissionUncheckedUpdateWithoutCqiEntriesInput>
+}
+
+export type FormSubmissionUpdateWithoutCqiEntriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  formType?: Prisma.FormTypeUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  classSection?: Prisma.ClassSectionUpdateOneWithoutFormSubmissionsNestedInput
+  program?: Prisma.ProgramUpdateOneWithoutFormSubmissionsNestedInput
+  term?: Prisma.AcademicTermUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  submittedBy?: Prisma.userUpdateOneWithoutFormSubmissionsNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
+}
+
+export type FormSubmissionUncheckedUpdateWithoutCqiEntriesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  formTypeId?: Prisma.StringFieldUpdateOperationsInput | string
+  classSectionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termId?: Prisma.StringFieldUpdateOperationsInput | string
+  submittedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
+}
+
+export type FormSubmissionCreateWithoutCtlRowsInput = {
+  id: string
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  formType: Prisma.FormTypeCreateNestedOneWithoutFormSubmissionsInput
+  classSection?: Prisma.ClassSectionCreateNestedOneWithoutFormSubmissionsInput
+  program?: Prisma.ProgramCreateNestedOneWithoutFormSubmissionsInput
+  term: Prisma.AcademicTermCreateNestedOneWithoutFormSubmissionsInput
+  submittedBy?: Prisma.userCreateNestedOneWithoutFormSubmissionsInput
+  approvalSteps?: Prisma.ApprovalStepCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutCqiActionPlanInput
+}
+
+export type FormSubmissionUncheckedCreateWithoutCtlRowsInput = {
+  id: string
+  formTypeId: string
+  classSectionId?: string | null
+  programId?: string | null
+  termId: string
+  submittedByUserId?: string | null
+  status?: $Enums.SubmissionStatus
+  currentApproverRole?: $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedCreateNestedManyWithoutFormSubmissionInput
+  reportExports?: Prisma.ReportExportUncheckedCreateNestedManyWithoutFormSubmissionInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedCreateNestedManyWithoutFormSubmissionInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloGapAnalysisInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutCqiActionPlanInput
+}
+
+export type FormSubmissionCreateOrConnectWithoutCtlRowsInput = {
+  where: Prisma.FormSubmissionWhereUniqueInput
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutCtlRowsInput>
+}
+
+export type FormSubmissionUpsertWithoutCtlRowsInput = {
+  update: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedUpdateWithoutCtlRowsInput>
+  create: Prisma.XOR<Prisma.FormSubmissionCreateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedCreateWithoutCtlRowsInput>
+  where?: Prisma.FormSubmissionWhereInput
+}
+
+export type FormSubmissionUpdateToOneWithWhereWithoutCtlRowsInput = {
+  where?: Prisma.FormSubmissionWhereInput
+  data: Prisma.XOR<Prisma.FormSubmissionUpdateWithoutCtlRowsInput, Prisma.FormSubmissionUncheckedUpdateWithoutCtlRowsInput>
+}
+
+export type FormSubmissionUpdateWithoutCtlRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  formType?: Prisma.FormTypeUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  classSection?: Prisma.ClassSectionUpdateOneWithoutFormSubmissionsNestedInput
+  program?: Prisma.ProgramUpdateOneWithoutFormSubmissionsNestedInput
+  term?: Prisma.AcademicTermUpdateOneRequiredWithoutFormSubmissionsNestedInput
+  submittedBy?: Prisma.userUpdateOneWithoutFormSubmissionsNestedInput
+  approvalSteps?: Prisma.ApprovalStepUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+}
+
+export type FormSubmissionUncheckedUpdateWithoutCtlRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  formTypeId?: Prisma.StringFieldUpdateOperationsInput | string
+  classSectionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  programId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  termId?: Prisma.StringFieldUpdateOperationsInput | string
+  submittedByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumSubmissionStatusFieldUpdateOperationsInput | $Enums.SubmissionStatus
+  currentApproverRole?: Prisma.NullableEnumApproverRoleFieldUpdateOperationsInput | $Enums.ApproverRole | null
+  formData?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  approvalSteps?: Prisma.ApprovalStepUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  reportExports?: Prisma.ReportExportUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
 }
 
 export type FormSubmissionCreateManySubmittedByInput = {
@@ -1588,6 +2041,9 @@ export type FormSubmissionUpdateWithoutSubmittedByInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutSubmittedByInput = {
@@ -1606,6 +2062,9 @@ export type FormSubmissionUncheckedUpdateWithoutSubmittedByInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutSubmittedByInput = {
@@ -1650,6 +2109,9 @@ export type FormSubmissionUpdateWithoutProgramInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutProgramInput = {
@@ -1668,6 +2130,9 @@ export type FormSubmissionUncheckedUpdateWithoutProgramInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutProgramInput = {
@@ -1712,6 +2177,9 @@ export type FormSubmissionUpdateWithoutTermInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutTermInput = {
@@ -1730,6 +2198,9 @@ export type FormSubmissionUncheckedUpdateWithoutTermInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutTermInput = {
@@ -1774,6 +2245,9 @@ export type FormSubmissionUpdateWithoutClassSectionInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutClassSectionInput = {
@@ -1792,6 +2266,9 @@ export type FormSubmissionUncheckedUpdateWithoutClassSectionInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutClassSectionInput = {
@@ -1836,6 +2313,9 @@ export type FormSubmissionUpdateWithoutFormTypeInput = {
   cloAttainments?: Prisma.CloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateWithoutFormTypeInput = {
@@ -1854,6 +2334,9 @@ export type FormSubmissionUncheckedUpdateWithoutFormTypeInput = {
   cloAttainments?: Prisma.CloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
   peoAttainments?: Prisma.PeoAttainmentUncheckedUpdateManyWithoutFormSubmissionNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloGapAnalysisNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutCqiActionPlanNestedInput
+  ctlRows?: Prisma.CtlRowUncheckedUpdateManyWithoutClosingTheLoopNestedInput
 }
 
 export type FormSubmissionUncheckedUpdateManyWithoutFormTypeInput = {
@@ -1880,6 +2363,9 @@ export type FormSubmissionCountOutputType = {
   cloAttainments: number
   ploAttainments: number
   peoAttainments: number
+  gapRows: number
+  cqiEntries: number
+  ctlRows: number
 }
 
 export type FormSubmissionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1888,6 +2374,9 @@ export type FormSubmissionCountOutputTypeSelect<ExtArgs extends runtime.Types.Ex
   cloAttainments?: boolean | FormSubmissionCountOutputTypeCountCloAttainmentsArgs
   ploAttainments?: boolean | FormSubmissionCountOutputTypeCountPloAttainmentsArgs
   peoAttainments?: boolean | FormSubmissionCountOutputTypeCountPeoAttainmentsArgs
+  gapRows?: boolean | FormSubmissionCountOutputTypeCountGapRowsArgs
+  cqiEntries?: boolean | FormSubmissionCountOutputTypeCountCqiEntriesArgs
+  ctlRows?: boolean | FormSubmissionCountOutputTypeCountCtlRowsArgs
 }
 
 /**
@@ -1935,6 +2424,27 @@ export type FormSubmissionCountOutputTypeCountPeoAttainmentsArgs<ExtArgs extends
   where?: Prisma.PeoAttainmentWhereInput
 }
 
+/**
+ * FormSubmissionCountOutputType without action
+ */
+export type FormSubmissionCountOutputTypeCountGapRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.GapRowWhereInput
+}
+
+/**
+ * FormSubmissionCountOutputType without action
+ */
+export type FormSubmissionCountOutputTypeCountCqiEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CqiEntryWhereInput
+}
+
+/**
+ * FormSubmissionCountOutputType without action
+ */
+export type FormSubmissionCountOutputTypeCountCtlRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CtlRowWhereInput
+}
+
 
 export type FormSubmissionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1958,6 +2468,9 @@ export type FormSubmissionSelect<ExtArgs extends runtime.Types.Extensions.Intern
   cloAttainments?: boolean | Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>
   peoAttainments?: boolean | Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>
+  gapRows?: boolean | Prisma.FormSubmission$gapRowsArgs<ExtArgs>
+  cqiEntries?: boolean | Prisma.FormSubmission$cqiEntriesArgs<ExtArgs>
+  ctlRows?: boolean | Prisma.FormSubmission$ctlRowsArgs<ExtArgs>
   _count?: boolean | Prisma.FormSubmissionCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["formSubmission"]>
 
@@ -2025,6 +2538,9 @@ export type FormSubmissionInclude<ExtArgs extends runtime.Types.Extensions.Inter
   cloAttainments?: boolean | Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>
   ploAttainments?: boolean | Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>
   peoAttainments?: boolean | Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>
+  gapRows?: boolean | Prisma.FormSubmission$gapRowsArgs<ExtArgs>
+  cqiEntries?: boolean | Prisma.FormSubmission$cqiEntriesArgs<ExtArgs>
+  ctlRows?: boolean | Prisma.FormSubmission$ctlRowsArgs<ExtArgs>
   _count?: boolean | Prisma.FormSubmissionCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type FormSubmissionIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2055,6 +2571,9 @@ export type $FormSubmissionPayload<ExtArgs extends runtime.Types.Extensions.Inte
     cloAttainments: Prisma.$CloAttainmentPayload<ExtArgs>[]
     ploAttainments: Prisma.$PloAttainmentPayload<ExtArgs>[]
     peoAttainments: Prisma.$PeoAttainmentPayload<ExtArgs>[]
+    gapRows: Prisma.$GapRowPayload<ExtArgs>[]
+    cqiEntries: Prisma.$CqiEntryPayload<ExtArgs>[]
+    ctlRows: Prisma.$CtlRowPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2472,6 +2991,9 @@ export interface Prisma__FormSubmissionClient<T, Null = never, ExtArgs extends r
   cloAttainments<T extends Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$cloAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   ploAttainments<T extends Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$ploAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   peoAttainments<T extends Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$peoAttainmentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PeoAttainmentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  gapRows<T extends Prisma.FormSubmission$gapRowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$gapRowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GapRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  cqiEntries<T extends Prisma.FormSubmission$cqiEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$cqiEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CqiEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  ctlRows<T extends Prisma.FormSubmission$ctlRowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FormSubmission$ctlRowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CtlRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -3087,6 +3609,78 @@ export type FormSubmission$peoAttainmentsArgs<ExtArgs extends runtime.Types.Exte
   take?: number
   skip?: number
   distinct?: Prisma.PeoAttainmentScalarFieldEnum | Prisma.PeoAttainmentScalarFieldEnum[]
+}
+
+/**
+ * FormSubmission.gapRows
+ */
+export type FormSubmission$gapRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the GapRow
+   */
+  select?: Prisma.GapRowSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the GapRow
+   */
+  omit?: Prisma.GapRowOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.GapRowInclude<ExtArgs> | null
+  where?: Prisma.GapRowWhereInput
+  orderBy?: Prisma.GapRowOrderByWithRelationInput | Prisma.GapRowOrderByWithRelationInput[]
+  cursor?: Prisma.GapRowWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.GapRowScalarFieldEnum | Prisma.GapRowScalarFieldEnum[]
+}
+
+/**
+ * FormSubmission.cqiEntries
+ */
+export type FormSubmission$cqiEntriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CqiEntry
+   */
+  select?: Prisma.CqiEntrySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CqiEntry
+   */
+  omit?: Prisma.CqiEntryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CqiEntryInclude<ExtArgs> | null
+  where?: Prisma.CqiEntryWhereInput
+  orderBy?: Prisma.CqiEntryOrderByWithRelationInput | Prisma.CqiEntryOrderByWithRelationInput[]
+  cursor?: Prisma.CqiEntryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CqiEntryScalarFieldEnum | Prisma.CqiEntryScalarFieldEnum[]
+}
+
+/**
+ * FormSubmission.ctlRows
+ */
+export type FormSubmission$ctlRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CtlRow
+   */
+  select?: Prisma.CtlRowSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CtlRow
+   */
+  omit?: Prisma.CtlRowOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CtlRowInclude<ExtArgs> | null
+  where?: Prisma.CtlRowWhereInput
+  orderBy?: Prisma.CtlRowOrderByWithRelationInput | Prisma.CtlRowOrderByWithRelationInput[]
+  cursor?: Prisma.CtlRowWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CtlRowScalarFieldEnum | Prisma.CtlRowScalarFieldEnum[]
 }
 
 /**
