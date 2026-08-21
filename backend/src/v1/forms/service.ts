@@ -5,6 +5,7 @@ import {
 	type InvalidTransitionError,
 	validateApprovalChain,
 } from "@lib/forms/state-machine";
+import { assertSubmitGate } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
 import type {
 	ApproverRole,
@@ -126,6 +127,13 @@ export class SubmissionService {
 		if (!existing) throw new SubmissionNotFoundError();
 		assertTransition(existing.status, "submitted");
 		validateApprovalChain(steps);
+		await assertSubmitGate(existing.formTypeId, {
+			id: existing.id,
+			status: existing.status,
+			programId: existing.programId,
+			termId: existing.termId,
+			formData: (existing.formData ?? {}) as Record<string, unknown>,
+		});
 
 		await prisma.$transaction(async (tx) => {
 			await tx.approvalStep.deleteMany({ where: { formSubmissionId: id } });
