@@ -74,3 +74,26 @@ enum UploadStatus {
   completed
   failed
 }
+
+enum PloStatus {
+  all_met
+  partial
+  not_met
+}
+
+enum LoopStatus {
+  closed
+  open_reassess
+  open_not_implemented
+}
+
+enum CqiEntryStatus {
+  planned
+  tracked
+}
+
+enum InterventionStatus {
+  yes
+  partial
+  no
+}
