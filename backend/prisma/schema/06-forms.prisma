@@ -33,6 +33,9 @@ model FormSubmission {
   cloAttainments CloAttainment[]
   ploAttainments PloAttainment[]
   peoAttainments PeoAttainment[]
+  gapRows        GapRow[]        @relation("GapAnalysisSubmission")
+  cqiEntries     CqiEntry[]      @relation("CqiActionPlanSubmission")
+  ctlRows        CtlRow[]        @relation("ClosingTheLoopSubmission")
 
   @@index([status])
   @@map("form_submission")

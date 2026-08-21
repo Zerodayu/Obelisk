@@ -1,0 +1,78 @@
+/**
+ * Phase 4 — CQI / ACT Loop stateful rows.
+ *
+ * These dedicated tables back the stateful per-entry lifecycle of the ACT
+ * forms (see SYSTEM-DESIGN §9 decision): `plo_gap_analysis` (F22),
+ * `cqi_action_plan` (F23), and `closing_the_loop` (F25, CTL). Each row is
+ * owned by a `FormSubmission` that carries the document header, approval
+ * steps, and any single-document metadata in `formData`; the rows below hold
+ * the repeatable, lifecycle-tracked content and give a real FK trace of
+ * `gap → cqi entry → ctl row` so the loop's computed status is auditable.
+ */
+
+model GapRow {
+  id                    String   @id
+  ploGapAnalysisId      String   @map("plo_gap_analysis_id")
+  ploId                 String   @map("plo_id")
+  cohortYearLevel       Int      @map("cohort_year_level")
+  attainmentPct         Decimal  @map("attainment_pct") @db.Decimal(5, 2)
+  rootCauseCategory     String?  @map("root_cause_category")
+  rootCauseAnalysis     String?  @map("root_cause_analysis") @db.Text
+  namedOwner            String?  @map("named_owner")
+  cqiActionPlanEntryId  String?  @unique @map("cqi_action_plan_entry_id")
+
+  plo                Plo            @relation(fields: [ploId], references: [id], onDelete: Cascade)
+  ploGapAnalysis     FormSubmission @relation("GapAnalysisSubmission", fields: [ploGapAnalysisId], references: [id], onDelete: Cascade)
+  cqiActionPlanEntry CqiEntry?      @relation(fields: [cqiActionPlanEntryId], references: [id], onDelete: SetNull)
+
+  @@index([ploGapAnalysisId])
+  @@index([ploId])
+  @@map("gap_row")
+}
+
+model CqiEntry {
+  id                       String              @id
+  cqiActionPlanId          String              @map("cqi_action_plan_id")
+  ploId                    String              @map("plo_id")
+  cohortYearLevel          Int                 @map("cohort_year_level")
+  evidenceSource           String              @map("evidence_source")
+  priorAttainmentPct       Decimal             @map("prior_attainment_pct") @db.Decimal(5, 2)
+  rootCauseCategory        String              @map("root_cause_category")
+  intervention             String              @db.Text
+  owner                    String              @map("owner_name")
+  ownerRole                String              @map("owner_role")
+  timelineAndKpi           String              @map("timeline_and_kpi")
+  status                   CqiEntryStatus      @default(planned)
+  interventionImplemented  InterventionStatus? @map("intervention_implemented")
+  currentAttainmentPct     Decimal?            @map("current_attainment_pct") @db.Decimal(5, 2)
+
+  cqiActionPlan FormSubmission @relation("CqiActionPlanSubmission", fields: [cqiActionPlanId], references: [id], onDelete: Cascade)
+  plo           Plo            @relation(fields: [ploId], references: [id], onDelete: Cascade)
+  gapRow        GapRow?
+  ctlRow        CtlRow?
+
+  @@index([cqiActionPlanId])
+  @@index([ploId])
+  @@map("cqi_entry")
+}
+
+model CtlRow {
+  id                          String     @id
+  closingTheLoopId            String     @map("closing_the_loop_id")
+  cqiEntryId                  String     @unique @map("cqi_entry_id")
+  gapFindingAndEvidence       String?    @map("gap_finding_and_evidence") @db.Text
+  interventionImplementedText String?    @map("intervention_implemented_text") @db.Text
+  priorAttainmentPct          Decimal?   @map("prior_attainment_pct") @db.Decimal(5, 2)
+  currentAttainmentPct        Decimal?   @map("current_attainment_pct") @db.Decimal(5, 2)
+  conditions12Met             Boolean    @default(false) @map("conditions_1_2_met")
+  condition3Met               Boolean    @default(false) @map("condition_3_met")
+  condition4Met               Boolean    @default(false) @map("condition_4_met")
+  condition5Met               Boolean    @default(false) @map("condition_5_met")
+  loopStatus                  LoopStatus @default(open_reassess) @map("loop_status")
+
+  closingTheLoop FormSubmission @relation("ClosingTheLoopSubmission", fields: [closingTheLoopId], references: [id], onDelete: Cascade)
+  cqiEntry       CqiEntry       @relation(fields: [cqiEntryId], references: [id], onDelete: Cascade)
+
+  @@index([closingTheLoopId])
+  @@map("ctl_row")
+}

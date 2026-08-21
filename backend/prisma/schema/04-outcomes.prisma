@@ -24,6 +24,8 @@ model Plo {
   ploToPeoMaps      PloToPeoMap[]
   ploAttainments    PloAttainment[]
   aiRecommendations AiRecommendation[]
+  gapRows           GapRow[]
+  cqiEntries        CqiEntry[]
 
   @@map("plo")
 }
