@@ -9,6 +9,7 @@ Development setup and workflow documentation. For a project overview, see the [R
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
 - [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
 - [Docker](https://www.docker.com) — optional, alternative way to run `python-server` via Docker Compose
+- [just](https://github.com/casey/just) — optional, to use the root [`justfile`](justfile) recipes (§4)
 - A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
 
 ---
