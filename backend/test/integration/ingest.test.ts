@@ -38,7 +38,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 		await prisma.academicTerm.create({
 			data: {
 				id: IDS.term,
-				schoolYear: "2099-2100",
+				schoolYear: "2093-2094",
 				semester: "1st",
 				isActive: false,
 			},
@@ -228,7 +228,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 		await prisma.academicTerm.create({
 			data: {
 				id: IDS.term,
-				schoolYear: "2099-2100",
+				schoolYear: "2093-2094",
 				semester: "1st",
 				isActive: false,
 			},
@@ -310,7 +310,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			expect(history[0].classSection).toMatchObject({
 				sectionCode: "T1",
 				course: { code: "IT-101", title: "Integration Test Course" },
-				term: { schoolYear: "2099-2100", semester: "1st" },
+				term: { schoolYear: "2093-2094", semester: "1st" },
 			});
 		} finally {
 			await prisma.uploadRecord.deleteMany({

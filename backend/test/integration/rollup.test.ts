@@ -102,7 +102,7 @@ async function seedAcademicChain() {
 	await prisma.academicTerm.create({
 		data: {
 			id: IDS.term,
-			schoolYear: "2099-2100",
+			schoolYear: "2092-2093",
 			semester: "1st",
 			isActive: false,
 		},
@@ -204,7 +204,7 @@ function classRecord() {
 			course_code: "ROLL-101",
 			section: "T1",
 			course_type: "lecture",
-			semester_year: "2099-2100 1st",
+			semester_year: "2092-2093 1st",
 			no_of_students: 2,
 			threshold: 0.7,
 		},
@@ -273,7 +273,7 @@ describe.skipIf(!db)("roll-up chain generation (integration)", () => {
 			expect(payload.formSubmissionId).toBe(draftId);
 			expect(payload.computationRunId).toBe(computationRunId);
 			expect(payload.course.code).toBe("ROLL-101");
-			expect(payload.term.schoolYear).toBe("2099-2100");
+			expect(payload.term.schoolYear).toBe("2092-2093");
 			expect(payload.summary.totalCount).toBe(2);
 			expect(payload.summary.belowCount).toBe(1);
 			expect(payload.summary.averagePct).toBe(77.5);
