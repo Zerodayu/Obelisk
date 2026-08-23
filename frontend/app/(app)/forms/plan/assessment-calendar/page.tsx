@@ -1,12 +1,5 @@
-import { ScheduleLoadBars } from "@/components/charts/plan-charts";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
-import {
-  Frame,
-  FrameDescription,
-  FrameHeader,
-  FramePanel,
-  FrameTitle,
-} from "@/components/reui/frame";
+import { AssessmentCalendarForm } from "@/components/forms/assessment-calendar-form";
 
 export default function AssessmentCalendarPage() {
   return (
@@ -14,23 +7,9 @@ export default function AssessmentCalendarPage() {
       title="Assessment Calendar"
       code="assessment_calendar"
       pdcaStage="PLAN"
-      description="Pre-seeded template rows; editable dates, non-deletable. Chart inputs mirror the backend schema; sample data until the calendar endpoint lands."
+      description="Plan assessment activities across the academic year. 17 template events pre-seeded; add program-specific items as needed."
     >
-      <div className="grid gap-4 sm:grid-cols-1">
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Assessment load by month</FrameTitle>
-            <FrameDescription>
-              Direct vs indirect assessment items scheduled per month.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-80">
-              <ScheduleLoadBars />
-            </div>
-          </FramePanel>
-        </Frame>
-      </div>
+      <AssessmentCalendarForm />
     </FormPlaceholder>
   );
 }
