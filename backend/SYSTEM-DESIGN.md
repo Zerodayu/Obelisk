@@ -97,6 +97,20 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 **Enums appended to `01-enums.prisma`:** `PloStatus` (all_met, partial, not_met), `LoopStatus` (closed, open_reassess, open_not_implemented), `CqiEntryStatus` (planned, tracked), `InterventionStatus` (yes, partial, no). `Plo` gains `gapRows`/`cqiEntries`; `FormSubmission` gains `gapRows`/`cqiEntries`/`ctlRows`.
 
+### 2.12 PLAN-phase setup forms — `12-plan.prisma`
+
+**Implemented (Phase 5).** Dedicated row tables backing the four PLAN setup forms (migration `20260823170939_add_plan_phase_setup_forms`). Each row set is owned by a `FormSubmission` that carries the document header metadata in `formData.header`; template/fixed rows are flagged (`isTemplate`/`isFixed`) so the service layer can protect them from deletion:
+
+- `PloDirectoryRow` — curriculum_map Section B PLO directory: `curriculumMapId` → `FormSubmission` (relation `"CurriculumMapSubmission"`, Cascade), optional `ploId` → `Plo` (SetNull), `code`, `statement`, `evidenceSources String[]` (exam/rubric/portfolio/capstone/ojt), `dStageCourse String?`, `validationStatus CurriculumValidationStatus` (default pending_review), `sortOrder`.
+- `CurriculumCourseRow` — curriculum_map Section C matrix rows grouped by year level: `curriculumMapId`, `yearLevel Int`, `courseCode`, `courseTitle`, `sortOrder`; has many `cells`.
+- `CurriculumMapCell` — one cell per course × PLO: `courseRowId` → `CurriculumCourseRow` (Cascade), `ploCode`, optional `ploId` (SetNull), `stage IpdStage?` (i/p/d), `cloCodes String?`; unique `[courseRowId, ploCode]`. The Coverage Check row is computed = any cell in that PLO column has stage `d`.
+- `CalendarEventRow` — assessment_calendar event rows across three sections (`CalendarSection`: semester1 / annual_and_semester2 / program_specific): `assessmentCalendarId` (relation `"CalendarSubmission"`), `templateKey String?`, `isTemplate Boolean` (the 17 seeded institutional milestones — editable but non-deletable), `periodWeeks?`, `activity`, `cohortYears Int[]`, `responsibleParty?`, `outputForms String[]` (stable form codes); unique `[assessmentCalendarId, templateKey]`.
+- `PloTargetRow` — target_setting_matrix per-PLO benchmark row: `targetSettingMatrixId` (relation `"TargetSettingSubmission"`), optional `ploId`, `ploCode`, `statement?`, `y1–y4TargetPct Decimal(5,2)` (each validated ≥70; rationale required above floor), `rationale Text?`, `sortOrder`.
+- `CourseCloTargetRow` — priority-course CLO targets: same owner, `courseCode`, `courseTitle?`, `cloCode`, nullable `y1–y4TargetPct`, `notes?`.
+- `BudgetLineItem` — assessment_budget line items grouped by PDCA phase (`PdcaPhase`): `assessmentBudgetId` (relation `"AssessmentBudgetSubmission"`), `name`, `isFixed Boolean` (the 12 seeded institutional items — non-deletable), `estimatedCost Decimal(12,2)` (default 0), `approvedCost Decimal(12,2)?`, `source BudgetSource?` (aqau/dean/vpaa), `notes?`; unique `[assessmentBudgetId, name]`.
+
+**Enums appended to `01-enums.prisma`:** `IpdStage` (i, p, d), `CurriculumValidationStatus` (confirmed, pending_review, needs_update), `CalendarSection`, `PdcaPhase` (plan, do, check, act), `BudgetSource`. `CloToPloMap` gains a nullable `stage IpdStage?` column (attainment-side I-P-D modeling); `Plo` gains back-relations `directoryRows`/`targetRows`/`curriculumCells`; `FormSubmission` gains the six mirrored row relations above.
+
 ## 3. Roles & Authorization Matrix
 
 | Role | Scope | Typical actions |
@@ -172,6 +186,18 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/cqi/annual-program-report/generate` | `auth: true` | APAR — assemble the 11-KPI performance dashboard (computed: overall PLO + cohort Y1-4 CLO + CQI completion; benchmark 70). |
 | GET | `/api/v1/cqi/annual-program-report` / `:id` | `auth: true` | List / re-assemble APAR submissions. |
 | PUT | `/api/v1/cqi/annual-program-report/:id` | `auth: true` | Save APAR attachments/narratives/dashboard entries; **submission gate** blocks until the Cohort Tracking Sheet is attached + an approved `cohort_tracking` submission exists for the program. |
+| POST | `/api/v1/plan/curriculum-map/init` | `auth: true` | F01 — ensure the program's curriculum-map draft and return its assembled payload. |
+| GET | `/api/v1/plan/curriculum-map` / `/:id` | `auth: true` | List (optional `programId` filter) / re-assemble curriculum-map submissions; Coverage Check row computed per PLO (any cell with I-P-D stage D). |
+| PUT | `/api/v1/plan/curriculum-map/:id` | `auth: true` | Full-replace PLO directory rows + year-grouped course matrix cells (I-P-D stage per cell); header merged into `formData`; `draft`/`returned` only. |
+| POST | `/api/v1/plan/assessment-calendar/init` | `auth: true` | F03 — ensure the calendar draft and seed the 17 institutional template rows (9 Semester 1 + 8 Annual/Sem2) once. |
+| GET | `/api/v1/plan/assessment-calendar` / `/:id` | `auth: true` | List / re-assemble calendar submissions (template flags included). |
+| PUT | `/api/v1/plan/assessment-calendar/:id` | `auth: true` | Patch event rows (dates editable) and add program-specific events; template rows are **non-deletable** (`PlanTemplateProtectedError`); `draft`/`returned` only. |
+| POST | `/api/v1/plan/target-setting-matrix/init` | `auth: true` | F04 — ensure the matrix draft and seed one 70%-default target row per program PLO. |
+| GET | `/api/v1/plan/target-setting-matrix` / `/:id` | `auth: true` | List / re-assemble matrix submissions; Program PLO Avg bottom row computed per year level. |
+| PUT | `/api/v1/plan/target-setting-matrix/:id` | `auth: true` | Full-replace PLO + course-CLO target rows; **≥70% hard floor enforced** and rationale required above floor (`TargetBelowFloorError`/`MissingRationaleError`); `draft`/`returned` only. |
+| POST | `/api/v1/plan/assessment-budget/init` | `auth: true` | F06 — ensure the budget draft and seed the 12 fixed line items grouped by PDCA phase once. |
+| GET | `/api/v1/plan/assessment-budget` / `:id` | `auth: true` | List / re-assemble budget submissions; TOTAL row computed (estimated + approved). |
+| PUT | `/api/v1/plan/assessment-budget/:id` | `auth: true` | Patch line-item costs/source/notes and add program-specific items; fixed items are **non-deletable**; `draft`/`returned` only. |
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
@@ -193,12 +219,12 @@ Each row: **stable code → title → primary models → status / rules to enfor
 
 | Stable code | Form title | Primary models | Notes / rules |
 | --- | --- | --- | --- |
-| `curriculum_map` | CLO-PLO Curriculum Map | `Program`, `Plo`, `Clo`, `CloToPloMap`, `FormSubmission` | Dynamic PLO/course tables; **Coverage Check** computed = any cell in a PLO column has I-P-D stage *D*. Gap: I-P-D stage cell not yet modeled — add stage to `CloToPloMap`. |
+| `curriculum_map` | CLO-PLO Curriculum Map | `Program`, `Plo`, `Clo`, `CloToPloMap`, `FormSubmission`, `PloDirectoryRow`, `CurriculumCourseRow`, `CurriculumMapCell` | **Implemented (Phase 5).** Dynamic PLO directory + year-grouped course matrix (I-P-D stage per cell); **Coverage Check** computed = any cell in a PLO column has I-P-D stage *D*. I-P-D also modeled on `CloToPloMap.stage` for the attainment side. |
 | `portfolio_roadmap` | Portfolio Roadmap and Rubric Standards | `Program`, `Plo`, `FormSubmission` (`formData`) | Reusable Year Roadmap (×4) + Rubric Criterion Block (×10); rubric weight **TOTAL must = 100%**. |
-| `assessment_calendar` | Assessment Calendar with Cohort Tracking Milestones | `AcademicTerm`, `FormSubmission` | Pre-seeded template rows (June-July PAC, OB syllabi, formative/midterm/finals windows, CAR windows, CQI) — editable dates, non-deletable. |
-| `target_setting_matrix` | Target-Setting Matrix | `Plo`, `FormSubmission` | Per-year targets; **each target ≥70% hard floor**, rationale required above floor. |
+| `assessment_calendar` | Assessment Calendar with Cohort Tracking Milestones | `AcademicTerm`, `FormSubmission`, `CalendarEventRow` | **Implemented (Phase 5).** 17 pre-seeded template rows (9 Semester 1 + 8 Annual/Sem2 institutional milestones) — dates editable, rows non-deletable; program-specific events fully free-form. |
+| `target_setting_matrix` | Target-Setting Matrix | `Plo`, `FormSubmission`, `PloTargetRow`, `CourseCloTargetRow` | **Implemented (Phase 5).** Seeded per-PLO target rows at the 70% default; **each target ≥70% hard floor**, rationale required above floor; Program PLO Avg bottom row computed per year level. |
 | `stakeholder_consultation` | Stakeholder Consultation Records | `Program`, `Plo`, `FormSubmission` | Fixed stakeholder groups (Faculty/Students/Alumni/Industry/PAC); PLO retain/revise/escalate decisions. |
-| `assessment_budget` | Approved Assessment Budget | `FormSubmission` | 12 fixed line items grouped by PDCA phase; pre-populated + extendable; TOTAL computed. |
+| `assessment_budget` | Approved Assessment Budget | `FormSubmission`, `BudgetLineItem` | **Implemented (Phase 5).** 12 fixed line items grouped by PDCA phase (11 named in the manual + Contingency/Miscellaneous) — non-deletable and extendable with program-specific items; TOTAL row computed. Mirrored downstream by `resource_monitoring`. |
 | `clo_raw_data` | Per-Student CLO Raw Data Sheet | `ClassSection`, `Course`, `Clo`, `AssessmentItem`, `StudentScore`, `Student`, `Enrollment`, `FormSubmission` | **Primary data-capture form.** CSV/Excel import path; **At-Risk auto-flag if any CLO <70%** (do not accept manual checkbox). |
 | `mid_cycle_attainment` | Mid-Cycle CLO Attainment Summary | `CloAttainment`, `AtRiskFlag`, `FormSubmission` | Reusable Cohort Attainment Block (×4); status vs ≥70% floor (MET/Early Warning/NOT MET); **At-Risk watchlist** sub-table. |
 | `resource_monitoring` | Resource Acquisition and Implementation Monitoring | `FormSubmission`, refs `assessment_budget` + `cqi_action_plan` | Mirrors budget line items (Acquired/Pending/Not Acquired/N/A); tracks CQI action implementation (Fully/Partially/Not Yet). |
@@ -283,6 +309,13 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   - `ClosingTheLoopService` F25 — `generate` opens one `CtlRow` per **tracked** CQI entry without a row (condition flags false, loop status computed); `save` recomputes `loopStatus` via `computeLoopStatus` from the merged condition flags + `interventionImplemented` + implemented text (never accepts a manual CLOSED) and persists the Identify step (4 prompts) into `formData`; audits `closing_the_loop.generated`/`.rows_saved`.
   - `AnnualProgramReportService` APAR — `generate` computes the 11-KPI dashboard (`overall_plo_attainment`, `y1–y4_cohort_clo_attainment` from per-year cohort means, `cqi_action_completion_rate` from tracked entries; remaining KPIs manual; each benchmarked 70 with `computeDashboardStatus`), snapshots `computed`, audits `annual_program_report.generated`; `save` merges attachments/narratives/dashboard; `latestTermWithData` picks the newest term with stored data when `termId` is omitted. **Submit gate** (module-registered via `lib/forms/submit-gates.ts`): APAR blocks submission unless `formData.attachments.cohort_tracking` is set **and** an approved `cohort_tracking` `FormSubmission` exists for the program.
   - Shared: `ensureCqiFormType` (race-safe `plo_gap_analysis` seq 17, `cqi_action_plan` seq 18, `annual_program_report` seq 19, `closing_the_loop` seq 20, `pdcaStage` ACT) / `listCqiSubmissions` / `snapshotFormData` / module-level `cqiAudit` (moduleAffected `cqi`).
+- **`plan-service`** *(src/v1/plan/{service,compute,controller}.ts)* — the four PLAN-phase setup forms F01/F03/F04/F06 (`plan-plugin`, `pdcaStage` PLAN):
+  - `compute.ts` — pure, DB-free helpers: `coverageCheck` (curriculum-map Coverage Check per PLO = any cell with stage `d`), `programPloAverages` (per-year Program PLO Avg row), `assertPloTargetsValid` (≥70% hard floor via `MIN_ATTAINMENT_PCT` + rationale-required-above-floor; throws `TargetBelowFloorError`/`MissingRationaleError`), `budgetTotals` (estimated/approved TOTAL row).
+  - `CurriculumMapService` F01 — `init` ensures the program's draft; `save` full-replaces directory rows + course rows (+ cells) in a transaction, linking `ploId` by code; header merged into `formData.header`; audits `.initialized`/`.saved`.
+  - `AssessmentCalendarService` F03 — `init` seeds the 17 institutional template rows once (unique `[assessmentCalendarId, templateKey]`); `save` patches by id / creates program-specific events / removes only non-template rows (`PlanTemplateProtectedError` otherwise); unknown event ids rejected.
+  - `TargetSettingMatrixService` F04 — `init` seeds one 70%-default target row per program PLO; `save` validates every row through `assertPloTargetsValid`, then full-replaces PLO + course-CLO target rows.
+  - `AssessmentBudgetService` F06 — `init` seeds the 12 fixed line items (11 manual-named + Contingency/Miscellaneous, grouped plan/do/check/act); `save` patches costs/source/notes, adds program-specific items (default phase `plan`), and protects fixed items from removal.
+  - Shared: `ensurePlanFormType` (race-safe `curriculum_map` seq 1, `assessment_calendar` seq 3, `target_setting_matrix` seq 4, `assessment_budget` seq 6, `pdcaStage` PLAN) / `ensureDraft` (find-or-create per formType+program+term, reusing editable/submitted/approved submissions) / `listPlanSubmissions` / `mergeFormData` / `assertEditable` / module-level `planAudit` (moduleAffected `plan`).
 
 ### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
@@ -301,7 +334,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 ## 9. Deferred / Open Questions
 
 - **Build strategy: backend-first.** All backend feature phases (forms, ingest, rollups, CQI, archival) are built and stabilized (typecheck + lint + bun:test green) before any frontend work resumes; see `../roadmap.md` for the tracking. **Phase 0 is complete**; the archival migration is applied, so DB integration tests now run against the live dev database.
-- I-P-D stage representation for curriculum-map cells and cohort progression (new column on `CloToPloMap` vs. JSON).
+- I-P-D stage representation for curriculum-map cells and cohort progression (new column on `CloToPloMap` vs. JSON). — **RESOLVED in Phase 5:** nullable `IpdStage` enum column on `CloToPloMap` (attainment side) plus `IpdStage?` on `CurriculumMapCell` (curriculum-map cells).
 - Stateful CQI/logical status fields beyond the clean single-table forms (may warrant dedicated CQI/CTL tables rather than `FormSubmission.formData` JSON). — **RESOLVED in Phase 4:** dedicated `gap_row` / `cqi_entry` / `ctl_row` tables adopted (see §2.11).
 - Survey long-guide vs. row-normalized tabulations (JSON now, consider normalized later).
 - Portfolio/capstone per-criterion rubric rows — JSON within `FormSubmission` vs. dedicated tables.

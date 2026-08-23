@@ -124,11 +124,13 @@ The term-level hub that consolidates a term's data.
 
 ## Phase 5 — PLAN-Phase Setup Forms
 
-- [ ] **`curriculum_map`** — dynamic CLO-PLO matrix + computed Coverage Check (D-stage)
-- [ ] **`assessment_calendar`** — pre-seeded editable calendar (non-deletable template rows)
-- [ ] **`target_setting_matrix`** — per-year targets, ≥70% hard floor + rationale
-- [ ] **`assessment_budget`** — 12 fixed line items by PDCA phase, computed totals
-- [ ] **Tests:** ≥70% floor validation, coverage check, calendar row protection
+- [x] **`curriculum_map`** — dynamic CLO-PLO matrix + computed Coverage Check (D-stage)
+- [x] **`assessment_calendar`** — pre-seeded editable calendar (non-deletable template rows)
+- [x] **`target_setting_matrix`** — per-year targets, ≥70% hard floor + rationale
+- [x] **`assessment_budget`** — 12 fixed line items by PDCA phase, computed totals
+- [x] **Tests:** ≥70% floor validation, coverage check, calendar row protection
+
+**Done (Phase 5):** the four PLAN setup forms ship as `src/v1/plan/` exposed under `/api/v1/plan` (`plan-plugin`, `pdcaStage` PLAN). Dedicated row tables in `12-plan.prisma` (migration `20260823170939_add_plan_phase_setup_forms`): `curriculum_map` full-replaces the PLO directory + year-grouped I-P-D matrix and computes the Coverage Check per PLO; `assessment_calendar` seeds 17 institutional template milestones (editable, non-deletable) plus free-form program-specific events; `target_setting_matrix` seeds 70%-default PLO rows and enforces the ≥70% hard floor with rationale-required-above-floor on save; `assessment_budget` seeds the 12 fixed line items by PDCA phase (non-deletable, extendable) with computed estimated/approved TOTALs. `CloToPloMap.stage` models the attainment-side I-P-D stage. Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 120 tests).
 
 ---
 
