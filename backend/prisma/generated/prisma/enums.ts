@@ -152,3 +152,49 @@ export const InterventionStatus = {
 } as const
 
 export type InterventionStatus = (typeof InterventionStatus)[keyof typeof InterventionStatus]
+
+
+export const IpdStage = {
+  i: 'i',
+  p: 'p',
+  d: 'd'
+} as const
+
+export type IpdStage = (typeof IpdStage)[keyof typeof IpdStage]
+
+
+export const CurriculumValidationStatus = {
+  confirmed: 'confirmed',
+  pending_review: 'pending_review',
+  needs_update: 'needs_update'
+} as const
+
+export type CurriculumValidationStatus = (typeof CurriculumValidationStatus)[keyof typeof CurriculumValidationStatus]
+
+
+export const CalendarSection = {
+  semester1: 'semester1',
+  annual_and_semester2: 'annual_and_semester2',
+  program_specific: 'program_specific'
+} as const
+
+export type CalendarSection = (typeof CalendarSection)[keyof typeof CalendarSection]
+
+
+export const PdcaPhase = {
+  plan: 'plan',
+  do: 'do',
+  check: 'check',
+  act: 'act'
+} as const
+
+export type PdcaPhase = (typeof PdcaPhase)[keyof typeof PdcaPhase]
+
+
+export const BudgetSource = {
+  aqau: 'aqau',
+  dean: 'dean',
+  vpaa: 'vpaa'
+} as const
+
+export type BudgetSource = (typeof BudgetSource)[keyof typeof BudgetSource]

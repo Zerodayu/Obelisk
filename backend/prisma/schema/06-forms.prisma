@@ -36,6 +36,12 @@ model FormSubmission {
   gapRows        GapRow[]        @relation("GapAnalysisSubmission")
   cqiEntries     CqiEntry[]      @relation("CqiActionPlanSubmission")
   ctlRows        CtlRow[]        @relation("ClosingTheLoopSubmission")
+  directoryRows  PloDirectoryRow[]     @relation("CurriculumMapSubmission")
+  courseRows     CurriculumCourseRow[] @relation("CurriculumMapSubmission")
+  calendarRows   CalendarEventRow[]    @relation("CalendarSubmission")
+  ploTargetRows  PloTargetRow[]        @relation("TargetSettingSubmission")
+  cloTargetRows  CourseCloTargetRow[]  @relation("TargetSettingSubmission")
+  budgetLines    BudgetLineItem[]      @relation("AssessmentBudgetSubmission")
 
   @@index([status])
   @@map("form_submission")

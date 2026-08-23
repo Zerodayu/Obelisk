@@ -39,6 +39,7 @@ export type CloToPloMapMinAggregateOutputType = {
   cloId: string | null
   ploId: string | null
   weight: runtime.Decimal | null
+  stage: $Enums.IpdStage | null
 }
 
 export type CloToPloMapMaxAggregateOutputType = {
@@ -46,6 +47,7 @@ export type CloToPloMapMaxAggregateOutputType = {
   cloId: string | null
   ploId: string | null
   weight: runtime.Decimal | null
+  stage: $Enums.IpdStage | null
 }
 
 export type CloToPloMapCountAggregateOutputType = {
@@ -53,6 +55,7 @@ export type CloToPloMapCountAggregateOutputType = {
   cloId: number
   ploId: number
   weight: number
+  stage: number
   _all: number
 }
 
@@ -70,6 +73,7 @@ export type CloToPloMapMinAggregateInputType = {
   cloId?: true
   ploId?: true
   weight?: true
+  stage?: true
 }
 
 export type CloToPloMapMaxAggregateInputType = {
@@ -77,6 +81,7 @@ export type CloToPloMapMaxAggregateInputType = {
   cloId?: true
   ploId?: true
   weight?: true
+  stage?: true
 }
 
 export type CloToPloMapCountAggregateInputType = {
@@ -84,6 +89,7 @@ export type CloToPloMapCountAggregateInputType = {
   cloId?: true
   ploId?: true
   weight?: true
+  stage?: true
   _all?: true
 }
 
@@ -178,6 +184,7 @@ export type CloToPloMapGroupByOutputType = {
   cloId: string
   ploId: string
   weight: runtime.Decimal
+  stage: $Enums.IpdStage | null
   _count: CloToPloMapCountAggregateOutputType | null
   _avg: CloToPloMapAvgAggregateOutputType | null
   _sum: CloToPloMapSumAggregateOutputType | null
@@ -208,6 +215,7 @@ export type CloToPloMapWhereInput = {
   cloId?: Prisma.StringFilter<"CloToPloMap"> | string
   ploId?: Prisma.StringFilter<"CloToPloMap"> | string
   weight?: Prisma.DecimalFilter<"CloToPloMap"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.EnumIpdStageNullableFilter<"CloToPloMap"> | $Enums.IpdStage | null
   clo?: Prisma.XOR<Prisma.CloScalarRelationFilter, Prisma.CloWhereInput>
   plo?: Prisma.XOR<Prisma.PloScalarRelationFilter, Prisma.PloWhereInput>
 }
@@ -217,6 +225,7 @@ export type CloToPloMapOrderByWithRelationInput = {
   cloId?: Prisma.SortOrder
   ploId?: Prisma.SortOrder
   weight?: Prisma.SortOrder
+  stage?: Prisma.SortOrderInput | Prisma.SortOrder
   clo?: Prisma.CloOrderByWithRelationInput
   plo?: Prisma.PloOrderByWithRelationInput
 }
@@ -230,6 +239,7 @@ export type CloToPloMapWhereUniqueInput = Prisma.AtLeast<{
   cloId?: Prisma.StringFilter<"CloToPloMap"> | string
   ploId?: Prisma.StringFilter<"CloToPloMap"> | string
   weight?: Prisma.DecimalFilter<"CloToPloMap"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.EnumIpdStageNullableFilter<"CloToPloMap"> | $Enums.IpdStage | null
   clo?: Prisma.XOR<Prisma.CloScalarRelationFilter, Prisma.CloWhereInput>
   plo?: Prisma.XOR<Prisma.PloScalarRelationFilter, Prisma.PloWhereInput>
 }, "id" | "cloId_ploId">
@@ -239,6 +249,7 @@ export type CloToPloMapOrderByWithAggregationInput = {
   cloId?: Prisma.SortOrder
   ploId?: Prisma.SortOrder
   weight?: Prisma.SortOrder
+  stage?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.CloToPloMapCountOrderByAggregateInput
   _avg?: Prisma.CloToPloMapAvgOrderByAggregateInput
   _max?: Prisma.CloToPloMapMaxOrderByAggregateInput
@@ -254,11 +265,13 @@ export type CloToPloMapScalarWhereWithAggregatesInput = {
   cloId?: Prisma.StringWithAggregatesFilter<"CloToPloMap"> | string
   ploId?: Prisma.StringWithAggregatesFilter<"CloToPloMap"> | string
   weight?: Prisma.DecimalWithAggregatesFilter<"CloToPloMap"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.EnumIpdStageNullableWithAggregatesFilter<"CloToPloMap"> | $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateInput = {
   id: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
   clo: Prisma.CloCreateNestedOneWithoutCloToPloMapsInput
   plo: Prisma.PloCreateNestedOneWithoutCloToPloMapsInput
 }
@@ -268,11 +281,13 @@ export type CloToPloMapUncheckedCreateInput = {
   cloId: string
   ploId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
   clo?: Prisma.CloUpdateOneRequiredWithoutCloToPloMapsNestedInput
   plo?: Prisma.PloUpdateOneRequiredWithoutCloToPloMapsNestedInput
 }
@@ -282,6 +297,7 @@ export type CloToPloMapUncheckedUpdateInput = {
   cloId?: Prisma.StringFieldUpdateOperationsInput | string
   ploId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateManyInput = {
@@ -289,11 +305,13 @@ export type CloToPloMapCreateManyInput = {
   cloId: string
   ploId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapUncheckedUpdateManyInput = {
@@ -301,6 +319,7 @@ export type CloToPloMapUncheckedUpdateManyInput = {
   cloId?: Prisma.StringFieldUpdateOperationsInput | string
   ploId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapListRelationFilter = {
@@ -323,6 +342,7 @@ export type CloToPloMapCountOrderByAggregateInput = {
   cloId?: Prisma.SortOrder
   ploId?: Prisma.SortOrder
   weight?: Prisma.SortOrder
+  stage?: Prisma.SortOrder
 }
 
 export type CloToPloMapAvgOrderByAggregateInput = {
@@ -334,6 +354,7 @@ export type CloToPloMapMaxOrderByAggregateInput = {
   cloId?: Prisma.SortOrder
   ploId?: Prisma.SortOrder
   weight?: Prisma.SortOrder
+  stage?: Prisma.SortOrder
 }
 
 export type CloToPloMapMinOrderByAggregateInput = {
@@ -341,6 +362,7 @@ export type CloToPloMapMinOrderByAggregateInput = {
   cloId?: Prisma.SortOrder
   ploId?: Prisma.SortOrder
   weight?: Prisma.SortOrder
+  stage?: Prisma.SortOrder
 }
 
 export type CloToPloMapSumOrderByAggregateInput = {
@@ -431,9 +453,14 @@ export type CloToPloMapUncheckedUpdateManyWithoutPloNestedInput = {
   deleteMany?: Prisma.CloToPloMapScalarWhereInput | Prisma.CloToPloMapScalarWhereInput[]
 }
 
+export type NullableEnumIpdStageFieldUpdateOperationsInput = {
+  set?: $Enums.IpdStage | null
+}
+
 export type CloToPloMapCreateWithoutCloInput = {
   id: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
   plo: Prisma.PloCreateNestedOneWithoutCloToPloMapsInput
 }
 
@@ -441,6 +468,7 @@ export type CloToPloMapUncheckedCreateWithoutCloInput = {
   id: string
   ploId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateOrConnectWithoutCloInput = {
@@ -477,11 +505,13 @@ export type CloToPloMapScalarWhereInput = {
   cloId?: Prisma.StringFilter<"CloToPloMap"> | string
   ploId?: Prisma.StringFilter<"CloToPloMap"> | string
   weight?: Prisma.DecimalFilter<"CloToPloMap"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.EnumIpdStageNullableFilter<"CloToPloMap"> | $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateWithoutPloInput = {
   id: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
   clo: Prisma.CloCreateNestedOneWithoutCloToPloMapsInput
 }
 
@@ -489,6 +519,7 @@ export type CloToPloMapUncheckedCreateWithoutPloInput = {
   id: string
   cloId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateOrConnectWithoutPloInput = {
@@ -521,11 +552,13 @@ export type CloToPloMapCreateManyCloInput = {
   id: string
   ploId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapUpdateWithoutCloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
   plo?: Prisma.PloUpdateOneRequiredWithoutCloToPloMapsNestedInput
 }
 
@@ -533,23 +566,27 @@ export type CloToPloMapUncheckedUpdateWithoutCloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   ploId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapUncheckedUpdateManyWithoutCloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   ploId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapCreateManyPloInput = {
   id: string
   cloId: string
   weight?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: $Enums.IpdStage | null
 }
 
 export type CloToPloMapUpdateWithoutPloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
   clo?: Prisma.CloUpdateOneRequiredWithoutCloToPloMapsNestedInput
 }
 
@@ -557,12 +594,14 @@ export type CloToPloMapUncheckedUpdateWithoutPloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   cloId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 export type CloToPloMapUncheckedUpdateManyWithoutPloInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   cloId?: Prisma.StringFieldUpdateOperationsInput | string
   weight?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stage?: Prisma.NullableEnumIpdStageFieldUpdateOperationsInput | $Enums.IpdStage | null
 }
 
 
@@ -572,6 +611,7 @@ export type CloToPloMapSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   cloId?: boolean
   ploId?: boolean
   weight?: boolean
+  stage?: boolean
   clo?: boolean | Prisma.CloDefaultArgs<ExtArgs>
   plo?: boolean | Prisma.PloDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cloToPloMap"]>
@@ -581,6 +621,7 @@ export type CloToPloMapSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   cloId?: boolean
   ploId?: boolean
   weight?: boolean
+  stage?: boolean
   clo?: boolean | Prisma.CloDefaultArgs<ExtArgs>
   plo?: boolean | Prisma.PloDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cloToPloMap"]>
@@ -590,6 +631,7 @@ export type CloToPloMapSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   cloId?: boolean
   ploId?: boolean
   weight?: boolean
+  stage?: boolean
   clo?: boolean | Prisma.CloDefaultArgs<ExtArgs>
   plo?: boolean | Prisma.PloDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cloToPloMap"]>
@@ -599,9 +641,10 @@ export type CloToPloMapSelectScalar = {
   cloId?: boolean
   ploId?: boolean
   weight?: boolean
+  stage?: boolean
 }
 
-export type CloToPloMapOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cloId" | "ploId" | "weight", ExtArgs["result"]["cloToPloMap"]>
+export type CloToPloMapOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "cloId" | "ploId" | "weight" | "stage", ExtArgs["result"]["cloToPloMap"]>
 export type CloToPloMapInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   clo?: boolean | Prisma.CloDefaultArgs<ExtArgs>
   plo?: boolean | Prisma.PloDefaultArgs<ExtArgs>
@@ -626,6 +669,7 @@ export type $CloToPloMapPayload<ExtArgs extends runtime.Types.Extensions.Interna
     cloId: string
     ploId: string
     weight: runtime.Decimal
+    stage: $Enums.IpdStage | null
   }, ExtArgs["result"]["cloToPloMap"]>
   composites: {}
 }
@@ -1055,6 +1099,7 @@ export interface CloToPloMapFieldRefs {
   readonly cloId: Prisma.FieldRef<"CloToPloMap", 'String'>
   readonly ploId: Prisma.FieldRef<"CloToPloMap", 'String'>
   readonly weight: Prisma.FieldRef<"CloToPloMap", 'Decimal'>
+  readonly stage: Prisma.FieldRef<"CloToPloMap", 'IpdStage'>
 }
     
 

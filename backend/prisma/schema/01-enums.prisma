@@ -97,3 +97,34 @@ enum InterventionStatus {
   partial
   no
 }
+
+enum IpdStage {
+  i
+  p
+  d
+}
+
+enum CurriculumValidationStatus {
+  confirmed
+  pending_review
+  needs_update
+}
+
+enum CalendarSection {
+  semester1
+  annual_and_semester2
+  program_specific
+}
+
+enum PdcaPhase {
+  plan
+  do
+  check
+  act
+}
+
+enum BudgetSource {
+  aqau
+  dean
+  vpaa
+}

@@ -223,6 +223,9 @@ export type PloWhereInput = {
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
   gapRows?: Prisma.GapRowListRelationFilter
   cqiEntries?: Prisma.CqiEntryListRelationFilter
+  directoryRows?: Prisma.PloDirectoryRowListRelationFilter
+  targetRows?: Prisma.PloTargetRowListRelationFilter
+  curriculumCells?: Prisma.CurriculumMapCellListRelationFilter
 }
 
 export type PloOrderByWithRelationInput = {
@@ -238,6 +241,9 @@ export type PloOrderByWithRelationInput = {
   aiRecommendations?: Prisma.AiRecommendationOrderByRelationAggregateInput
   gapRows?: Prisma.GapRowOrderByRelationAggregateInput
   cqiEntries?: Prisma.CqiEntryOrderByRelationAggregateInput
+  directoryRows?: Prisma.PloDirectoryRowOrderByRelationAggregateInput
+  targetRows?: Prisma.PloTargetRowOrderByRelationAggregateInput
+  curriculumCells?: Prisma.CurriculumMapCellOrderByRelationAggregateInput
 }
 
 export type PloWhereUniqueInput = Prisma.AtLeast<{
@@ -256,6 +262,9 @@ export type PloWhereUniqueInput = Prisma.AtLeast<{
   aiRecommendations?: Prisma.AiRecommendationListRelationFilter
   gapRows?: Prisma.GapRowListRelationFilter
   cqiEntries?: Prisma.CqiEntryListRelationFilter
+  directoryRows?: Prisma.PloDirectoryRowListRelationFilter
+  targetRows?: Prisma.PloTargetRowListRelationFilter
+  curriculumCells?: Prisma.CurriculumMapCellListRelationFilter
 }, "id">
 
 export type PloOrderByWithAggregationInput = {
@@ -294,6 +303,9 @@ export type PloCreateInput = {
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateInput = {
@@ -308,6 +320,9 @@ export type PloUncheckedCreateInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloUpdateInput = {
@@ -322,6 +337,9 @@ export type PloUpdateInput = {
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateInput = {
@@ -336,6 +354,9 @@ export type PloUncheckedUpdateInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateManyInput = {
@@ -549,6 +570,54 @@ export type PloUpdateOneRequiredWithoutCqiEntriesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PloUpdateToOneWithWhereWithoutCqiEntriesInput, Prisma.PloUpdateWithoutCqiEntriesInput>, Prisma.PloUncheckedUpdateWithoutCqiEntriesInput>
 }
 
+export type PloCreateNestedOneWithoutDirectoryRowsInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutDirectoryRowsInput, Prisma.PloUncheckedCreateWithoutDirectoryRowsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutDirectoryRowsInput
+  connect?: Prisma.PloWhereUniqueInput
+}
+
+export type PloUpdateOneWithoutDirectoryRowsNestedInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutDirectoryRowsInput, Prisma.PloUncheckedCreateWithoutDirectoryRowsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutDirectoryRowsInput
+  upsert?: Prisma.PloUpsertWithoutDirectoryRowsInput
+  disconnect?: Prisma.PloWhereInput | boolean
+  delete?: Prisma.PloWhereInput | boolean
+  connect?: Prisma.PloWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PloUpdateToOneWithWhereWithoutDirectoryRowsInput, Prisma.PloUpdateWithoutDirectoryRowsInput>, Prisma.PloUncheckedUpdateWithoutDirectoryRowsInput>
+}
+
+export type PloCreateNestedOneWithoutCurriculumCellsInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutCurriculumCellsInput, Prisma.PloUncheckedCreateWithoutCurriculumCellsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutCurriculumCellsInput
+  connect?: Prisma.PloWhereUniqueInput
+}
+
+export type PloUpdateOneWithoutCurriculumCellsNestedInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutCurriculumCellsInput, Prisma.PloUncheckedCreateWithoutCurriculumCellsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutCurriculumCellsInput
+  upsert?: Prisma.PloUpsertWithoutCurriculumCellsInput
+  disconnect?: Prisma.PloWhereInput | boolean
+  delete?: Prisma.PloWhereInput | boolean
+  connect?: Prisma.PloWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PloUpdateToOneWithWhereWithoutCurriculumCellsInput, Prisma.PloUpdateWithoutCurriculumCellsInput>, Prisma.PloUncheckedUpdateWithoutCurriculumCellsInput>
+}
+
+export type PloCreateNestedOneWithoutTargetRowsInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutTargetRowsInput, Prisma.PloUncheckedCreateWithoutTargetRowsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutTargetRowsInput
+  connect?: Prisma.PloWhereUniqueInput
+}
+
+export type PloUpdateOneWithoutTargetRowsNestedInput = {
+  create?: Prisma.XOR<Prisma.PloCreateWithoutTargetRowsInput, Prisma.PloUncheckedCreateWithoutTargetRowsInput>
+  connectOrCreate?: Prisma.PloCreateOrConnectWithoutTargetRowsInput
+  upsert?: Prisma.PloUpsertWithoutTargetRowsInput
+  disconnect?: Prisma.PloWhereInput | boolean
+  delete?: Prisma.PloWhereInput | boolean
+  connect?: Prisma.PloWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PloUpdateToOneWithWhereWithoutTargetRowsInput, Prisma.PloUpdateWithoutTargetRowsInput>, Prisma.PloUncheckedUpdateWithoutTargetRowsInput>
+}
+
 export type PloCreateWithoutProgramInput = {
   id: string
   code: string
@@ -560,6 +629,9 @@ export type PloCreateWithoutProgramInput = {
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutProgramInput = {
@@ -573,6 +645,9 @@ export type PloUncheckedCreateWithoutProgramInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutProgramInput = {
@@ -623,6 +698,9 @@ export type PloCreateWithoutCloToPloMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutCloToPloMapsInput = {
@@ -636,6 +714,9 @@ export type PloUncheckedCreateWithoutCloToPloMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutCloToPloMapsInput = {
@@ -665,6 +746,9 @@ export type PloUpdateWithoutCloToPloMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutCloToPloMapsInput = {
@@ -678,6 +762,9 @@ export type PloUncheckedUpdateWithoutCloToPloMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateWithoutPloToPeoMapsInput = {
@@ -691,6 +778,9 @@ export type PloCreateWithoutPloToPeoMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutPloToPeoMapsInput = {
@@ -704,6 +794,9 @@ export type PloUncheckedCreateWithoutPloToPeoMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutPloToPeoMapsInput = {
@@ -733,6 +826,9 @@ export type PloUpdateWithoutPloToPeoMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutPloToPeoMapsInput = {
@@ -746,6 +842,9 @@ export type PloUncheckedUpdateWithoutPloToPeoMapsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateWithoutPloAttainmentsInput = {
@@ -759,6 +858,9 @@ export type PloCreateWithoutPloAttainmentsInput = {
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutPloAttainmentsInput = {
@@ -772,6 +874,9 @@ export type PloUncheckedCreateWithoutPloAttainmentsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutPloAttainmentsInput = {
@@ -801,6 +906,9 @@ export type PloUpdateWithoutPloAttainmentsInput = {
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutPloAttainmentsInput = {
@@ -814,6 +922,9 @@ export type PloUncheckedUpdateWithoutPloAttainmentsInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateWithoutAiRecommendationsInput = {
@@ -827,6 +938,9 @@ export type PloCreateWithoutAiRecommendationsInput = {
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutAiRecommendationsInput = {
@@ -840,6 +954,9 @@ export type PloUncheckedCreateWithoutAiRecommendationsInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutAiRecommendationsInput = {
@@ -869,6 +986,9 @@ export type PloUpdateWithoutAiRecommendationsInput = {
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutAiRecommendationsInput = {
@@ -882,6 +1002,9 @@ export type PloUncheckedUpdateWithoutAiRecommendationsInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateWithoutGapRowsInput = {
@@ -895,6 +1018,9 @@ export type PloCreateWithoutGapRowsInput = {
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutGapRowsInput = {
@@ -908,6 +1034,9 @@ export type PloUncheckedCreateWithoutGapRowsInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutGapRowsInput = {
@@ -937,6 +1066,9 @@ export type PloUpdateWithoutGapRowsInput = {
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutGapRowsInput = {
@@ -950,6 +1082,9 @@ export type PloUncheckedUpdateWithoutGapRowsInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateWithoutCqiEntriesInput = {
@@ -963,6 +1098,9 @@ export type PloCreateWithoutCqiEntriesInput = {
   ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
   aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
 }
 
 export type PloUncheckedCreateWithoutCqiEntriesInput = {
@@ -976,6 +1114,9 @@ export type PloUncheckedCreateWithoutCqiEntriesInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
   gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
 }
 
 export type PloCreateOrConnectWithoutCqiEntriesInput = {
@@ -1005,6 +1146,9 @@ export type PloUpdateWithoutCqiEntriesInput = {
   ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutCqiEntriesInput = {
@@ -1018,6 +1162,249 @@ export type PloUncheckedUpdateWithoutCqiEntriesInput = {
   ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
+}
+
+export type PloCreateWithoutDirectoryRowsInput = {
+  id: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  program: Prisma.ProgramCreateNestedOneWithoutPlosInput
+  cloToPloMaps?: Prisma.CloToPloMapCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
+}
+
+export type PloUncheckedCreateWithoutDirectoryRowsInput = {
+  id: string
+  programId: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
+}
+
+export type PloCreateOrConnectWithoutDirectoryRowsInput = {
+  where: Prisma.PloWhereUniqueInput
+  create: Prisma.XOR<Prisma.PloCreateWithoutDirectoryRowsInput, Prisma.PloUncheckedCreateWithoutDirectoryRowsInput>
+}
+
+export type PloUpsertWithoutDirectoryRowsInput = {
+  update: Prisma.XOR<Prisma.PloUpdateWithoutDirectoryRowsInput, Prisma.PloUncheckedUpdateWithoutDirectoryRowsInput>
+  create: Prisma.XOR<Prisma.PloCreateWithoutDirectoryRowsInput, Prisma.PloUncheckedCreateWithoutDirectoryRowsInput>
+  where?: Prisma.PloWhereInput
+}
+
+export type PloUpdateToOneWithWhereWithoutDirectoryRowsInput = {
+  where?: Prisma.PloWhereInput
+  data: Prisma.XOR<Prisma.PloUpdateWithoutDirectoryRowsInput, Prisma.PloUncheckedUpdateWithoutDirectoryRowsInput>
+}
+
+export type PloUpdateWithoutDirectoryRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  program?: Prisma.ProgramUpdateOneRequiredWithoutPlosNestedInput
+  cloToPloMaps?: Prisma.CloToPloMapUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
+}
+
+export type PloUncheckedUpdateWithoutDirectoryRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
+}
+
+export type PloCreateWithoutCurriculumCellsInput = {
+  id: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  program: Prisma.ProgramCreateNestedOneWithoutPlosInput
+  cloToPloMaps?: Prisma.CloToPloMapCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowCreateNestedManyWithoutPloInput
+}
+
+export type PloUncheckedCreateWithoutCurriculumCellsInput = {
+  id: string
+  programId: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  targetRows?: Prisma.PloTargetRowUncheckedCreateNestedManyWithoutPloInput
+}
+
+export type PloCreateOrConnectWithoutCurriculumCellsInput = {
+  where: Prisma.PloWhereUniqueInput
+  create: Prisma.XOR<Prisma.PloCreateWithoutCurriculumCellsInput, Prisma.PloUncheckedCreateWithoutCurriculumCellsInput>
+}
+
+export type PloUpsertWithoutCurriculumCellsInput = {
+  update: Prisma.XOR<Prisma.PloUpdateWithoutCurriculumCellsInput, Prisma.PloUncheckedUpdateWithoutCurriculumCellsInput>
+  create: Prisma.XOR<Prisma.PloCreateWithoutCurriculumCellsInput, Prisma.PloUncheckedCreateWithoutCurriculumCellsInput>
+  where?: Prisma.PloWhereInput
+}
+
+export type PloUpdateToOneWithWhereWithoutCurriculumCellsInput = {
+  where?: Prisma.PloWhereInput
+  data: Prisma.XOR<Prisma.PloUpdateWithoutCurriculumCellsInput, Prisma.PloUncheckedUpdateWithoutCurriculumCellsInput>
+}
+
+export type PloUpdateWithoutCurriculumCellsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  program?: Prisma.ProgramUpdateOneRequiredWithoutPlosNestedInput
+  cloToPloMaps?: Prisma.CloToPloMapUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+}
+
+export type PloUncheckedUpdateWithoutCurriculumCellsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+}
+
+export type PloCreateWithoutTargetRowsInput = {
+  id: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  program: Prisma.ProgramCreateNestedOneWithoutPlosInput
+  cloToPloMaps?: Prisma.CloToPloMapCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellCreateNestedManyWithoutPloInput
+}
+
+export type PloUncheckedCreateWithoutTargetRowsInput = {
+  id: string
+  programId: string
+  code: string
+  description: string
+  targetAttainmentPct?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedCreateNestedManyWithoutPloInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedCreateNestedManyWithoutPloInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedCreateNestedManyWithoutPloInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedCreateNestedManyWithoutPloInput
+  gapRows?: Prisma.GapRowUncheckedCreateNestedManyWithoutPloInput
+  cqiEntries?: Prisma.CqiEntryUncheckedCreateNestedManyWithoutPloInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedCreateNestedManyWithoutPloInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedCreateNestedManyWithoutPloInput
+}
+
+export type PloCreateOrConnectWithoutTargetRowsInput = {
+  where: Prisma.PloWhereUniqueInput
+  create: Prisma.XOR<Prisma.PloCreateWithoutTargetRowsInput, Prisma.PloUncheckedCreateWithoutTargetRowsInput>
+}
+
+export type PloUpsertWithoutTargetRowsInput = {
+  update: Prisma.XOR<Prisma.PloUpdateWithoutTargetRowsInput, Prisma.PloUncheckedUpdateWithoutTargetRowsInput>
+  create: Prisma.XOR<Prisma.PloCreateWithoutTargetRowsInput, Prisma.PloUncheckedCreateWithoutTargetRowsInput>
+  where?: Prisma.PloWhereInput
+}
+
+export type PloUpdateToOneWithWhereWithoutTargetRowsInput = {
+  where?: Prisma.PloWhereInput
+  data: Prisma.XOR<Prisma.PloUpdateWithoutTargetRowsInput, Prisma.PloUncheckedUpdateWithoutTargetRowsInput>
+}
+
+export type PloUpdateWithoutTargetRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  program?: Prisma.ProgramUpdateOneRequiredWithoutPlosNestedInput
+  cloToPloMaps?: Prisma.CloToPloMapUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
+}
+
+export type PloUncheckedUpdateWithoutTargetRowsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  programId?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  targetAttainmentPct?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  cloToPloMaps?: Prisma.CloToPloMapUncheckedUpdateManyWithoutPloNestedInput
+  ploToPeoMaps?: Prisma.PloToPeoMapUncheckedUpdateManyWithoutPloNestedInput
+  ploAttainments?: Prisma.PloAttainmentUncheckedUpdateManyWithoutPloNestedInput
+  aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
+  gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
+  cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloCreateManyProgramInput = {
@@ -1038,6 +1425,9 @@ export type PloUpdateWithoutProgramInput = {
   aiRecommendations?: Prisma.AiRecommendationUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateWithoutProgramInput = {
@@ -1051,6 +1441,9 @@ export type PloUncheckedUpdateWithoutProgramInput = {
   aiRecommendations?: Prisma.AiRecommendationUncheckedUpdateManyWithoutPloNestedInput
   gapRows?: Prisma.GapRowUncheckedUpdateManyWithoutPloNestedInput
   cqiEntries?: Prisma.CqiEntryUncheckedUpdateManyWithoutPloNestedInput
+  directoryRows?: Prisma.PloDirectoryRowUncheckedUpdateManyWithoutPloNestedInput
+  targetRows?: Prisma.PloTargetRowUncheckedUpdateManyWithoutPloNestedInput
+  curriculumCells?: Prisma.CurriculumMapCellUncheckedUpdateManyWithoutPloNestedInput
 }
 
 export type PloUncheckedUpdateManyWithoutProgramInput = {
@@ -1072,6 +1465,9 @@ export type PloCountOutputType = {
   aiRecommendations: number
   gapRows: number
   cqiEntries: number
+  directoryRows: number
+  targetRows: number
+  curriculumCells: number
 }
 
 export type PloCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1081,6 +1477,9 @@ export type PloCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.In
   aiRecommendations?: boolean | PloCountOutputTypeCountAiRecommendationsArgs
   gapRows?: boolean | PloCountOutputTypeCountGapRowsArgs
   cqiEntries?: boolean | PloCountOutputTypeCountCqiEntriesArgs
+  directoryRows?: boolean | PloCountOutputTypeCountDirectoryRowsArgs
+  targetRows?: boolean | PloCountOutputTypeCountTargetRowsArgs
+  curriculumCells?: boolean | PloCountOutputTypeCountCurriculumCellsArgs
 }
 
 /**
@@ -1135,6 +1534,27 @@ export type PloCountOutputTypeCountCqiEntriesArgs<ExtArgs extends runtime.Types.
   where?: Prisma.CqiEntryWhereInput
 }
 
+/**
+ * PloCountOutputType without action
+ */
+export type PloCountOutputTypeCountDirectoryRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PloDirectoryRowWhereInput
+}
+
+/**
+ * PloCountOutputType without action
+ */
+export type PloCountOutputTypeCountTargetRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PloTargetRowWhereInput
+}
+
+/**
+ * PloCountOutputType without action
+ */
+export type PloCountOutputTypeCountCurriculumCellsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CurriculumMapCellWhereInput
+}
+
 
 export type PloSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1149,6 +1569,9 @@ export type PloSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   aiRecommendations?: boolean | Prisma.Plo$aiRecommendationsArgs<ExtArgs>
   gapRows?: boolean | Prisma.Plo$gapRowsArgs<ExtArgs>
   cqiEntries?: boolean | Prisma.Plo$cqiEntriesArgs<ExtArgs>
+  directoryRows?: boolean | Prisma.Plo$directoryRowsArgs<ExtArgs>
+  targetRows?: boolean | Prisma.Plo$targetRowsArgs<ExtArgs>
+  curriculumCells?: boolean | Prisma.Plo$curriculumCellsArgs<ExtArgs>
   _count?: boolean | Prisma.PloCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["plo"]>
 
@@ -1187,6 +1610,9 @@ export type PloInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   aiRecommendations?: boolean | Prisma.Plo$aiRecommendationsArgs<ExtArgs>
   gapRows?: boolean | Prisma.Plo$gapRowsArgs<ExtArgs>
   cqiEntries?: boolean | Prisma.Plo$cqiEntriesArgs<ExtArgs>
+  directoryRows?: boolean | Prisma.Plo$directoryRowsArgs<ExtArgs>
+  targetRows?: boolean | Prisma.Plo$targetRowsArgs<ExtArgs>
+  curriculumCells?: boolean | Prisma.Plo$curriculumCellsArgs<ExtArgs>
   _count?: boolean | Prisma.PloCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type PloIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1206,6 +1632,9 @@ export type $PloPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
     aiRecommendations: Prisma.$AiRecommendationPayload<ExtArgs>[]
     gapRows: Prisma.$GapRowPayload<ExtArgs>[]
     cqiEntries: Prisma.$CqiEntryPayload<ExtArgs>[]
+    directoryRows: Prisma.$PloDirectoryRowPayload<ExtArgs>[]
+    targetRows: Prisma.$PloTargetRowPayload<ExtArgs>[]
+    curriculumCells: Prisma.$CurriculumMapCellPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1614,6 +2043,9 @@ export interface Prisma__PloClient<T, Null = never, ExtArgs extends runtime.Type
   aiRecommendations<T extends Prisma.Plo$aiRecommendationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$aiRecommendationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AiRecommendationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   gapRows<T extends Prisma.Plo$gapRowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$gapRowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$GapRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   cqiEntries<T extends Prisma.Plo$cqiEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$cqiEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CqiEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  directoryRows<T extends Prisma.Plo$directoryRowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$directoryRowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloDirectoryRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  targetRows<T extends Prisma.Plo$targetRowsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$targetRowsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PloTargetRowPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  curriculumCells<T extends Prisma.Plo$curriculumCellsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Plo$curriculumCellsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CurriculumMapCellPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2190,6 +2622,78 @@ export type Plo$cqiEntriesArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.CqiEntryScalarFieldEnum | Prisma.CqiEntryScalarFieldEnum[]
+}
+
+/**
+ * Plo.directoryRows
+ */
+export type Plo$directoryRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PloDirectoryRow
+   */
+  select?: Prisma.PloDirectoryRowSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PloDirectoryRow
+   */
+  omit?: Prisma.PloDirectoryRowOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PloDirectoryRowInclude<ExtArgs> | null
+  where?: Prisma.PloDirectoryRowWhereInput
+  orderBy?: Prisma.PloDirectoryRowOrderByWithRelationInput | Prisma.PloDirectoryRowOrderByWithRelationInput[]
+  cursor?: Prisma.PloDirectoryRowWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PloDirectoryRowScalarFieldEnum | Prisma.PloDirectoryRowScalarFieldEnum[]
+}
+
+/**
+ * Plo.targetRows
+ */
+export type Plo$targetRowsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PloTargetRow
+   */
+  select?: Prisma.PloTargetRowSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PloTargetRow
+   */
+  omit?: Prisma.PloTargetRowOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PloTargetRowInclude<ExtArgs> | null
+  where?: Prisma.PloTargetRowWhereInput
+  orderBy?: Prisma.PloTargetRowOrderByWithRelationInput | Prisma.PloTargetRowOrderByWithRelationInput[]
+  cursor?: Prisma.PloTargetRowWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PloTargetRowScalarFieldEnum | Prisma.PloTargetRowScalarFieldEnum[]
+}
+
+/**
+ * Plo.curriculumCells
+ */
+export type Plo$curriculumCellsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CurriculumMapCell
+   */
+  select?: Prisma.CurriculumMapCellSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CurriculumMapCell
+   */
+  omit?: Prisma.CurriculumMapCellOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CurriculumMapCellInclude<ExtArgs> | null
+  where?: Prisma.CurriculumMapCellWhereInput
+  orderBy?: Prisma.CurriculumMapCellOrderByWithRelationInput | Prisma.CurriculumMapCellOrderByWithRelationInput[]
+  cursor?: Prisma.CurriculumMapCellWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CurriculumMapCellScalarFieldEnum | Prisma.CurriculumMapCellScalarFieldEnum[]
 }
 
 /**

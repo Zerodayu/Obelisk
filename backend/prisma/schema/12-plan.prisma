@@ -1,0 +1,146 @@
+/**
+ * Phase 5 — PLAN-phase setup forms.
+ * Dedicated tables backing the four PLAN forms (see SYSTEM-DESIGN §5/§9
+ * decision): `curriculum_map` (F01), `assessment_calendar` (F03),
+ * `target_setting_matrix` (F04), and `assessment_budget` (F06). Each row set
+ * is owned by a `FormSubmission` that carries the document header metadata in
+ * `formData`; the rows below hold the repeating, seeded or computed content.
+ * Template/fixed rows (calendar milestones, budget line items) are flagged so
+ * the service layer can protect them from deletion.
+ */
+
+// --- curriculum_map ---------------------------------------------------------
+
+model PloDirectoryRow {
+  id               String                     @id
+  curriculumMapId  String                     @map("curriculum_map_id")
+  ploId            String?                    @map("plo_id")
+  code             String
+  statement        String
+  evidenceSources  String[]                   @map("evidence_sources")
+  dStageCourse     String?                    @map("d_stage_course")
+  validationStatus CurriculumValidationStatus @default(pending_review) @map("validation_status")
+  sortOrder        Int                        @map("sort_order")
+
+  submission FormSubmission @relation("CurriculumMapSubmission", fields: [curriculumMapId], references: [id], onDelete: Cascade)
+  plo        Plo?           @relation(fields: [ploId], references: [id], onDelete: SetNull)
+
+  @@index([curriculumMapId])
+  @@index([ploId])
+  @@map("plo_directory_row")
+}
+
+model CurriculumCourseRow {
+  id              String @id
+  curriculumMapId String @map("curriculum_map_id")
+  yearLevel       Int    @map("year_level")
+  courseCode      String @map("course_code")
+  courseTitle     String @map("course_title")
+  sortOrder       Int    @map("sort_order")
+
+  submission FormSubmission      @relation("CurriculumMapSubmission", fields: [curriculumMapId], references: [id], onDelete: Cascade)
+  cells      CurriculumMapCell[]
+
+  @@index([curriculumMapId])
+  @@map("curriculum_course_row")
+}
+
+model CurriculumMapCell {
+  id          String    @id
+  courseRowId String    @map("course_row_id")
+  ploCode     String    @map("plo_code")
+  ploId       String?   @map("plo_id")
+  stage       IpdStage?
+  cloCodes    String?   @map("clo_codes")
+
+  courseRow CurriculumCourseRow @relation(fields: [courseRowId], references: [id], onDelete: Cascade)
+  plo       Plo?                @relation(fields: [ploId], references: [id], onDelete: SetNull)
+
+  @@unique([courseRowId, ploCode])
+  @@index([ploId])
+  @@map("curriculum_map_cell")
+}
+
+// --- assessment_calendar ----------------------------------------------------
+
+model CalendarEventRow {
+  id                   String          @id
+  assessmentCalendarId String          @map("assessment_calendar_id")
+  section              CalendarSection
+  templateKey          String?         @map("template_key")
+  isTemplate           Boolean         @default(false) @map("is_template")
+  periodWeeks          String?         @map("period_weeks")
+  activity             String
+  cohortYears          Int[]           @map("cohort_years")
+  responsibleParty     String?         @map("responsible_party")
+  outputForms          String[]        @map("output_forms")
+  sortOrder            Int             @map("sort_order")
+
+  submission FormSubmission @relation("CalendarSubmission", fields: [assessmentCalendarId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentCalendarId, templateKey])
+  @@index([assessmentCalendarId])
+  @@map("calendar_event_row")
+}
+
+// --- target_setting_matrix --------------------------------------------------
+
+model PloTargetRow {
+  id                    String  @id
+  targetSettingMatrixId String  @map("target_setting_matrix_id")
+  ploId                 String? @map("plo_id")
+  ploCode               String  @map("plo_code")
+  statement             String?
+  y1TargetPct           Decimal @map("y1_target_pct") @db.Decimal(5, 2)
+  y2TargetPct           Decimal @map("y2_target_pct") @db.Decimal(5, 2)
+  y3TargetPct           Decimal @map("y3_target_pct") @db.Decimal(5, 2)
+  y4TargetPct           Decimal @map("y4_target_pct") @db.Decimal(5, 2)
+  rationale             String? @db.Text
+  sortOrder             Int     @map("sort_order")
+
+  submission FormSubmission @relation("TargetSettingSubmission", fields: [targetSettingMatrixId], references: [id], onDelete: Cascade)
+  plo        Plo?           @relation(fields: [ploId], references: [id], onDelete: SetNull)
+
+  @@index([targetSettingMatrixId])
+  @@index([ploId])
+  @@map("plo_target_row")
+}
+
+model CourseCloTargetRow {
+  id                    String   @id
+  targetSettingMatrixId String   @map("target_setting_matrix_id")
+  courseCode            String   @map("course_code")
+  courseTitle           String?  @map("course_title")
+  cloCode               String   @map("clo_code")
+  y1TargetPct           Decimal? @map("y1_target_pct") @db.Decimal(5, 2)
+  y2TargetPct           Decimal? @map("y2_target_pct") @db.Decimal(5, 2)
+  y3TargetPct           Decimal? @map("y3_target_pct") @db.Decimal(5, 2)
+  y4TargetPct           Decimal? @map("y4_target_pct") @db.Decimal(5, 2)
+  notes                 String?
+  sortOrder             Int      @map("sort_order")
+
+  submission FormSubmission @relation("TargetSettingSubmission", fields: [targetSettingMatrixId], references: [id], onDelete: Cascade)
+
+  @@index([targetSettingMatrixId])
+  @@map("course_clo_target_row")
+}
+
+// --- assessment_budget ------------------------------------------------------
+
+model BudgetLineItem {
+  id                 String        @id
+  assessmentBudgetId String        @map("assessment_budget_id")
+  phase              PdcaPhase
+  name               String
+  isFixed            Boolean       @default(false) @map("is_fixed")
+  estimatedCost      Decimal       @default("0.00") @map("estimated_cost") @db.Decimal(12, 2)
+  approvedCost       Decimal?      @map("approved_cost") @db.Decimal(12, 2)
+  source             BudgetSource?
+  notes              String?
+
+  submission FormSubmission @relation("AssessmentBudgetSubmission", fields: [assessmentBudgetId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentBudgetId, name])
+  @@index([assessmentBudgetId])
+  @@map("budget_line_item")
+}

@@ -85,7 +85,14 @@ export const ModelName = {
   GraduationClusterEntry: 'GraduationClusterEntry',
   GapRow: 'GapRow',
   CqiEntry: 'CqiEntry',
-  CtlRow: 'CtlRow'
+  CtlRow: 'CtlRow',
+  PloDirectoryRow: 'PloDirectoryRow',
+  CurriculumCourseRow: 'CurriculumCourseRow',
+  CurriculumMapCell: 'CurriculumMapCell',
+  CalendarEventRow: 'CalendarEventRow',
+  PloTargetRow: 'PloTargetRow',
+  CourseCloTargetRow: 'CourseCloTargetRow',
+  BudgetLineItem: 'BudgetLineItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -288,7 +295,8 @@ export const CloToPloMapScalarFieldEnum = {
   id: 'id',
   cloId: 'cloId',
   ploId: 'ploId',
-  weight: 'weight'
+  weight: 'weight',
+  stage: 'stage'
 } as const
 
 export type CloToPloMapScalarFieldEnum = (typeof CloToPloMapScalarFieldEnum)[keyof typeof CloToPloMapScalarFieldEnum]
@@ -588,6 +596,111 @@ export const CtlRowScalarFieldEnum = {
 } as const
 
 export type CtlRowScalarFieldEnum = (typeof CtlRowScalarFieldEnum)[keyof typeof CtlRowScalarFieldEnum]
+
+
+export const PloDirectoryRowScalarFieldEnum = {
+  id: 'id',
+  curriculumMapId: 'curriculumMapId',
+  ploId: 'ploId',
+  code: 'code',
+  statement: 'statement',
+  evidenceSources: 'evidenceSources',
+  dStageCourse: 'dStageCourse',
+  validationStatus: 'validationStatus',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PloDirectoryRowScalarFieldEnum = (typeof PloDirectoryRowScalarFieldEnum)[keyof typeof PloDirectoryRowScalarFieldEnum]
+
+
+export const CurriculumCourseRowScalarFieldEnum = {
+  id: 'id',
+  curriculumMapId: 'curriculumMapId',
+  yearLevel: 'yearLevel',
+  courseCode: 'courseCode',
+  courseTitle: 'courseTitle',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CurriculumCourseRowScalarFieldEnum = (typeof CurriculumCourseRowScalarFieldEnum)[keyof typeof CurriculumCourseRowScalarFieldEnum]
+
+
+export const CurriculumMapCellScalarFieldEnum = {
+  id: 'id',
+  courseRowId: 'courseRowId',
+  ploCode: 'ploCode',
+  ploId: 'ploId',
+  stage: 'stage',
+  cloCodes: 'cloCodes'
+} as const
+
+export type CurriculumMapCellScalarFieldEnum = (typeof CurriculumMapCellScalarFieldEnum)[keyof typeof CurriculumMapCellScalarFieldEnum]
+
+
+export const CalendarEventRowScalarFieldEnum = {
+  id: 'id',
+  assessmentCalendarId: 'assessmentCalendarId',
+  section: 'section',
+  templateKey: 'templateKey',
+  isTemplate: 'isTemplate',
+  periodWeeks: 'periodWeeks',
+  activity: 'activity',
+  cohortYears: 'cohortYears',
+  responsibleParty: 'responsibleParty',
+  outputForms: 'outputForms',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CalendarEventRowScalarFieldEnum = (typeof CalendarEventRowScalarFieldEnum)[keyof typeof CalendarEventRowScalarFieldEnum]
+
+
+export const PloTargetRowScalarFieldEnum = {
+  id: 'id',
+  targetSettingMatrixId: 'targetSettingMatrixId',
+  ploId: 'ploId',
+  ploCode: 'ploCode',
+  statement: 'statement',
+  y1TargetPct: 'y1TargetPct',
+  y2TargetPct: 'y2TargetPct',
+  y3TargetPct: 'y3TargetPct',
+  y4TargetPct: 'y4TargetPct',
+  rationale: 'rationale',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PloTargetRowScalarFieldEnum = (typeof PloTargetRowScalarFieldEnum)[keyof typeof PloTargetRowScalarFieldEnum]
+
+
+export const CourseCloTargetRowScalarFieldEnum = {
+  id: 'id',
+  targetSettingMatrixId: 'targetSettingMatrixId',
+  courseCode: 'courseCode',
+  courseTitle: 'courseTitle',
+  cloCode: 'cloCode',
+  y1TargetPct: 'y1TargetPct',
+  y2TargetPct: 'y2TargetPct',
+  y3TargetPct: 'y3TargetPct',
+  y4TargetPct: 'y4TargetPct',
+  notes: 'notes',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CourseCloTargetRowScalarFieldEnum = (typeof CourseCloTargetRowScalarFieldEnum)[keyof typeof CourseCloTargetRowScalarFieldEnum]
+
+
+export const BudgetLineItemScalarFieldEnum = {
+  id: 'id',
+  assessmentBudgetId: 'assessmentBudgetId',
+  phase: 'phase',
+  name: 'name',
+  isFixed: 'isFixed',
+  estimatedCost: 'estimatedCost',
+  approvedCost: 'approvedCost',
+  source: 'source',
+  notes: 'notes'
+} as const
+
+export type BudgetLineItemScalarFieldEnum = (typeof BudgetLineItemScalarFieldEnum)[keyof typeof BudgetLineItemScalarFieldEnum]
 
 
 export const SortOrder = {

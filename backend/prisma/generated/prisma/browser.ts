@@ -196,3 +196,38 @@ export type CqiEntry = Prisma.CqiEntryModel
  * 
  */
 export type CtlRow = Prisma.CtlRowModel
+/**
+ * Model PloDirectoryRow
+ * 
+ */
+export type PloDirectoryRow = Prisma.PloDirectoryRowModel
+/**
+ * Model CurriculumCourseRow
+ * 
+ */
+export type CurriculumCourseRow = Prisma.CurriculumCourseRowModel
+/**
+ * Model CurriculumMapCell
+ * 
+ */
+export type CurriculumMapCell = Prisma.CurriculumMapCellModel
+/**
+ * Model CalendarEventRow
+ * 
+ */
+export type CalendarEventRow = Prisma.CalendarEventRowModel
+/**
+ * Model PloTargetRow
+ * 
+ */
+export type PloTargetRow = Prisma.PloTargetRowModel
+/**
+ * Model CourseCloTargetRow
+ * 
+ */
+export type CourseCloTargetRow = Prisma.CourseCloTargetRowModel
+/**
+ * Model BudgetLineItem
+ * 
+ */
+export type BudgetLineItem = Prisma.BudgetLineItemModel

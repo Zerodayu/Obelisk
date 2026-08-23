@@ -26,6 +26,9 @@ model Plo {
   aiRecommendations AiRecommendation[]
   gapRows           GapRow[]
   cqiEntries        CqiEntry[]
+  directoryRows     PloDirectoryRow[]
+  targetRows        PloTargetRow[]
+  curriculumCells   CurriculumMapCell[]
 
   @@map("plo")
 }
@@ -44,10 +47,11 @@ model Peo {
 }
 
 model CloToPloMap {
-  id     String  @id
-  cloId  String  @map("clo_id")
-  ploId  String  @map("plo_id")
-  weight Decimal @default("1.000") @db.Decimal(4, 3)
+  id     String    @id
+  cloId  String    @map("clo_id")
+  ploId  String    @map("plo_id")
+  weight Decimal   @default("1.000") @db.Decimal(4, 3)
+  stage  IpdStage?
 
   clo Clo @relation(fields: [cloId], references: [id], onDelete: Cascade)
   plo Plo @relation(fields: [ploId], references: [id], onDelete: Cascade)

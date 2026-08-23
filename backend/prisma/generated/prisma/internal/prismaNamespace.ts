@@ -431,7 +431,14 @@ export const ModelName = {
   GraduationClusterEntry: 'GraduationClusterEntry',
   GapRow: 'GapRow',
   CqiEntry: 'CqiEntry',
-  CtlRow: 'CtlRow'
+  CtlRow: 'CtlRow',
+  PloDirectoryRow: 'PloDirectoryRow',
+  CurriculumCourseRow: 'CurriculumCourseRow',
+  CurriculumMapCell: 'CurriculumMapCell',
+  CalendarEventRow: 'CalendarEventRow',
+  PloTargetRow: 'PloTargetRow',
+  CourseCloTargetRow: 'CourseCloTargetRow',
+  BudgetLineItem: 'BudgetLineItem'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -447,7 +454,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "uploadRecord" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry" | "gapRow" | "cqiEntry" | "ctlRow"
+    modelProps: "user" | "session" | "account" | "verification" | "department" | "program" | "academicTerm" | "course" | "classSection" | "student" | "enrollment" | "clo" | "plo" | "peo" | "cloToPloMap" | "ploToPeoMap" | "assessmentItem" | "studentScore" | "formType" | "formSubmission" | "approvalStep" | "computationRun" | "uploadRecord" | "cloAttainment" | "ploAttainment" | "peoAttainment" | "auditLog" | "atRiskFlag" | "aiRecommendation" | "reportExport" | "graduationCluster" | "graduationClusterEntry" | "gapRow" | "cqiEntry" | "ctlRow" | "ploDirectoryRow" | "curriculumCourseRow" | "curriculumMapCell" | "calendarEventRow" | "ploTargetRow" | "courseCloTargetRow" | "budgetLineItem"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -3041,6 +3048,524 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    PloDirectoryRow: {
+      payload: Prisma.$PloDirectoryRowPayload<ExtArgs>
+      fields: Prisma.PloDirectoryRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PloDirectoryRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PloDirectoryRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        findFirst: {
+          args: Prisma.PloDirectoryRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PloDirectoryRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        findMany: {
+          args: Prisma.PloDirectoryRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>[]
+        }
+        create: {
+          args: Prisma.PloDirectoryRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        createMany: {
+          args: Prisma.PloDirectoryRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PloDirectoryRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>[]
+        }
+        delete: {
+          args: Prisma.PloDirectoryRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        update: {
+          args: Prisma.PloDirectoryRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.PloDirectoryRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PloDirectoryRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PloDirectoryRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.PloDirectoryRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloDirectoryRowPayload>
+        }
+        aggregate: {
+          args: Prisma.PloDirectoryRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePloDirectoryRow>
+        }
+        groupBy: {
+          args: Prisma.PloDirectoryRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PloDirectoryRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PloDirectoryRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PloDirectoryRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    CurriculumCourseRow: {
+      payload: Prisma.$CurriculumCourseRowPayload<ExtArgs>
+      fields: Prisma.CurriculumCourseRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CurriculumCourseRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CurriculumCourseRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        findFirst: {
+          args: Prisma.CurriculumCourseRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CurriculumCourseRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        findMany: {
+          args: Prisma.CurriculumCourseRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>[]
+        }
+        create: {
+          args: Prisma.CurriculumCourseRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        createMany: {
+          args: Prisma.CurriculumCourseRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CurriculumCourseRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>[]
+        }
+        delete: {
+          args: Prisma.CurriculumCourseRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        update: {
+          args: Prisma.CurriculumCourseRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.CurriculumCourseRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CurriculumCourseRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CurriculumCourseRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.CurriculumCourseRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumCourseRowPayload>
+        }
+        aggregate: {
+          args: Prisma.CurriculumCourseRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCurriculumCourseRow>
+        }
+        groupBy: {
+          args: Prisma.CurriculumCourseRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CurriculumCourseRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CurriculumCourseRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CurriculumCourseRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    CurriculumMapCell: {
+      payload: Prisma.$CurriculumMapCellPayload<ExtArgs>
+      fields: Prisma.CurriculumMapCellFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CurriculumMapCellFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CurriculumMapCellFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        findFirst: {
+          args: Prisma.CurriculumMapCellFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CurriculumMapCellFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        findMany: {
+          args: Prisma.CurriculumMapCellFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>[]
+        }
+        create: {
+          args: Prisma.CurriculumMapCellCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        createMany: {
+          args: Prisma.CurriculumMapCellCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CurriculumMapCellCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>[]
+        }
+        delete: {
+          args: Prisma.CurriculumMapCellDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        update: {
+          args: Prisma.CurriculumMapCellUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        deleteMany: {
+          args: Prisma.CurriculumMapCellDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CurriculumMapCellUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CurriculumMapCellUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>[]
+        }
+        upsert: {
+          args: Prisma.CurriculumMapCellUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CurriculumMapCellPayload>
+        }
+        aggregate: {
+          args: Prisma.CurriculumMapCellAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCurriculumMapCell>
+        }
+        groupBy: {
+          args: Prisma.CurriculumMapCellGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CurriculumMapCellGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CurriculumMapCellCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CurriculumMapCellCountAggregateOutputType> | number
+        }
+      }
+    }
+    CalendarEventRow: {
+      payload: Prisma.$CalendarEventRowPayload<ExtArgs>
+      fields: Prisma.CalendarEventRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CalendarEventRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CalendarEventRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        findFirst: {
+          args: Prisma.CalendarEventRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CalendarEventRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        findMany: {
+          args: Prisma.CalendarEventRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>[]
+        }
+        create: {
+          args: Prisma.CalendarEventRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        createMany: {
+          args: Prisma.CalendarEventRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CalendarEventRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>[]
+        }
+        delete: {
+          args: Prisma.CalendarEventRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        update: {
+          args: Prisma.CalendarEventRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.CalendarEventRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CalendarEventRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CalendarEventRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.CalendarEventRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CalendarEventRowPayload>
+        }
+        aggregate: {
+          args: Prisma.CalendarEventRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCalendarEventRow>
+        }
+        groupBy: {
+          args: Prisma.CalendarEventRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CalendarEventRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CalendarEventRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CalendarEventRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    PloTargetRow: {
+      payload: Prisma.$PloTargetRowPayload<ExtArgs>
+      fields: Prisma.PloTargetRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PloTargetRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PloTargetRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        findFirst: {
+          args: Prisma.PloTargetRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PloTargetRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        findMany: {
+          args: Prisma.PloTargetRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>[]
+        }
+        create: {
+          args: Prisma.PloTargetRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        createMany: {
+          args: Prisma.PloTargetRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PloTargetRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>[]
+        }
+        delete: {
+          args: Prisma.PloTargetRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        update: {
+          args: Prisma.PloTargetRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.PloTargetRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PloTargetRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PloTargetRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.PloTargetRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PloTargetRowPayload>
+        }
+        aggregate: {
+          args: Prisma.PloTargetRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePloTargetRow>
+        }
+        groupBy: {
+          args: Prisma.PloTargetRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PloTargetRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PloTargetRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PloTargetRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    CourseCloTargetRow: {
+      payload: Prisma.$CourseCloTargetRowPayload<ExtArgs>
+      fields: Prisma.CourseCloTargetRowFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CourseCloTargetRowFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CourseCloTargetRowFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        findFirst: {
+          args: Prisma.CourseCloTargetRowFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CourseCloTargetRowFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        findMany: {
+          args: Prisma.CourseCloTargetRowFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>[]
+        }
+        create: {
+          args: Prisma.CourseCloTargetRowCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        createMany: {
+          args: Prisma.CourseCloTargetRowCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.CourseCloTargetRowCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>[]
+        }
+        delete: {
+          args: Prisma.CourseCloTargetRowDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        update: {
+          args: Prisma.CourseCloTargetRowUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        deleteMany: {
+          args: Prisma.CourseCloTargetRowDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CourseCloTargetRowUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.CourseCloTargetRowUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>[]
+        }
+        upsert: {
+          args: Prisma.CourseCloTargetRowUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourseCloTargetRowPayload>
+        }
+        aggregate: {
+          args: Prisma.CourseCloTargetRowAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCourseCloTargetRow>
+        }
+        groupBy: {
+          args: Prisma.CourseCloTargetRowGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseCloTargetRowGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CourseCloTargetRowCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourseCloTargetRowCountAggregateOutputType> | number
+        }
+      }
+    }
+    BudgetLineItem: {
+      payload: Prisma.$BudgetLineItemPayload<ExtArgs>
+      fields: Prisma.BudgetLineItemFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BudgetLineItemFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BudgetLineItemFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        findFirst: {
+          args: Prisma.BudgetLineItemFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BudgetLineItemFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        findMany: {
+          args: Prisma.BudgetLineItemFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>[]
+        }
+        create: {
+          args: Prisma.BudgetLineItemCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        createMany: {
+          args: Prisma.BudgetLineItemCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BudgetLineItemCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>[]
+        }
+        delete: {
+          args: Prisma.BudgetLineItemDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        update: {
+          args: Prisma.BudgetLineItemUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        deleteMany: {
+          args: Prisma.BudgetLineItemDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BudgetLineItemUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BudgetLineItemUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>[]
+        }
+        upsert: {
+          args: Prisma.BudgetLineItemUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BudgetLineItemPayload>
+        }
+        aggregate: {
+          args: Prisma.BudgetLineItemAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBudgetLineItem>
+        }
+        groupBy: {
+          args: Prisma.BudgetLineItemGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BudgetLineItemGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BudgetLineItemCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BudgetLineItemCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -3264,7 +3789,8 @@ export const CloToPloMapScalarFieldEnum = {
   id: 'id',
   cloId: 'cloId',
   ploId: 'ploId',
-  weight: 'weight'
+  weight: 'weight',
+  stage: 'stage'
 } as const
 
 export type CloToPloMapScalarFieldEnum = (typeof CloToPloMapScalarFieldEnum)[keyof typeof CloToPloMapScalarFieldEnum]
@@ -3566,6 +4092,111 @@ export const CtlRowScalarFieldEnum = {
 export type CtlRowScalarFieldEnum = (typeof CtlRowScalarFieldEnum)[keyof typeof CtlRowScalarFieldEnum]
 
 
+export const PloDirectoryRowScalarFieldEnum = {
+  id: 'id',
+  curriculumMapId: 'curriculumMapId',
+  ploId: 'ploId',
+  code: 'code',
+  statement: 'statement',
+  evidenceSources: 'evidenceSources',
+  dStageCourse: 'dStageCourse',
+  validationStatus: 'validationStatus',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PloDirectoryRowScalarFieldEnum = (typeof PloDirectoryRowScalarFieldEnum)[keyof typeof PloDirectoryRowScalarFieldEnum]
+
+
+export const CurriculumCourseRowScalarFieldEnum = {
+  id: 'id',
+  curriculumMapId: 'curriculumMapId',
+  yearLevel: 'yearLevel',
+  courseCode: 'courseCode',
+  courseTitle: 'courseTitle',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CurriculumCourseRowScalarFieldEnum = (typeof CurriculumCourseRowScalarFieldEnum)[keyof typeof CurriculumCourseRowScalarFieldEnum]
+
+
+export const CurriculumMapCellScalarFieldEnum = {
+  id: 'id',
+  courseRowId: 'courseRowId',
+  ploCode: 'ploCode',
+  ploId: 'ploId',
+  stage: 'stage',
+  cloCodes: 'cloCodes'
+} as const
+
+export type CurriculumMapCellScalarFieldEnum = (typeof CurriculumMapCellScalarFieldEnum)[keyof typeof CurriculumMapCellScalarFieldEnum]
+
+
+export const CalendarEventRowScalarFieldEnum = {
+  id: 'id',
+  assessmentCalendarId: 'assessmentCalendarId',
+  section: 'section',
+  templateKey: 'templateKey',
+  isTemplate: 'isTemplate',
+  periodWeeks: 'periodWeeks',
+  activity: 'activity',
+  cohortYears: 'cohortYears',
+  responsibleParty: 'responsibleParty',
+  outputForms: 'outputForms',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CalendarEventRowScalarFieldEnum = (typeof CalendarEventRowScalarFieldEnum)[keyof typeof CalendarEventRowScalarFieldEnum]
+
+
+export const PloTargetRowScalarFieldEnum = {
+  id: 'id',
+  targetSettingMatrixId: 'targetSettingMatrixId',
+  ploId: 'ploId',
+  ploCode: 'ploCode',
+  statement: 'statement',
+  y1TargetPct: 'y1TargetPct',
+  y2TargetPct: 'y2TargetPct',
+  y3TargetPct: 'y3TargetPct',
+  y4TargetPct: 'y4TargetPct',
+  rationale: 'rationale',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PloTargetRowScalarFieldEnum = (typeof PloTargetRowScalarFieldEnum)[keyof typeof PloTargetRowScalarFieldEnum]
+
+
+export const CourseCloTargetRowScalarFieldEnum = {
+  id: 'id',
+  targetSettingMatrixId: 'targetSettingMatrixId',
+  courseCode: 'courseCode',
+  courseTitle: 'courseTitle',
+  cloCode: 'cloCode',
+  y1TargetPct: 'y1TargetPct',
+  y2TargetPct: 'y2TargetPct',
+  y3TargetPct: 'y3TargetPct',
+  y4TargetPct: 'y4TargetPct',
+  notes: 'notes',
+  sortOrder: 'sortOrder'
+} as const
+
+export type CourseCloTargetRowScalarFieldEnum = (typeof CourseCloTargetRowScalarFieldEnum)[keyof typeof CourseCloTargetRowScalarFieldEnum]
+
+
+export const BudgetLineItemScalarFieldEnum = {
+  id: 'id',
+  assessmentBudgetId: 'assessmentBudgetId',
+  phase: 'phase',
+  name: 'name',
+  isFixed: 'isFixed',
+  estimatedCost: 'estimatedCost',
+  approvedCost: 'approvedCost',
+  source: 'source',
+  notes: 'notes'
+} as const
+
+export type BudgetLineItemScalarFieldEnum = (typeof BudgetLineItemScalarFieldEnum)[keyof typeof BudgetLineItemScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -3722,6 +4353,20 @@ export type EnumStudentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pr
  * Reference to a field of type 'StudentStatus[]'
  */
 export type ListEnumStudentStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'StudentStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'IpdStage'
+ */
+export type EnumIpdStageFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IpdStage'>
+    
+
+
+/**
+ * Reference to a field of type 'IpdStage[]'
+ */
+export type ListEnumIpdStageFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'IpdStage[]'>
     
 
 
@@ -3890,6 +4535,62 @@ export type EnumLoopStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'LoopStatus[]'
  */
 export type ListEnumLoopStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LoopStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'CurriculumValidationStatus'
+ */
+export type EnumCurriculumValidationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CurriculumValidationStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'CurriculumValidationStatus[]'
+ */
+export type ListEnumCurriculumValidationStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CurriculumValidationStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'CalendarSection'
+ */
+export type EnumCalendarSectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CalendarSection'>
+    
+
+
+/**
+ * Reference to a field of type 'CalendarSection[]'
+ */
+export type ListEnumCalendarSectionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'CalendarSection[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PdcaPhase'
+ */
+export type EnumPdcaPhaseFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PdcaPhase'>
+    
+
+
+/**
+ * Reference to a field of type 'PdcaPhase[]'
+ */
+export type ListEnumPdcaPhaseFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PdcaPhase[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BudgetSource'
+ */
+export type EnumBudgetSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BudgetSource'>
+    
+
+
+/**
+ * Reference to a field of type 'BudgetSource[]'
+ */
+export type ListEnumBudgetSourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BudgetSource[]'>
     
 
 
@@ -4092,6 +4793,13 @@ export type GlobalOmitConfig = {
   gapRow?: Prisma.GapRowOmit
   cqiEntry?: Prisma.CqiEntryOmit
   ctlRow?: Prisma.CtlRowOmit
+  ploDirectoryRow?: Prisma.PloDirectoryRowOmit
+  curriculumCourseRow?: Prisma.CurriculumCourseRowOmit
+  curriculumMapCell?: Prisma.CurriculumMapCellOmit
+  calendarEventRow?: Prisma.CalendarEventRowOmit
+  ploTargetRow?: Prisma.PloTargetRowOmit
+  courseCloTargetRow?: Prisma.CourseCloTargetRowOmit
+  budgetLineItem?: Prisma.BudgetLineItemOmit
 }
 
 /* Types for Logging */
