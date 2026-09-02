@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
@@ -22,7 +23,7 @@ export const formsPlugin = new Elysia({
 	.use(authPlugin)
 	.get(
 		"/",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			submissionService.list({
 				...(query.formTypeId ? { formTypeId: query.formTypeId } : {}),
 				...(query.classSectionId
@@ -30,6 +31,7 @@ export const formsPlugin = new Elysia({
 					: {}),
 				...(query.status ? { status: query.status } : {}),
 			}),
+		),
 		{
 			auth: true,
 			query: t.Object({
@@ -74,14 +76,14 @@ export const formsPlugin = new Elysia({
 	)
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		cached(120, async ({ params, set }) => {
 			const submission = await submissionService.findById(params.id);
 			if (!submission) {
 				set.status = 404;
 				return { error: "Submission not found" };
 			}
 			return submission;
-		},
+		}),
 		{
 			auth: true,
 			detail: {
