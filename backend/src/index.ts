@@ -2,6 +2,7 @@ import cors from "@elysia/cors";
 import openapi from "@elysia/openapi";
 import { env } from "@utils/env";
 import { Elysia } from "elysia";
+import { rateLimit } from "elysia-rate-limit";
 import type { OpenAPIV3 } from "openapi-types";
 import { apiRoutesV1 } from "./routes";
 import { OpenAPI } from "./v1/auth/controller";
@@ -29,6 +30,7 @@ const app = new Elysia()
 			allowedHeaders: ["Content-Type", "Authorization"],
 		}),
 	)
+	.use(rateLimit({ max: 100, duration: 15 * 60 * 1000 }))
 	.get("/", () => "hello elysia", { detail: { hide: true } })
 	.mount(auth.handler)
 	.use(apiRoutesV1)
