@@ -9,6 +9,8 @@ const rawEnv = {
 	GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
 	GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
 	ORG_EMAIL_DOMAIN: process.env.ORG_EMAIL_DOMAIN,
+	REDIS_HOST: process.env.REDIS_HOST,
+	REDIS_PORT: process.env.REDIS_PORT,
 };
 
 const envSchema = z.object({
@@ -20,6 +22,8 @@ const envSchema = z.object({
 	GOOGLE_CLIENT_ID: z.string().min(1),
 	GOOGLE_CLIENT_SECRET: z.string().min(1),
 	ORG_EMAIL_DOMAIN: z.string().min(1),
+	REDIS_HOST: z.string().min(1),
+	REDIS_PORT: z.string().min(1),
 });
 
 export const env = envSchema.parse(rawEnv);
