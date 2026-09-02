@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
@@ -70,12 +71,12 @@ export const ingestPlugin = new Elysia({
 	)
 	.get(
 		"/attainments",
-		async ({ query }) => {
+		cached(60, async ({ query }) => {
 			return attainmentService.listAttainments(
 				query.classSectionId,
 				query.computationRunId,
 			);
-		},
+		}),
 		{
 			auth: true,
 			query: ListAttainmentsSchema,

@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -59,11 +60,12 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/clo-attainment-summary",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listRollupSubmissions("clo_attainment_summary", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: RollupListQuerySchema,
@@ -81,7 +83,7 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/clo-attainment-summary/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await cloSummaryService.generateFromSubmission(
 					params.id,
@@ -97,7 +99,7 @@ export const rollupPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -149,11 +151,12 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/plo-attainment-summary",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listRollupSubmissions("plo_attainment_summary", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: RollupListQuerySchema,
@@ -170,7 +173,7 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/plo-attainment-summary/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await ploSummaryService.generateFromSubmission(
 					params.id,
@@ -186,7 +189,7 @@ export const rollupPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -235,11 +238,12 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/cohort-tracking",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listRollupSubmissions("cohort_tracking", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: RollupListQuerySchema,
@@ -256,7 +260,7 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/cohort-tracking/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await cohortTrackingService.generateFromSubmission(
 					params.id,
@@ -272,7 +276,7 @@ export const rollupPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {

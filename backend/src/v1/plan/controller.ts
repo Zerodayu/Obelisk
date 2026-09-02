@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import { MissingRationaleError, TargetBelowFloorError } from "./compute";
@@ -58,8 +59,9 @@ export const planPlugin = new Elysia({
 	// --- curriculum_map (F01) -------------------------------------------------
 	.get(
 		"/curriculum-map",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listPlanSubmissions("curriculum_map", { programId: query.programId }),
+		),
 		{
 			auth: true,
 			query: PlanListQuerySchema,
@@ -105,13 +107,13 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/curriculum-map/:id",
-		async ({ params, set }) => {
+		cached(120, async ({ params, set }) => {
 			try {
 				return await curriculumMapService.get(params.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -154,10 +156,11 @@ export const planPlugin = new Elysia({
 	// --- assessment_calendar (F03) ---------------------------------------------
 	.get(
 		"/assessment-calendar",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listPlanSubmissions("assessment_calendar", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: PlanListQuerySchema,
@@ -203,13 +206,13 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/assessment-calendar/:id",
-		async ({ params, set }) => {
+		cached(120, async ({ params, set }) => {
 			try {
 				return await assessmentCalendarService.get(params.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -254,10 +257,11 @@ export const planPlugin = new Elysia({
 	// --- target_setting_matrix (F04) ----------------------------------------------
 	.get(
 		"/target-setting-matrix",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listPlanSubmissions("target_setting_matrix", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: PlanListQuerySchema,
@@ -303,13 +307,13 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/target-setting-matrix/:id",
-		async ({ params, set }) => {
+		cached(120, async ({ params, set }) => {
 			try {
 				return await targetSettingMatrixService.get(params.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -355,8 +359,9 @@ export const planPlugin = new Elysia({
 	// --- assessment_budget (F06) ------------------------------------------------------
 	.get(
 		"/assessment-budget",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listPlanSubmissions("assessment_budget", { programId: query.programId }),
+		),
 		{
 			auth: true,
 			query: PlanListQuerySchema,
@@ -402,13 +407,13 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/assessment-budget/:id",
-		async ({ params, set }) => {
+		cached(120, async ({ params, set }) => {
 			try {
 				return await assessmentBudgetService.get(params.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {

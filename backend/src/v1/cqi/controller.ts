@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -63,10 +64,11 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/plo-gap-analysis",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listCqiSubmissions("plo_gap_analysis", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: CqiListQuerySchema,
@@ -83,7 +85,7 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/plo-gap-analysis/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await ploGapAnalysisService.generateFromSubmission(
 					params.id,
@@ -99,7 +101,7 @@ export const cqiPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -186,10 +188,11 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/cqi-action-plan",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listCqiSubmissions("cqi_action_plan", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: CqiListQuerySchema,
@@ -206,7 +209,7 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/cqi-action-plan/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await cqiActionPlanService.generateFromSubmission(
 					params.id,
@@ -222,7 +225,7 @@ export const cqiPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -343,10 +346,11 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/closing-the-loop",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listCqiSubmissions("closing_the_loop", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: CqiListQuerySchema,
@@ -363,7 +367,7 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/closing-the-loop/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await closingTheLoopService.generateFromSubmission(
 					params.id,
@@ -379,7 +383,7 @@ export const cqiPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
@@ -466,10 +470,11 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/annual-program-report",
-		async ({ query }) =>
+		cached(60, async ({ query }) =>
 			listCqiSubmissions("annual_program_report", {
 				programId: query.programId,
 			}),
+		),
 		{
 			auth: true,
 			query: CqiListQuerySchema,
@@ -486,7 +491,7 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/annual-program-report/:id",
-		async ({ params, user, set }) => {
+		cached(300, async ({ params, user, set }) => {
 			try {
 				return await annualProgramReportService.generateFromSubmission(
 					params.id,
@@ -502,7 +507,7 @@ export const cqiPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
