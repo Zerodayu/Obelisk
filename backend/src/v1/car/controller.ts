@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -46,23 +47,27 @@ export const carPlugin = new Elysia({
 			},
 		},
 	)
-	.get("/", async ({ query }) => carService.list(query.classSectionId), {
-		auth: true,
-		query: ListCarsQuerySchema,
-		detail: {
-			summary: "List CAR submissions",
-			description:
-				"Optionally filtered by class section; newest first, without the assembled payload.",
-			security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
-			responses: {
-				200: { description: "List of CAR submissions" },
-				401: { description: "Unauthorized" },
+	.get(
+		"/",
+		cached(60, async ({ query }) => carService.list(query.classSectionId)),
+		{
+			auth: true,
+			query: ListCarsQuerySchema,
+			detail: {
+				summary: "List CAR submissions",
+				description:
+					"Optionally filtered by class section; newest first, without the assembled payload.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "List of CAR submissions" },
+					401: { description: "Unauthorized" },
+				},
 			},
 		},
-	})
+	)
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		cached(300, async ({ params, set }) => {
 			try {
 				return await carService.generateFromSubmission(params.id);
 			} catch (error) {
@@ -72,7 +77,7 @@ export const carPlugin = new Elysia({
 				}
 				throw error;
 			}
-		},
+		}),
 		{
 			auth: true,
 			detail: {
