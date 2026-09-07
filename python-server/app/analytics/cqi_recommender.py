@@ -61,14 +61,14 @@ def identify_gaps(header: ClassRecordHeader, attainments: List[StudentCLOAttainm
     """
     Identifies CLOs where students fell below the attainment threshold.
     """
-    failures = [a for a in attainments if not a.met_threshold]
+    failures = [a for a in attainments if a.excluded_reason is None and a.direct_clo_attainment_pct is not None and a.met_threshold is False]
     grouped_failures = defaultdict(list)
     for f in failures:
         grouped_failures[f.clo_code].append(f)
 
     gap_summaries = []
     for clo_code, failed_attainments in grouped_failures.items():
-        all_students_for_clo = [a for a in attainments if a.clo_code == clo_code]
+        all_students_for_clo = [a for a in attainments if a.clo_code == clo_code and a.excluded_reason is None and a.direct_clo_attainment_pct is not None]
         gap_summaries.append({
             "clo_code": clo_code,
             "num_students_below_threshold": len(failed_attainments),

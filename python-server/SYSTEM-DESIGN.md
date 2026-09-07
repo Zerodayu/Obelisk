@@ -57,13 +57,14 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 - **`class_record.py`** (all `extra="forbid"`):
   - `ClassRecordHeader` — course_code/title/type, section, semester_year, instructor, `no_of_students`, `threshold` (workbook's own, informational), grading_system, `workbook_configured_weights_unused`.
   - `RawScoreRecord` — student_id/name, `grading_period` (`PRELIM|MIDTERM|FINAL`), `assessment_category` (`TLA|AT|EXAM|OUTPUT`), assessment_no, clo_code, activity_name, max_score, raw_score.
-  - `StudentCLOAttainment` — per-CLO output: `direct_clo_attainment_pct`, `met_threshold`, `clo_level`, `formula_version`, completeness fields (`is_record_complete`, `section_completeness_pct`, `rule1_met`) + informational category pcts (tla/at/exam/output).
+  - `StudentCLOAttainment` — per-CLO output: `direct_clo_attainment_pct`, `met_threshold`, `clo_level`, `formula_version`, completeness fields (`is_record_complete`, `section_completeness_pct`, `rule1_met`) + informational category pcts (tla/at/exam/output) and `excluded_reason` when a CLO is intentionally skipped because it has no valid PLO mapping.
 - **`institutional_summary.py`** — `Period` (`semester|year|custom`), `CourseSubmission` (dept/program/avp_group/course/section + header + attainments + clo_plo_mapping), `InstitutionalSummaryPayload` (period + submissions, `extra="forbid"`).
 
 ## 5. ETL pipeline
 
 - **`ExcelExtractor`** (`app/etl/extract/extractor.py`): validates template (`STUDENT NAME` at `B12`/`B18`), reads header + roster, extracts per-period assessment blocks from Database/Exam/Output sheets, parses the CLO-PLO map from the COVERPAGE. All cell addresses/columns from `etl_const` (see `documentations/CONSTANTS.md`). Errors: `InvalidWorkbook`, `MissingWorksheet`, `InvalidTemplate`.
 - **`SimpleTransformer`** (`app/etl/transform/transformer.py`): validates `raw_score <= max_score`, computes per-student-per-CLO attainment (Formula 1A), 4-tier `clo_level`, `met_threshold`, Rule-1 completeness + section completeness. Emits a deterministic `formula_version` hash.
+  - CLOs that do not appear in the extracted CLO-PLO mapping with at least one non-zero correlation are passed through with `excluded_reason="no_plo_mapping"` and nullable attainment fields, instead of raising an error.
 - **`DummyLoader`** (`app/etl/load/loader.py`): returns `{status, received_records, header, attainments, clo_plo_mapping}` — a placeholder sink until a real delivery mechanism (direct HTTP to webapp) is implemented.
 
 ## 6. Analytics engine (`app/analytics/`)

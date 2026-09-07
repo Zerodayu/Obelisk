@@ -146,6 +146,7 @@ class Transformation:
         STUDENT_ID = "student_id"
         STUDENT_NAME = "student_name"
         CLO_CODE = "clo_code"
+        EXCLUDED_REASON = "excluded_reason"
         IS_RECORD_COMPLETE = "is_record_complete"
         DIRECT_CLO_ATTAINMENT_PCT = "direct_clo_attainment_pct"
         MET_THRESHOLD = "met_threshold"

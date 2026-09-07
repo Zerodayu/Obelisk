@@ -107,6 +107,14 @@ The project includes several scripts in the `testing_modules/` directory to vali
 | `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and AI recommendation. |
 | `GET` | `/health` | A simple health check endpoint. |
 
+### Output compatibility note
+
+ETL results remain backward-compatible, but `attainments[]` may now include an additive `excluded_reason` field. When `excluded_reason == "no_plo_mapping"`, the CLO was intentionally skipped because the workbook's CLO-PLO mapping table did not contain a valid non-zero mapping for that CLO. In that case, the attainment-related fields are returned as `null` for that row.
+
+### Extraction validation note
+
+The ETL extractor currently supports `LECTURE` class records only. If a workbook declares any other course type, extraction stops with a structured `UnsupportedCourseType` error so the job is marked failed instead of producing partial output.
+
 ---
 
 ## 6. Known Limitations and Deferred Items

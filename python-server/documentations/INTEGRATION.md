@@ -55,8 +55,50 @@ A single job object with the following structure:
 }
 ```
 
+### `result.loaded.attainments[]` row shape
+
+Each item inside `result.loaded.attainments` is a `StudentCLOAttainment` row. The overall JSON envelope is unchanged; this is an additive row-level extension only.
+
+The new field exists so the caller can understand why a CLO row was intentionally skipped during computation:
+
+- `excluded_reason = null` → the CLO was computed normally
+- `excluded_reason = "no_plo_mapping"` → the CLO had no valid non-zero PLO mapping in the workbook's CLO-PLO table, so the service did not compute attainment for it
+
+When a row is excluded for this reason, the attainment fields are returned as `null` so consumers can safely ignore them without treating the row as a failure.
+
+```json
+{
+  "student_id": "...",
+  "student_name": "...",
+  "clo_code": "CLO1",
+  "direct_clo_attainment_pct": 0.7059,
+  "met_threshold": true,
+  "clo_level": "Proficient",
+  "is_record_complete": true,
+  "section_completeness_pct": 1.0,
+  "rule1_met": true,
+  "excluded_reason": null
+}
+```
+
+If a CLO has no valid PLO mapping in the workbook's CLO-PLO table, the same row shape is returned with:
+
+```json
+{
+  "excluded_reason": "no_plo_mapping",
+  "direct_clo_attainment_pct": null,
+  "met_threshold": null,
+  "clo_level": null,
+  "is_record_complete": null,
+  "section_completeness_pct": null,
+  "rule1_met": null
+}
+```
+
 **If `status` is `"failed"`:**
 The `error` field will contain a structured JSON object with details about the failure. The webapp should parse this object to display a user-friendly error message.
+
+`excluded_reason == "no_plo_mapping"` is not an error. It means the row was excluded by design because the workbook's CLO-PLO table did not contain any valid non-zero mapping for that CLO.
 
 **Example Structured Error (`MissingWorksheet`):**
 ```json
@@ -70,6 +112,18 @@ The `error` field will contain a structured JSON object with details about the f
       "Exam (LECTURE ONLY)",
       "OUTPUT"
     ]
+  }
+}
+```
+
+**Example Structured Error (`UnsupportedCourseType`):**
+```json
+{
+  "error_type": "UnsupportedCourseType",
+  "message": "Course type 'RESEARCH' is not yet supported. Only LECTURE course records can be processed at this time.",
+  "details": {
+    "course_type": "RESEARCH",
+    "supported_types": ["LECTURE"]
   }
 }
 ```
@@ -103,6 +157,8 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 }
 ```
 
+The `attainments` arrays forwarded in each submission may contain rows with `excluded_reason = "no_plo_mapping"`. Aggregators should ignore those rows when computing CLO/PLO summaries.
+
 **Response:**
 ```json
 {
@@ -120,6 +176,8 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 
 **Request body:**
 Same as `/analytics/summary`, but the webapp should always send the full set of institutional data.
+
+The same `attainments[]` row extension applies here as well; it does not change the top-level payload contract.
 
 **Response:**
 ```json

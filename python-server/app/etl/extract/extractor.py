@@ -5,7 +5,7 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import column_index_from_string
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet
+from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType
 from app.core.logging import logger
 from app.etl.abstracts import Extractor
 from app.schemas.class_record import ClassRecordHeader, RawScoreRecord
@@ -114,6 +114,8 @@ class ExcelExtractor(Extractor):
     def _build_header(self, db_sheet: Worksheet, cover_sheet: Worksheet) -> ClassRecordHeader:
         semester_year = self._as_string(db_sheet[etl_const.HeaderData.SEMESTER_YEAR].value)
         course_type = self._as_string(db_sheet[etl_const.HeaderData.COURSE_TYPE].value)
+        if course_type.strip().upper() != "LECTURE":
+            raise UnsupportedCourseType(course_type=course_type, supported_types=["LECTURE"])
         no_of_students = self._as_int(db_sheet[etl_const.HeaderData.NO_OF_STUDENTS].value)
         threshold = self._as_float(db_sheet[etl_const.HeaderData.THRESHOLD].value)
         

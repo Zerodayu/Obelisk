@@ -22,7 +22,9 @@ class SimpleTransformer(Transformer):
         if not (isinstance(extracted, tuple) and len(extracted) == 3 and isinstance(extracted[0], ClassRecordHeader) and isinstance(extracted[1], list)):
             raise TransformationError("transform expects (header, records, clo_plo_mapping)")
 
-        header, records, _ = extracted
+        header, records, clo_plo_mapping = extracted
+
+        mapped_clo_codes = self._build_valid_mapped_clo_codes(clo_plo_mapping)
 
         student_clo_groups: Dict[tuple, List[RawScoreRecord]] = defaultdict(list)
         for record in records:
@@ -38,23 +40,38 @@ class SimpleTransformer(Transformer):
                 )
             student_clo_groups[(record.student_name, record.student_id, record.clo_code)].append(record)
 
-        intermediate_results = self._calculate_student_attainment(student_clo_groups)
+        intermediate_results = self._calculate_student_attainment(student_clo_groups, mapped_clo_codes)
         section_completeness_map = self._calculate_section_completeness(intermediate_results)
 
         final_results = self._assemble_final_results(intermediate_results, section_completeness_map)
 
         return final_results
 
-    def _calculate_student_attainment(self, student_clo_groups: Dict[tuple, List[RawScoreRecord]]) -> List[Dict[str, Any]]:
+    def _calculate_student_attainment(self, student_clo_groups: Dict[tuple, List[RawScoreRecord]], mapped_clo_codes: Set[str]) -> List[Dict[str, Any]]:
         """First pass: Calculate per-student, per-CLO attainment and completeness."""
         intermediate_results = []
         for (student_name, student_id, clo_code), group_records in student_clo_groups.items():
+            if clo_code not in mapped_clo_codes:
+                intermediate_results.append({
+                    etl_const.Transformation.IntermediateKeys.STUDENT_ID: student_id,
+                    etl_const.Transformation.IntermediateKeys.STUDENT_NAME: student_name,
+                    etl_const.Transformation.IntermediateKeys.CLO_CODE: clo_code,
+                    etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON: "no_plo_mapping",
+                    etl_const.Transformation.IntermediateKeys.IS_RECORD_COMPLETE: None,
+                    etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT: None,
+                    etl_const.Transformation.IntermediateKeys.MET_THRESHOLD: None,
+                    etl_const.Transformation.IntermediateKeys.CLO_LEVEL: None,
+                    etl_const.Transformation.IntermediateKeys.GROUP_RECORDS: group_records,
+                })
+                continue
+
             is_record_complete = self._check_record_completeness(group_records)
             direct_clo_attainment_pct = self._compute_direct_clo_attainment(group_records)
             intermediate_results.append({
                 etl_const.Transformation.IntermediateKeys.STUDENT_ID: student_id,
                 etl_const.Transformation.IntermediateKeys.STUDENT_NAME: student_name,
                 etl_const.Transformation.IntermediateKeys.CLO_CODE: clo_code,
+                etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON: None,
                 etl_const.Transformation.IntermediateKeys.IS_RECORD_COMPLETE: is_record_complete,
                 etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT: direct_clo_attainment_pct,
                 etl_const.Transformation.IntermediateKeys.MET_THRESHOLD: direct_clo_attainment_pct >= etl_const.Transformation.INSTITUTIONAL_THRESHOLD,
@@ -67,6 +84,8 @@ class SimpleTransformer(Transformer):
         """Second pass: Calculate section-wide completeness for each CLO."""
         clo_groups: Dict[str, List[Dict]] = defaultdict(list)
         for res in intermediate_results:
+            if res.get(etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON):
+                continue
             clo_groups[res[etl_const.Transformation.IntermediateKeys.CLO_CODE]].append(res)
         section_completeness_map = {}
         for clo_code, clo_student_records in clo_groups.items():
@@ -84,13 +103,26 @@ class SimpleTransformer(Transformer):
         final_results: List[StudentCLOAttainment] = []
         for res in intermediate_results:
             clo_code = res[etl_const.Transformation.IntermediateKeys.CLO_CODE]
-            completeness_info = section_completeness_map[clo_code]
-            category_pcts = {
-                etl_const.AssessmentCategory.TLA: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.TLA),
-                etl_const.AssessmentCategory.AT: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.AT),
-                etl_const.AssessmentCategory.EXAM: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.EXAM),
-                etl_const.AssessmentCategory.OUTPUT: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.OUTPUT),
-            }
+            excluded_reason = res.get(etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON)
+            completeness_info = section_completeness_map.get(clo_code, {
+                etl_const.Transformation.IntermediateKeys.SECTION_COMPLETENESS_PCT: None,
+                etl_const.Transformation.IntermediateKeys.RULE1_MET: None,
+            })
+
+            if excluded_reason:
+                category_pcts = {
+                    etl_const.AssessmentCategory.TLA: None,
+                    etl_const.AssessmentCategory.AT: None,
+                    etl_const.AssessmentCategory.EXAM: None,
+                    etl_const.AssessmentCategory.OUTPUT: None,
+                }
+            else:
+                category_pcts = {
+                    etl_const.AssessmentCategory.TLA: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.TLA),
+                    etl_const.AssessmentCategory.AT: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.AT),
+                    etl_const.AssessmentCategory.EXAM: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.EXAM),
+                    etl_const.AssessmentCategory.OUTPUT: self._category_pct(res[etl_const.Transformation.IntermediateKeys.GROUP_RECORDS], etl_const.AssessmentCategory.OUTPUT),
+                }
             final_results.append(
                 StudentCLOAttainment(
                     student_id=res[etl_const.Transformation.IntermediateKeys.STUDENT_ID],
@@ -107,6 +139,7 @@ class SimpleTransformer(Transformer):
                     is_record_complete=res[etl_const.Transformation.IntermediateKeys.IS_RECORD_COMPLETE],
                     section_completeness_pct=completeness_info[etl_const.Transformation.IntermediateKeys.SECTION_COMPLETENESS_PCT],
                     rule1_met=completeness_info[etl_const.Transformation.IntermediateKeys.RULE1_MET],
+                    excluded_reason=excluded_reason,
                 )
             )
         return final_results
@@ -146,6 +179,26 @@ class SimpleTransformer(Transformer):
         total_max_score = sum(r.max_score for r in eligible_records)
         if total_max_score == 0: return 0.0
         return total_raw_score / total_max_score
+
+    @staticmethod
+    def _build_valid_mapped_clo_codes(clo_plo_mapping: list[Dict[str, Any]]) -> Set[str]:
+        """Collect CLO codes that have at least one non-zero PLO correlation."""
+        mapped_clo_codes: Set[str] = set()
+        for item in clo_plo_mapping or []:
+            clo_code = item.get("clo_code")
+            correlation_strength = item.get("correlation_strength")
+            if not clo_code:
+                continue
+
+            if correlation_strength is None:
+                continue
+
+            correlation_text = str(correlation_strength).strip()
+            if not correlation_text or correlation_text in {"0", "0.0"}:
+                continue
+
+            mapped_clo_codes.add(str(clo_code).strip())
+        return mapped_clo_codes
 
     @staticmethod
     def _compute_clo_level(direct_clo_attainment_pct: float) -> Literal["Exceptional", "Proficient", "Basic", "Below Basic"]:

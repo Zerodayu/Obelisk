@@ -1,7 +1,7 @@
 from collections import defaultdict
-from typing import List, Dict, Any
+from typing import List, Dict, Any, cast
 
-from app.analytics.cqi_recommender import anonymize_students, call_llm_api, IS_DEBUG_MODE
+from app.analytics.cqi_recommender import anonymize_students, call_llm_api
 from app.etl import etl_const
 from app.schemas.institutional_summary import InstitutionalSummaryPayload, CourseSubmission
 
@@ -11,11 +11,12 @@ def _calculate_mean_attainment_pct(attainments: List[Dict[str, Any]]) -> float:
     Calculates the average of all individual direct_clo_attainment_pct values
     for a given group of records. Implements Formula 2A.
     """
-    if not attainments:
+    valid_attainments = [a for a in attainments if a.get("direct_clo_attainment_pct") is not None]
+    if not valid_attainments:
         return 0.0
     
-    total_pct = sum(a.get("direct_clo_attainment_pct", 0.0) for a in attainments)
-    return total_pct / len(attainments)
+    total_pct = sum(a.get("direct_clo_attainment_pct", 0.0) for a in valid_attainments)
+    return total_pct / len(valid_attainments)
 
 
 def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -72,6 +73,8 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
             continue
         summary[group_name]["submissions"].append(sub)
         for attainment in sub.attainments:
+            if attainment.excluded_reason is not None or attainment.direct_clo_attainment_pct is None:
+                continue
             summary[group_name]["clo_data"][attainment.clo_code].append(attainment.model_dump())
 
     results = {}
@@ -89,7 +92,7 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
 
         plos = compute_plo_attainment(clo_summary, list(consolidated_mapping))
         
-        result_payload = {
+        result_payload: Dict[str, Any] = {
             "total_attainment_records": sum(len(attainments) for attainments in data["clo_data"].values()),
             "clos": clo_summary,
             "plos": plos,
@@ -98,7 +101,7 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
         if is_program_level and plos:
             all_plo_attainments = [p["plo_attainment_direct_only"] for p in plos.values()]
             if all_plo_attainments:
-                result_payload["program_plo_average"] = sum(all_plo_attainments) / len(all_plo_attainments)
+                result_payload["program_plo_average"] = cast(Any, sum(all_plo_attainments) / len(all_plo_attainments))
 
         results[name] = result_payload
         

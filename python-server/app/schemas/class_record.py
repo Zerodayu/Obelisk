@@ -48,17 +48,20 @@ class StudentCLOAttainment(BaseModel):
     output_pct: float | None
     
     # The primary output based on the institutional formula (Formula 1A).
-    direct_clo_attainment_pct: float
-    
+    direct_clo_attainment_pct: float | None
+
     # Based on the fixed institutional threshold of 70%.
-    met_threshold: bool
-    
+    met_threshold: bool | None
+
     # The new 4-tier descriptive level.
-    clo_level: Literal["Exceptional", "Proficient", "Basic", "Below Basic"]
-    
+    clo_level: Literal["Exceptional", "Proficient", "Basic", "Below Basic"] | None
+
     formula_version: str
 
     # Data completeness fields (Section 3.6)
-    is_record_complete: bool
-    section_completeness_pct: float
-    rule1_met: bool
+    is_record_complete: bool | None
+    section_completeness_pct: float | None
+    rule1_met: bool | None
+
+    # Present when the CLO was intentionally excluded from attainment computation.
+    excluded_reason: str | None = None

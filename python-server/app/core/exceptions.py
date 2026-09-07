@@ -65,6 +65,24 @@ class MissingWorksheet(OBELISKError):
         }
 
 
+class UnsupportedCourseType(OBELISKError):
+    def __init__(self, course_type: str, supported_types: List[str]):
+        self.course_type = course_type
+        self.supported_types = supported_types
+        message = f"Course type '{course_type}' is not yet supported. Only LECTURE course records can be processed at this time."
+        super().__init__(message)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "error_type": "UnsupportedCourseType",
+            "message": str(self),
+            "details": {
+                "course_type": self.course_type,
+                "supported_types": self.supported_types,
+            },
+        }
+
+
 class TransformationError(OBELISKError):
     def __init__(self, message: str, details: Dict[str, Any] | None = None):
         self.details = details or {}
