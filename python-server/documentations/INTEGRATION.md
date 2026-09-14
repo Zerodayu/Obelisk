@@ -18,6 +18,40 @@ that will not change without a real conversation first:
    the requester is and what they're allowed to see BEFORE calling this
    service.
 
+### Optional: Webapp Shared-Secret Auth
+
+This service can optionally enforce a simple shared-secret caller check
+using the `X-Webapp-Secret` header. It is **disabled by default** — if
+`WEBAPP_SHARED_SECRET` is unset or empty, the service behaves exactly
+as it does today and trusts every request.
+
+**To enable it:**
+1. Set `WEBAPP_SHARED_SECRET` on the python-server to a long, random
+   secret value.
+2. Have the webapp backend send that exact same value in an
+   `X-Webapp-Secret` header on every request it makes to this service,
+   including `POST /upload`, `GET /jobs/{job_id}`, and `/analytics/*`.
+
+**If enabled** and the header is missing or does not match, the
+service returns `401 Unauthorized` with a structured error payload
+(`error_type: "UnauthorizedCaller"`).
+
+**This does not replace real end-user authentication or
+authorization.** That responsibility still belongs entirely to the
+webapp backend, per the boundary above. The shared secret only
+verifies that the *caller* is the webapp backend itself — not which
+end user initiated the request.
+
+**Example:**
+```
+# python-server .env
+WEBAPP_SHARED_SECRET=your-long-random-secret
+```
+```
+# webapp backend — header on every outgoing request
+X-Webapp-Secret: your-long-random-secret
+```
+
 ## Endpoint 1: Per-course upload & attainment
 
 ### `POST /upload`

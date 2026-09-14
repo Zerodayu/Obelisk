@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # This is loaded from the OBELISK_LLM_API_KEY environment variable.
     LLM_API_KEY: str | None = None
 
+    # --- Optional Webapp Shared Secret ---
+    # When set, incoming requests must present a matching X-Webapp-Secret header.
+    WEBAPP_SHARED_SECRET: str | None = None
+
     model_config = SettingsConfigDict(
         env_prefix="OBELISK_",  # All env vars must start with OBELISK_
         env_file=".env",

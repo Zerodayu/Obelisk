@@ -18,7 +18,7 @@
 	},
 	"dependencies": {
 		"@better-auth/prisma-adapter": "^1.6.23",
-		"@dotenvx/dotenvx": "^2.15.1",
+		"@dotenvx/dotenvx": "^2.20.1",
 		"@elysia/cors": "^1.4.2",
 		"@elysia/openapi": "^1.4.15",
 		"@neondatabase/serverless": "^1.1.0",

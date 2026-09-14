@@ -65,6 +65,24 @@ class MissingWorksheet(OBELISKError):
         }
 
 
+class UnauthorizedCaller(OBELISKError):
+    def __init__(self, header_name: str, reason: str):
+        self.header_name = header_name
+        self.reason = reason
+        message = f"Unauthorized request: missing or invalid '{header_name}' header."
+        super().__init__(message)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "error_type": "UnauthorizedCaller",
+            "message": str(self),
+            "details": {
+                "header_name": self.header_name,
+                "reason": self.reason,
+            },
+        }
+
+
 class UnsupportedCourseType(OBELISKError):
     def __init__(self, course_type: str, supported_types: List[str]):
         self.course_type = course_type

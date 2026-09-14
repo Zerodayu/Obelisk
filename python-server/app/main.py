@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import asyncio
 from app.core.config import settings
 from app.core.logging import configure_logging, logger
+from app.core.security import verify_webapp_secret
 from app.api.routes.upload import router as upload_router
 from app.api.routes.etl import router as etl_router
 from app.api.routes.jobs import router as jobs_router
@@ -24,11 +25,14 @@ app.add_middleware(
 configure_logging()
 logger.info("app_startup", message="Initializing OBELISK ETL application", debug=settings.DEBUG, allowed_origins=settings.ALLOWED_ORIGINS)
 
-app.include_router(upload_router, prefix="", tags=["upload"])
+protected_api_router = APIRouter(dependencies=[Depends(verify_webapp_secret)])
+protected_api_router.include_router(upload_router, prefix="", tags=["upload"])
+protected_api_router.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
+protected_api_router.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
+
+app.include_router(protected_api_router)
 app.include_router(etl_router, prefix="/etl", tags=["etl"])
-app.include_router(jobs_router, prefix="/jobs", tags=["jobs"])
 app.include_router(health_router, prefix="/health", tags=["health"])
-app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
 
 _worker_tasks: list[asyncio.Task] = []
 
