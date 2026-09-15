@@ -128,3 +128,23 @@ enum BudgetSource {
   dean
   vpaa
 }
+
+enum MidCycleStatus {
+  pending
+  met
+  early_warning
+  not_met
+}
+
+enum AcquisitionStatus {
+  acquired
+  pending
+  not_acquired
+  na
+}
+
+enum CqiImplementationStatus {
+  fully
+  partially
+  not_yet
+}

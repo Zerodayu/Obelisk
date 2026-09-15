@@ -255,3 +255,43 @@ export type CourseCloTargetRow = Prisma.CourseCloTargetRowModel
  * 
  */
 export type BudgetLineItem = Prisma.BudgetLineItemModel
+/**
+ * Model MidCycleCohortRow
+ * 
+ */
+export type MidCycleCohortRow = Prisma.MidCycleCohortRowModel
+/**
+ * Model ResourceItemRow
+ * 
+ */
+export type ResourceItemRow = Prisma.ResourceItemRowModel
+/**
+ * Model CqiImplementRow
+ * 
+ */
+export type CqiImplementRow = Prisma.CqiImplementRowModel
+/**
+ * Model ExhibitionGuestRow
+ * 
+ */
+export type ExhibitionGuestRow = Prisma.ExhibitionGuestRowModel
+/**
+ * Model PortfolioCriterionRow
+ * 
+ */
+export type PortfolioCriterionRow = Prisma.PortfolioCriterionRowModel
+/**
+ * Model CapstonePanelistRow
+ * 
+ */
+export type CapstonePanelistRow = Prisma.CapstonePanelistRowModel
+/**
+ * Model PortfolioRoadmapRow
+ * 
+ */
+export type PortfolioRoadmapRow = Prisma.PortfolioRoadmapRowModel
+/**
+ * Model PortfolioRubricRow
+ * 
+ */
+export type PortfolioRubricRow = Prisma.PortfolioRubricRowModel

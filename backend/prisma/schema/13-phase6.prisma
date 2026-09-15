@@ -1,0 +1,147 @@
+/**
+ * Phase 6 — Supporting & Periodic / Institutional forms.
+ *
+ * Dedicated tables backing the DO/CHECK instruments (F08, F10, F11, F18, F19)
+ * and PLAN-phase roadmap (F02). Forms without dedicated row tables (F09, F10,
+ * F12, F17, F20, F21, F26, F27, F28) store their structured data in
+ * `FormSubmission.formData` JSON; this file only defines the row models that
+ * hold complex repeatable or lifecycle-tracked content.
+ */
+
+// --- mid_cycle_attainment (F08) --------------------------------------------
+
+model MidCycleCohortRow {
+  id                   String   @id
+  midCycleAttainmentId String   @map("mid_cycle_attainment_id")
+  yearLevel            Int      @map("year_level")
+  cloCode              String   @map("clo_code")
+  cloDescription       String?  @map("clo_description")
+  attainmentPct        Decimal  @map("attainment_pct") @db.Decimal(5, 2)
+  benchmarkPct         Decimal  @default("70.00") @map("benchmark_pct") @db.Decimal(5, 2)
+  status               MidCycleStatus @default(pending)
+  studentCount         Int      @default(0) @map("student_count")
+  belowTargetCount     Int      @default(0) @map("below_target_count")
+
+  submission FormSubmission @relation("MidCycleCohortRows", fields: [midCycleAttainmentId], references: [id], onDelete: Cascade)
+
+  @@index([midCycleAttainmentId])
+  @@map("mid_cycle_cohort_row")
+}
+
+// --- resource_monitoring (F09) -----------------------------------------------
+
+model ResourceItemRow {
+  id                String           @id
+  resourceMonitorId String           @map("resource_monitor_id")
+  budgetLineItemId  String?          @map("budget_line_item_id")
+  name              String
+  phase             PdcaPhase
+  acquisitionStatus AcquisitionStatus @default(pending) @map("acquisition_status")
+  actualCost        Decimal?         @map("actual_cost") @db.Decimal(12, 2)
+  notes             String?
+
+  submission FormSubmission @relation("ResourceMonitorRows", fields: [resourceMonitorId], references: [id], onDelete: Cascade)
+
+  @@index([resourceMonitorId])
+  @@map("resource_item_row")
+}
+
+model CqiImplementRow {
+  id                      String                   @id
+  resourceMonitorId       String                   @map("resource_monitor_id")
+  cqiEntryId              String?                  @map("cqi_entry_id")
+  interventionDescription String                   @map("intervention_description")
+  implementationStatus    CqiImplementationStatus  @default(not_yet) @map("implementation_status")
+  evidenceNotes           String?                  @map("evidence_notes") @db.Text
+
+  submission FormSubmission @relation("CqiImplementRows", fields: [resourceMonitorId], references: [id], onDelete: Cascade)
+
+  @@index([resourceMonitorId])
+  @@map("cqi_implement_row")
+}
+
+// --- exhibition_feedback (F11) -----------------------------------------------
+
+model ExhibitionGuestRow {
+  id                   String  @id
+  exhibitionFeedbackId String  @map("exhibition_feedback_id")
+  guestName            String  @map("guest_name")
+  guestAffiliation     String? @map("guest_affiliation")
+  ploRatings           Json    @map("plo_ratings")
+  overallComments      String? @map("overall_comments") @db.Text
+
+  submission FormSubmission @relation("ExhibitionGuestRows", fields: [exhibitionFeedbackId], references: [id], onDelete: Cascade)
+
+  @@index([exhibitionFeedbackId])
+  @@map("exhibition_guest_row")
+}
+
+// --- portfolio_assessment_record (F18) ---------------------------------------
+
+model PortfolioCriterionRow {
+  id                    String   @id
+  portfolioAssessmentId String   @map("portfolio_assessment_id")
+  cloCode               String   @map("clo_code")
+  cloDescription        String?  @map("clo_description")
+  criterionName         String   @map("criterion_name")
+  maxScore              Int      @default(5) @map("max_score")
+  assessor1Score        Int?     @map("assessor1_score")
+  assessor2Score        Int?     @map("assessor2_score")
+  industryScore         Int?     @map("industry_score")
+  consensusScore        Decimal? @map("consensus_score") @db.Decimal(5, 2)
+  attainmentPct         Decimal? @map("attainment_pct") @db.Decimal(5, 2)
+  evidenceNotes         String?  @map("evidence_notes") @db.Text
+
+  submission FormSubmission @relation("PortfolioCriterionRows", fields: [portfolioAssessmentId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioAssessmentId])
+  @@map("portfolio_criterion_row")
+}
+
+// --- capstone_panel_evaluation (F19) -----------------------------------------
+
+model CapstonePanelistRow {
+  id                  String  @id
+  capstonePanelEvalId String  @map("capstone_panel_eval_id")
+  panelistName        String  @map("panelist_name")
+  panelistRole        String  @map("panelist_role")
+  ploRatings          Json    @map("plo_ratings")
+  overallComments     String? @map("overall_comments") @db.Text
+
+  submission FormSubmission @relation("CapstonePanelistRows", fields: [capstonePanelEvalId], references: [id], onDelete: Cascade)
+
+  @@index([capstonePanelEvalId])
+  @@map("capstone_panelist_row")
+}
+
+// --- portfolio_roadmap (F02) -------------------------------------------------
+
+model PortfolioRoadmapRow {
+  id                 String  @id
+  portfolioRoadmapId String  @map("portfolio_roadmap_id")
+  yearLevel          Int     @map("year_level")
+  milestone          String
+  description        String  @db.Text
+  ploAlignment       String? @map("plo_alignment")
+  sortOrder          Int     @map("sort_order")
+
+  submission FormSubmission @relation("PortfolioRoadmapSubmission", fields: [portfolioRoadmapId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioRoadmapId])
+  @@map("portfolio_roadmap_row")
+}
+
+model PortfolioRubricRow {
+  id                 String   @id
+  portfolioRoadmapId String   @map("portfolio_roadmap_id")
+  criterionName      String   @map("criterion_name")
+  description        String   @db.Text
+  weightPct          Decimal  @map("weight_pct") @db.Decimal(5, 2)
+  rubricLevels       Json     @map("rubric_levels")
+  sortOrder          Int      @map("sort_order")
+
+  submission FormSubmission @relation("PortfolioRoadmapSubmission", fields: [portfolioRoadmapId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioRoadmapId])
+  @@map("portfolio_rubric_row")
+}

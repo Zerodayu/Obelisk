@@ -198,3 +198,32 @@ export const BudgetSource = {
 } as const
 
 export type BudgetSource = (typeof BudgetSource)[keyof typeof BudgetSource]
+
+
+export const MidCycleStatus = {
+  pending: 'pending',
+  met: 'met',
+  early_warning: 'early_warning',
+  not_met: 'not_met'
+} as const
+
+export type MidCycleStatus = (typeof MidCycleStatus)[keyof typeof MidCycleStatus]
+
+
+export const AcquisitionStatus = {
+  acquired: 'acquired',
+  pending: 'pending',
+  not_acquired: 'not_acquired',
+  na: 'na'
+} as const
+
+export type AcquisitionStatus = (typeof AcquisitionStatus)[keyof typeof AcquisitionStatus]
+
+
+export const CqiImplementationStatus = {
+  fully: 'fully',
+  partially: 'partially',
+  not_yet: 'not_yet'
+} as const
+
+export type CqiImplementationStatus = (typeof CqiImplementationStatus)[keyof typeof CqiImplementationStatus]

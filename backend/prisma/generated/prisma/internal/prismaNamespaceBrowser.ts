@@ -92,7 +92,15 @@ export const ModelName = {
   CalendarEventRow: 'CalendarEventRow',
   PloTargetRow: 'PloTargetRow',
   CourseCloTargetRow: 'CourseCloTargetRow',
-  BudgetLineItem: 'BudgetLineItem'
+  BudgetLineItem: 'BudgetLineItem',
+  MidCycleCohortRow: 'MidCycleCohortRow',
+  ResourceItemRow: 'ResourceItemRow',
+  CqiImplementRow: 'CqiImplementRow',
+  ExhibitionGuestRow: 'ExhibitionGuestRow',
+  PortfolioCriterionRow: 'PortfolioCriterionRow',
+  CapstonePanelistRow: 'CapstonePanelistRow',
+  PortfolioRoadmapRow: 'PortfolioRoadmapRow',
+  PortfolioRubricRow: 'PortfolioRubricRow'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -701,6 +709,116 @@ export const BudgetLineItemScalarFieldEnum = {
 } as const
 
 export type BudgetLineItemScalarFieldEnum = (typeof BudgetLineItemScalarFieldEnum)[keyof typeof BudgetLineItemScalarFieldEnum]
+
+
+export const MidCycleCohortRowScalarFieldEnum = {
+  id: 'id',
+  midCycleAttainmentId: 'midCycleAttainmentId',
+  yearLevel: 'yearLevel',
+  cloCode: 'cloCode',
+  cloDescription: 'cloDescription',
+  attainmentPct: 'attainmentPct',
+  benchmarkPct: 'benchmarkPct',
+  status: 'status',
+  studentCount: 'studentCount',
+  belowTargetCount: 'belowTargetCount'
+} as const
+
+export type MidCycleCohortRowScalarFieldEnum = (typeof MidCycleCohortRowScalarFieldEnum)[keyof typeof MidCycleCohortRowScalarFieldEnum]
+
+
+export const ResourceItemRowScalarFieldEnum = {
+  id: 'id',
+  resourceMonitorId: 'resourceMonitorId',
+  budgetLineItemId: 'budgetLineItemId',
+  name: 'name',
+  phase: 'phase',
+  acquisitionStatus: 'acquisitionStatus',
+  actualCost: 'actualCost',
+  notes: 'notes'
+} as const
+
+export type ResourceItemRowScalarFieldEnum = (typeof ResourceItemRowScalarFieldEnum)[keyof typeof ResourceItemRowScalarFieldEnum]
+
+
+export const CqiImplementRowScalarFieldEnum = {
+  id: 'id',
+  resourceMonitorId: 'resourceMonitorId',
+  cqiEntryId: 'cqiEntryId',
+  interventionDescription: 'interventionDescription',
+  implementationStatus: 'implementationStatus',
+  evidenceNotes: 'evidenceNotes'
+} as const
+
+export type CqiImplementRowScalarFieldEnum = (typeof CqiImplementRowScalarFieldEnum)[keyof typeof CqiImplementRowScalarFieldEnum]
+
+
+export const ExhibitionGuestRowScalarFieldEnum = {
+  id: 'id',
+  exhibitionFeedbackId: 'exhibitionFeedbackId',
+  guestName: 'guestName',
+  guestAffiliation: 'guestAffiliation',
+  ploRatings: 'ploRatings',
+  overallComments: 'overallComments'
+} as const
+
+export type ExhibitionGuestRowScalarFieldEnum = (typeof ExhibitionGuestRowScalarFieldEnum)[keyof typeof ExhibitionGuestRowScalarFieldEnum]
+
+
+export const PortfolioCriterionRowScalarFieldEnum = {
+  id: 'id',
+  portfolioAssessmentId: 'portfolioAssessmentId',
+  cloCode: 'cloCode',
+  cloDescription: 'cloDescription',
+  criterionName: 'criterionName',
+  maxScore: 'maxScore',
+  assessor1Score: 'assessor1Score',
+  assessor2Score: 'assessor2Score',
+  industryScore: 'industryScore',
+  consensusScore: 'consensusScore',
+  attainmentPct: 'attainmentPct',
+  evidenceNotes: 'evidenceNotes'
+} as const
+
+export type PortfolioCriterionRowScalarFieldEnum = (typeof PortfolioCriterionRowScalarFieldEnum)[keyof typeof PortfolioCriterionRowScalarFieldEnum]
+
+
+export const CapstonePanelistRowScalarFieldEnum = {
+  id: 'id',
+  capstonePanelEvalId: 'capstonePanelEvalId',
+  panelistName: 'panelistName',
+  panelistRole: 'panelistRole',
+  ploRatings: 'ploRatings',
+  overallComments: 'overallComments'
+} as const
+
+export type CapstonePanelistRowScalarFieldEnum = (typeof CapstonePanelistRowScalarFieldEnum)[keyof typeof CapstonePanelistRowScalarFieldEnum]
+
+
+export const PortfolioRoadmapRowScalarFieldEnum = {
+  id: 'id',
+  portfolioRoadmapId: 'portfolioRoadmapId',
+  yearLevel: 'yearLevel',
+  milestone: 'milestone',
+  description: 'description',
+  ploAlignment: 'ploAlignment',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PortfolioRoadmapRowScalarFieldEnum = (typeof PortfolioRoadmapRowScalarFieldEnum)[keyof typeof PortfolioRoadmapRowScalarFieldEnum]
+
+
+export const PortfolioRubricRowScalarFieldEnum = {
+  id: 'id',
+  portfolioRoadmapId: 'portfolioRoadmapId',
+  criterionName: 'criterionName',
+  description: 'description',
+  weightPct: 'weightPct',
+  rubricLevels: 'rubricLevels',
+  sortOrder: 'sortOrder'
+} as const
+
+export type PortfolioRubricRowScalarFieldEnum = (typeof PortfolioRubricRowScalarFieldEnum)[keyof typeof PortfolioRubricRowScalarFieldEnum]
 
 
 export const SortOrder = {
