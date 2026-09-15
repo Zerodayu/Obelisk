@@ -198,21 +198,72 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] **Sign-up + role request** — `/register` with role selection; new accounts default to `user` until a `system_admin` approves (`requestedRole` + `roleRequestStatus` on the user; `GET/POST /auth/role-requests*`; approval UI on the system-admin dashboard).
 - [x] **Google-only account creation** — `/register` shows only the org-restricted Google provider (email/password sign-up disabled; login kept for existing accounts); role selection moved to a post-login `/onboarding` route (`POST /auth/role-request`); the `(app)` shell redirects role-less users to `/onboarding`.
 - [x] **DEVELOPMENT auth bypass** — when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev `system_admin` user so every route is viewable without an account (frontend-only; backend still requires a session).
+- [x] **6 role-specific dashboards** — faculty, program_chair, dean, aqau, vpaa, system_admin (chart panels with sample data; `formStatusCountsAtom` + `uploadsHistoryDataAtom` wired to real API).
 
 ### Shared infrastructure
 
+- [x] UI primitives — `components/ui/` (button, input, select, dialog, badge, tooltip, skeleton, etc.)
+- [x] Layout components — `app-shell`, `app-sidebar`, `site-header`, `nav-*`
+- [x] Chart system — `evilcharts/` (ECharts wrappers) + `components/charts/` (attainment, CQI, governance, plan, ingest chart sets)
+- [x] Data grid — `reui/data-grid/` (TanStack Table-based, virtual scrolling, column visibility, pagination)
+- [x] Form frame — `reui/frame.tsx`, `reui/badge.tsx`, `reui/filters.tsx`
 - [ ] `components/obe/` primitives — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table
 
-### Form screens (mirror backend phases)
+### Form screens — Phases 0–5 (13 forms, all fully built)
 
-- [ ] `clo_raw_data` entry screen (`/forms/clo-raw-data`) — upload panel scaffolded; wire to `POST /ingest/upload` + job polling.
-- [ ] CAR screen (`/forms/course-assessment-report`) — 7 parts, computed cells read-only.
-- [ ] Roll-up screens (`/forms/attainment/...`) + dashboard KPI cards/charts.
-- [ ] CQI screens (`/forms/cqi/...`).
-- [ ] PLAN setup screens (`curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget`).
-- [ ] Supporting/periodic/institutional screens (Phase 6 forms).
-- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin).
-- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down.
+- [x] `clo_raw_data` (`/forms/clo-raw-data`) — upload panel + ETL polling + upload history table
+- [x] `course_assessment_report` (`/forms/course-assessment-report`) — 7-part tabbed CAR
+- [x] `clo_attainment_summary` (`/forms/attainment/clo-attainment-summary`) — generate + display
+- [x] `plo_attainment_summary` (`/forms/attainment/plo-attainment-summary`) — generate + display
+- [x] `cohort_tracking` (`/forms/attainment/cohort-tracking`) — generate + annotation editor + grid
+- [x] `plo_gap_analysis` (`/forms/cqi/plo-gap-analysis`) — gap rows + root-cause editor
+- [x] `cqi_action_plan` (`/forms/cqi/cqi-action-plan`) — action plan table with tracking
+- [x] `closing_the_loop` (`/forms/cqi/closing-the-loop`) — condition editor + identify section
+- [x] `annual_program_report` (`/forms/cqi/annual-program-report`) — KPIs + attachments + narratives
+- [x] `curriculum_map` (`/forms/plan/curriculum-map`) — I-P-D matrix with toggle cells
+- [x] `assessment_calendar` (`/forms/plan/assessment-calendar`) — calendar event table
+- [x] `target_setting_matrix` (`/forms/plan/target-setting-matrix`) — PLO + CLO target tables
+- [x] `assessment_budget` (`/forms/plan/assessment-budget`) — budget line-item table
+
+### Form screens — Phase 6 (14 forms, all pending)
+
+#### CHECK module (`/forms/check/`)
+
+- [ ] `mid_cycle_attainment` — 4 cohort blocks, per-CLO attainment table, at-risk watchlist
+- [ ] `peer_observation` — 7 criteria rows, each with own rating scale + evidence text
+- [ ] `exhibition_feedback` — dynamic guest rows, per-PLO 0-10 ratings, computed means
+- [ ] `clo_perception_survey` — Likert tabulation per CLO, divergence flag
+- [ ] `student_exit_survey` — PLO × cohort matrix, divergence flag
+- [ ] `portfolio_assessment` — rubric scoring per criterion, 3 assessor scores, consensus
+- [ ] `capstone_panel` — dynamic panelist rows, per-PLO 0-10 ratings, panel composition
+
+#### Periodic module (`/forms/periodic/`)
+
+- [ ] `resource_monitoring` — resource items + CQI implementation rows
+- [ ] `alumni_tracer` — employment indicators + PLO sufficiency table
+- [ ] `employer_survey` — employer profiles + PLO competency table
+- [ ] `systemic_gap_report` — 3-cycle evidence, root cause, structural response
+- [ ] `capa_plan` — action rows (≤8), progress reviews, closure declaration
+- [ ] `institutional_review` — program reviews + CQI completion table
+- [ ] `portfolio_roadmap` — 4-year roadmap rows + rubric standards with weight validation
+
+### Workflow UI (all pending)
+
+- [ ] Approval workflow — submit / review / approve / return buttons on form screens
+- [ ] Submission inbox — "My Submissions" + "Pending Approvals" pages
+- [ ] Export / print — PDF / Excel / Word on form screens
+
+### Archives
+
+- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin)
+- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down
+
+### Dashboard data wiring (partially done)
+
+- [x] `formStatusCountsAtom` — wired to `GET /forms`
+- [x] `uploadsHistoryDataAtom` — wired to `GET /ingest/history`
+- [ ] Wire remaining ~18 atoms to real backend endpoints (attainment trends, cohort trends, PEO attainment, budget data, approval flows, audit activity, etc.)
+- [ ] Populate stat cards on all 6 role dashboards (currently empty `stats: []`)
 
 ---
 
