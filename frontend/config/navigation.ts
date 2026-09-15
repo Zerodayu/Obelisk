@@ -17,6 +17,7 @@ import {
   BookOpenIcon,
   CalendarDaysIcon,
   CalendarRangeIcon,
+  ClipboardCheckIcon,
   ClipboardListIcon,
   FileChartColumnIcon,
   FileTextIcon,
@@ -25,8 +26,10 @@ import {
   ListChecksIcon,
   type LucideIcon,
   RefreshCwIcon,
+  StarIcon,
   TargetIcon,
   UsersIcon,
+  WalletIcon,
 } from "lucide-react";
 
 import { ACADEMIC_ROLES, hasAccess, type UserRole } from "@/lib/roles";
@@ -136,6 +139,46 @@ const FORM_SECTIONS: NavSection[] = [
         title: "Assessment Budget",
         url: "/forms/plan/assessment-budget",
         icon: CalendarDaysIcon,
+      },
+    ],
+  },
+  {
+    label: "Supporting (CHECK)",
+    items: [
+      {
+        title: "Peer Observation",
+        url: "/forms/check/peer-observation",
+        icon: ClipboardCheckIcon,
+      },
+      {
+        title: "CLO Perception Survey",
+        url: "/forms/check/clo-perception-survey",
+        icon: ClipboardListIcon,
+      },
+      {
+        title: "Student Exit Survey",
+        url: "/forms/check/student-exit-survey",
+        icon: ClipboardListIcon,
+      },
+      {
+        title: "Exhibition Feedback",
+        url: "/forms/check/exhibition-feedback",
+        icon: StarIcon,
+      },
+      {
+        title: "Portfolio Assessment",
+        url: "/forms/check/portfolio-assessment",
+        icon: FileChartColumnIcon,
+      },
+      {
+        title: "Capstone Panel Evaluation",
+        url: "/forms/check/capstone-panel",
+        icon: ListChecksIcon,
+      },
+      {
+        title: "Mid-Cycle Attainment",
+        url: "/forms/check/mid-cycle-attainment",
+        icon: WalletIcon,
       },
     ],
   },
