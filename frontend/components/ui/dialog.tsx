@@ -6,9 +6,9 @@ import { Portal } from "@ark-ui/react/portal";
 import { XIcon } from "lucide-react";
 import React from "react";
 import { tv, type VariantProps } from "tailwind-variants";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 export const useDialog = useDialogContext;
 
@@ -44,7 +44,7 @@ export const Dialog = (props: React.ComponentProps<typeof ArkDialog.Root>) => {
 };
 
 export const DialogTrigger = (
-  props: React.ComponentProps<typeof ArkDialog.Trigger>
+  props: React.ComponentProps<typeof ArkDialog.Trigger>,
 ) => <ArkDialog.Trigger {...props} />;
 
 export const dialogOverlayVariants = tv({
@@ -60,7 +60,7 @@ export const dialogOverlayVariants = tv({
 });
 
 export const DialogOverlay = (
-  props: React.ComponentProps<typeof ArkDialog.Backdrop>
+  props: React.ComponentProps<typeof ArkDialog.Backdrop>,
 ) => {
   const { className, ...rest } = props;
 
@@ -80,7 +80,7 @@ export const DialogOverlay = (
 };
 
 export const DialogPositioner = (
-  props: React.ComponentProps<typeof ArkDialog.Positioner>
+  props: React.ComponentProps<typeof ArkDialog.Positioner>,
 ) => {
   const { className, ...rest } = props;
 
@@ -91,7 +91,7 @@ export const DialogPositioner = (
         "h-svh w-screen",
         "grid grid-rows-[1fr_auto_3fr] justify-items-center",
         "p-4",
-        className
+        className,
       )}
       data-slot="dialog-positioner"
       {...rest}
@@ -182,13 +182,13 @@ export const DialogContent = (props: DialogContentProps) => {
       <DialogPositioner
         className={cn(
           bottomStickOnMobile &&
-            "max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12"
+            "max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12",
         )}
       >
         <ArkDialog.Content
           className={cn(
             dialogContentVariants({ size, bottomStickOnMobile }),
-            className
+            className,
           )}
           data-slot="dialog-content"
           {...rest}
@@ -232,7 +232,7 @@ export const DialogBody = (props: DialogBodyProps) => {
           "p-(--space)",
           "in-[[data-slot=dialog-content]:has([data-slot=dialog-header])]:pt-0",
           "in-[[data-slot=dialog-content]:has([data-slot=dialog-footer]:not(.border-t))]:pb-1",
-          className
+          className,
         )}
         data-slot="dialog-body"
         {...rest}
@@ -262,7 +262,7 @@ export const DialogHeader = (props: DialogHeaderProps) => {
         "p-(--space)",
         "flex flex-col gap-2",
         "in-[[data-slot=dialog-content]:has([data-slot=dialog-body])]:pb-3",
-        className
+        className,
       )}
       data-slot="dialog-header"
       {...rest}
@@ -281,7 +281,7 @@ export const DialogHeader = (props: DialogHeaderProps) => {
 };
 
 export const DialogTitle = (
-  props: React.ComponentProps<typeof ArkDialog.Title>
+  props: React.ComponentProps<typeof ArkDialog.Title>,
 ) => {
   const { className, ...rest } = props;
 
@@ -289,7 +289,7 @@ export const DialogTitle = (
     <ArkDialog.Title
       className={cn(
         "font-heading font-semibold text-lg leading-none",
-        className
+        className,
       )}
       data-slot="dialog-title"
       {...rest}
@@ -298,7 +298,7 @@ export const DialogTitle = (
 };
 
 export const DialogDescription = (
-  props: React.ComponentProps<typeof ArkDialog.Description>
+  props: React.ComponentProps<typeof ArkDialog.Description>,
 ) => {
   const { className, ...rest } = props;
 
@@ -312,7 +312,7 @@ export const DialogDescription = (
 };
 
 export const DialogClose = (
-  props: React.ComponentProps<typeof ArkDialog.CloseTrigger>
+  props: React.ComponentProps<typeof ArkDialog.CloseTrigger>,
 ) => <ArkDialog.CloseTrigger data-slot="dialog-close-trigger" {...props} />;
 
 export const DialogFooter = (props: React.ComponentProps<typeof ark.div>) => {
@@ -327,7 +327,7 @@ export const DialogFooter = (props: React.ComponentProps<typeof ark.div>) => {
         "px-(--space) py-4",
         "bg-muted/48",
         "border-t",
-        className
+        className,
       )}
       data-slot="dialog-footer"
       {...rest}

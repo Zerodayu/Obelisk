@@ -66,7 +66,7 @@ export const ScrollArea = (props: ScrollAreaProps) => {
 };
 
 export const ScrollAreaScrollbar = (
-  props: React.ComponentProps<typeof ArkScrollArea.Scrollbar>
+  props: React.ComponentProps<typeof ArkScrollArea.Scrollbar>,
 ) => {
   const { orientation, className, ...rest } = props;
 
@@ -84,7 +84,7 @@ export const ScrollAreaScrollbar = (
         "data-[orientation=vertical]:in-[[data-slot=scroll-area]:not([data-overflow-y])]:hidden",
         "data-[orientation=horizontal]:in-[[data-slot=scroll-area]:not([data-overflow-x])]:hidden",
         "motion-reduce:transition-none!",
-        className
+        className,
       )}
       data-slot="scroll-area-scrollbar"
       orientation={orientation}

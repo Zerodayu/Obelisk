@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-import { cn } from "@/lib/utils";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,17 +13,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 export const AlertDialog = (props: React.ComponentProps<typeof Dialog>) => (
   <Dialog data-slot="alert-dialog-root" role="alertdialog" {...props} />
 );
 
 export const AlertDialogTrigger = (
-  props: React.ComponentProps<typeof DialogTrigger>
+  props: React.ComponentProps<typeof DialogTrigger>,
 ) => <DialogTrigger data-slot="alert-dialog-trigger" {...props} />;
 
 export const AlertDialogContent = (
-  props: React.ComponentProps<typeof DialogContent>
+  props: React.ComponentProps<typeof DialogContent>,
 ) => (
   <DialogContent
     data-slot="alert-dialog-content"
@@ -34,7 +34,7 @@ export const AlertDialogContent = (
 );
 
 export const AlertDialogBody = (
-  props: React.ComponentProps<typeof DialogBody>
+  props: React.ComponentProps<typeof DialogBody>,
 ) => {
   const { className, ...rest } = props;
 
@@ -42,7 +42,7 @@ export const AlertDialogBody = (
     <DialogBody
       className={cn(
         "in-[[data-slot=alert-dialog-content]:has([data-slot=alert-dialog-header])]:pt-0",
-        className
+        className,
       )}
       data-slot="alert-dialog-body"
       {...rest}
@@ -51,23 +51,23 @@ export const AlertDialogBody = (
 };
 
 export const AlertDialogHeader = (
-  props: React.ComponentProps<typeof DialogHeader>
+  props: React.ComponentProps<typeof DialogHeader>,
 ) => <DialogHeader data-slot="alert-dialog-header" {...props} />;
 
 export const AlertDialogTitle = (
-  props: React.ComponentProps<typeof DialogTitle>
+  props: React.ComponentProps<typeof DialogTitle>,
 ) => <DialogTitle data-slot="alert-dialog-title" {...props} />;
 
 export const AlertDialogDescription = (
-  props: React.ComponentProps<typeof DialogDescription>
+  props: React.ComponentProps<typeof DialogDescription>,
 ) => <DialogDescription data-slot="alert-dialog-description" {...props} />;
 
 export const AlertDialogClose = (
-  props: React.ComponentProps<typeof DialogClose>
+  props: React.ComponentProps<typeof DialogClose>,
 ) => <DialogClose data-slot="alert-dialog-close" {...props} />;
 
 export const AlertDialogFooter = (
-  props: React.ComponentProps<typeof DialogFooter>
+  props: React.ComponentProps<typeof DialogFooter>,
 ) => <DialogFooter data-slot="alert-dialog-footer" {...props} />;
 
 interface AlertDialogActionProps

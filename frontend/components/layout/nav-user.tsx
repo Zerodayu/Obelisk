@@ -38,7 +38,7 @@ function initials(name: string): string {
 export function NavUser({ user }: { user: ApiUser }) {
   const { isMobile } = useSidebar();
   const displayName = user.name || user.email;
-  const logout = () => signOut()
+  const logout = () => signOut();
 
   return (
     <SidebarMenu>

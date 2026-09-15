@@ -118,10 +118,7 @@ export async function saveCohortAnnotations(
   } catch (err) {
     return {
       ok: false,
-      error: errorMessage(
-        err,
-        "Failed to save annotations. Please try again.",
-      ),
+      error: errorMessage(err, "Failed to save annotations. Please try again."),
     };
   }
 }

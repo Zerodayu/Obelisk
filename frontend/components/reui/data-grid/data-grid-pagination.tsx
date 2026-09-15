@@ -236,4 +236,3 @@ function DataGridPagination(props: DataGridPaginationProps): JSX.Element {
 }
 
 export { DataGridPagination, type DataGridPaginationProps };
-

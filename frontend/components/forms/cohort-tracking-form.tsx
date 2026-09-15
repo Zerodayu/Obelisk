@@ -1,20 +1,19 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast, toastError } from "@/components/ui/toast";
 import {
   generateCohortTracking,
   saveCohortAnnotations,
@@ -142,7 +141,8 @@ export function CohortTrackingForm() {
         <FrameHeader>
           <FrameTitle>Generate Cohort Tracking Sheet</FrameTitle>
           <FrameDescription>
-            Track longitudinal CLO/PLO attainment across year-level cohorts and terms.
+            Track longitudinal CLO/PLO attainment across year-level cohorts and
+            terms.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -164,7 +164,10 @@ export function CohortTrackingForm() {
               />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim()}
+              >
                 {loading ? "Generating..." : "Generate"}
               </Button>
             </div>
@@ -180,7 +183,8 @@ export function CohortTrackingForm() {
         <FrameHeader>
           <FrameTitle>{payload.program.name}</FrameTitle>
           <FrameDescription>
-            Cohort tracking · Generated {new Date(payload.generatedAt).toLocaleString()}
+            Cohort tracking · Generated{" "}
+            {new Date(payload.generatedAt).toLocaleString()}
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -190,7 +194,11 @@ export function CohortTrackingForm() {
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-4">Year</th>
                   {payload.lines[0]?.terms.map((t) => (
-                    <th key={t.termId} className="py-2 pr-4 text-center" colSpan={3}>
+                    <th
+                      key={t.termId}
+                      className="py-2 pr-4 text-center"
+                      colSpan={3}
+                    >
                       {t.termId}
                     </th>
                   ))}
@@ -217,17 +225,25 @@ export function CohortTrackingForm() {
                     {line.terms.map((t) => (
                       <React.Fragment key={t.termId}>
                         <td className="py-2 pr-2 text-right">
-                          {t.cloAttainmentPct !== null ? `${t.cloAttainmentPct.toFixed(1)}%` : "—"}
+                          {t.cloAttainmentPct !== null
+                            ? `${t.cloAttainmentPct.toFixed(1)}%`
+                            : "—"}
                         </td>
                         <td className="py-2 pr-2 text-right">
-                          {t.ploAttainmentPct !== null ? `${t.ploAttainmentPct.toFixed(1)}%` : "—"}
+                          {t.ploAttainmentPct !== null
+                            ? `${t.ploAttainmentPct.toFixed(1)}%`
+                            : "—"}
                         </td>
                         <td className="py-2 pr-2">{levelBadge(t.level)}</td>
                       </React.Fragment>
                     ))}
-                    <td className="py-2 pr-2 text-center">{trendIcon(line.trend)}</td>
                     <td className="py-2 pr-2 text-center">
-                      {line.cqiTriggered && <Badge variant="destructive">CQI</Badge>}
+                      {trendIcon(line.trend)}
+                    </td>
+                    <td className="py-2 pr-2 text-center">
+                      {line.cqiTriggered && (
+                        <Badge variant="destructive">CQI</Badge>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -249,15 +265,22 @@ export function CohortTrackingForm() {
           <FramePanel>
             <div className="space-y-3">
               {annotations.map((ann, idx) => (
-                <div key={idx} className="grid gap-2 sm:grid-cols-[100px_80px_80px_1fr_auto] items-start">
+                <div
+                  key={idx}
+                  className="grid gap-2 sm:grid-cols-[100px_80px_80px_1fr_auto] items-start"
+                >
                   <div className="text-sm font-medium pt-2">
                     {ann.yearLevel ? `Y${ann.yearLevel}` : "All"}
                   </div>
-                  <div className="text-sm text-muted-foreground pt-2">{ann.termId}</div>
+                  <div className="text-sm text-muted-foreground pt-2">
+                    {ann.termId}
+                  </div>
                   <div className="text-sm font-medium pt-2">{ann.cloCode}</div>
                   <Textarea
                     value={ann.followUp}
-                    onChange={(e) => updateAnnotation(idx, "followUp", e.target.value)}
+                    onChange={(e) =>
+                      updateAnnotation(idx, "followUp", e.target.value)
+                    }
                     placeholder="Follow-up notes..."
                     rows={2}
                   />
@@ -265,7 +288,9 @@ export function CohortTrackingForm() {
                     <input
                       type="checkbox"
                       checked={ann.cqiFlag ?? false}
-                      onChange={(e) => updateAnnotation(idx, "cqiFlag", e.target.checked)}
+                      onChange={(e) =>
+                        updateAnnotation(idx, "cqiFlag", e.target.checked)
+                      }
                       className="rounded border-input"
                     />
                     CQI Flag
@@ -278,7 +303,14 @@ export function CohortTrackingForm() {
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setAnnotations([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setAnnotations([]);
+          }}
+        >
           Generate Another
         </Button>
         {annotations.length > 0 && (

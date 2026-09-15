@@ -1,5 +1,5 @@
-import { FormPlaceholder } from "@/components/forms/form-placeholder";
 import { CurriculumMapForm } from "@/components/forms/curriculum-map-form";
+import { FormPlaceholder } from "@/components/forms/form-placeholder";
 
 export default function CurriculumMapPage() {
   return (

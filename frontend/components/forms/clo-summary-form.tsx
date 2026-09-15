@@ -1,19 +1,18 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { toast, toastError } from "@/components/ui/toast";
 import { generateCloSummary } from "@/server/actions/rollup";
 
 interface CloSummaryRow {
@@ -86,7 +85,8 @@ export function CloSummaryForm() {
         <FrameHeader>
           <FrameTitle>Generate CLO Attainment Summary</FrameTitle>
           <FrameDescription>
-            Compute per-CLO attainment for a class section using Direct × 70% + Indirect × 30%.
+            Compute per-CLO attainment for a class section using Direct × 70% +
+            Indirect × 30%.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -99,7 +99,10 @@ export function CloSummaryForm() {
                 placeholder="e.g. clx_abc123"
               />
             </Field>
-            <Button onClick={handleGenerate} disabled={loading || !classSectionId.trim()}>
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || !classSectionId.trim()}
+            >
               {loading ? "Generating..." : "Generate"}
             </Button>
           </div>
@@ -113,9 +116,12 @@ export function CloSummaryForm() {
       {/* Summary header */}
       <Frame>
         <FrameHeader>
-          <FrameTitle>{payload.course.code} — {payload.course.title}</FrameTitle>
+          <FrameTitle>
+            {payload.course.code} — {payload.course.title}
+          </FrameTitle>
           <FrameDescription>
-            {payload.sectionCode} · {payload.program.name} · {payload.term.schoolYear} {payload.term.semester}
+            {payload.sectionCode} · {payload.program.name} ·{" "}
+            {payload.term.schoolYear} {payload.term.semester}
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -123,7 +129,9 @@ export function CloSummaryForm() {
             <div>
               <span className="text-xs text-muted-foreground">Average</span>
               <p className="text-lg font-semibold">
-                {payload.summary.averagePct !== null ? `${payload.summary.averagePct.toFixed(1)}%` : "—"}
+                {payload.summary.averagePct !== null
+                  ? `${payload.summary.averagePct.toFixed(1)}%`
+                  : "—"}
               </p>
             </div>
             <div>
@@ -131,14 +139,18 @@ export function CloSummaryForm() {
               <p>{levelBadge(payload.summary.level)}</p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground">CLOs Below 70%</span>
+              <span className="text-xs text-muted-foreground">
+                CLOs Below 70%
+              </span>
               <p className="text-lg font-semibold text-destructive">
                 {payload.summary.belowCount} / {payload.summary.totalCount}
               </p>
             </div>
             <div>
               <span className="text-xs text-muted-foreground">Generated</span>
-              <p className="text-sm">{new Date(payload.generatedAt).toLocaleString()}</p>
+              <p className="text-sm">
+                {new Date(payload.generatedAt).toLocaleString()}
+              </p>
             </div>
           </div>
         </FramePanel>
@@ -166,7 +178,9 @@ export function CloSummaryForm() {
                   <tr key={row.cloCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.cloCode}</td>
                     <td className="py-2 pr-4 text-right">
-                      {row.examPct !== null ? `${row.examPct.toFixed(1)}%` : "—"}
+                      {row.examPct !== null
+                        ? `${row.examPct.toFixed(1)}%`
+                        : "—"}
                     </td>
                     <td className="py-2 pr-4 text-right">
                       {row.atPct !== null ? `${row.atPct.toFixed(1)}%` : "—"}
@@ -175,14 +189,22 @@ export function CloSummaryForm() {
                       {row.tlaPct !== null ? `${row.tlaPct.toFixed(1)}%` : "—"}
                     </td>
                     <td className="py-2 pr-4 text-right">
-                      {row.outputPct !== null ? `${row.outputPct.toFixed(1)}%` : "—"}
+                      {row.outputPct !== null
+                        ? `${row.outputPct.toFixed(1)}%`
+                        : "—"}
                     </td>
                     <td className="py-2 pr-4 text-right font-medium">
-                      {row.weightedAvgPct !== null ? `${row.weightedAvgPct.toFixed(1)}%` : "—"}
+                      {row.weightedAvgPct !== null
+                        ? `${row.weightedAvgPct.toFixed(1)}%`
+                        : "—"}
                     </td>
                     <td className="py-2 pr-4">{levelBadge(row.level)}</td>
                     <td className="py-2 pr-4">
-                      <Badge variant={row.status === "MET" ? "success" : "destructive"}>
+                      <Badge
+                        variant={
+                          row.status === "MET" ? "success" : "destructive"
+                        }
+                      >
                         {row.status}
                       </Badge>
                     </td>

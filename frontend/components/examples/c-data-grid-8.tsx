@@ -1,51 +1,46 @@
-"use client"
+"use client";
 
 // This file keeps "use no memo": its own cell/header templates read state
 // through builder calls on a stable row/column, which React Compiler cannot
 // see. The primitive wraps its own such reads in TanStack's Subscribe; a
 // consumer template has to opt out or subscribe itself.
-"use no memo"
+"use no memo";
 
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/reui/badge"
+import {
+  type ColumnDef,
+  type PaginationState,
+  type SortingState,
+  useTable,
+} from "@tanstack/react-table";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/reui/badge";
 import {
   DataGrid,
   DataGridContainer,
-  dataGridFeatures,
   type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import {
-  ColumnDef,
-  PaginationState,
-  SortingState,
-  useTable,
-} from "@tanstack/react-table"
-
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { ChevronUpIcon, ChevronDownIcon } from "lucide-react"
+  dataGridFeatures,
+} from "@/components/reui/data-grid/data-grid";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 interface IData {
-  id: string
-  name: string
-  availability: "online" | "away" | "busy" | "offline"
-  avatar: string
-  status: "active" | "inactive"
-  flag: string // Emoji flags
-  email: string
-  company: string
-  role: string
-  joined: string
-  location: string
-  balance: number
-  details: string // New field
+  id: string;
+  name: string;
+  availability: "online" | "away" | "busy" | "offline";
+  avatar: string;
+  status: "active" | "inactive";
+  flag: string; // Emoji flags
+  email: string;
+  company: string;
+  role: string;
+  joined: string;
+  location: string;
+  balance: number;
+  details: string; // New field
 }
 
 const demoData: IData[] = [
@@ -253,16 +248,16 @@ const demoData: IData[] = [
     details:
       "Sarah manages international sales for Tata's industrial and automotive products.",
   },
-]
+];
 
 export function Pattern() {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 5,
-  })
+  });
   const [sorting, setSorting] = useState<SortingState>([
     { id: "name", desc: true },
-  ])
+  ]);
 
   const columns = useMemo<ColumnDef<DataGridFeatures, IData>[]>(
     () => [
@@ -285,7 +280,7 @@ export function Pattern() {
                 <ChevronDownIcon aria-hidden="true" />
               )}
             </Button>
-          ) : null
+          ) : null;
         },
         size: 25,
         meta: {
@@ -322,7 +317,7 @@ export function Pattern() {
                 {row.original.name}
               </a>
             </div>
-          )
+          );
         },
         size: 150,
         enableSorting: true,
@@ -367,19 +362,19 @@ export function Pattern() {
         id: "status",
         header: "Status",
         cell: ({ row }) => {
-          const status = row.original.status
+          const status = row.original.status;
 
           if (status == "active") {
-            return <Badge variant="success-outline">Approved</Badge>
+            return <Badge variant="success-outline">Approved</Badge>;
           } else {
-            return <Badge variant="warning-outline">Pending</Badge>
+            return <Badge variant="warning-outline">Pending</Badge>;
           }
         },
         size: 100,
       },
     ],
-    []
-  )
+    [],
+  );
 
   const table = useTable({
     features: dataGridFeatures,
@@ -394,7 +389,7 @@ export function Pattern() {
     },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
-  })
+  });
 
   return (
     <DataGrid
@@ -411,5 +406,5 @@ export function Pattern() {
         <DataGridPagination />
       </div>
     </DataGrid>
-  )
+  );
 }

@@ -1,20 +1,19 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast, toastError } from "@/components/ui/toast";
 import {
   generatePloGapAnalysis,
   savePloGapAnalysis,
@@ -134,7 +133,8 @@ export function PloGapAnalysisForm() {
         <FrameHeader>
           <FrameTitle>Generate PLO Gap Analysis</FrameTitle>
           <FrameDescription>
-            Identify NOT-MET PLO-cohort combinations and assign root-cause categories.
+            Identify NOT-MET PLO-cohort combinations and assign root-cause
+            categories.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -156,7 +156,10 @@ export function PloGapAnalysisForm() {
               />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Generating..." : "Generate"}
               </Button>
             </div>
@@ -173,7 +176,8 @@ export function PloGapAnalysisForm() {
         <FrameHeader>
           <FrameTitle>{payload.program.name} — Gap Analysis</FrameTitle>
           <FrameDescription>
-            {payload.term.schoolYear} {payload.term.semester} · {payload.gapRows.length} gap(s) identified
+            {payload.term.schoolYear} {payload.term.semester} ·{" "}
+            {payload.gapRows.length} gap(s) identified
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -196,20 +200,40 @@ export function PloGapAnalysisForm() {
                   <tr key={plo.ploCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{plo.ploCode}</td>
                     <td className="py-2 pr-4 text-right">
-                      {plo.programAvgPct !== null ? `${plo.programAvgPct.toFixed(1)}%` : "—"}
+                      {plo.programAvgPct !== null
+                        ? `${plo.programAvgPct.toFixed(1)}%`
+                        : "—"}
                     </td>
                     <td className="py-2 pr-4">
-                      <Badge variant={plo.status === "all_met" ? "success" : plo.status === "partial" ? "warning" : "destructive"}>
-                        {plo.status === "all_met" ? "ALL MET" : plo.status === "partial" ? "PARTIAL" : "NOT MET"}
+                      <Badge
+                        variant={
+                          plo.status === "all_met"
+                            ? "success"
+                            : plo.status === "partial"
+                              ? "warning"
+                              : "destructive"
+                        }
+                      >
+                        {plo.status === "all_met"
+                          ? "ALL MET"
+                          : plo.status === "partial"
+                            ? "PARTIAL"
+                            : "NOT MET"}
                       </Badge>
                     </td>
                     {plo.cohorts.map((c) => (
                       <td key={c.yearLevel} className="py-2 pr-4 text-right">
                         {c.attainedPct !== null ? (
-                          <span className={c.achieved ? "" : "text-destructive font-medium"}>
+                          <span
+                            className={
+                              c.achieved ? "" : "text-destructive font-medium"
+                            }
+                          >
                             {c.attainedPct.toFixed(1)}%
                           </span>
-                        ) : "—"}
+                        ) : (
+                          "—"
+                        )}
                       </td>
                     ))}
                   </tr>
@@ -230,7 +254,9 @@ export function PloGapAnalysisForm() {
         </FrameHeader>
         <FramePanel>
           {gapRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No gaps — all PLOs met target.</p>
+            <p className="text-sm text-muted-foreground">
+              No gaps — all PLOs met target.
+            </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -252,7 +278,9 @@ export function PloGapAnalysisForm() {
                       <td className="py-1 pr-2 font-medium">{row.ploCode}</td>
                       <td className="py-1 pr-2">Y{row.cohortYear}</td>
                       <td className="py-1 pr-2 text-right text-destructive">
-                        {row.attainedPct !== null ? `${row.attainedPct.toFixed(1)}%` : "—"}
+                        {row.attainedPct !== null
+                          ? `${row.attainedPct.toFixed(1)}%`
+                          : "—"}
                       </td>
                       <td className="py-1 pr-2 text-right">{row.targetPct}%</td>
                       <td className="py-1 pr-2 text-right font-medium text-destructive">
@@ -261,18 +289,32 @@ export function PloGapAnalysisForm() {
                       <td className="py-1 pr-2">
                         <select
                           value={row.rootCauseCategory}
-                          onChange={(e) => updateGapRow(idx, "rootCauseCategory", e.target.value)}
+                          onChange={(e) =>
+                            updateGapRow(
+                              idx,
+                              "rootCauseCategory",
+                              e.target.value,
+                            )
+                          }
                           className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
                         >
                           {ROOT_CAUSES.map((rc) => (
-                            <option key={rc} value={rc}>{rc}</option>
+                            <option key={rc} value={rc}>
+                              {rc}
+                            </option>
                           ))}
                         </select>
                       </td>
                       <td className="py-1 pr-2">
                         <Input
                           value={row.rootCauseAnalysis}
-                          onChange={(e) => updateGapRow(idx, "rootCauseAnalysis", e.target.value)}
+                          onChange={(e) =>
+                            updateGapRow(
+                              idx,
+                              "rootCauseAnalysis",
+                              e.target.value,
+                            )
+                          }
                           className="h-8 text-xs"
                           placeholder="Analysis..."
                         />
@@ -280,7 +322,9 @@ export function PloGapAnalysisForm() {
                       <td className="py-1 pr-2">
                         <Input
                           value={row.namedOwner}
-                          onChange={(e) => updateGapRow(idx, "namedOwner", e.target.value)}
+                          onChange={(e) =>
+                            updateGapRow(idx, "namedOwner", e.target.value)
+                          }
                           className="h-8 w-28 text-xs"
                           placeholder="Owner"
                         />
@@ -295,7 +339,14 @@ export function PloGapAnalysisForm() {
       </Frame>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setGapRows([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setGapRows([]);
+          }}
+        >
           Generate Another
         </Button>
         {gapRows.length > 0 && (

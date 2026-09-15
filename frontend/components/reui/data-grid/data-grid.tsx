@@ -1,7 +1,14 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useEffect, useMemo, useRef } from "react"
-import type { ReactNode } from "react"
+import type {
+  Column,
+  ColumnFiltersState,
+  ReactTable,
+  RowData,
+  SortingState,
+  Table,
+  TableFeatures,
+} from "@tanstack/react-table";
 import {
   columnFacetingFeature,
   columnFilteringFeature,
@@ -30,18 +37,11 @@ import {
   sortFn_text,
   sortFn_textCaseSensitive,
   tableFeatures,
-} from "@tanstack/react-table"
-import type {
-  Column,
-  ColumnFiltersState,
-  ReactTable,
-  RowData,
-  SortingState,
-  Table,
-  TableFeatures,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
+import type { ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef } from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 /**
  * Per-column extras the grid reads off `columnDef.meta`.
@@ -52,12 +52,12 @@ import { cn } from "@/lib/utils"
  * table in the consuming app.
  */
 export interface DataGridColumnMeta<TData> {
-  headerTitle?: string
-  headerClassName?: string
-  cellClassName?: string
-  skeleton?: ReactNode
-  expandedContent?: (row: TData) => ReactNode
-  autoSize?: boolean
+  headerTitle?: string;
+  headerClassName?: string;
+  cellClassName?: string;
+  skeleton?: ReactNode;
+  expandedContent?: (row: TData) => ReactNode;
+  autoSize?: boolean;
 }
 
 /**
@@ -127,10 +127,10 @@ export const dataGridFeatures = tableFeatures({
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columnMeta: metaHelper<DataGridColumnMeta<any>>(),
-})
+});
 
 /** The feature set `dataGridFeatures` registers. */
-export type DataGridFeatures = typeof dataGridFeatures
+export type DataGridFeatures = typeof dataGridFeatures;
 
 /**
  * The grid's internal view of the table.
@@ -145,35 +145,35 @@ export type DataGridFeatures = typeof dataGridFeatures
 export type DataGridTableInstance<TData extends object> = ReactTable<
   DataGridFeatures,
   TData
->
+>;
 
 /** Label for headers / column visibility: `meta.headerTitle`, string `columnDef.header`, or `column.id`. */
 export function getColumnHeaderLabel<TData extends RowData, TValue>(
-  column: Column<DataGridFeatures, TData, TValue>
+  column: Column<DataGridFeatures, TData, TValue>,
 ): string {
-  const meta = column.columnDef.meta as { headerTitle?: string } | undefined
-  if (typeof meta?.headerTitle === "string") return meta.headerTitle
-  const defHeader = column.columnDef.header
-  if (typeof defHeader === "string") return defHeader
-  return String(column.id)
+  const meta = column.columnDef.meta as { headerTitle?: string } | undefined;
+  if (typeof meta?.headerTitle === "string") return meta.headerTitle;
+  const defHeader = column.columnDef.header;
+  if (typeof defHeader === "string") return defHeader;
+  return String(column.id);
 }
 
 export type DataGridApiFetchParams = {
-  pageIndex: number
-  pageSize: number
-  sorting?: SortingState
-  filters?: ColumnFiltersState
-  searchQuery?: string
-}
+  pageIndex: number;
+  pageSize: number;
+  sorting?: SortingState;
+  filters?: ColumnFiltersState;
+  searchQuery?: string;
+};
 
 export type DataGridApiResponse<T> = {
-  data: T[]
-  empty: boolean
+  data: T[];
+  empty: boolean;
   pagination: {
-    total: number
-    page: number
-  }
-}
+    total: number;
+    page: number;
+  };
+};
 
 /**
  * Everything `<DataGrid>` accepts except the two props the provider consumes
@@ -183,18 +183,18 @@ export type DataGridApiResponse<T> = {
 export type DataGridLayoutProps<TData extends object> = Omit<
   DataGridProps<TableFeatures, TData>,
   "table" | "children"
->
+>;
 
 export interface DataGridContextProps<TData extends object> {
-  props: DataGridLayoutProps<TData>
-  table: DataGridTableInstance<TData>
-  recordCount: number
-  isLoading: boolean
+  props: DataGridLayoutProps<TData>;
+  table: DataGridTableInstance<TData>;
+  recordCount: number;
+  isLoading: boolean;
   /**
    * Internal coordinator for `meta.autoSize` columns. Lives at the core level
    * so every table variant and viewport instance shares one application state.
    */
-  autoSize?: DataGridAutoSizeController
+  autoSize?: DataGridAutoSizeController;
 }
 
 export type DataGridAutoSizeController = {
@@ -203,8 +203,8 @@ export type DataGridAutoSizeController = {
    * Applies at most once per column id; safe to call from every viewport
    * measurement. Returns true when a sizing update was dispatched.
    */
-  apply: (fillWidth: number) => boolean
-}
+  apply: (fillWidth: number) => boolean;
+};
 
 function createDataGridAutoSizeController<TData extends object>(
   /**
@@ -217,32 +217,32 @@ function createDataGridAutoSizeController<TData extends object>(
    * applied-once guard re-armed on every measurement, and the fill overwrote
    * whatever width the user had just dragged the column to.
    */
-  getTable: () => DataGridTableInstance<TData>
+  getTable: () => DataGridTableInstance<TData>,
 ): DataGridAutoSizeController {
-  let applied: { columnId: string; base: number; grown: number } | null = null
+  let applied: { columnId: string; base: number; grown: number } | null = null;
 
   return {
     apply(fillWidth: number) {
-      const table = getTable()
-      const columnSizing = table.state.columnSizing
+      const table = getTable();
+      const columnSizing = table.state.columnSizing;
 
       // Re-arm after reset flows (double-click resetSize, resetColumnSizing,
       // controlled state replacement) so the column re-fills instead of
       // leaving a dead blank strip.
       if (applied && columnSizing[applied.columnId] === undefined) {
-        applied = null
+        applied = null;
       }
 
-      if (fillWidth <= 0) return false
+      if (fillWidth <= 0) return false;
 
       const autoSizeColumn = table
         .getVisibleLeafColumns()
         .find(
-          (column) => column.columnDef.meta?.autoSize && column.getCanResize()
-        )
+          (column) => column.columnDef.meta?.autoSize && column.getCanResize(),
+        );
 
       if (!autoSizeColumn || applied?.columnId === autoSizeColumn.id) {
-        return false
+        return false;
       }
 
       // A width this coordinator did not write belongs to someone else -
@@ -256,9 +256,9 @@ function createDataGridAutoSizeController<TData extends object>(
       // (a remount, a new table store) forgets what it did, and the guard has
       // to survive that. An explicit reset clears the entry and re-arms the
       // fill, which is what makes double-click-to-reset still work.
-      const currentSize = columnSizing[autoSizeColumn.id]
+      const currentSize = columnSizing[autoSizeColumn.id];
       if (currentSize !== undefined && currentSize !== applied?.grown) {
-        return false
+        return false;
       }
 
       // Candidate switched (e.g. the grown column was hidden and another
@@ -268,82 +268,82 @@ function createDataGridAutoSizeController<TData extends object>(
       const revert =
         applied && columnSizing[applied.columnId] === applied.grown
           ? applied
-          : null
-      const base = columnSizing[autoSizeColumn.id] ?? autoSizeColumn.getSize()
-      const grown = base + fillWidth
+          : null;
+      const base = columnSizing[autoSizeColumn.id] ?? autoSizeColumn.getSize();
+      const grown = base + fillWidth;
 
-      applied = { columnId: autoSizeColumn.id, base, grown }
+      applied = { columnId: autoSizeColumn.id, base, grown };
       table.setColumnSizing((old) => {
-        const next = { ...old, [autoSizeColumn.id]: grown }
+        const next = { ...old, [autoSizeColumn.id]: grown };
         if (revert && next[revert.columnId] === revert.grown) {
-          next[revert.columnId] = revert.base
+          next[revert.columnId] = revert.base;
         }
-        return next
-      })
+        return next;
+      });
 
-      return true
+      return true;
     },
-  }
+  };
 }
 
 export type DataGridRequestParams = {
-  pageIndex: number
-  pageSize: number
-  sorting?: SortingState
-  columnFilters?: ColumnFiltersState
-}
+  pageIndex: number;
+  pageSize: number;
+  sorting?: SortingState;
+  columnFilters?: ColumnFiltersState;
+};
 
 export interface DataGridProps<
   TFeatures extends TableFeatures,
   TData extends object,
 > {
-  className?: string
-  table?: Table<TFeatures, TData>
-  recordCount: number
-  children?: ReactNode
-  onRowClick?: (row: TData) => void
-  isLoading?: boolean
-  loadingMode?: "skeleton" | "spinner"
-  loadingMessage?: ReactNode | string
-  fetchingMoreMessage?: ReactNode | string
-  allRowsLoadedMessage?: ReactNode | string
-  emptyMessage?: ReactNode | string
+  className?: string;
+  table?: Table<TFeatures, TData>;
+  recordCount: number;
+  children?: ReactNode;
+  onRowClick?: (row: TData) => void;
+  isLoading?: boolean;
+  loadingMode?: "skeleton" | "spinner";
+  loadingMessage?: ReactNode | string;
+  fetchingMoreMessage?: ReactNode | string;
+  allRowsLoadedMessage?: ReactNode | string;
+  emptyMessage?: ReactNode | string;
   tableLayout?: {
-    dense?: boolean
-    cellBorder?: boolean
-    rowBorder?: boolean
-    rowRounded?: boolean
-    stripped?: boolean
-    headerBackground?: boolean
-    footerBackground?: boolean
-    headerBorder?: boolean
-    headerSticky?: boolean
-    width?: "auto" | "fixed"
-    columnsVisibility?: boolean
-    columnsResizable?: boolean
-    columnsResizeMode?: "onChange" | "onEnd"
-    columnsPinnable?: boolean
-    columnsMovable?: boolean
-    columnsDraggable?: boolean
-    rowsDraggable?: boolean
-    rowsPinnable?: boolean
-  }
+    dense?: boolean;
+    cellBorder?: boolean;
+    rowBorder?: boolean;
+    rowRounded?: boolean;
+    stripped?: boolean;
+    headerBackground?: boolean;
+    footerBackground?: boolean;
+    headerBorder?: boolean;
+    headerSticky?: boolean;
+    width?: "auto" | "fixed";
+    columnsVisibility?: boolean;
+    columnsResizable?: boolean;
+    columnsResizeMode?: "onChange" | "onEnd";
+    columnsPinnable?: boolean;
+    columnsMovable?: boolean;
+    columnsDraggable?: boolean;
+    rowsDraggable?: boolean;
+    rowsPinnable?: boolean;
+  };
   tableClassNames?: {
-    base?: string
-    header?: string
-    headerRow?: string
-    headerSticky?: string
-    body?: string
-    bodyRow?: string
-    footer?: string
-    edgeCell?: string
-  }
+    base?: string;
+    header?: string;
+    headerRow?: string;
+    headerSticky?: string;
+    body?: string;
+    bodyRow?: string;
+    footer?: string;
+    edgeCell?: string;
+  };
 }
 
 const DataGridContext = createContext<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   DataGridContextProps<any> | undefined
->(undefined)
+>(undefined);
 
 /**
  * Reads the grid context. Pass `TData` from the calling component when the
@@ -357,11 +357,11 @@ function useDataGrid<
 >(): DataGridContextProps<TData> {
   const context = useContext(DataGridContext) as
     | DataGridContextProps<TData>
-    | undefined
+    | undefined;
   if (!context) {
-    throw new Error("useDataGrid must be used within a DataGridProvider")
+    throw new Error("useDataGrid must be used within a DataGridProvider");
   }
-  return context
+  return context;
 }
 
 function DataGridProvider<TData extends object>({
@@ -369,23 +369,23 @@ function DataGridProvider<TData extends object>({
   table,
   ...props
 }: DataGridLayoutProps<TData> & {
-  table: DataGridTableInstance<TData>
-  children?: ReactNode
+  table: DataGridTableInstance<TData>;
+  children?: ReactNode;
 }) {
   // Latest-props ref: context reads always resolve fresh props through the
   // getter below without the memoized context value depending on unstable
   // ReactNode/function prop identities (inline emptyMessage/onRowClick would
   // otherwise publish a new context value on every consumer render - at
   // mousemove rate during a resize drag, piercing the body-rows memo).
-  const propsRef = useRef(props)
-  propsRef.current = props
+  const propsRef = useRef(props);
+  propsRef.current = props;
 
   // Same treatment for the table itself, which v9 - unlike v8 - re-creates on
   // every state change. Depending on it directly would republish the context
   // on each resize tick, which is exactly what the memo below exists to
   // prevent; the getter still hands every consumer the current instance.
-  const tableRef = useRef(table)
-  tableRef.current = table
+  const tableRef = useRef(table);
+  tableRef.current = table;
 
   // Re-assert an explicit tableLayout resize mode so consumer-level useTable
   // options cannot flip it back between drags. v9 makes `table.options`
@@ -395,13 +395,13 @@ function DataGridProvider<TData extends object>({
   const resizeMode =
     props.tableLayout?.columnsResizable && props.tableLayout.columnsResizeMode
       ? props.tableLayout.columnsResizeMode
-      : undefined
+      : undefined;
 
   useEffect(() => {
-    if (!resizeMode) return
-    if (table.options.columnResizeMode === resizeMode) return
-    table.setOptions((old) => ({ ...old, columnResizeMode: resizeMode }))
-  }, [table, resizeMode])
+    if (!resizeMode) return;
+    if (table.options.columnResizeMode === resizeMode) return;
+    table.setOptions((old) => ({ ...old, columnResizeMode: resizeMode }));
+  }, [table, resizeMode]);
 
   // One autoSize coordinator per table instance so split header/body viewports
   // cannot apply the growth twice. Keyed on `table.store`, which v9 keeps
@@ -410,10 +410,10 @@ function DataGridProvider<TData extends object>({
   // controller with it would reset its applied-once bookkeeping mid-drag.
   const autoSize = useMemo(
     () => createDataGridAutoSizeController(() => tableRef.current),
-    [table.store]
-  )
+    [table.store],
+  );
 
-  const tableState = table.state
+  const tableState = table.state;
 
   // Memoize context value so consumers don't re-render during column resize.
   // Column sizing state is intentionally excluded from deps -- CSS variables
@@ -424,10 +424,10 @@ function DataGridProvider<TData extends object>({
   const value = useMemo(
     () => ({
       get props() {
-        return propsRef.current
+        return propsRef.current;
       },
       get table() {
-        return tableRef.current
+        return tableRef.current;
       },
       recordCount: props.recordCount,
       isLoading: props.isLoading || false,
@@ -454,8 +454,8 @@ function DataGridProvider<TData extends object>({
       tableState.columnOrder,
       tableState.columnPinning,
       tableState.globalFilter,
-    ]
-  )
+    ],
+  );
 
   return (
     // One React context serves every TData, but v9 declares both TFeatures and
@@ -467,7 +467,7 @@ function DataGridProvider<TData extends object>({
     >
       {children}
     </DataGridContext.Provider>
-  )
+  );
 }
 
 function DataGrid<TFeatures extends TableFeatures, TData extends object>({
@@ -511,7 +511,7 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       footer: "",
       edgeCell: "",
     },
-  }
+  };
 
   const mergedProps: DataGridProps<TFeatures, TData> = {
     ...defaultProps,
@@ -524,35 +524,35 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
       ...defaultProps.tableClassNames,
       ...(props.tableClassNames || {}),
     },
-  }
+  };
 
   // Ensure table is provided
   if (!table) {
-    throw new Error('DataGrid requires a "table" prop')
+    throw new Error('DataGrid requires a "table" prop');
   }
 
   // The single widening point. Consumers own the TanStack core and may hand
   // over any feature bundle; internals need a concrete one to resolve the
   // feature-gated APIs they call, and v9's invariant TFeatures rules out
   // expressing that with a generic constraint.
-  const internalTable = table as unknown as DataGridTableInstance<TData>
-  const internalProps = mergedProps as unknown as DataGridLayoutProps<TData>
+  const internalTable = table as unknown as DataGridTableInstance<TData>;
+  const internalProps = mergedProps as unknown as DataGridLayoutProps<TData>;
 
   return (
     <DataGridProvider table={internalTable} {...internalProps}>
       {children}
     </DataGridProvider>
-  )
+  );
 }
 
 function DataGridContainer({
   children,
   className,
 }: {
-  children: ReactNode
-  className?: string
+  children: ReactNode;
+  className?: string;
   /** Accepted for backwards compatibility; currently has no effect. */
-  border?: boolean
+  border?: boolean;
 }) {
   return (
     <div
@@ -561,7 +561,7 @@ function DataGridContainer({
     >
       {children}
     </div>
-  )
+  );
 }
 
-export { useDataGrid, DataGridProvider, DataGrid, DataGridContainer }
+export { useDataGrid, DataGridProvider, DataGrid, DataGridContainer };

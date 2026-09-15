@@ -1,20 +1,22 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
-import { initAssessmentCalendar, saveAssessmentCalendar } from "@/server/actions/plan";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { toast, toastError } from "@/components/ui/toast";
+import {
+  initAssessmentCalendar,
+  saveAssessmentCalendar,
+} from "@/server/actions/plan";
 
 interface CalendarEvent {
   id: string;
@@ -42,7 +44,9 @@ const SECTIONS = [
 ] as const;
 
 export function AssessmentCalendarForm() {
-  const [payload, setPayload] = useState<AssessmentCalendarPayload | null>(null);
+  const [payload, setPayload] = useState<AssessmentCalendarPayload | null>(
+    null,
+  );
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [programId, setProgramId] = useState("");
   const [termId, setTermId] = useState("");
@@ -61,9 +65,16 @@ export function AssessmentCalendarForm() {
         const p = result.data.payload as unknown as AssessmentCalendarPayload;
         setPayload(p);
         setEvents(p.events || []);
-        toast.create({ title: "Assessment calendar initialized", type: "success" });
+        toast.create({
+          title: "Assessment calendar initialized",
+          type: "success",
+        });
       } else {
-        toastError({ title: "Init failed", description: result.error, scope: "acal:generate" });
+        toastError({
+          title: "Init failed",
+          description: result.error,
+          scope: "acal:generate",
+        });
       }
     } finally {
       setLoading(false);
@@ -89,7 +100,11 @@ export function AssessmentCalendarForm() {
       if (result.ok) {
         toast.create({ title: "Calendar saved", type: "success" });
       } else {
-        toastError({ title: "Save failed", description: result.error, scope: "acal:save" });
+        toastError({
+          title: "Save failed",
+          description: result.error,
+          scope: "acal:save",
+        });
       }
     } finally {
       setSaving(false);
@@ -129,21 +144,33 @@ export function AssessmentCalendarForm() {
         <FrameHeader>
           <FrameTitle>Initialize Assessment Calendar</FrameTitle>
           <FrameDescription>
-            Set up the assessment calendar with 17 template events and add program-specific items.
+            Set up the assessment calendar with 17 template events and add
+            program-specific items.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
               <FieldLabel>Program ID</FieldLabel>
-              <Input value={programId} onChange={(e) => setProgramId(e.target.value)} placeholder="e.g. prog_cs" />
+              <Input
+                value={programId}
+                onChange={(e) => setProgramId(e.target.value)}
+                placeholder="e.g. prog_cs"
+              />
             </Field>
             <Field>
               <FieldLabel>Term ID</FieldLabel>
-              <Input value={termId} onChange={(e) => setTermId(e.target.value)} placeholder="e.g. 2025-2-s1" />
+              <Input
+                value={termId}
+                onChange={(e) => setTermId(e.target.value)}
+                placeholder="e.g. 2025-2-s1"
+              />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Initializing..." : "Initialize"}
               </Button>
             </div>
@@ -162,7 +189,8 @@ export function AssessmentCalendarForm() {
             <FrameHeader>
               <FrameTitle>{section.label}</FrameTitle>
               <FrameDescription>
-                {sectionEvents.filter((e) => e.isTemplate).length} templates · {sectionEvents.filter((e) => !e.isTemplate).length} custom
+                {sectionEvents.filter((e) => e.isTemplate).length} templates ·{" "}
+                {sectionEvents.filter((e) => !e.isTemplate).length} custom
               </FrameDescription>
             </FrameHeader>
             <FramePanel>
@@ -185,11 +213,19 @@ export function AssessmentCalendarForm() {
                         <tr key={event.id} className="border-b last:border-0">
                           <td className="py-1 pr-2">
                             {event.isTemplate ? (
-                              <span className="text-xs text-muted-foreground">{event.periodWeeks}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {event.periodWeeks}
+                              </span>
                             ) : (
                               <Input
                                 value={event.periodWeeks}
-                                onChange={(e) => updateEvent(globalIdx, "periodWeeks", e.target.value)}
+                                onChange={(e) =>
+                                  updateEvent(
+                                    globalIdx,
+                                    "periodWeeks",
+                                    e.target.value,
+                                  )
+                                }
                                 className="h-8 w-24 text-xs"
                                 placeholder="Weeks"
                               />
@@ -201,7 +237,13 @@ export function AssessmentCalendarForm() {
                             ) : (
                               <Input
                                 value={event.activity}
-                                onChange={(e) => updateEvent(globalIdx, "activity", e.target.value)}
+                                onChange={(e) =>
+                                  updateEvent(
+                                    globalIdx,
+                                    "activity",
+                                    e.target.value,
+                                  )
+                                }
                                 className="h-8 text-xs"
                               />
                             )}
@@ -211,12 +253,18 @@ export function AssessmentCalendarForm() {
                               {[1, 2, 3, 4].map((y) => (
                                 <Badge
                                   key={y}
-                                  variant={event.cohortYears.includes(y) ? "info" : "outline"}
+                                  variant={
+                                    event.cohortYears.includes(y)
+                                      ? "info"
+                                      : "outline"
+                                  }
                                   className="cursor-pointer text-[0.6rem]"
                                   onClick={() => {
                                     if (event.isTemplate) return;
                                     const yrs = event.cohortYears.includes(y)
-                                      ? event.cohortYears.filter((yr) => yr !== y)
+                                      ? event.cohortYears.filter(
+                                          (yr) => yr !== y,
+                                        )
                                       : [...event.cohortYears, y];
                                     updateEvent(globalIdx, "cohortYears", yrs);
                                   }}
@@ -228,11 +276,19 @@ export function AssessmentCalendarForm() {
                           </td>
                           <td className="py-1 pr-2">
                             {event.isTemplate ? (
-                              <span className="text-xs text-muted-foreground">{event.responsibleParty}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {event.responsibleParty}
+                              </span>
                             ) : (
                               <Input
                                 value={event.responsibleParty}
-                                onChange={(e) => updateEvent(globalIdx, "responsibleParty", e.target.value)}
+                                onChange={(e) =>
+                                  updateEvent(
+                                    globalIdx,
+                                    "responsibleParty",
+                                    e.target.value,
+                                  )
+                                }
                                 className="h-8 w-32 text-xs"
                               />
                             )}
@@ -242,7 +298,12 @@ export function AssessmentCalendarForm() {
                           </td>
                           <td className="py-1 pr-2">
                             {!event.isTemplate && (
-                              <Button variant="ghost" size="sm" onClick={() => removeEvent(globalIdx)} className="h-8 px-2 text-destructive">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeEvent(globalIdx)}
+                                className="h-8 px-2 text-destructive"
+                              >
                                 ✕
                               </Button>
                             )}
@@ -262,7 +323,14 @@ export function AssessmentCalendarForm() {
         <Button variant="outline" size="sm" onClick={addProgramEvent}>
           + Add Program Event
         </Button>
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setEvents([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setEvents([]);
+          }}
+        >
           Re-initialize
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving}>

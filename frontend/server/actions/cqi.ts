@@ -54,9 +54,7 @@ export async function savePloGapAnalysis(
     }[];
     programChairSummary?: string;
   },
-): Promise<
-  ActionResult<{ id: string; gapRows: Record<string, unknown>[] }>
-> {
+): Promise<ActionResult<{ id: string; gapRows: Record<string, unknown>[] }>> {
   try {
     const data = await actionApi.post<{
       id: string;
@@ -66,7 +64,10 @@ export async function savePloGapAnalysis(
   } catch (err) {
     return {
       ok: false,
-      error: errorMessage(err, "Failed to save gap analysis. Please try again."),
+      error: errorMessage(
+        err,
+        "Failed to save gap analysis. Please try again.",
+      ),
     };
   }
 }

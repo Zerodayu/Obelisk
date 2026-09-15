@@ -5,8 +5,8 @@ import {
   useProgressContext,
 } from "@ark-ui/react/progress";
 import type React from "react";
-import { cn } from "@/lib/utils";
 import { FieldLabel } from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 
 export const useProgress = useProgressContext;
 
@@ -42,7 +42,7 @@ export const Progress = (props: ProgressProps) => {
         "flex flex-wrap gap-3",
         "data-[orientation=horizontal]:w-full",
         "data-[orientation=vertical]:-scale-y-100",
-        className
+        className,
       )}
       data-slot="progress"
       orientation={orientation}
@@ -59,7 +59,7 @@ export const Progress = (props: ProgressProps) => {
 };
 
 export const ProgressTrack = (
-  props: React.ComponentProps<typeof ArkProgress.Track>
+  props: React.ComponentProps<typeof ArkProgress.Track>,
 ) => (
   <ArkProgress.Track
     className={cn(
@@ -67,7 +67,7 @@ export const ProgressTrack = (
       "rounded-full",
       "overflow-x-hidden",
       "data-[orientation=horizontal]:h-2 data-[orientation=horizontal]:w-full",
-      "data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2"
+      "data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2",
     )}
     data-slot="progress-track"
     {...props}
@@ -75,7 +75,7 @@ export const ProgressTrack = (
 );
 
 export const ProgressRange = (
-  props: React.ComponentProps<typeof ArkProgress.Range>
+  props: React.ComponentProps<typeof ArkProgress.Range>,
 ) => (
   <ArkProgress.Range
     className={cn(
@@ -84,7 +84,7 @@ export const ProgressRange = (
       "data-[orientation=horizontal]:h-full",
       "data-[orientation=vertical]:h-full",
       "motion-reduce:animate-none! motion-reduce:transition-none!",
-      "data-[state=indeterminate]:w-1/3 data-[state=indeterminate]:animate-indeterminate! data-[state=indeterminate]:duration-100"
+      "data-[state=indeterminate]:w-1/3 data-[state=indeterminate]:animate-indeterminate! data-[state=indeterminate]:duration-100",
     )}
     data-slot="progress-range"
     {...props}
@@ -92,11 +92,19 @@ export const ProgressRange = (
 );
 
 export const ProgressValue = (
-  props: React.ComponentProps<typeof ArkProgress.ValueText>
+  props: React.ComponentProps<typeof ArkProgress.ValueText>,
 ) => {
   const { className, ...rest } = props;
 
   return (
-    <FieldLabel render={<ArkProgress.ValueText className={cn("ms-auto tabular-nums", className)} data-slot="progress-value" {...rest} />}></FieldLabel>
+    <FieldLabel
+      render={
+        <ArkProgress.ValueText
+          className={cn("ms-auto tabular-nums", className)}
+          data-slot="progress-value"
+          {...rest}
+        />
+      }
+    ></FieldLabel>
   );
 };

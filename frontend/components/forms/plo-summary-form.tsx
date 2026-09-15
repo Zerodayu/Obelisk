@@ -1,19 +1,18 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { toast, toastError } from "@/components/ui/toast";
 import { generatePloSummary } from "@/server/actions/rollup";
 
 interface PloSummaryRow {
@@ -76,7 +75,8 @@ export function PloSummaryForm() {
         <FrameHeader>
           <FrameTitle>Generate PLO Attainment Summary</FrameTitle>
           <FrameDescription>
-            Aggregate CLO attainments into per-PLO scores across all sections in a program + term.
+            Aggregate CLO attainments into per-PLO scores across all sections in
+            a program + term.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -98,7 +98,10 @@ export function PloSummaryForm() {
               />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Generating..." : "Generate"}
               </Button>
             </div>
@@ -114,24 +117,35 @@ export function PloSummaryForm() {
         <FrameHeader>
           <FrameTitle>{payload.program.name}</FrameTitle>
           <FrameDescription>
-            {payload.term.schoolYear} {payload.term.semester} · {payload.feed.sections} sections · {payload.feed.fed} fed
+            {payload.term.schoolYear} {payload.term.semester} ·{" "}
+            {payload.feed.sections} sections · {payload.feed.fed} fed
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <span className="text-xs text-muted-foreground">Program Average</span>
+              <span className="text-xs text-muted-foreground">
+                Program Average
+              </span>
               <p className="text-lg font-semibold">
-                {payload.summary.averagePct !== null ? `${payload.summary.averagePct.toFixed(1)}%` : "—"}
+                {payload.summary.averagePct !== null
+                  ? `${payload.summary.averagePct.toFixed(1)}%`
+                  : "—"}
               </p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground">PLOs Below Target</span>
-              <p className="text-lg font-semibold text-destructive">{payload.summary.belowCount}</p>
+              <span className="text-xs text-muted-foreground">
+                PLOs Below Target
+              </span>
+              <p className="text-lg font-semibold text-destructive">
+                {payload.summary.belowCount}
+              </p>
             </div>
             <div>
               <span className="text-xs text-muted-foreground">Generated</span>
-              <p className="text-sm">{new Date(payload.generatedAt).toLocaleString()}</p>
+              <p className="text-sm">
+                {new Date(payload.generatedAt).toLocaleString()}
+              </p>
             </div>
           </div>
         </FramePanel>
@@ -157,12 +171,18 @@ export function PloSummaryForm() {
                 {payload.plos.map((row) => (
                   <tr key={row.ploCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.ploCode}</td>
-                    <td className="py-2 pr-4 max-w-[200px] truncate">{row.ploDescription}</td>
+                    <td className="py-2 pr-4 max-w-[200px] truncate">
+                      {row.ploDescription}
+                    </td>
                     <td className="py-2 pr-4 text-right">{row.targetPct}%</td>
                     <td className="py-2 pr-4 text-right font-medium">
-                      {row.attainedPct !== null ? `${row.attainedPct.toFixed(1)}%` : "—"}
+                      {row.attainedPct !== null
+                        ? `${row.attainedPct.toFixed(1)}%`
+                        : "—"}
                     </td>
-                    <td className="py-2 pr-4 text-right">{row.studentsBelow}</td>
+                    <td className="py-2 pr-4 text-right">
+                      {row.studentsBelow}
+                    </td>
                     <td className="py-2 pr-4">
                       <Badge variant={row.rule3Met ? "success" : "destructive"}>
                         {row.rule3Met ? "MET" : "NOT MET"}
@@ -173,7 +193,9 @@ export function PloSummaryForm() {
                         {row.achieved ? "ACHIEVED" : "NOT ACHIEVED"}
                       </Badge>
                     </td>
-                    <td className="py-2 pr-4 text-muted-foreground">{row.mappedClos.join(", ")}</td>
+                    <td className="py-2 pr-4 text-muted-foreground">
+                      {row.mappedClos.join(", ")}
+                    </td>
                   </tr>
                 ))}
               </tbody>

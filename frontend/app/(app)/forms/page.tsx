@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { requireUser } from "@/server/auth";
 import { navSectionsFor } from "@/config/navigation";
+import { requireUser } from "@/server/auth";
 
 /**
  * `/forms` index — lists the form groups the current role may access, derived

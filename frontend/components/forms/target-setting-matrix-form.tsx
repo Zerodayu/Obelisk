@@ -1,20 +1,22 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
-import { initTargetSettingMatrix, saveTargetSettingMatrix } from "@/server/actions/plan";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast, toastError } from "@/components/ui/toast";
+import {
+  initTargetSettingMatrix,
+  saveTargetSettingMatrix,
+} from "@/server/actions/plan";
 
 interface PloTargetRow {
   ploCode: string;
@@ -70,7 +72,11 @@ export function TargetSettingMatrixForm() {
         setCourseRows(p.courseRows || []);
         toast.create({ title: "Target matrix initialized", type: "success" });
       } else {
-        toastError({ title: "Init failed", description: result.error, scope: "target:generate" });
+        toastError({
+          title: "Init failed",
+          description: result.error,
+          scope: "target:generate",
+        });
       }
     } finally {
       setLoading(false);
@@ -105,7 +111,11 @@ export function TargetSettingMatrixForm() {
       if (result.ok) {
         toast.create({ title: "Target matrix saved", type: "success" });
       } else {
-        toastError({ title: "Save failed", description: result.error, scope: "target:save" });
+        toastError({
+          title: "Save failed",
+          description: result.error,
+          scope: "target:save",
+        });
       }
     } finally {
       setSaving(false);
@@ -131,14 +141,25 @@ export function TargetSettingMatrixForm() {
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
               <FieldLabel>Program ID</FieldLabel>
-              <Input value={programId} onChange={(e) => setProgramId(e.target.value)} placeholder="e.g. prog_cs" />
+              <Input
+                value={programId}
+                onChange={(e) => setProgramId(e.target.value)}
+                placeholder="e.g. prog_cs"
+              />
             </Field>
             <Field>
               <FieldLabel>Term ID</FieldLabel>
-              <Input value={termId} onChange={(e) => setTermId(e.target.value)} placeholder="e.g. 2025-2-s1" />
+              <Input
+                value={termId}
+                onChange={(e) => setTermId(e.target.value)}
+                placeholder="e.g. 2025-2-s1"
+              />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Initializing..." : "Initialize"}
               </Button>
             </div>
@@ -175,12 +196,23 @@ export function TargetSettingMatrixForm() {
                 {ploRows.map((row, idx) => (
                   <tr key={row.ploCode} className="border-b last:border-0">
                     <td className="py-1 pr-2 font-medium">{row.ploCode}</td>
-                    {(["y1TargetPct", "y2TargetPct", "y3TargetPct", "y4TargetPct"] as const).map((field) => (
+                    {(
+                      [
+                        "y1TargetPct",
+                        "y2TargetPct",
+                        "y3TargetPct",
+                        "y4TargetPct",
+                      ] as const
+                    ).map((field) => (
                       <td key={field} className="py-1 pr-2">
                         <Input
-                          type="number" min={70} max={100}
+                          type="number"
+                          min={70}
+                          max={100}
                           value={row[field]}
-                          onChange={(e) => updatePloRow(idx, field, Number(e.target.value))}
+                          onChange={(e) =>
+                            updatePloRow(idx, field, Number(e.target.value))
+                          }
                           className="h-8 w-16 text-xs text-right"
                         />
                       </td>
@@ -188,7 +220,9 @@ export function TargetSettingMatrixForm() {
                     <td className="py-1 pr-2">
                       <Input
                         value={row.rationale}
-                        onChange={(e) => updatePloRow(idx, "rationale", e.target.value)}
+                        onChange={(e) =>
+                          updatePloRow(idx, "rationale", e.target.value)
+                        }
                         className="h-8 text-xs"
                         placeholder="Required if >70%"
                       />
@@ -235,17 +269,36 @@ export function TargetSettingMatrixForm() {
                 </thead>
                 <tbody>
                   {courseRows.map((row, idx) => (
-                    <tr key={`${row.courseCode}-${row.cloCode}`} className="border-b last:border-0">
+                    <tr
+                      key={`${row.courseCode}-${row.cloCode}`}
+                      className="border-b last:border-0"
+                    >
                       <td className="py-1 pr-2 text-xs">{row.courseCode}</td>
-                      <td className="py-1 pr-2 font-medium text-xs">{row.cloCode}</td>
-                      {(["y1TargetPct", "y2TargetPct", "y3TargetPct", "y4TargetPct"] as const).map((field) => (
+                      <td className="py-1 pr-2 font-medium text-xs">
+                        {row.cloCode}
+                      </td>
+                      {(
+                        [
+                          "y1TargetPct",
+                          "y2TargetPct",
+                          "y3TargetPct",
+                          "y4TargetPct",
+                        ] as const
+                      ).map((field) => (
                         <td key={field} className="py-1 pr-2">
                           <Input
-                            type="number" min={70} max={100}
+                            type="number"
+                            min={70}
+                            max={100}
                             value={row[field] ?? ""}
                             onChange={(e) => {
                               const next = [...courseRows];
-                              next[idx] = { ...next[idx], [field]: e.target.value ? Number(e.target.value) : null };
+                              next[idx] = {
+                                ...next[idx],
+                                [field]: e.target.value
+                                  ? Number(e.target.value)
+                                  : null,
+                              };
                               setCourseRows(next);
                             }}
                             className="h-8 w-16 text-xs text-right"
@@ -273,7 +326,15 @@ export function TargetSettingMatrixForm() {
       )}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setPloRows([]); setCourseRows([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setPloRows([]);
+            setCourseRows([]);
+          }}
+        >
           Re-initialize
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving}>

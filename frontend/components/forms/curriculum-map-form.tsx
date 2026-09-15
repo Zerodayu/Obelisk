@@ -1,19 +1,18 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { toast, toastError } from "@/components/ui/toast";
 import { initCurriculumMap, saveCurriculumMap } from "@/server/actions/plan";
 
 interface PloDirectoryRow {
@@ -70,7 +69,11 @@ export function CurriculumMapForm() {
         setCourses(p.courseRows || []);
         toast.create({ title: "Curriculum map initialized", type: "success" });
       } else {
-        toastError({ title: "Init failed", description: result.error, scope: "cmap:generate" });
+        toastError({
+          title: "Init failed",
+          description: result.error,
+          scope: "cmap:generate",
+        });
       }
     } finally {
       setLoading(false);
@@ -103,14 +106,22 @@ export function CurriculumMapForm() {
       if (result.ok) {
         toast.create({ title: "Curriculum map saved", type: "success" });
       } else {
-        toastError({ title: "Save failed", description: result.error, scope: "cmap:save" });
+        toastError({
+          title: "Save failed",
+          description: result.error,
+          scope: "cmap:save",
+        });
       }
     } finally {
       setSaving(false);
     }
   }, [payload, plos, courses]);
 
-  const updateCell = (courseIdx: number, ploCode: string, stage: string | null) => {
+  const updateCell = (
+    courseIdx: number,
+    ploCode: string,
+    stage: string | null,
+  ) => {
     const next = [...courses];
     const course = { ...next[courseIdx] };
     const cells = [...course.cells];
@@ -131,21 +142,33 @@ export function CurriculumMapForm() {
         <FrameHeader>
           <FrameTitle>Initialize Curriculum Map</FrameTitle>
           <FrameDescription>
-            Set up the PLO directory and I-P-D × course matrix for a program + term.
+            Set up the PLO directory and I-P-D × course matrix for a program +
+            term.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
               <FieldLabel>Program ID</FieldLabel>
-              <Input value={programId} onChange={(e) => setProgramId(e.target.value)} placeholder="e.g. prog_cs" />
+              <Input
+                value={programId}
+                onChange={(e) => setProgramId(e.target.value)}
+                placeholder="e.g. prog_cs"
+              />
             </Field>
             <Field>
               <FieldLabel>Term ID</FieldLabel>
-              <Input value={termId} onChange={(e) => setTermId(e.target.value)} placeholder="e.g. 2025-2-s1" />
+              <Input
+                value={termId}
+                onChange={(e) => setTermId(e.target.value)}
+                placeholder="e.g. 2025-2-s1"
+              />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Initializing..." : "Initialize"}
               </Button>
             </div>
@@ -167,8 +190,14 @@ export function CurriculumMapForm() {
         <FramePanel>
           <div className="flex flex-wrap gap-2">
             {plos.map((plo) => (
-              <Badge key={plo.ploCode} variant={payload.coverageCheck[plo.ploCode] ? "success" : "destructive"}>
-                {plo.ploCode}: {payload.coverageCheck[plo.ploCode] ? "Covered" : "Gap"}
+              <Badge
+                key={plo.ploCode}
+                variant={
+                  payload.coverageCheck[plo.ploCode] ? "success" : "destructive"
+                }
+              >
+                {plo.ploCode}:{" "}
+                {payload.coverageCheck[plo.ploCode] ? "Covered" : "Gap"}
               </Badge>
             ))}
           </div>
@@ -180,7 +209,8 @@ export function CurriculumMapForm() {
         <FrameHeader>
           <FrameTitle>I-P-D × Course Matrix</FrameTitle>
           <FrameDescription>
-            Click cells to cycle through I → P → D stages. D-stage coverage ensures PLO mapping.
+            Click cells to cycle through I → P → D stages. D-stage coverage
+            ensures PLO mapping.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -190,25 +220,44 @@ export function CurriculumMapForm() {
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-4">Course</th>
                   {ploCodes.map((code) => (
-                    <th key={code} className="py-2 pr-2 text-center min-w-[60px]">{code}</th>
+                    <th
+                      key={code}
+                      className="py-2 pr-2 text-center min-w-[60px]"
+                    >
+                      {code}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {courses.map((course, cIdx) => (
-                  <tr key={course.courseCode} className="border-b last:border-0">
+                  <tr
+                    key={course.courseCode}
+                    className="border-b last:border-0"
+                  >
                     <td className="py-2 pr-4">
                       <div className="font-medium">{course.courseCode}</div>
-                      <div className="text-xs text-muted-foreground">{course.courseTitle}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {course.courseTitle}
+                      </div>
                     </td>
                     {ploCodes.map((ploCode) => {
-                      const cell = course.cells.find((c) => c.ploCode === ploCode);
+                      const cell = course.cells.find(
+                        (c) => c.ploCode === ploCode,
+                      );
                       const stage = cell?.stage ?? null;
                       return (
                         <td key={ploCode} className="py-2 pr-2 text-center">
                           <button
                             onClick={() => {
-                              const next = stage === "i" ? "p" : stage === "p" ? "d" : stage === "d" ? null : "i";
+                              const next =
+                                stage === "i"
+                                  ? "p"
+                                  : stage === "p"
+                                    ? "d"
+                                    : stage === "d"
+                                      ? null
+                                      : "i";
                               updateCell(cIdx, ploCode, next);
                             }}
                             className={`w-10 h-8 rounded border text-xs font-medium transition-colors ${
@@ -235,7 +284,15 @@ export function CurriculumMapForm() {
       </Frame>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setPlos([]); setCourses([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setPlos([]);
+            setCourses([]);
+          }}
+        >
           Re-initialize
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving}>

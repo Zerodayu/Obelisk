@@ -1,20 +1,19 @@
 "use client";
 
 import { useCallback, useState } from "react";
-
-import { toast, toastError } from "@/components/ui/toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
-  FrameHeader,
-  FrameTitle,
   FrameDescription,
+  FrameHeader,
   FramePanel,
+  FrameTitle,
 } from "@/components/reui/frame";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { toast, toastError } from "@/components/ui/toast";
 import {
   generateCqiActionPlan,
   saveCqiActionPlan,
@@ -108,7 +107,11 @@ export function CqiActionPlanForm() {
       if (result.ok) {
         toast.create({ title: "Action plan saved", type: "success" });
       } else {
-        toastError({ title: "Save failed", description: result.error, scope: "cqi-plan:save" });
+        toastError({
+          title: "Save failed",
+          description: result.error,
+          scope: "cqi-plan:save",
+        });
       }
     } finally {
       setSaving(false);
@@ -128,16 +131,27 @@ export function CqiActionPlanForm() {
         })),
       );
       if (result.ok) {
-        toast.create({ title: `Tracked ${result.data.updated} entries`, type: "success" });
+        toast.create({
+          title: `Tracked ${result.data.updated} entries`,
+          type: "success",
+        });
       } else {
-        toastError({ title: "Track failed", description: result.error, scope: "cqi-plan:track" });
+        toastError({
+          title: "Track failed",
+          description: result.error,
+          scope: "cqi-plan:track",
+        });
       }
     } finally {
       setTracking(false);
     }
   }, [payload, entries]);
 
-  const updateEntry = (idx: number, field: string, value: string | number | null) => {
+  const updateEntry = (
+    idx: number,
+    field: string,
+    value: string | number | null,
+  ) => {
     const next = [...entries];
     next[idx] = { ...next[idx], [field]: value };
     setEntries(next);
@@ -149,21 +163,33 @@ export function CqiActionPlanForm() {
         <FrameHeader>
           <FrameTitle>Generate CQI Action Plan</FrameTitle>
           <FrameDescription>
-            Create intervention entries for NOT-MET PLOs with root causes, owners, and KPIs.
+            Create intervention entries for NOT-MET PLOs with root causes,
+            owners, and KPIs.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
               <FieldLabel>Program ID</FieldLabel>
-              <Input value={programId} onChange={(e) => setProgramId(e.target.value)} placeholder="e.g. prog_cs" />
+              <Input
+                value={programId}
+                onChange={(e) => setProgramId(e.target.value)}
+                placeholder="e.g. prog_cs"
+              />
             </Field>
             <Field>
               <FieldLabel>Term ID</FieldLabel>
-              <Input value={termId} onChange={(e) => setTermId(e.target.value)} placeholder="e.g. 2025-2-s1" />
+              <Input
+                value={termId}
+                onChange={(e) => setTermId(e.target.value)}
+                placeholder="e.g. 2025-2-s1"
+              />
             </Field>
             <div className="flex items-end">
-              <Button onClick={handleGenerate} disabled={loading || !programId.trim() || !termId.trim()}>
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
                 {loading ? "Generating..." : "Generate"}
               </Button>
             </div>
@@ -179,7 +205,8 @@ export function CqiActionPlanForm() {
         <FrameHeader>
           <FrameTitle>{payload.program.name} — CQI Action Plan</FrameTitle>
           <FrameDescription>
-            {payload.term.schoolYear} {payload.term.semester} · {entries.length} entries
+            {payload.term.schoolYear} {payload.term.semester} · {entries.length}{" "}
+            entries
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -204,32 +231,64 @@ export function CqiActionPlanForm() {
                     <td className="py-1 pr-2">
                       <select
                         value={entry.rootCauseCategory}
-                        onChange={(e) => updateEntry(idx, "rootCauseCategory", e.target.value)}
+                        onChange={(e) =>
+                          updateEntry(idx, "rootCauseCategory", e.target.value)
+                        }
                         className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
                       >
                         {ROOT_CAUSES.map((rc) => (
-                          <option key={rc} value={rc}>{rc}</option>
+                          <option key={rc} value={rc}>
+                            {rc}
+                          </option>
                         ))}
                       </select>
                     </td>
                     <td className="py-1 pr-2">
-                      <Input value={entry.intervention} onChange={(e) => updateEntry(idx, "intervention", e.target.value)} className="h-8 text-xs" />
+                      <Input
+                        value={entry.intervention}
+                        onChange={(e) =>
+                          updateEntry(idx, "intervention", e.target.value)
+                        }
+                        className="h-8 text-xs"
+                      />
                     </td>
                     <td className="py-1 pr-2">
-                      <Input value={entry.owner} onChange={(e) => updateEntry(idx, "owner", e.target.value)} className="h-8 w-24 text-xs" />
+                      <Input
+                        value={entry.owner}
+                        onChange={(e) =>
+                          updateEntry(idx, "owner", e.target.value)
+                        }
+                        className="h-8 w-24 text-xs"
+                      />
                     </td>
                     <td className="py-1 pr-2">
-                      <Input value={entry.timelineAndKpi} onChange={(e) => updateEntry(idx, "timelineAndKpi", e.target.value)} className="h-8 text-xs" />
+                      <Input
+                        value={entry.timelineAndKpi}
+                        onChange={(e) =>
+                          updateEntry(idx, "timelineAndKpi", e.target.value)
+                        }
+                        className="h-8 text-xs"
+                      />
                     </td>
                     <td className="py-1 pr-2">
-                      <Badge variant={entry.status === "tracked" ? "info" : "outline"}>
+                      <Badge
+                        variant={
+                          entry.status === "tracked" ? "info" : "outline"
+                        }
+                      >
                         {entry.status}
                       </Badge>
                     </td>
                     <td className="py-1 pr-2">
                       <select
                         value={entry.interventionImplemented || "no"}
-                        onChange={(e) => updateEntry(idx, "interventionImplemented", e.target.value)}
+                        onChange={(e) =>
+                          updateEntry(
+                            idx,
+                            "interventionImplemented",
+                            e.target.value,
+                          )
+                        }
                         className="h-8 rounded-md border border-input bg-background px-2 text-xs"
                       >
                         <option value="no">No</option>
@@ -243,7 +302,13 @@ export function CqiActionPlanForm() {
                         min={0}
                         max={100}
                         value={entry.currentAttainmentPct ?? ""}
-                        onChange={(e) => updateEntry(idx, "currentAttainmentPct", e.target.value ? Number(e.target.value) : null)}
+                        onChange={(e) =>
+                          updateEntry(
+                            idx,
+                            "currentAttainmentPct",
+                            e.target.value ? Number(e.target.value) : null,
+                          )
+                        }
                         className="h-8 w-20 text-xs text-right"
                         placeholder="%"
                       />
@@ -257,10 +322,22 @@ export function CqiActionPlanForm() {
       </Frame>
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => { setPayload(null); setEntries([]); }}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setPayload(null);
+            setEntries([]);
+          }}
+        >
           Generate Another
         </Button>
-        <Button variant="outline" size="sm" onClick={handleTrack} disabled={tracking}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleTrack}
+          disabled={tracking}
+        >
           {tracking ? "Tracking..." : "Track End-of-Cycle"}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving}>

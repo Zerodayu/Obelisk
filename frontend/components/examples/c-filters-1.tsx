@@ -1,21 +1,33 @@
-"use client"
+"use client";
 
-import { useCallback, useState } from "react"
+import {
+  BanIcon,
+  BellIcon,
+  BuildingIcon,
+  CircleAlertIcon,
+  CircleCheckIcon,
+  ClockIcon,
+  FunnelXIcon,
+  GlobeIcon,
+  ListFilterIcon,
+  MailIcon,
+  PhoneIcon,
+  StarIcon,
+  TypeIcon,
+  UserRoundCheckIcon,
+  UserRoundXIcon,
+  UsersIcon,
+} from "lucide-react";
+import { useCallback, useState } from "react";
 import {
   createFilter,
-  Filters,
   type Filter,
   type FilterFieldConfig,
-} from "@/components/reui/filters"
-
-import { cn } from "@/lib/utils"
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { MailIcon, TypeIcon, GlobeIcon, PhoneIcon, BellIcon, ClockIcon, CircleAlertIcon, CircleCheckIcon, BanIcon, UserRoundCheckIcon, UserRoundXIcon, UsersIcon, StarIcon, BuildingIcon, ListFilterIcon, FunnelXIcon } from "lucide-react"
+  Filters,
+} from "@/components/reui/filters";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Priority icon component
 const PriorityIcon = ({ priority }: { priority: string }) => {
@@ -25,16 +37,16 @@ const PriorityIcon = ({ priority }: { priority: string }) => {
     high: "bg-violet-500",
     urgent: "bg-orange-500",
     critical: "bg-red-500",
-  }
+  };
   return (
     <div
       className={cn(
         "size-2.25 shrink-0 rounded-full",
-        colors[priority as keyof typeof colors]
+        colors[priority as keyof typeof colors],
       )}
     />
-  )
-}
+  );
+};
 
 const countryFlags = [
   { code: "AF", name: "Afghanistan" },
@@ -208,7 +220,7 @@ const countryFlags = [
   { code: "VN", name: "Vietnam" },
   { code: "ZM", name: "Zambia" },
   { code: "ZW", name: "Zimbabwe" },
-]
+];
 
 export function Pattern() {
   // Example: All Possible Filter Field Types with Grouping
@@ -220,39 +232,27 @@ export function Pattern() {
           key: "text",
           label: "Text",
           type: "text",
-          icon: (
-            <MailIcon
-            />
-          ),
+          icon: <MailIcon />,
           placeholder: "Search text...",
         },
         {
           key: "email",
           label: "Email",
           type: "text",
-          icon: (
-            <TypeIcon
-            />
-          ),
+          icon: <TypeIcon />,
           placeholder: "user@example.com",
         },
         {
           key: "website",
           label: "Website",
-          icon: (
-            <GlobeIcon
-            />
-          ),
+          icon: <GlobeIcon />,
           type: "text",
           placeholder: "https://example.com",
         },
         {
           key: "phone",
           label: "Phone",
-          icon: (
-            <PhoneIcon
-            />
-          ),
+          icon: <PhoneIcon />,
           type: "text",
           placeholder: "+1 (123) 456-7890",
         },
@@ -264,10 +264,7 @@ export function Pattern() {
         {
           key: "status",
           label: "Status",
-          icon: (
-            <BellIcon
-            />
-          ),
+          icon: <BellIcon />,
           type: "select",
           searchable: false,
           className: "w-[200px]",
@@ -275,40 +272,29 @@ export function Pattern() {
             {
               value: "todo",
               label: "To Do",
-              icon: (
-                <ClockIcon className="stroke-violet-500" />
-              ),
+              icon: <ClockIcon className="stroke-violet-500" />,
             },
             {
               value: "in-progress",
               label: "In Progress",
-              icon: (
-                <CircleAlertIcon className="stroke-yellow-500" />
-              ),
+              icon: <CircleAlertIcon className="stroke-yellow-500" />,
             },
             {
               value: "done",
               label: "Done",
-              icon: (
-                <CircleCheckIcon className="stroke-green-500" />
-              ),
+              icon: <CircleCheckIcon className="stroke-green-500" />,
             },
             {
               value: "cancelled",
               label: "Cancelled",
-              icon: (
-                <BanIcon className="stroke-destructive" />
-              ),
+              icon: <BanIcon className="stroke-destructive" />,
             },
           ],
         },
         {
           key: "priority",
           label: "Priority",
-          icon: (
-            <BanIcon
-            />
-          ),
+          icon: <BanIcon />,
           type: "multiselect",
           className: "w-[180px]",
           options: [
@@ -342,10 +328,7 @@ export function Pattern() {
         {
           key: "assignee",
           label: "Assignee",
-          icon: (
-            <UserRoundCheckIcon
-            />
-          ),
+          icon: <UserRoundCheckIcon />,
           type: "multiselect",
           maxSelections: 5,
           options: [
@@ -550,8 +533,7 @@ export function Pattern() {
               icon: (
                 <Avatar className="size-5">
                   <AvatarFallback>
-                    <UserRoundXIcon
-                    />
+                    <UserRoundXIcon />
                   </AvatarFallback>
                 </Avatar>
               ),
@@ -561,10 +543,7 @@ export function Pattern() {
         {
           key: "userType",
           label: "User Type",
-          icon: (
-            <UsersIcon
-            />
-          ),
+          icon: <UsersIcon />,
           type: "select",
           searchable: false,
           className: "w-[200px]",
@@ -572,33 +551,24 @@ export function Pattern() {
             {
               value: "premium",
               label: "Premium",
-              icon: (
-                <StarIcon className="size-3 text-yellow-500" />
-              ),
+              icon: <StarIcon className="size-3 text-yellow-500" />,
             },
             {
               value: "standard",
               label: "Standard",
-              icon: (
-                <BuildingIcon className="size-3 text-blue-500" />
-              ),
+              icon: <BuildingIcon className="size-3 text-blue-500" />,
             },
             {
               value: "trial",
               label: "Trial",
-              icon: (
-                <ClockIcon className="size-3 text-gray-500" />
-              ),
+              icon: <ClockIcon className="size-3 text-gray-500" />,
             },
           ],
         },
         {
           key: "country",
           label: "Country",
-          icon: (
-            <GlobeIcon
-            />
-          ),
+          icon: <GlobeIcon />,
           type: "select",
           searchable: true,
           className: "w-[220px]",
@@ -616,15 +586,15 @@ export function Pattern() {
         },
       ],
     },
-  ]
+  ];
 
   const [filters, setFilters] = useState<Filter[]>([
     createFilter("priority", "is_any_of", ["low", "medium", "critical"]),
-  ])
+  ]);
 
   const handleFiltersChange = useCallback((filters: Filter[]) => {
-    setFilters(filters)
-  }, [])
+    setFilters(filters);
+  }, []);
 
   return (
     <div className="flex grow content-start items-start gap-2.5 self-start">
@@ -641,8 +611,7 @@ export function Pattern() {
               enableShortcut={true}
               trigger={
                 <Button variant="outline">
-                  <ListFilterIcon
-                  />
+                  <ListFilterIcon />
                   Add Filter
                 </Button>
               }
@@ -651,8 +620,7 @@ export function Pattern() {
 
           {filters.length > 0 && (
             <Button variant="outline" onClick={() => setFilters([])}>
-              <FunnelXIcon
-              />
+              <FunnelXIcon />
               Clear
             </Button>
           )}
@@ -664,5 +632,5 @@ export function Pattern() {
         </pre>
       </div>
     </div>
-  )
+  );
 }

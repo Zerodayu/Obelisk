@@ -1,44 +1,43 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Badge } from "@/components/reui/badge"
+import {
+  type ColumnDef,
+  type PaginationState,
+  type SortingState,
+  useTable,
+} from "@tanstack/react-table";
+import { useMemo, useState } from "react";
+import { Badge } from "@/components/reui/badge";
 import {
   DataGrid,
   DataGridContainer,
-  dataGridFeatures,
   type DataGridFeatures,
-} from "@/components/reui/data-grid/data-grid"
-import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination"
-import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area"
-import { DataGridTable } from "@/components/reui/data-grid/data-grid-table"
-import {
-  ColumnDef,
-  PaginationState,
-  SortingState,
-  useTable,
-} from "@tanstack/react-table"
-
-import { cn } from "@/lib/utils"
+  dataGridFeatures,
+} from "@/components/reui/data-grid/data-grid";
+import { DataGridPagination } from "@/components/reui/data-grid/data-grid-pagination";
+import { DataGridScrollArea } from "@/components/reui/data-grid/data-grid-scroll-area";
+import { DataGridTable } from "@/components/reui/data-grid/data-grid-table";
 import {
   Avatar,
   AvatarBadge,
   AvatarFallback,
   AvatarImage,
-} from "@/components/ui/avatar"
+} from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 interface IData {
-  id: string
-  name: string
-  availability: "online" | "away" | "busy" | "offline"
-  avatar: string
-  status: "active" | "inactive"
-  flag: string // Emoji flags
-  email: string
-  company: string
-  role: string
-  joined: string
-  location: string
-  balance: number
+  id: string;
+  name: string;
+  availability: "online" | "away" | "busy" | "offline";
+  avatar: string;
+  status: "active" | "inactive";
+  flag: string; // Emoji flags
+  email: string;
+  company: string;
+  role: string;
+  joined: string;
+  location: string;
+  balance: number;
 }
 
 const demoData: IData[] = [
@@ -222,16 +221,16 @@ const demoData: IData[] = [
     location: "India",
     balance: 4521.67,
   },
-]
+];
 
 export function Pattern() {
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 10,
-  })
+  });
   const [sorting, setSorting] = useState<SortingState>([
     { id: "name", desc: true },
-  ])
+  ]);
 
   const columns = useMemo<ColumnDef<DataGridFeatures, IData>[]>(
     () => [
@@ -240,13 +239,13 @@ export function Pattern() {
         id: "name",
         header: "Name",
         cell: ({ row }) => {
-          const availability = row.original.availability
+          const availability = row.original.availability;
           const statusColors = {
             online: "bg-green-500",
             away: "bg-yellow-500",
             busy: "bg-orange-500",
             offline: "bg-gray-400",
-          }
+          };
 
           return (
             <div className="flex items-center gap-3">
@@ -264,7 +263,7 @@ export function Pattern() {
                 <AvatarBadge
                   className={cn(
                     "size-1.5! p-0",
-                    statusColors[availability] || statusColors.offline
+                    statusColors[availability] || statusColors.offline,
                   )}
                 />
               </Avatar>
@@ -277,7 +276,7 @@ export function Pattern() {
                 </div>
               </div>
             </div>
-          )
+          );
         },
         size: 250,
         enableSorting: true,
@@ -297,7 +296,7 @@ export function Pattern() {
                 {row.original.company}
               </div>
             </div>
-          )
+          );
         },
         size: 150,
         enableSorting: true,
@@ -308,19 +307,19 @@ export function Pattern() {
         id: "status",
         header: "Status",
         cell: ({ row }) => {
-          const status = row.original.status
+          const status = row.original.status;
 
           if (status == "active") {
-            return <Badge variant="success-outline">Approved</Badge>
+            return <Badge variant="success-outline">Approved</Badge>;
           } else {
-            return <Badge variant="warning-outline">Pending</Badge>
+            return <Badge variant="warning-outline">Pending</Badge>;
           }
         },
         size: 100,
       },
     ],
-    []
-  )
+    [],
+  );
 
   const table = useTable({
     features: dataGridFeatures,
@@ -334,7 +333,7 @@ export function Pattern() {
     },
     onPaginationChange: setPagination,
     onSortingChange: setSorting,
-  })
+  });
 
   return (
     <DataGrid
@@ -351,5 +350,5 @@ export function Pattern() {
         <DataGridPagination />
       </div>
     </DataGrid>
-  )
+  );
 }

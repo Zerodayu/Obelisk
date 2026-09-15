@@ -1,8 +1,8 @@
-import { mergeProps } from "@base-ui/react/merge-props"
-import { useRender } from "@base-ui/react/use-render"
-import { cva, type VariantProps } from "class-variance-authority"
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
+import { cva, type VariantProps } from "class-variance-authority";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 const badgeVariants = cva(
   [
@@ -60,8 +60,7 @@ const badgeVariants = cva(
       },
       /** `default`: active style radius. `full`: pill radius. */
       radius: {
-        default:
-          "rounded-4xl",
+        default: "rounded-4xl",
         full: "rounded-full",
       },
     },
@@ -70,13 +69,13 @@ const badgeVariants = cva(
       size: "default",
       radius: "default",
     },
-  }
-)
+  },
+);
 
 interface BadgeProps extends useRender.ComponentProps<"span"> {
-  variant?: VariantProps<typeof badgeVariants>["variant"]
-  size?: VariantProps<typeof badgeVariants>["size"]
-  radius?: VariantProps<typeof badgeVariants>["radius"]
+  variant?: VariantProps<typeof badgeVariants>["variant"];
+  size?: VariantProps<typeof badgeVariants>["size"];
+  radius?: VariantProps<typeof badgeVariants>["radius"];
 }
 
 function Badge({
@@ -90,13 +89,13 @@ function Badge({
   const defaultProps = {
     "data-slot": "badge",
     className: cn(badgeVariants({ variant, size, radius, className })),
-  }
+  };
 
   return useRender({
     defaultTagName: "span",
     render,
     props: mergeProps<"span">(defaultProps, props),
-  })
+  });
 }
 
-export { Badge, badgeVariants, type BadgeProps }
+export { Badge, badgeVariants, type BadgeProps };
