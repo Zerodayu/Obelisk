@@ -48,6 +48,15 @@ const TABLES = [
 	"gap_row",
 	"cqi_entry",
 	"ctl_row",
+	// phase 6
+	"mid_cycle_cohort_row",
+	"resource_item_row",
+	"cqi_implement_row",
+	"exhibition_guest_row",
+	"portfolio_criterion_row",
+	"capstone_panelist_row",
+	"portfolio_roadmap_row",
+	"portfolio_rubric_row",
 ] as const;
 
 /**
