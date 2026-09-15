@@ -40,7 +40,7 @@ dean → aqau → vpaa — Phase 0 machinery, no new approval logic).
 
 **Aug 18–23** — buffer: demo prep, client/adviser conversations, fix whatever broke. No new scope unless Aug 17 slipped.
 
-**Explicitly deferred, unscheduled:** `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phases 6, 7. (CAR is now done — see Phase 2. Manual edit + CSV re-import and the ingest test suite are done — see Phase 1.)
+**Explicitly deferred, unscheduled:** `clo_attainment_summary`; `cohort_tracking`; Phase 4 (gap analysis/CQI action plan — VPAA sees raw attainment data, not a full CQI plan); Phase 7. (CAR is now done — see Phase 2. Manual edit + CSV re-import and the ingest test suite are done — see Phase 1. Phase 6 is done — see below.)
 
 **Exit criteria:** upload → compute → persist → CAR → PLO rollup → AI recommendation → routed through full approval chain to VPAA, no manual re-entry.
 
@@ -138,23 +138,24 @@ The term-level hub that consolidates a term's data.
 
 ### DO/CHECK instruments
 
-- [ ] `mid_cycle_attainment` — reusable cohort attainment block ×4 + at-risk watchlist
-- [ ] `resource_monitoring` — budget line-item status + CQI implementation tracking
-- [ ] `peer_observation` — 7 fixed criteria, per-criterion scales
-- [ ] `exhibition_feedback` — min 3 industry guests, computed means
-- [ ] `clo_perception_survey` + `student_exit_survey` — Likert tabulation, divergence auto-flag (indirect evidence)
-- [ ] `portfolio_assessment_record` + `capstone_panel_evaluation` — panel rubric scoring (portfolio programs / Year 4)
+- [x] `mid_cycle_attainment` — reusable cohort attainment block ×4 + at-risk watchlist
+- [x] `peer_observation` — 7 fixed criteria, per-criterion scales
+- [x] `exhibition_feedback` — min 3 industry guests, computed means
+- [x] `clo_perception_survey` + `student_exit_survey` — Likert tabulation, divergence auto-flag (indirect evidence)
+- [x] `portfolio_assessment_record` + `capstone_panel_evaluation` — panel rubric scoring (portfolio programs / Year 4)
 
-### Periodic / institutional (lowest MVP urgency)
+### Periodic / institutional
 
-- [ ] `alumni_tracer` + `employer_satisfaction_survey` — biennial surveys → **PEO attainment evidence** + feed composite (Direct×70% + Indirect×30%)
-- [ ] `annual_program_report` (APAR) — dashboard KPIs, mandatory attachments, cohort_tracking gate
-- [ ] `systemic_gap_report` — trigger: 3 consecutive NOT-MET, due trigger + 30 days
-- [ ] `capa_plan` — actions/milestones, AQAU progress monitoring
-- [ ] `institutional_review` — program APAR review, institutional CQI completion rate
-- [ ] `portfolio_roadmap` — 4-year roadmap + rubric standards (portfolio programs)
+- [x] `resource_monitoring` — budget line-item status + CQI implementation tracking
+- [x] `alumni_tracer` + `employer_satisfaction_survey` — biennial surveys → **PEO attainment evidence** + feed composite (Direct×70% + Indirect×30%)
+- [x] `systemic_gap_report` — trigger: 3 consecutive NOT-MET, due trigger + 30 days
+- [x] `capa_plan` — actions/milestones, AQAU progress monitoring
+- [x] `institutional_review` — program APAR review, institutional CQI completion rate
+- [x] `portfolio_roadmap` — 4-year roadmap + rubric standards (portfolio programs)
 
-- [ ] **Tests:** divergence flags, PEO evidence capture into `PeoAttainment`, systemic-gap trigger
+- [x] **Tests:** 19 integration tests across `check.test.ts` (9) + `periodic.test.ts` (10); submit gates (F11 ≥3 guests, F19 ≥2 faculty + 1 industry, F20/F21 biennial 18mo, F26 3+ consecutive NOT-MET, F27 referenced F26 approved)
+
+**Done (Phase 6):** 14 forms shipped across two new plugins — `check-plugin` (`/api/v1/check`, PDCA stage CHECK: F08/F10/F11/F12/F17/F18/F19, sequence nos 21–27) and `periodic-plugin` (`/api/v1/periodic`, PDCA stage ACT: F09/F20/F21/F26/F27/F28/F02, sequence nos 28–34). Schema `13-phase6.prisma` adds 8 dedicated row tables (`MidCycleCohortRow`, `ResourceItemRow`, `CqiImplementRow`, `ExhibitionGuestRow`, `PortfolioCriterionRow`, `CapstonePanelistRow`, `PortfolioRoadmapRow`, `PortfolioRubricRow`) + 3 new enums (`MidCycleStatus`, `AcquisitionStatus`, `CqiImplementationStatus`) + 8 back-relations on `FormSubmission`. 5 submit gates enforced via `lib/forms/submit-gates.ts`. Migration `20260915145318_add_phase6`. Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 107 unit + 30 integration tests).
 
 ---
 
@@ -235,6 +236,8 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] Phase 0 stabilization (tsconfig fix, scripts, test harness, validators, forms module, ingest client)
 - [ ] Feature routes (all forms) — see Phases 1–6
   - [x] CAR routes (`/api/v1/car/*`) — submit-time assembly, per-section CAR resolution, editable-parts save (Phases 1–2)
+  - [x] Check routes (`/api/v1/check/*`) — F08/F10/F11/F12/F17/F18/F19 (Phase 6)
+  - [x] Periodic routes (`/api/v1/periodic/*`) — F09/F20/F21/F26/F27/F28/F02 (Phase 6)
 - [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
 - [ ] Archival pipeline — see Phase 7
 

@@ -15,10 +15,14 @@ src/
 ├── routes.ts             # Aggregates all feature route plugins (api/v1 prefix)
 └── v1/
     ├── auth/             # Auth (better-auth config, session guard macro, role requests)
-    └── {feature}/
-        ├── controller.ts # Route definitions (Elysia plugin with prefix + tags)
-        ├── service.ts    # Business logic (class with methods)
-        └── model.ts      # Validation schemas using Elysia's t + Static types
+    ├── car/              # Course Assessment Report (F13)
+    ├── cqi/              # CQI/ACT loop (F22, F23, F25, F24 APAR)
+    ├── check/            # CHECK-stage supporting instruments (F08/F10/F11/F12/F17/F18/F19)
+    ├── forms/            # Generic form submission CRUD + approval workflow
+    ├── ingest/           # Class-record upload + ETL pipeline
+    ├── periodic/         # Periodic/institutional forms (F09/F20/F21/F26/F27/F28/F02)
+    ├── plan/             # PLAN-phase setup forms (F01, F03, F04, F06)
+    └── rollup/           # Roll-up chain (F14, F15, F16)
 ```
 
 ## Conventions
@@ -95,11 +99,29 @@ institutional_review      -> Institutional Management Review Records
 3. `clo_attainment_summary` → `plo_attainment_summary` → `cohort_tracking` (roll-up chain)
 4. `plo_gap_analysis` → `cqi_action_plan` → `closing_the_loop` (CQI/ACT loop)
 5. `curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget` (PLAN-phase setup)
-6. `mid_cycle_attainment`, `resource_monitoring`, `peer_observation`, `exhibition_feedback`, `clo_perception_survey`, `student_exit_survey`, `portfolio_assessment_record`, `capstone_panel_evaluation` (supporting DO/CHECK instruments)
-7. `alumni_tracer`, `employer_satisfaction_survey`, `annual_program_report`, `systemic_gap_report`, `capa_plan`, `portfolio_roadmap`, `institutional_review` (periodic/escalation/institutional — lowest MVP urgency)
+6. ✅ `mid_cycle_attainment`, `resource_monitoring`, `peer_observation`, `exhibition_feedback`, `clo_perception_survey`, `student_exit_survey`, `portfolio_assessment_record`, `capstone_panel_evaluation` (supporting DO/CHECK instruments) — **DONE** (Phase 6)
+7. ✅ `alumni_tracer`, `employer_satisfaction_survey`, `annual_program_report`, `systemic_gap_report`, `capa_plan`, `portfolio_roadmap`, `institutional_review` (periodic/escalation/institutional) — **DONE** (Phase 6; `annual_program_report` done in Phase 4)
 8. Graduation-cluster archival pipeline (after PEO attainment capture)
 
 Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on Neon reachability), with lint and typecheck green.
+
+## Phase 6 Modules
+
+Phases 6 forms are split across two feature plugins:
+
+- **`check-plugin`** (`src/v1/check/`, prefix `/api/v1/check`, PDCA stage CHECK): F08/F10/F11/F12/F17/F18/F19 — sequence nos 21–27.
+- **`periodic-plugin`** (`src/v1/periodic/`, prefix `/api/v1/periodic`, PDCA stage ACT): F09/F20/F21/F26/F27/F28/F02 — sequence nos 28–34.
+
+**Schema:** `prisma/schema/13-phase6.prisma` — 8 row models (`MidCycleCohortRow`, `ResourceItemRow`, `CqiImplementRow`, `ExhibitionGuestRow`, `PortfolioCriterionRow`, `CapstonePanelistRow`, `PortfolioRoadmapRow`, `PortfolioRubricRow`). 3 new enums in `01-enums.prisma`: `MidCycleStatus`, `AcquisitionStatus`, `CqiImplementationStatus`. 8 back-relations on `FormSubmission` in `06-forms.prisma`.
+
+**Submit gates** (registered in `lib/forms/submit-gates.ts`):
+- F11 `exhibition_feedback`: ≥3 `ExhibitionGuestRow` rows.
+- F19 `capstone_panel_evaluation`: ≥2 faculty + ≥1 industry `CapstonePanelistRow` rows.
+- F20 `alumni_tracer` / F21 `employer_satisfaction_survey`: no approved submission within 18 months (biennial).
+- F26 `systemic_gap_report`: `cohort_tracking` with 3+ consecutive NOT-MET cycles.
+- F27 `capa_plan`: referenced `systemic_gap_report` must be approved.
+
+**Tests:** `test/integration/check.test.ts` (9 tests) + `test/integration/periodic.test.ts` (10 tests).
 
 ## System Design Documentation
 

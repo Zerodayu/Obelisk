@@ -1,7 +1,7 @@
 # Obelisk Backend — System Design
 
 > **Product:** Obelisk — Outcomes-Based Educational Learning and Intelligent System Kit for Jose Maria College Foundation, Inc. (JMCFI)
-> **Status:** Backend-first build in progress — **Phase 0 foundation/stabilization complete** (typecheck/lint/bun:test green; forms module, python-server ingest client, and shared validators shipped behind `api/v1`; archival migration applied). Feature phases (1–7) build on this. **Frontend work is deferred until the backend is stable** (see `../roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
+> **Status:** Backend-first build in progress — **Phases 0–6 complete** (typecheck/lint/bun:test green; forms module, ingest, rollup, CQI/ACT loop, PLAN setup, and 14 supporting/periodic forms shipped behind `api/v1`; archival migration applied). Phase 7 (graduation-cluster archival pipeline) pending. **Frontend work is deferred until the backend is stable** (see `../roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
 
 ---
 
@@ -111,6 +111,28 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 **Enums appended to `01-enums.prisma`:** `IpdStage` (i, p, d), `CurriculumValidationStatus` (confirmed, pending_review, needs_update), `CalendarSection`, `PdcaPhase` (plan, do, check, act), `BudgetSource`. `CloToPloMap` gains a nullable `stage IpdStage?` column (attainment-side I-P-D modeling); `Plo` gains back-relations `directoryRows`/`targetRows`/`curriculumCells`; `FormSubmission` gains the six mirrored row relations above.
 
+### 2.13 Phase 6 — Supporting & Periodic / Institutional Forms — `13-phase6.prisma`
+
+**Implemented (Phase 6).** Dedicated row tables backing 14 DO/CHECK and periodic/institutional forms (migration `20260915145318_add_phase6`). Forms without dedicated rows store all data in `FormSubmission.formData` (JSON).
+
+- `MidCycleCohortRow` — F08 mid-cycle attainment per-CLO attainment by year level: `midCycleAttainmentId` → `FormSubmission` (relation `"MidCycleCohortRows"`, Cascade), `yearLevel Int`, `cloCode`, `cloDescription?`, `attainmentPct Decimal(5,2)`, `benchmarkPct Decimal(5,2)` default 70.00, `status String` (pending/met/early_warning/not_met), `studentCount Int`, `belowTargetCount Int`. Index `[midCycleAttainmentId]`.
+- `ResourceItemRow` — F09 resource monitoring budget line items: `resourceMonitorId` → `FormSubmission` (relation `"ResourceMonitorRows"`, Cascade), `budgetLineItemId?` → `BudgetLineItem` (SetNull), `name`, `phase PdcaPhase`, `acquisitionStatus String` (acquired/pending/not_acquired/na), `notes?`. Index `[resourceMonitorId]`.
+- `CqiImplementRow` — F09 CQI action implementation tracking: `resourceMonitorId` → `FormSubmission` (relation `"CqiImplementRows"`, Cascade), `cqiEntryId?` → `CqiEntry` (SetNull), `interventionDescription`, `implementationStatus String` (fully/partially/not_yet), `evidenceNotes Text?`. Index `[resourceMonitorId]`.
+- `ExhibitionGuestRow` — F11 exhibition feedback per-guest PLO ratings: `exhibitionFeedbackId` → `FormSubmission` (relation `"ExhibitionGuestRows"`, Cascade), `guestName`, `guestAffiliation?`, `ploRatings Json`, `overallComments Text?`. Index `[exhibitionFeedbackId]`. **Submit gate** requires ≥3 rows.
+- `PortfolioCriterionRow` — F18 portfolio assessment per-criterion rubric scoring: `portfolioAssessmentId` → `FormSubmission` (relation `"PortfolioCriterionRows"`, Cascade), `cloCode`, `cloDescription?`, `criterionName`, `maxScore Int` default 5, `assessor1Score?`, `assessor2Score?`, `industryScore?`, `consensusScore Decimal(5,2)?`, `attainmentPct Decimal(5,2)?`, `evidenceNotes Text?`. Index `[portfolioAssessmentId]`.
+- `CapstonePanelistRow` — F19 capstone panel evaluation per-panelist PLO ratings: `capstonePanelEvalId` → `FormSubmission` (relation `"CapstonePanelistRows"`, Cascade), `panelistName`, `panelistRole`, `ploRatings Json`, `overallComments Text?`. Index `[capstonePanelEvalId]`. **Submit gate** requires ≥2 faculty + ≥1 industry panelist.
+- `PortfolioRoadmapRow` — F02 portfolio roadmap 4-year milestones: `portfolioRoadmapId` → `FormSubmission` (relation `"PortfolioRoadmapSubmission"`, Cascade), `yearLevel Int`, `milestone`, `description Text`, `ploAlignment?`, `sortOrder Int`. Index `[portfolioRoadmapId]`.
+- `PortfolioRubricRow` — F02 portfolio roadmap rubric standards: `portfolioRoadmapId` → `FormSubmission` (relation `"PortfolioRoadmapSubmission"`, Cascade), `criterionName`, `description Text`, `weightPct Decimal(5,2)`, `rubricLevels Json`, `sortOrder Int`. Index `[portfolioRoadmapId]`. **Validation:** weight total must = 100%.
+
+**Enums appended to `01-enums.prisma`:** `MidCycleStatus` (pending, met, early_warning, not_met), `AcquisitionStatus` (acquired, pending, not_acquired, na), `CqiImplementationStatus` (fully, partially, not_yet). `FormSubmission` gains 8 back-relations: `midCycleCohortRows`, `resourceItems`, `cqiImplementRows`, `exhibitionGuestRows`, `portfolioCriterionRows`, `capstonePanelistRows`, `portfolioRoadmapRows`, `portfolioRubricRows`.
+
+**Submit gates** (registered in `lib/forms/submit-gates.ts`):
+- `exhibition_feedback`: blocks unless ≥3 `ExhibitionGuestRow` rows exist.
+- `capstone_panel_evaluation`: blocks unless ≥2 faculty + ≥1 industry `CapstonePanelistRow` rows exist.
+- `alumni_tracer` / `employer_satisfaction_survey`: blocks if an approved submission exists within the last 18 months (biennial gate).
+- `systemic_gap_report`: blocks unless a `cohort_tracking` submission exists with 3+ consecutive NOT-MET cycles for the program.
+- `capa_plan`: blocks unless the referenced `systemic_gap_report` submission is approved.
+
 ## 3. Roles & Authorization Matrix
 
 | Role | Scope | Typical actions |
@@ -201,6 +223,72 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
+**CHECK / Supporting Instruments** (`check-plugin`, prefix `/api/v1/check`):
+
+| Method | Path | Guard | Summary |
+| --- | --- | --- | --- |
+| GET | `/api/v1/check/mid-cycle-attainment` | `auth: true` | List mid-cycle attainment submissions (optional `programId`/`termId` filter) |
+| POST | `/api/v1/check/mid-cycle-attainment/init` | `auth: true` | Open (or reuse) a mid-cycle attainment draft |
+| GET | `/api/v1/check/mid-cycle-attainment/:id` | `auth: true` | Get mid-cycle attainment by submission id (incl. `MidCycleCohortRow` rows) |
+| PUT | `/api/v1/check/mid-cycle-attainment/:id` | `auth: true` | Save header + cohort rows; `draft`/`returned` only |
+| GET | `/api/v1/check/peer-observation` | `auth: true` | List peer observation submissions |
+| POST | `/api/v1/check/peer-observation/init` | `auth: true` | Open (or reuse) a peer observation draft |
+| GET | `/api/v1/check/peer-observation/:id` | `auth: true` | Get peer observation by submission id |
+| PUT | `/api/v1/check/peer-observation/:id` | `auth: true` | Save header + 7 fixed criteria; `draft`/`returned` only |
+| GET | `/api/v1/check/exhibition-feedback` | `auth: true` | List exhibition feedback submissions |
+| POST | `/api/v1/check/exhibition-feedback/init` | `auth: true` | Open (or reuse) an exhibition feedback draft |
+| GET | `/api/v1/check/exhibition-feedback/:id` | `auth: true` | Get exhibition feedback by submission id (incl. `ExhibitionGuestRow` rows) |
+| PUT | `/api/v1/check/exhibition-feedback/:id` | `auth: true` | Save header + guest rows; **submit gate** requires ≥3 `ExhibitionGuestRow` rows |
+| GET | `/api/v1/check/clo-perception-survey` | `auth: true` | List CLO perception survey submissions |
+| POST | `/api/v1/check/clo-perception-survey/init` | `auth: true` | Open (or reuse) a CLO perception survey draft |
+| GET | `/api/v1/check/clo-perception-survey/:id` | `auth: true` | Get CLO perception survey by submission id |
+| PUT | `/api/v1/check/clo-perception-survey/:id` | `auth: true` | Save header + CLO Likert rows; `draft`/`returned` only |
+| GET | `/api/v1/check/student-exit-survey` | `auth: true` | List student exit survey submissions |
+| POST | `/api/v1/check/student-exit-survey/init` | `auth: true` | Open (or reuse) a student exit survey draft |
+| GET | `/api/v1/check/student-exit-survey/:id` | `auth: true` | Get student exit survey by submission id |
+| PUT | `/api/v1/check/student-exit-survey/:id` | `auth: true` | Save header + PLO rows; `draft`/`returned` only |
+| GET | `/api/v1/check/portfolio-assessment` | `auth: true` | List portfolio assessment submissions |
+| POST | `/api/v1/check/portfolio-assessment/init` | `auth: true` | Open (or reuse) a portfolio assessment draft |
+| GET | `/api/v1/check/portfolio-assessment/:id` | `auth: true` | Get portfolio assessment by submission id (incl. `PortfolioCriterionRow` rows) |
+| PUT | `/api/v1/check/portfolio-assessment/:id` | `auth: true` | Save header + rubric criterion rows; `draft`/`returned` only |
+| GET | `/api/v1/check/capstone-panel` | `auth: true` | List capstone panel evaluation submissions |
+| POST | `/api/v1/check/capstone-panel/init` | `auth: true` | Open (or reuse) a capstone panel evaluation draft |
+| GET | `/api/v1/check/capstone-panel/:id` | `auth: true` | Get capstone panel evaluation by submission id (incl. `CapstonePanelistRow` rows) |
+| PUT | `/api/v1/check/capstone-panel/:id` | `auth: true` | Save header + panelist rows; **submit gate** requires ≥2 faculty + ≥1 industry panelist |
+
+**Periodic / Institutional Forms** (`periodic-plugin`, prefix `/api/v1/periodic`):
+
+| Method | Path | Guard | Summary |
+| --- | --- | --- | --- |
+| GET | `/api/v1/periodic/resource-monitoring` | `auth: true` | List resource monitoring submissions |
+| POST | `/api/v1/periodic/resource-monitoring/init` | `auth: true` | Open (or reuse) a resource monitoring draft |
+| GET | `/api/v1/periodic/resource-monitoring/:id` | `auth: true` | Get resource monitoring by submission id (incl. `ResourceItemRow` + `CqiImplementRow` rows) |
+| PUT | `/api/v1/periodic/resource-monitoring/:id` | `auth: true` | Save header + resource items + CQI implementation rows; `draft`/`returned` only |
+| GET | `/api/v1/periodic/alumni-tracer` | `auth: true` | List alumni tracer submissions |
+| POST | `/api/v1/periodic/alumni-tracer/init` | `auth: true` | Open (or reuse) an alumni tracer draft |
+| GET | `/api/v1/periodic/alumni-tracer/:id` | `auth: true` | Get alumni tracer by submission id |
+| PUT | `/api/v1/periodic/alumni-tracer/:id` | `auth: true` | Save header + employment indicators + PLO rows; **submit gate** blocks if approved submission exists within 18 months (biennial) |
+| GET | `/api/v1/periodic/employer-survey` | `auth: true` | List employer satisfaction survey submissions |
+| POST | `/api/v1/periodic/employer-survey/init` | `auth: true` | Open (or reuse) an employer satisfaction survey draft |
+| GET | `/api/v1/periodic/employer-survey/:id` | `auth: true` | Get employer satisfaction survey by submission id |
+| PUT | `/api/v1/periodic/employer-survey/:id` | `auth: true` | Save header + employer profiles + PLO rows; **submit gate** blocks if approved submission exists within 18 months (biennial) |
+| GET | `/api/v1/periodic/systemic-gap-report` | `auth: true` | List systemic gap report submissions |
+| POST | `/api/v1/periodic/systemic-gap-report/init` | `auth: true` | Open (or reuse) a systemic gap report draft |
+| GET | `/api/v1/periodic/systemic-gap-report/:id` | `auth: true` | Get systemic gap report by submission id |
+| PUT | `/api/v1/periodic/systemic-gap-report/:id` | `auth: true` | Save header + cycle evidence + root cause; **submit gate** requires `cohort_tracking` with 3+ consecutive NOT-MET cycles |
+| GET | `/api/v1/periodic/capa-plan` | `auth: true` | List CAPA plan submissions |
+| POST | `/api/v1/periodic/capa-plan/init` | `auth: true` | Open (or reuse) a CAPA plan draft |
+| GET | `/api/v1/periodic/capa-plan/:id` | `auth: true` | Get CAPA plan by submission id |
+| PUT | `/api/v1/periodic/capa-plan/:id` | `auth: true` | Save header + actions (≤8) + progress reviews; **submit gate** requires referenced `systemic_gap_report` to be approved |
+| GET | `/api/v1/periodic/institutional-review` | `auth: true` | List institutional review submissions |
+| POST | `/api/v1/periodic/institutional-review/init` | `auth: true` | Open (or reuse) an institutional review draft |
+| GET | `/api/v1/periodic/institutional-review/:id` | `auth: true` | Get institutional review by submission id |
+| PUT | `/api/v1/periodic/institutional-review/:id` | `auth: true` | Save header + program reviews + CQI completions; `draft`/`returned` only |
+| GET | `/api/v1/periodic/portfolio-roadmap` | `auth: true` | List portfolio roadmap submissions |
+| POST | `/api/v1/periodic/portfolio-roadmap/init` | `auth: true` | Open (or reuse) a portfolio roadmap draft |
+| GET | `/api/v1/periodic/portfolio-roadmap/:id` | `auth: true` | Get portfolio roadmap by submission id (incl. `PortfolioRoadmapRow` + `PortfolioRubricRow` rows) |
+| PUT | `/api/v1/periodic/portfolio-roadmap/:id` | `auth: true` | Save header + roadmap rows + rubric rows (weight total must = 100%); `draft`/`returned` only |
+
 > **Status machine** (enforced in `lib/forms/state-machine.ts`): `draft → submitted → returned → approved → archived`. `returned` is re-submittable; edits are restricted to `draft`/`returned`; approval chains must ascend the canonical role order (`program_chair → dean → aqau → vpaa`, skipping allowed). Every lifecycle action writes an `AuditLog` row (`forms` module).
 
 ### Planned (feature plugins, one per module mirroring the form catalog)
@@ -209,9 +297,9 @@ Per feature module `src/v1/{feature}/{controller,service,model}.ts`, mounted in 
 
 - `forms` — form CRUD, submit, approval actions, computed-field resolution, auto-population across related forms.
 - `attainment` — run `ComputationRun`, compute CLO/PLO attainment, diagnostics (divergence, at-risk).
-- `survey` — survey/feedback tabulation (indirect evidence).
 - `rollups` — cohort/program rollup + longitudinal (`cohort_tracking`) **implemented** (F14/F15/F16 under `/api/v1/rollup`); dashboards + report exports remain planned.
-- `monitoring` — audit-trail queries, systemic-gap trigger, CAPA lifecycle.
+- `check` — CHECK-stage supporting instruments **implemented** (F08/F10/F11/F12/F17/F18/F19 under `/api/v1/check`).
+- `periodic` — periodic/institutional forms **implemented** (F09/F20/F21/F26/F27/F28/F02 under `/api/v1/periodic`).
 
 ## 5. Form Catalog & Data Mapping (target)
 
@@ -220,33 +308,33 @@ Each row: **stable code → title → primary models → status / rules to enfor
 | Stable code | Form title | Primary models | Notes / rules |
 | --- | --- | --- | --- |
 | `curriculum_map` | CLO-PLO Curriculum Map | `Program`, `Plo`, `Clo`, `CloToPloMap`, `FormSubmission`, `PloDirectoryRow`, `CurriculumCourseRow`, `CurriculumMapCell` | **Implemented (Phase 5).** Dynamic PLO directory + year-grouped course matrix (I-P-D stage per cell); **Coverage Check** computed = any cell in a PLO column has I-P-D stage *D*. I-P-D also modeled on `CloToPloMap.stage` for the attainment side. |
-| `portfolio_roadmap` | Portfolio Roadmap and Rubric Standards | `Program`, `Plo`, `FormSubmission` (`formData`) | Reusable Year Roadmap (×4) + Rubric Criterion Block (×10); rubric weight **TOTAL must = 100%**. |
+| `portfolio_roadmap` | Portfolio Roadmap and Rubric Standards | `Program`, `Plo`, `FormSubmission`, `PortfolioRoadmapRow`, `PortfolioRubricRow` | **Implemented (Phase 6).** Reusable Year Roadmap (×4) + Rubric Criterion Block (×10); rubric weight **TOTAL must = 100%**; dedicated `PortfolioRoadmapRow` + `PortfolioRubricRow` tables. |
 | `assessment_calendar` | Assessment Calendar with Cohort Tracking Milestones | `AcademicTerm`, `FormSubmission`, `CalendarEventRow` | **Implemented (Phase 5).** 17 pre-seeded template rows (9 Semester 1 + 8 Annual/Sem2 institutional milestones) — dates editable, rows non-deletable; program-specific events fully free-form. |
 | `target_setting_matrix` | Target-Setting Matrix | `Plo`, `FormSubmission`, `PloTargetRow`, `CourseCloTargetRow` | **Implemented (Phase 5).** Seeded per-PLO target rows at the 70% default; **each target ≥70% hard floor**, rationale required above floor; Program PLO Avg bottom row computed per year level. |
 | `stakeholder_consultation` | Stakeholder Consultation Records | `Program`, `Plo`, `FormSubmission` | Fixed stakeholder groups (Faculty/Students/Alumni/Industry/PAC); PLO retain/revise/escalate decisions. |
 | `assessment_budget` | Approved Assessment Budget | `FormSubmission`, `BudgetLineItem` | **Implemented (Phase 5).** 12 fixed line items grouped by PDCA phase (11 named in the manual + Contingency/Miscellaneous) — non-deletable and extendable with program-specific items; TOTAL row computed. Mirrored downstream by `resource_monitoring`. |
 | `clo_raw_data` | Per-Student CLO Raw Data Sheet | `ClassSection`, `Course`, `Clo`, `AssessmentItem`, `StudentScore`, `Student`, `Enrollment`, `FormSubmission` | **Primary data-capture form.** CSV/Excel import path; **At-Risk auto-flag if any CLO <70%** (do not accept manual checkbox). |
-| `mid_cycle_attainment` | Mid-Cycle CLO Attainment Summary | `CloAttainment`, `AtRiskFlag`, `FormSubmission` | Reusable Cohort Attainment Block (×4); status vs ≥70% floor (MET/Early Warning/NOT MET); **At-Risk watchlist** sub-table. |
-| `resource_monitoring` | Resource Acquisition and Implementation Monitoring | `FormSubmission`, refs `assessment_budget` + `cqi_action_plan` | Mirrors budget line items (Acquired/Pending/Not Acquired/N/A); tracks CQI action implementation (Fully/Partially/Not Yet). |
-| `peer_observation` | Peer Observation Record | `FormSubmission` | 7 fixed criteria, each with its own rating scale + Evidence Observed text. |
-| `exhibition_feedback` | Portfolio Exhibition Industry Feedback | `FormSubmission` | **Min 3 industry guests (validation);** per-PLO rating (0-10) × guests, Mean computed; OVERALL MEAN computed. |
-| `clo_perception_survey` | CLO Achievement Perception Survey Tabulation | `FormSubmission`, refs direct attainment | 5-pt Likert tabulation; Mean + % rating 4+5 computed (target ≥80%); **divergence auto-flag** vs direct CLO attainment. |
+| `mid_cycle_attainment` | Mid-Cycle CLO Attainment Summary | `FormSubmission`, `MidCycleCohortRow` | **Implemented (Phase 6).** Reusable Cohort Attainment Block (×4) via dedicated `MidCycleCohortRow` table; status vs ≥70% floor (MET/Early Warning/NOT MET); **At-Risk watchlist** sub-table. |
+| `resource_monitoring` | Resource Acquisition and Implementation Monitoring | `FormSubmission`, `ResourceItemRow`, `CqiImplementRow`, refs `assessment_budget` + `cqi_action_plan` | **Implemented (Phase 6).** Dedicated `ResourceItemRow` + `CqiImplementRow` tables; mirrors budget line items (Acquired/Pending/Not Acquired/N/A); tracks CQI action implementation (Fully/Partially/Not Yet). |
+| `peer_observation` | Peer Observation Record | `FormSubmission` | **Implemented (Phase 6).** 7 fixed criteria, each with its own rating scale + Evidence Observed text (stored in `formData`). |
+| `exhibition_feedback` | Portfolio Exhibition Industry Feedback | `FormSubmission`, `ExhibitionGuestRow` | **Implemented (Phase 6).** Dedicated `ExhibitionGuestRow` table; **min 3 industry guests (submit gate);** per-PLO rating (0-10) × guests, Mean computed; OVERALL MEAN computed. |
+| `clo_perception_survey` | CLO Achievement Perception Survey Tabulation | `FormSubmission`, refs direct attainment | **Implemented (Phase 6).** 5-pt Likert tabulation; Mean + % rating 4+5 computed (target ≥80%); **divergence auto-flag** vs direct CLO attainment (stored in `formData`). |
 | `course_assessment_report` | Course Assessment Report (CAR) | `FormSubmission`, `CloAttainment`, `PloAttainment`, `AtRiskFlag` | **Hub form, 7 parts.** Part 2 rolls up assessment-category means (`exam`/`rubric`/`perf.tasks`/`portfolio` vs ≥70%); Part 3 auto-populates from stored attainment grouped by year-level cohort; Part 4 at-risk watchlist derives from `isBelowThreshold`; Part 5 CQI entries feed `plo_gap_analysis`/`cqi_action_plan`. Effects: `ensureDraft` + `generate` + `save` (parts 1/5/6/7 only), `generateFromSubmission`. |
 | `clo_attainment_summary` | CLO Attainment Summary (Full Term) | `CloAttainment`, `FormSubmission` | **Implemented (F14).** Per section: assembles the full-term per-CLO attainment (category means + composite vs ≥70%) from the section's computation run, groupable by year-level cohort; snapshots `computed {generatedAt, summary, rows}` into `formData` and audits. Effects: `ensureDraft`, `generate`/`generateFromSubmission`. |
 | `plo_attainment_summary` | PLO Attainment Summary | `PloAttainment`, `ComputationRun`, `FormSubmission` | **Implemented (F15).** Per program+term: feeds the program's section `etlSnapshotJson` to python-server `/analytics/summary` (Formula 7A/7C + Rule 3 — never re-implemented locally), persists the returned PLO roll-ups into `PloAttainment` under a fresh `ComputationRun` (`scope plo:<program>:<term>`), reports status vs each PLO's `targetAttainmentPct` and the students-below-target count; snapshots `computed` + audits. |
 | `cohort_tracking` | Cohort CLO/PLO Attainment Tracking Sheet | `Plo`, `PloAttainment`, `CloAttainment`, `ComputationRun`, `FormSubmission` | **Implemented (F16). Permanent retention + strict audit trail.** Longitudinal per-year-level CLO grid (Year 1-4), Trend (↑/↓/→) computed from consecutive term averages, CQI-triggered flag when any CLO in the latest term is NOT MET, plus stored PLO roll-ups; `generate` snapshots `computed {generatedAt, lines, plos}` and `save` merges CQI annotations into `formData` — every write audits. Cited by many later forms. |
-| `student_exit_survey` | Student Exit Survey Tabulation | `FormSubmission` | Response rate target ≥70%; tabulation by PLO × cohort; divergence flag OK/FLAG. |
-| `portfolio_assessment_record` | Portfolio Assessment Record with CLO Evidence | `FormSubmission` | Assessor panel (2 faculty + industry where required); rubric consensus score; attainment % computed. |
-| `capstone_panel_evaluation` | Capstone/Culminating Panel Evaluation | `FormSubmission` | **Min 2 faculty + 1 industry panelist (validation);** 10-pt PLO scoring; consensus + attainment computed; Program-Readiness declaration. |
-| `alumni_tracer` | Alumni Tracer Study Report | `FormSubmission` | 5 fixed employment indicators; PLO sufficiency ratings (target ≥70%, insufficiency flag ≥30%); **biennial**. |
-| `employer_satisfaction_survey` | Employer Satisfaction Survey | `FormSubmission` | ≥10 employers targeted; PLO competency ratings (target ≥70%); **biennial**. |
+| `student_exit_survey` | Student Exit Survey Tabulation | `FormSubmission` | **Implemented (Phase 6).** Response rate target ≥70%; tabulation by PLO × cohort; divergence flag OK/FLAG (stored in `formData`). |
+| `portfolio_assessment_record` | Portfolio Assessment Record with CLO Evidence | `FormSubmission`, `PortfolioCriterionRow` | **Implemented (Phase 6).** Dedicated `PortfolioCriterionRow` table; assessor panel (2 faculty + industry where required); rubric consensus score; attainment % computed. |
+| `capstone_panel_evaluation` | Capstone/Culminating Panel Evaluation | `FormSubmission`, `CapstonePanelistRow` | **Implemented (Phase 6).** Dedicated `CapstonePanelistRow` table; **min 2 faculty + 1 industry panelist (submit gate);** 10-pt PLO scoring; consensus + attainment computed; Program-Readiness declaration. |
+| `alumni_tracer` | Alumni Tracer Study Report | `FormSubmission` | **Implemented (Phase 6).** 5 fixed employment indicators; PLO sufficiency ratings (target ≥70%, insufficiency flag ≥30%); **biennial** (submit gate: blocks if approved within 18 months). |
+| `employer_satisfaction_survey` | Employer Satisfaction Survey | `FormSubmission` | **Implemented (Phase 6).** ≥10 employers targeted; PLO competency ratings (target ≥70%); **biennial** (submit gate: blocks if approved within 18 months). |
 | `plo_gap_analysis` | PLO Attainment Report with Gap Analysis | `PloAttainment`, `FormSubmission`, `GapRow` | **Implemented (Phase 4).** One `GapRow` per NOT-MET PLO-cohort combo; 6-category root cause; links CQI entries via `cqiActionPlanEntryId`. Derives per-PLO-per-cohort attainment from stored `CloAttainment` (through the CLO→PLO map + `student.year_level`), reconciles `GapRow` rows on regenerate, validates the 6-category root cause on save, snapshots `computed` + audits. Effects: `ensureDraft`, `generate`/`generateFromSubmission`, `save`. |
 | `cqi_action_plan` | CQI Action Plan | `FormSubmission` (stateful lifecycle) + `CqiEntry` + `GapRow` | **Implemented (Phase 4).** Two-phase lifecycle (planned this cycle → tracked next). `generate` creates one planned `CqiEntry` per open `GapRow` and links them; `track` flips entries to `tracked` with `interventionImplemented` + `currentAttainmentPct`. **Modeled as a stateful record per entry** (`CqiEntry.status`), not a static document. Feeds `resource_monitoring` §3 + `closing_the_loop`. |
 | `annual_program_report` | Annual Program Assessment Report (APAR) | `FormSubmission` | **Implemented (Phase 4).** 9 fixed attachments; 11-KPI dashboard computed (`overall_plo_attainment`, `y1–y4_cohort_clo_attainment`, `cqi_action_completion_rate` computed; remaining KPIs manual, all benchmarked ≥70% + auto MET/NOT MET); **validation gate: blocked if `cohort_tracking` absent** (enforced via submit-gate in `lib/forms/submit-gates.ts`). Due June 30. |
 | `closing_the_loop` | Closing-the-Loop (CTL) Report | `FormSubmission`, `CqiEntry`, `CtlRow` | **Implemented (Phase 4).** One `CtlRow` per tracked `CqiEntry`; **Loop Status hard-computed**: CLOSED only if all 5 conditions Yes; else OPEN-Re-assess / OPEN-Not Implemented (computed by `computeLoopStatus`, never a free field). Mandatory Identify step (4 prompts) saved to `formData`. |
-| `systemic_gap_report` | Systemic Gap Report | `FormSubmission` | **Trigger: 3 consecutive NOT-MET cycles (from `cohort_tracking`).** Due = trigger + 30 days (auto-computed). Structural response + CAPA outline. |
-| `capa_plan` | Corrective and Preventive Action Plan | `FormSubmission` | Refs system-gap report; actions/milestones (≤8); AQAU progress monitoring; closure when benchmark sustained 2+ cycles. |
-| `institutional_review` | Institutional Management Review | `FormSubmission` | Program APAR review summary; institutional CQI completion rate (target ≥70%); decisions D1-D5; July 15. |
+| `systemic_gap_report` | Systemic Gap Report | `FormSubmission` | **Implemented (Phase 6).** **Trigger: 3 consecutive NOT-MET cycles (from `cohort_tracking`).** Due = trigger + 30 days (auto-computed). Structural response + CAPA outline. **Submit gate** requires `cohort_tracking` with 3+ consecutive NOT-MET. |
+| `capa_plan` | Corrective and Preventive Action Plan | `FormSubmission` | **Implemented (Phase 6).** Refs system-gap report; actions/milestones (≤8); AQAU progress monitoring; closure when benchmark sustained 2+ cycles. **Submit gate** requires referenced `systemic_gap_report` approved. |
+| `institutional_review` | Institutional Management Review | `FormSubmission` | **Implemented (Phase 6).** Program APAR review summary; institutional CQI completion rate (target ≥70%); decisions D1-D5; July 15. |
 
 ### Provisional mapping note
 
@@ -289,6 +377,8 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   (Direct×70% + Indirect×30%) and annual_program_report
 ```
 
+**Implemented (Phase 6):** All 14 supporting/periodic forms shipped. `check-plugin` (`/api/v1/check`) handles F08/F10/F11/F12/F17/F18/F19; `periodic-plugin` (`/api/v1/periodic`) handles F09/F20/F21/F26/F27/F28/F02. Dedicated row tables for complex repeatable data (`MidCycleCohortRow`, `ResourceItemRow`, `CqiImplementRow`, `ExhibitionGuestRow`, `PortfolioCriterionRow`, `CapstonePanelistRow`, `PortfolioRoadmapRow`, `PortfolioRubricRow`); simpler forms store data in `FormSubmission.formData` JSON. 5 submit gates enforce cross-form dependencies.
+
 ## 7. Service Layer
 
 ### Implemented
@@ -309,6 +399,24 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   - `ClosingTheLoopService` F25 — `generate` opens one `CtlRow` per **tracked** CQI entry without a row (condition flags false, loop status computed); `save` recomputes `loopStatus` via `computeLoopStatus` from the merged condition flags + `interventionImplemented` + implemented text (never accepts a manual CLOSED) and persists the Identify step (4 prompts) into `formData`; audits `closing_the_loop.generated`/`.rows_saved`.
   - `AnnualProgramReportService` APAR — `generate` computes the 11-KPI dashboard (`overall_plo_attainment`, `y1–y4_cohort_clo_attainment` from per-year cohort means, `cqi_action_completion_rate` from tracked entries; remaining KPIs manual; each benchmarked 70 with `computeDashboardStatus`), snapshots `computed`, audits `annual_program_report.generated`; `save` merges attachments/narratives/dashboard; `latestTermWithData` picks the newest term with stored data when `termId` is omitted. **Submit gate** (module-registered via `lib/forms/submit-gates.ts`): APAR blocks submission unless `formData.attachments.cohort_tracking` is set **and** an approved `cohort_tracking` `FormSubmission` exists for the program.
   - Shared: `ensureCqiFormType` (race-safe `plo_gap_analysis` seq 17, `cqi_action_plan` seq 18, `annual_program_report` seq 19, `closing_the_loop` seq 20, `pdcaStage` ACT) / `listCqiSubmissions` / `snapshotFormData` / module-level `cqiAudit` (moduleAffected `cqi`).
+- **`check-service`** *(src/v1/check/{service,controller,model}.ts)* — 7 CHECK-stage supporting instruments (`check-plugin`, `pdcaStage` CHECK, prefix `/api/v1/check`):
+  - `MidCycleAttainmentService` F08 — `init`/`get`/`save` lifecycle; stores header in `formData`, per-CLO attainment by year level in `MidCycleCohortRow` (dedicated table); at-risk watchlist sub-table.
+  - `PeerObservationService` F10 — 7 fixed criteria with per-criterion rating scales; header + criteria stored in `formData`.
+  - `ExhibitionFeedbackService` F11 — per-guest PLO ratings in `ExhibitionGuestRow` (dedicated table); computed mean + overall mean. **Submit gate**: ≥3 guest rows.
+  - `CloPerceptionSurveyService` F12 — 5-pt Likert tabulation per CLO; divergence auto-flag vs direct attainment; stored in `formData`.
+  - `StudentExitSurveyService` F17 — response rate, PLO × cohort tabulation, divergence flag; stored in `formData`.
+  - `PortfolioAssessmentService` F18 — per-criterion rubric scoring in `PortfolioCriterionRow` (dedicated table); assessor panel (2 faculty + industry); consensus + attainment % computed.
+  - `CapstonePanelEvaluationService` F19 — per-panelist PLO ratings in `CapstonePanelistRow` (dedicated table); consensus + attainment computed. **Submit gate**: ≥2 faculty + ≥1 industry panelist.
+  - Shared: `ensureCheckFormType` (race-safe seq nos 21–27) / `listCheckSubmissions` / `snapshotFormData`.
+- **`periodic-service`** *(src/v1/periodic/{service,controller,model}.ts)* — 7 periodic/institutional forms (`periodic-plugin`, `pdcaStage` ACT, prefix `/api/v1/periodic`):
+  - `ResourceMonitoringService` F09 — budget line items in `ResourceItemRow` + CQI implementation tracking in `CqiImplementRow` (both dedicated tables); mirrors `assessment_budget` and `cqi_action_plan` data.
+  - `AlumniTracerService` F20 — 5 employment indicators + PLO sufficiency ratings; stored in `formData`. **Submit gate**: biennial (blocks if approved within 18 months).
+  - `EmployerSurveyService` F21 — employer profiles + PLO competency ratings; stored in `formData`. **Submit gate**: biennial (blocks if approved within 18 months).
+  - `SystemicGapReportService` F26 — 3-cycle evidence, root cause, structural response; stored in `formData`. **Submit gate**: requires `cohort_tracking` with 3+ consecutive NOT-MET cycles.
+  - `CapaPlanService` F27 — up to 8 action rows + progress reviews; stored in `formData`. **Submit gate**: requires referenced `systemic_gap_report` to be approved. **Validation**: max 8 actions enforced.
+  - `InstitutionalReviewService` F28 — program review summaries, CQI completion rates, decisions D1-D5; stored in `formData`. Due July 15.
+  - `PortfolioRoadmapService` F02 — 4-year roadmap in `PortfolioRoadmapRow` + rubric standards in `PortfolioRubricRow` (both dedicated tables). **Validation**: rubric weight total must = 100%.
+  - Shared: `ensurePeriodicFormType` (race-safe seq nos 28–34) / `listPeriodicSubmissions` / `snapshotFormData`.
 - **`plan-service`** *(src/v1/plan/{service,compute,controller}.ts)* — the four PLAN-phase setup forms F01/F03/F04/F06 (`plan-plugin`, `pdcaStage` PLAN):
   - `compute.ts` — pure, DB-free helpers: `coverageCheck` (curriculum-map Coverage Check per PLO = any cell with stage `d`), `programPloAverages` (per-year Program PLO Avg row), `assertPloTargetsValid` (≥70% hard floor via `MIN_ATTAINMENT_PCT` + rationale-required-above-floor; throws `TargetBelowFloorError`/`MissingRationaleError`), `budgetTotals` (estimated/approved TOTAL row).
   - `CurriculumMapService` F01 — `init` ensures the program's draft; `save` full-replaces directory rows + course rows (+ cells) in a transaction, linking `ploId` by code; header merged into `formData.header`; audits `.initialized`/`.saved`.
@@ -320,6 +428,8 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 ### Planned
 - **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
 - **`dashboard/rollup-service`** — institutional completion-rate and cross-program analytics (the per-program APAR KPIs ship with `cqi-service`).
+- **`survey-service`** — survey/feedback tabulation (indirect evidence) — now partially covered by `check-service` (F12 CLO perception survey, F17 student exit survey).
+- **`monitoring-service`** — audit-trail queries, systemic-gap trigger, CAPA lifecycle — now partially covered by `periodic-service` (F26 systemic gap report, F27 CAPA plan).
 - **`archival-service`** *(schema complete + migration applied; pipeline pending)* — graduation-cluster archival lifecycle. **Must run after PEO attainment capture** (biennial alumni/employer surveys) so compiled snapshots include PEO evidence:
   1. **Auto-create** at end of AY (June 30 / July 15 cycle): per program, find students whose `graduationTermId` = the closing term (graduates + `transferred_out`/`withdrawn`) → create `GraduationCluster(status=open)` listing candidates; nothing locked.
   2. **Confirm to compile** (`aqau`/`system_admin`): blocked until `peoAttainmentCapturedAt` is set; set `compiling`; per student in a transaction — (a) compile snapshot from lifetime `CloAttainment`/`PloAttainment`/`AtRiskFlag`/`FormSubmission` plus **PEO attainment** (`PeoAttainment` → entry `peoAttainment` column) into `compiledData`; (b) export full granular detail to a `detailArtifactUrl` (configurable storage); (c) purge granular hot rows (`StudentScore`, per-student `CloAttainment`, `AtRiskFlag`, detached `FormSubmission.formData`) while keeping `PloAttainment` + `class_section`/`enrollment`; (d) write `GraduationClusterEntry` + `AuditLog`.
@@ -337,5 +447,5 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 - I-P-D stage representation for curriculum-map cells and cohort progression (new column on `CloToPloMap` vs. JSON). — **RESOLVED in Phase 5:** nullable `IpdStage` enum column on `CloToPloMap` (attainment side) plus `IpdStage?` on `CurriculumMapCell` (curriculum-map cells).
 - Stateful CQI/logical status fields beyond the clean single-table forms (may warrant dedicated CQI/CTL tables rather than `FormSubmission.formData` JSON). — **RESOLVED in Phase 4:** dedicated `gap_row` / `cqi_entry` / `ctl_row` tables adopted (see §2.11).
 - Survey long-guide vs. row-normalized tabulations (JSON now, consider normalized later).
-- Portfolio/capstone per-criterion rubric rows — JSON within `FormSubmission` vs. dedicated tables.
+- Portfolio/capstone per-criterion rubric rows — JSON within `FormSubmission` vs. dedicated tables. — **RESOLVED in Phase 6:** dedicated `PortfolioCriterionRow` (F18) and `CapstonePanelistRow` (F19) tables adopted.
 - **Archival (schema done, pipeline pending):** implementation follows **after PEO attainment capture** (biennial alumni/employer surveys) — snapshots must include PEO evidence before granular purge. `PeoAttainment` rows (biennial, per `[peoId, termId]`) are the capture records; cluster compile is gated by `GraduationCluster.peoAttainmentCapturedAt`. Open items: object-storage provider for detail artifacts (`ARCHIVE_STORAGE_URL`; S3/MinIO/local in dev); how `graduated`/`graduationTermId` get set (registrar action for now — manual flag, external SIS sync later); DB-level write-blocking trigger as optional hardening; scope of granular purge (keep `PloAttainment`/`class_section`/`enrollment`).
