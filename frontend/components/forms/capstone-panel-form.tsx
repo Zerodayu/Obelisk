@@ -11,7 +11,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/server/actions/check";
@@ -191,20 +194,12 @@ export default function CapstonePanelForm() {
         <FramePanel>
           <div className="grid grid-cols-2 gap-4">
             <Field>
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="program ID"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Field>
-              <FieldLabel>Term ID</FieldLabel>
-              <Input
-                value={termId}
-                onChange={(e) => setTermId(e.target.value)}
-                placeholder="term ID"
-              />
+              <FieldLabel>Term</FieldLabel>
+              <TermSelect value={termId} onValueChange={setTermId} />
             </Field>
           </div>
           <Button
@@ -389,19 +384,20 @@ export default function CapstonePanelForm() {
                     />
                   </td>
                   <td className="px-3 py-2">
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    <FormSelect
                       value={p.panelistRole}
-                      onChange={(e) => {
+                      onValueChange={(v) => {
                         const rows = [...payload.panelistRows];
-                        rows[i] = { ...rows[i], panelistRole: e.target.value };
+                        rows[i] = { ...rows[i], panelistRole: v };
                         setPayload({ ...payload, panelistRows: rows });
                       }}
-                    >
-                      <option value="faculty">Faculty</option>
-                      <option value="industry">Industry</option>
-                      <option value="other">Other</option>
-                    </select>
+                      options={[
+                        { value: "faculty", label: "Faculty" },
+                        { value: "industry", label: "Industry" },
+                        { value: "other", label: "Other" },
+                      ]}
+                      className="w-full"
+                    />
                   </td>
                   <td className="px-3 py-2">
                     <Input
