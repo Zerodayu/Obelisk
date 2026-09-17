@@ -12,6 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { toast, toastError } from "@/components/ui/toast";
 import {
   initAssessmentCalendar,
@@ -151,20 +153,12 @@ export function AssessmentCalendarForm() {
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="e.g. prog_cs"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Field>
-              <FieldLabel>Term ID</FieldLabel>
-              <Input
-                value={termId}
-                onChange={(e) => setTermId(e.target.value)}
-                placeholder="e.g. 2025-2-s1"
-              />
+              <FieldLabel>Term</FieldLabel>
+              <TermSelect value={termId} onValueChange={setTermId} />
             </Field>
             <div className="flex items-end">
               <Button

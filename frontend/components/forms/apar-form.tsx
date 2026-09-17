@@ -11,7 +11,7 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { generateApar, saveApar } from "@/server/actions/cqi";
@@ -128,12 +128,8 @@ export function AparForm() {
         <FramePanel>
           <div className="flex items-end gap-3">
             <Field className="flex-1">
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="e.g. prog_cs"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Button
               onClick={handleGenerate}

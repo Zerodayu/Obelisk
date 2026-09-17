@@ -11,7 +11,7 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { toast, toastError } from "@/components/ui/toast";
 import { generateCloSummary } from "@/server/actions/rollup";
 
@@ -92,12 +92,8 @@ export function CloSummaryForm() {
         <FramePanel>
           <div className="flex items-end gap-3">
             <Field className="flex-1">
-              <FieldLabel>Class Section ID</FieldLabel>
-              <Input
-                value={classSectionId}
-                onChange={(e) => setClassSectionId(e.target.value)}
-                placeholder="e.g. clx_abc123"
-              />
+              <FieldLabel>Class Section</FieldLabel>
+              <ClassSectionSelect value={classSectionId} onValueChange={setClassSectionId} />
             </Field>
             <Button
               onClick={handleGenerate}

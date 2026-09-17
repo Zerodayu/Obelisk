@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { ROOT_CAUSES } from "@/lib/constants/obe";
@@ -659,11 +660,10 @@ export function CarForm() {
         <FramePanel>
           <div className="flex items-end gap-3">
             <Field className="flex-1">
-              <FieldLabel>Class Section ID</FieldLabel>
-              <Input
+              <FieldLabel>Class Section</FieldLabel>
+              <ClassSectionSelect
                 value={classSectionId}
-                onChange={(e) => setClassSectionId(e.target.value)}
-                placeholder="e.g. clx_abc123"
+                onValueChange={setClassSectionId}
               />
             </Field>
             <Button
