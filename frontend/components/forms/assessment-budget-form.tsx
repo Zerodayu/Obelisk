@@ -11,7 +11,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import {
@@ -141,20 +144,12 @@ export function AssessmentBudgetForm() {
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="e.g. prog_cs"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Field>
-              <FieldLabel>Term ID</FieldLabel>
-              <Input
-                value={termId}
-                onChange={(e) => setTermId(e.target.value)}
-                placeholder="e.g. 2025-2-s1"
-              />
+              <FieldLabel>Term</FieldLabel>
+              <TermSelect value={termId} onValueChange={setTermId} />
             </Field>
             <div className="flex items-end">
               <Button
@@ -198,20 +193,15 @@ export function AssessmentBudgetForm() {
                 {lineItems.map((item, idx) => (
                   <tr key={item.id} className="border-b last:border-0">
                     <td className="py-1 pr-2">
-                      <select
+                      <FormSelect
                         value={item.phase}
-                        onChange={(e) =>
-                          updateItem(idx, "phase", e.target.value)
-                        }
-                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                        onValueChange={(v) => updateItem(idx, "phase", v)}
+                        options={PHASES.map((p) => ({
+                          value: p,
+                          label: p.toUpperCase(),
+                        }))}
                         disabled={item.isFixed}
-                      >
-                        {PHASES.map((p) => (
-                          <option key={p} value={p}>
-                            {p.toUpperCase()}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </td>
                     <td className="py-1 pr-2">
                       {item.isFixed ? (
@@ -258,20 +248,20 @@ export function AssessmentBudgetForm() {
                       />
                     </td>
                     <td className="py-1 pr-2">
-                      <select
+                      <FormSelect
                         value={item.source ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, "source", e.target.value || null)
+                        onValueChange={(v) =>
+                          updateItem(idx, "source", v || null)
                         }
-                        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-                      >
-                        <option value="">—</option>
-                        {SOURCES.map((s) => (
-                          <option key={s} value={s}>
-                            {s.toUpperCase()}
-                          </option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: "", label: "—" },
+                          ...SOURCES.map((s) => ({
+                            value: s,
+                            label: s.toUpperCase(),
+                          })),
+                        ]}
+                        placeholder="—"
+                      />
                     </td>
                     <td className="py-1 pr-2">
                       <Input
