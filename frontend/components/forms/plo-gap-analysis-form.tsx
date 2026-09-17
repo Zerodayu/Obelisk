@@ -11,7 +11,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import {
@@ -19,14 +22,7 @@ import {
   savePloGapAnalysis,
 } from "@/server/actions/cqi";
 
-const ROOT_CAUSES = [
-  "1-Curriculum Design",
-  "2-Instruction & Pedagogy",
-  "3-Assessment Design",
-  "4-Student Factors",
-  "5-Resources & Tools",
-  "6-Industry & Field Alignment",
-];
+import { ROOT_CAUSES } from "@/lib/constants/obe";
 
 interface GapRow {
   id: string;
@@ -140,20 +136,12 @@ export function PloGapAnalysisForm() {
         <FramePanel>
           <div className="grid gap-3 sm:grid-cols-3">
             <Field>
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="e.g. prog_cs"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Field>
-              <FieldLabel>Term ID</FieldLabel>
-              <Input
-                value={termId}
-                onChange={(e) => setTermId(e.target.value)}
-                placeholder="e.g. 2025-2-s1"
-              />
+              <FieldLabel>Term</FieldLabel>
+              <TermSelect value={termId} onValueChange={setTermId} />
             </Field>
             <div className="flex items-end">
               <Button
@@ -287,23 +275,17 @@ export function PloGapAnalysisForm() {
                         {row.gap !== null ? `+${row.gap.toFixed(1)}%` : "—"}
                       </td>
                       <td className="py-1 pr-2">
-                        <select
+                        <FormSelect
                           value={row.rootCauseCategory}
-                          onChange={(e) =>
-                            updateGapRow(
-                              idx,
-                              "rootCauseCategory",
-                              e.target.value,
-                            )
+                          onValueChange={(v) =>
+                            updateGapRow(idx, "rootCauseCategory", v)
                           }
-                          className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
-                        >
-                          {ROOT_CAUSES.map((rc) => (
-                            <option key={rc} value={rc}>
-                              {rc}
-                            </option>
-                          ))}
-                        </select>
+                          options={ROOT_CAUSES.map((rc) => ({
+                            value: rc,
+                            label: rc,
+                          }))}
+                          className="w-full"
+                        />
                       </td>
                       <td className="py-1 pr-2">
                         <Input
