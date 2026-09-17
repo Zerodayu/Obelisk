@@ -17,13 +17,12 @@ import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { ROOT_CAUSES } from "@/lib/constants/obe";
 import {
   generateCqiActionPlan,
   saveCqiActionPlan,
   trackCqiEntries,
 } from "@/server/actions/cqi";
-
-import { ROOT_CAUSES } from "@/lib/constants/obe";
 
 interface CqiEntry {
   id: string;
