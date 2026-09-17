@@ -35,7 +35,7 @@ import type { UserRole } from "@/lib/roles";
  *
  * `satisfies UserRole` errors at compile time if a wrong role is typed here.
  */
-export const DEV_ROLE = "faculty" satisfies UserRole;
+export const DEV_ROLE = "dean" satisfies UserRole;
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
 export const DEV_USER: ApiUser = {
@@ -247,6 +247,19 @@ async function actionFetch<T>(
  * (with the backend's message) so actions can surface them to the UI.
  */
 export const actionApi = {
+  get: <T>(
+    path: string,
+    query?: Record<string, string | number | boolean | null | undefined>,
+  ) => {
+    const url = new URL(`${API_ROOT}${path}`);
+    if (query) {
+      for (const [key, value] of Object.entries(query)) {
+        if (value === undefined || value === null) continue;
+        url.searchParams.set(key, String(value));
+      }
+    }
+    return actionFetch<T>(url.pathname + url.search);
+  },
   post: <T>(path: string, body?: unknown) =>
     actionFetch<T>(path, {
       method: "POST",
