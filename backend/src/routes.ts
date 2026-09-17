@@ -1,4 +1,5 @@
 import Elysia from "elysia";
+import { academicPlugin } from "./v1/academic/controller";
 import { authPlugin } from "./v1/auth/controller";
 import { carPlugin } from "./v1/car/controller";
 import { checkPlugin } from "./v1/check/controller";
@@ -11,6 +12,7 @@ import { rollupPlugin } from "./v1/rollup/controller";
 
 export const apiRoutesV1 = new Elysia({ prefix: "api/v1" })
 	.use(authPlugin)
+	.use(academicPlugin)
 	.use(formsPlugin)
 	.use(ingestPlugin)
 	.use(carPlugin)
