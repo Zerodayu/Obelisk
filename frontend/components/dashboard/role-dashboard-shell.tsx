@@ -1,5 +1,7 @@
 "use client";
 
+import { AiSuggestionsDrawer } from "@/components/dashboard/ai-suggestions-drawer";
+
 /**
  * Shared presentational shell for role dashboards. Renders a scoped header
  * (title + the unit the role operates within) and a responsive stat-card row.
@@ -39,18 +41,24 @@ export function DashboardShell({
 }) {
   return (
     <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
-          {scopeLabel ? (
-            <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-              {scopeLabel}
-            </span>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+            {scopeLabel ? (
+              <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                {scopeLabel}
+              </span>
+            ) : null}
+          </div>
+          {description ? (
+            <p className="text-sm text-muted-foreground">{description}</p>
           ) : null}
         </div>
-        {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        ) : null}
+
+        <div className="flex">
+          <AiSuggestionsDrawer />
+        </div>
       </div>
 
       {stats && stats.length > 0 ? (
