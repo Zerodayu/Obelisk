@@ -10,7 +10,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/server/actions/check";
 import {
@@ -176,20 +179,12 @@ export default function MidCycleAttainmentForm() {
         <FramePanel>
           <div className="grid grid-cols-2 gap-4 max-w-md">
             <Field>
-              <FieldLabel>Program ID</FieldLabel>
-              <Input
-                value={programId}
-                onChange={(e) => setProgramId(e.target.value)}
-                placeholder="e.g. BSCS"
-              />
+              <FieldLabel>Program</FieldLabel>
+              <ProgramSelect value={programId} onValueChange={setProgramId} />
             </Field>
             <Field>
-              <FieldLabel>Term ID</FieldLabel>
-              <Input
-                value={termId}
-                onChange={(e) => setTermId(e.target.value)}
-                placeholder="e.g. 2025-2"
-              />
+              <FieldLabel>Term</FieldLabel>
+              <TermSelect value={termId} onValueChange={setTermId} />
             </Field>
           </div>
           <div className="mt-4">
@@ -367,18 +362,19 @@ export default function MidCycleAttainmentForm() {
                 {payload.cohortRows.map((row, idx) => (
                   <tr key={idx} className="border-b">
                     <td className="px-3 py-2">
-                      <select
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                        value={row.yearLevel}
-                        onChange={(e) =>
-                          updateRow(idx, "yearLevel", Number(e.target.value))
+                      <FormSelect
+                        value={String(row.yearLevel)}
+                        onValueChange={(v) =>
+                          updateRow(idx, "yearLevel", Number(v))
                         }
-                      >
-                        <option value={1}>1</option>
-                        <option value={2}>2</option>
-                        <option value={3}>3</option>
-                        <option value={4}>4</option>
-                      </select>
+                        options={[
+                          { value: "1", label: "1" },
+                          { value: "2", label: "2" },
+                          { value: "3", label: "3" },
+                          { value: "4", label: "4" },
+                        ]}
+                        className="w-full"
+                      />
                     </td>
                     <td className="px-3 py-2">
                       <Input
@@ -424,18 +420,17 @@ export default function MidCycleAttainmentForm() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <select
-                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      <FormSelect
                         value={row.status}
-                        onChange={(e) =>
-                          updateRow(idx, "status", e.target.value)
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="met">Met</option>
-                        <option value="early_warning">Early Warning</option>
-                        <option value="not_met">Not Met</option>
-                      </select>
+                        onValueChange={(v) => updateRow(idx, "status", v)}
+                        options={[
+                          { value: "pending", label: "Pending" },
+                          { value: "met", label: "Met" },
+                          { value: "early_warning", label: "Early Warning" },
+                          { value: "not_met", label: "Not Met" },
+                        ]}
+                        className="w-full"
+                      />
                     </td>
                     <td className="px-3 py-2">
                       <Input
