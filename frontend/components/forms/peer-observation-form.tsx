@@ -10,7 +10,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
+import { ProgramSelect } from "@/components/ui/program-select";
+import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/server/actions/check";
@@ -182,20 +185,12 @@ export default function PeerObservationForm() {
         </FrameHeader>
         <FramePanel className="space-y-4">
           <Field>
-            <FieldLabel>Program ID</FieldLabel>
-            <Input
-              value={programId}
-              onChange={(e) => setProgramId(e.target.value)}
-              placeholder="Enter program ID"
-            />
+            <FieldLabel>Program</FieldLabel>
+            <ProgramSelect value={programId} onValueChange={setProgramId} />
           </Field>
           <Field>
-            <FieldLabel>Term ID</FieldLabel>
-            <Input
-              value={termId}
-              onChange={(e) => setTermId(e.target.value)}
-              placeholder="Enter term ID"
-            />
+            <FieldLabel>Term</FieldLabel>
+            <TermSelect value={termId} onValueChange={setTermId} />
           </Field>
           <Button
             onClick={handleInit}
@@ -306,22 +301,17 @@ export default function PeerObservationForm() {
           ).map((key) => (
             <Field key={key}>
               <FieldLabel>{CRITERIA_LABELS[key]}</FieldLabel>
-              <select
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              <FormSelect
                 value={
                   (payload.criteria as Record<string, string | undefined>)[
                     key
                   ] ?? ""
                 }
-                onChange={(e) => updateCriteria(key, e.target.value)}
-              >
-                <option value="">Select...</option>
-                {CRITERIA_OPTIONS[key].map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
+                onValueChange={(v) => updateCriteria(key, v)}
+                options={CRITERIA_OPTIONS[key]}
+                placeholder="Select…"
+                className="w-full"
+              />
             </Field>
           ))}
         </FramePanel>
