@@ -13,9 +13,11 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { ROOT_CAUSES } from "@/lib/constants/obe";
 import {
   type CarPayload,
   carDirtyAtom,
@@ -273,15 +275,6 @@ function Part5({
   part5: CarPayload["part5"];
   onChange: (rows: CarPayload["part5"]) => void;
 }) {
-  const ROOT_CAUSES = [
-    "1-Curriculum Design",
-    "2-Instruction & Pedagogy",
-    "3-Assessment Design",
-    "4-Student Factors",
-    "5-Resources & Tools",
-    "6-Industry & Field Alignment",
-  ];
-
   const updateRow = (idx: number, field: string, value: string) => {
     const next = [...part5];
     next[idx] = { ...next[idx], [field]: value };
@@ -337,19 +330,17 @@ function Part5({
                     />
                   </td>
                   <td className="py-1 pr-2">
-                    <select
+                    <FormSelect
                       value={row.rootCauseCategory}
-                      onChange={(e) =>
-                        updateRow(idx, "rootCauseCategory", e.target.value)
+                      onValueChange={(v) =>
+                        updateRow(idx, "rootCauseCategory", v)
                       }
-                      className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm"
-                    >
-                      {ROOT_CAUSES.map((rc) => (
-                        <option key={rc} value={rc}>
-                          {rc}
-                        </option>
-                      ))}
-                    </select>
+                      options={ROOT_CAUSES.map((rc) => ({
+                        value: rc,
+                        label: rc,
+                      }))}
+                      className="w-full"
+                    />
                   </td>
                   <td className="py-1 pr-2">
                     <Input
