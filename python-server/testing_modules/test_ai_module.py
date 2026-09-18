@@ -64,7 +64,24 @@ async def main():
     cqi_result = await generate_cqi_recommendation(header, attainments)
 
     print_step("3. Full CQI Recommendation Result")
-    print_json(cqi_result)
+
+    # Print the structured metadata as JSON
+    metadata = {
+        "course_code": cqi_result.get("course_code"),
+        "status": cqi_result.get("status"),
+        "gaps": cqi_result.get("gaps"),
+    }
+    print_json(metadata, title="Metadata & Gaps")
+
+    # Print the LLM recommendation as raw text to render Markdown formatting cleanly
+    print("\n" + "=" * 50)
+    print("AI RECOMMENDATION REPORT (RENDERED MARKDOWN):")
+    print("=" * 50 + "\n")
+    if cqi_result.get("recommendation"):
+        print(cqi_result["recommendation"])
+    else:
+        print("[No recommendation text generated]")
+    print("\n" + "=" * 50)
 
     print_step("4. Verification")
     
