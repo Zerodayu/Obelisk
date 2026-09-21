@@ -140,35 +140,54 @@ export function CurriculumMapForm() {
 
   if (!payload) {
     return (
-      <Frame>
-        <FrameHeader>
-          <FrameTitle>Initialize Curriculum Map</FrameTitle>
-          <FrameDescription>
-            Set up the PLO directory and I-P-D × course matrix for a program +
-            term.
-          </FrameDescription>
-        </FrameHeader>
-        <FramePanel>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field>
-              <FieldLabel>Program</FieldLabel>
-              <ProgramSelect value={programId} onValueChange={setProgramId} />
-            </Field>
-            <Field>
-              <FieldLabel>Term</FieldLabel>
-              <TermSelect value={termId} onValueChange={setTermId} />
-            </Field>
-            <div className="flex items-end">
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !programId.trim() || !termId.trim()}
-              >
-                {loading ? "Initializing..." : "Initialize"}
-              </Button>
+      <div className="space-y-6">
+        <Frame>
+          <FrameHeader>
+            <FrameTitle>Initialize Curriculum Map</FrameTitle>
+            <FrameDescription>
+              Set up the PLO directory and I-P-D × course matrix for a program +
+              term.
+            </FrameDescription>
+          </FrameHeader>
+          <FramePanel>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field>
+                <FieldLabel>Program</FieldLabel>
+                <ProgramSelect value={programId} onValueChange={setProgramId} />
+              </Field>
+              <Field>
+                <FieldLabel>Term</FieldLabel>
+                <TermSelect value={termId} onValueChange={setTermId} />
+              </Field>
+              <div className="flex items-end">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={loading || !programId.trim() || !termId.trim()}
+                >
+                  {loading ? "Initializing..." : "Initialize"}
+                </Button>
+              </div>
             </div>
-          </div>
-        </FramePanel>
-      </Frame>
+          </FramePanel>
+        </Frame>
+
+        {/* CLO-PLO Connections - visible even before initialization */}
+        {programId.trim() && (
+          <Frame>
+            <FrameHeader>
+              <FrameTitle>CLO-PLO Connections</FrameTitle>
+              <FrameDescription>
+                Explicitly map Course Learning Outcomes to Program Learning
+                Outcomes. These connections are used by the attainment
+                computation chain.
+              </FrameDescription>
+            </FrameHeader>
+            <FramePanel>
+              <CloPloMapPanel programId={programId} />
+            </FramePanel>
+          </Frame>
+        )}
+      </div>
     );
   }
 
