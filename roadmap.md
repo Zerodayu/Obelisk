@@ -132,6 +132,8 @@ The term-level hub that consolidates a term's data.
 
 **Done (Phase 5):** the four PLAN setup forms ship as `src/v1/plan/` exposed under `/api/v1/plan` (`plan-plugin`, `pdcaStage` PLAN). Dedicated row tables in `12-plan.prisma` (migration `20260823170939_add_plan_phase_setup_forms`): `curriculum_map` full-replaces the PLO directory + year-grouped I-P-D matrix and computes the Coverage Check per PLO; `assessment_calendar` seeds 17 institutional template milestones (editable, non-deletable) plus free-form program-specific events; `target_setting_matrix` seeds 70%-default PLO rows and enforces the ≥70% hard floor with rationale-required-above-floor on save; `assessment_budget` seeds the 12 fixed line items by PDCA phase (non-deletable, extendable) with computed estimated/approved TOTALs. `CloToPloMap.stage` models the attainment-side I-P-D stage. Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 120 tests).
 
+**CLO-PLO Connection (added):** `CloToPloMapService` provides CRUD for the many-to-many CLO↔PLO mapping (`/plan/clo-plo-map/*`) with weight (0–1) and optional I-P-D stage. Frontend panel integrated into the curriculum map form (`clo-plo-map-panel.tsx`) lets users create, edit, and delete connections with dropdown selectors for CLOs (grouped by course) and PLOs.
+
 ---
 
 ## Phase 6 — Supporting & Periodic / Institutional Forms
@@ -220,7 +222,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] `cqi_action_plan` (`/forms/cqi/cqi-action-plan`) — action plan table with tracking
 - [x] `closing_the_loop` (`/forms/cqi/closing-the-loop`) — condition editor + identify section
 - [x] `annual_program_report` (`/forms/cqi/annual-program-report`) — KPIs + attachments + narratives
-- [x] `curriculum_map` (`/forms/plan/curriculum-map`) — I-P-D matrix with toggle cells
+- [x] `curriculum_map` (`/forms/plan/curriculum-map`) — I-P-D matrix with toggle cells + CLO-PLO connection panel (weight/stage per mapping)
 - [x] `assessment_calendar` (`/forms/plan/assessment-calendar`) — calendar event table
 - [x] `target_setting_matrix` (`/forms/plan/target-setting-matrix`) — PLO + CLO target tables
 - [x] `assessment_budget` (`/forms/plan/assessment-budget`) — budget line-item table
@@ -321,7 +323,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### CLO/PLO Management
 
-- [ ] **Add CLOs and PLOs with connection** — CRUD operations for CLOs and PLOs (add, edit, delete) + ability to link/map them to each other; currently `curriculum_map` shows the matrix but there is no standalone CLO/PLO entity management
+- [x] **Add CLOs and PLOs with connection** — CRUD operations for CLOs and PLOs (add, edit, delete) + ability to link/map them to each other; currently `curriculum_map` shows the matrix but there is no standalone CLO/PLO entity management — **Done:** added `CloToPloMapService` with list/create/update/delete endpoints (`/plan/clo-plo-map/*`), integrated CLO-PLO connection panel into curriculum map form with weight (0-1) and I-P-D stage per mapping
 
 ### Forms & Workflow
 
