@@ -308,3 +308,25 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - `python-server` database/auth scaffolding (`app/database`, `app/models`) is unused — pending removal decision.
 - **DB blocker (resolved):** Neon (`ep-delicate-water-azqj15d0-pooler...neon.tech`) is reachable; archival migration applied and DB integration tests run in the suite. Monitor for future outages.
 - **Archival storage:** object-storage provider for `detailArtifactUrl` TBD (S3/MinIO/local in dev; `ARCHIVE_STORAGE_URL`).
+
+---
+
+## Backlog
+
+### Data Pipeline & Integration
+
+- [ ] **Class record as required input** — class record upload is a hard prerequisite for the downstream pipeline (ingest → ETL → CAR → PLO → CQI); enforce at form level
+- [ ] **Input → Output pipeline (class record → CQI)** — end-to-end integration: upload class record → compute CLO attainment → generate CAR → roll up to PLO → feed CQI gap analysis + action plan; verify no manual re-entry
+- [ ] **CLO-to-PLO connection** — wire the attainment-side CLO→PLO mapping end-to-end (confirm `curriculum_map` linkage feeds correctly into rollup chain and CQI)
+
+### CLO/PLO Management
+
+- [ ] **Add CLOs and PLOs with connection** — CRUD operations for CLOs and PLOs (add, edit, delete) + ability to link/map them to each other; currently `curriculum_map` shows the matrix but there is no standalone CLO/PLO entity management
+
+### Forms & Workflow
+
+- [ ] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs
+
+### Bug / Investigation
+
+- [ ] **Phantom GET calls on server** — investigate and fix unidentified/phantom GET requests hitting the backend; root-cause whether these are client-side misfires, stale polling, or external probes
