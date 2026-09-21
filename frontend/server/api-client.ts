@@ -35,7 +35,7 @@ import type { UserRole } from "@/lib/roles";
  *
  * `satisfies UserRole` errors at compile time if a wrong role is typed here.
  */
-export const DEV_ROLE = "dean" satisfies UserRole;
+export const DEV_ROLE = "faculty" satisfies UserRole;
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
 export const DEV_USER: ApiUser = {
@@ -270,6 +270,7 @@ export const actionApi = {
       method: "PUT",
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
+  delete: <T>(path: string) => actionFetch<T>(path, { method: "DELETE" }),
 };
 
 /**

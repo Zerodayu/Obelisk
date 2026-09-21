@@ -272,3 +272,114 @@ export async function saveAssessmentBudget(
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// CLO-PLO Mapping
+// ---------------------------------------------------------------------------
+
+export interface CloPloMapDto {
+  id: string;
+  cloId: string;
+  ploId: string;
+  weight: number;
+  stage: string | null;
+  clo: { code: string; description: string; courseId: string };
+  plo: { code: string; description: string };
+}
+
+export interface CloEntity {
+  id: string;
+  code: string;
+  description: string;
+  courseId: string;
+  courseCode: string;
+  courseTitle: string;
+}
+
+export interface PloEntity {
+  id: string;
+  code: string;
+  description: string;
+}
+
+export async function listCloPloMaps(
+  programId: string,
+  courseId?: string,
+): Promise<ActionResult<CloPloMapDto[]>> {
+  try {
+    const params = new URLSearchParams({ programId });
+    if (courseId) params.set("courseId", courseId);
+    const data = await actionApi.get<CloPloMapDto[]>(
+      `/plan/clo-plo-map?${params.toString()}`,
+    );
+    return { ok: true, data };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to load CLO-PLO mappings."),
+    };
+  }
+}
+
+export async function listCloPloEntities(
+  programId: string,
+): Promise<ActionResult<{ clos: CloEntity[]; plos: PloEntity[] }>> {
+  try {
+    const data = await actionApi.get<{ clos: CloEntity[]; plos: PloEntity[] }>(
+      `/plan/clo-plo-map/entities?programId=${programId}`,
+    );
+    return { ok: true, data };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to load CLOs and PLOs."),
+    };
+  }
+}
+
+export async function createCloPloMap(body: {
+  cloId: string;
+  ploId: string;
+  weight?: number;
+  stage?: string;
+}): Promise<ActionResult<CloPloMapDto>> {
+  try {
+    const data = await actionApi.post<CloPloMapDto>("/plan/clo-plo-map", body);
+    return { ok: true, data };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to create CLO-PLO mapping."),
+    };
+  }
+}
+
+export async function updateCloPloMap(
+  id: string,
+  body: { weight?: number; stage?: string },
+): Promise<ActionResult<CloPloMapDto>> {
+  try {
+    const data = await actionApi.put<CloPloMapDto>(
+      `/plan/clo-plo-map/${id}`,
+      body,
+    );
+    return { ok: true, data };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to update CLO-PLO mapping."),
+    };
+  }
+}
+
+export async function deleteCloPloMap(id: string): Promise<ActionResult<void>> {
+  try {
+    await actionApi.delete(`/plan/clo-plo-map/${id}`);
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to delete CLO-PLO mapping."),
+    };
+  }
+}

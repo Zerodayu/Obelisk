@@ -11,13 +11,18 @@ import {
 import type {
 	AssessmentBudgetPayload,
 	AssessmentCalendarPayload,
+	CloDto,
+	CloToPloMapDto,
+	CloToPloMapInput,
 	CurriculumMapPayload,
 	PlanSubmissionListItem,
+	PloDto,
 	SaveAssessmentBudget,
 	SaveAssessmentCalendar,
 	SaveCurriculumMap,
 	SaveTargetSettingMatrix,
 	TargetSettingMatrixPayload,
+	UpdateCloToPloMap,
 } from "./model";
 
 const CURRICULUM_MAP_CODE = "curriculum_map";
@@ -949,7 +954,232 @@ export class AssessmentBudgetService {
 	}
 }
 
+// --- clo_to_plo_map ----------------------------------------------------------------
+
+export class CloToPloMapNotFoundError extends Error {
+	constructor(id: string) {
+		super(`CLO-PLO mapping '${id}' not found`);
+		this.name = "CloToPloMapNotFoundError";
+	}
+}
+
+export class CloToPloMapDuplicateError extends Error {
+	constructor() {
+		super(`A mapping already exists for this CLO-PLO pair`);
+		this.name = "CloToPloMapDuplicateError";
+	}
+}
+
+export class CloToPloMapSourceNotFoundError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "CloToPloMapSourceNotFoundError";
+	}
+}
+
+export class CloToPloMapService {
+	/**
+	 * List all CLO-PLO mappings for a program, including CLO and PLO details.
+	 * Optionally filter by course (courseId) to scope to a specific course's CLOs.
+	 */
+	async list(
+		programId: string,
+		opts: { courseId?: string } = {},
+	): Promise<CloToPloMapDto[]> {
+		const program = await prisma.program.findUnique({
+			where: { id: programId },
+			select: { id: true },
+		});
+		if (!program) {
+			throw new CloToPloMapSourceNotFoundError(
+				`Program '${programId}' not found`,
+			);
+		}
+
+		const where: Prisma.CloToPloMapWhereInput = {
+			plo: { programId },
+			...(opts.courseId ? { clo: { courseId: opts.courseId } } : {}),
+		};
+
+		const maps = await prisma.cloToPloMap.findMany({
+			where,
+			include: {
+				clo: { select: { code: true, description: true, courseId: true } },
+				plo: { select: { code: true, description: true } },
+			},
+			orderBy: [{ plo: { code: "asc" } }, { clo: { code: "asc" } }],
+		});
+
+		return maps.map((m) => ({
+			id: m.id,
+			cloId: m.cloId,
+			ploId: m.ploId,
+			weight: Number(m.weight),
+			stage: m.stage,
+			clo: m.clo,
+			plo: m.plo,
+		}));
+	}
+
+	/**
+	 * List all CLOs for a program (via courses) and all PLOs for the program.
+	 * Used to populate dropdown selectors.
+	 */
+	async listEntities(
+		programId: string,
+	): Promise<{ clos: CloDto[]; plos: PloDto[] }> {
+		const program = await prisma.program.findUnique({
+			where: { id: programId },
+			select: {
+				id: true,
+				plos: { select: { id: true, code: true, description: true } },
+				courses: {
+					select: {
+						id: true,
+						code: true,
+						title: true,
+						clos: { select: { id: true, code: true, description: true } },
+					},
+				},
+			},
+		});
+		if (!program) {
+			throw new CloToPloMapSourceNotFoundError(
+				`Program '${programId}' not found`,
+			);
+		}
+
+		const clos: CloDto[] = program.courses.flatMap((course) =>
+			course.clos.map((clo) => ({
+				id: clo.id,
+				code: clo.code,
+				description: clo.description,
+				courseId: course.id,
+				courseCode: course.code,
+				courseTitle: course.title,
+			})),
+		);
+
+		const plos: PloDto[] = program.plos.map((plo) => ({
+			id: plo.id,
+			code: plo.code,
+			description: plo.description,
+		}));
+
+		return { clos, plos };
+	}
+
+	/**
+	 * Create a new CLO-PLO mapping.
+	 */
+	async create(input: CloToPloMapInput): Promise<CloToPloMapDto> {
+		// Verify CLO exists
+		const clo = await prisma.clo.findUnique({
+			where: { id: input.cloId },
+			select: { id: true, code: true, description: true, courseId: true },
+		});
+		if (!clo) {
+			throw new CloToPloMapSourceNotFoundError(
+				`CLO '${input.cloId}' not found`,
+			);
+		}
+
+		// Verify PLO exists
+		const plo = await prisma.plo.findUnique({
+			where: { id: input.ploId },
+			select: { id: true, code: true, description: true },
+		});
+		if (!plo) {
+			throw new CloToPloMapSourceNotFoundError(
+				`PLO '${input.ploId}' not found`,
+			);
+		}
+
+		// Check for duplicate
+		const existing = await prisma.cloToPloMap.findFirst({
+			where: { cloId: input.cloId, ploId: input.ploId },
+		});
+		if (existing) {
+			throw new CloToPloMapDuplicateError();
+		}
+
+		const created = await prisma.cloToPloMap.create({
+			data: {
+				id: crypto.randomUUID(),
+				cloId: input.cloId,
+				ploId: input.ploId,
+				weight: input.weight ?? 1.0,
+				stage: input.stage ?? null,
+			},
+			include: {
+				clo: { select: { code: true, description: true, courseId: true } },
+				plo: { select: { code: true, description: true } },
+			},
+		});
+
+		return {
+			id: created.id,
+			cloId: created.cloId,
+			ploId: created.ploId,
+			weight: Number(created.weight),
+			stage: created.stage,
+			clo: created.clo,
+			plo: created.plo,
+		};
+	}
+
+	/**
+	 * Update weight and/or stage of an existing mapping.
+	 */
+	async update(id: string, body: UpdateCloToPloMap): Promise<CloToPloMapDto> {
+		const existing = await prisma.cloToPloMap.findUnique({
+			where: { id },
+		});
+		if (!existing) {
+			throw new CloToPloMapNotFoundError(id);
+		}
+
+		const patch: Prisma.CloToPloMapUpdateInput = {};
+		if (body.weight !== undefined) patch.weight = body.weight;
+		if (body.stage !== undefined) patch.stage = body.stage;
+
+		const updated = await prisma.cloToPloMap.update({
+			where: { id },
+			data: patch,
+			include: {
+				clo: { select: { code: true, description: true, courseId: true } },
+				plo: { select: { code: true, description: true } },
+			},
+		});
+
+		return {
+			id: updated.id,
+			cloId: updated.cloId,
+			ploId: updated.ploId,
+			weight: Number(updated.weight),
+			stage: updated.stage,
+			clo: updated.clo,
+			plo: updated.plo,
+		};
+	}
+
+	/**
+	 * Delete a CLO-PLO mapping.
+	 */
+	async delete(id: string): Promise<void> {
+		const existing = await prisma.cloToPloMap.findUnique({
+			where: { id },
+		});
+		if (!existing) {
+			throw new CloToPloMapNotFoundError(id);
+		}
+
+		await prisma.cloToPloMap.delete({ where: { id } });
+	}
+}
+
 export const curriculumMapService = new CurriculumMapService();
 export const assessmentCalendarService = new AssessmentCalendarService();
 export const targetSettingMatrixService = new TargetSettingMatrixService();
 export const assessmentBudgetService = new AssessmentBudgetService();
+export const cloToPloMapService = new CloToPloMapService();

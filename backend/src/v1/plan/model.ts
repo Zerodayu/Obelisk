@@ -354,3 +354,67 @@ export type AssessmentBudgetPayload = {
 	lineItems: BudgetLineItemDto[];
 	totals: { estimatedTotal: number; approvedTotal: number };
 };
+
+// --- clo_to_plo_map -----------------------------------------------------------
+
+export const CloToPloMapInputSchema = t.Object({
+	cloId: t.String({ description: "CLO id to connect" }),
+	ploId: t.String({ description: "PLO id to connect" }),
+	weight: t.Optional(
+		t.Number({
+			minimum: 0,
+			maximum: 1,
+			default: 1,
+			description: "Correlation weight (0-1)",
+		}),
+	),
+	stage: t.Optional(
+		t.Union([t.Literal("i"), t.Literal("p"), t.Literal("d")], {
+			description: "I-P-D stage",
+		}),
+	),
+});
+
+export type CloToPloMapInput = typeof CloToPloMapInputSchema.static;
+
+export const UpdateCloToPloMapSchema = t.Object({
+	weight: t.Optional(
+		t.Number({
+			minimum: 0,
+			maximum: 1,
+			description: "Correlation weight (0-1)",
+		}),
+	),
+	stage: t.Optional(
+		t.Union([t.Literal("i"), t.Literal("p"), t.Literal("d")], {
+			description: "I-P-D stage",
+		}),
+	),
+});
+
+export type UpdateCloToPloMap = typeof UpdateCloToPloMapSchema.static;
+
+export type CloToPloMapDto = {
+	id: string;
+	cloId: string;
+	ploId: string;
+	weight: number;
+	stage: string | null;
+	clo: { code: string; description: string; courseId: string };
+	plo: { code: string; description: string };
+};
+
+export type CloDto = {
+	id: string;
+	code: string;
+	description: string;
+	courseId: string;
+	courseCode: string;
+	courseTitle: string;
+};
+
+export type PloDto = {
+	id: string;
+	code: string;
+	description: string;
+};

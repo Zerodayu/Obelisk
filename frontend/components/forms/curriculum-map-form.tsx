@@ -15,6 +15,7 @@ import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { toast, toastError } from "@/components/ui/toast";
 import { initCurriculumMap, saveCurriculumMap } from "@/server/actions/plan";
+import { CloPloMapPanel } from "./clo-plo-map-panel";
 
 interface PloDirectoryRow {
   ploCode: string;
@@ -273,6 +274,21 @@ export function CurriculumMapForm() {
               </tbody>
             </table>
           </div>
+        </FramePanel>
+      </Frame>
+
+      {/* CLO-PLO Connections */}
+      <Frame>
+        <FrameHeader>
+          <FrameTitle>CLO-PLO Connections</FrameTitle>
+          <FrameDescription>
+            Explicitly map Course Learning Outcomes to Program Learning
+            Outcomes. These connections are used by the attainment computation
+            chain.
+          </FrameDescription>
+        </FrameHeader>
+        <FramePanel>
+          <CloPloMapPanel programId={programId} />
         </FramePanel>
       </Frame>
 

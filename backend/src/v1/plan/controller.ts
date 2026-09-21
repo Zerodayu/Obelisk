@@ -1,18 +1,24 @@
 import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { MissingRationaleError, TargetBelowFloorError } from "./compute";
 import {
+	CloToPloMapInputSchema,
 	PlanInitSchema,
 	PlanListQuerySchema,
 	SaveAssessmentBudgetSchema,
 	SaveAssessmentCalendarSchema,
 	SaveCurriculumMapSchema,
 	SaveTargetSettingMatrixSchema,
+	UpdateCloToPloMapSchema,
 } from "./model";
 import {
 	assessmentBudgetService,
 	assessmentCalendarService,
+	CloToPloMapDuplicateError,
+	CloToPloMapNotFoundError,
+	CloToPloMapSourceNotFoundError,
+	cloToPloMapService,
 	curriculumMapService,
 	listPlanSubmissions,
 	PlanInvalidEditError,
@@ -34,6 +40,10 @@ function mapPlanErrors(
 		set.status = 404;
 		return { error: error.message };
 	}
+	if (error instanceof CloToPloMapNotFoundError) {
+		set.status = 404;
+		return { error: error.message };
+	}
 	if (error instanceof PlanTemplateProtectedError) {
 		set.status = 403;
 		return { error: error.message };
@@ -42,8 +52,13 @@ function mapPlanErrors(
 		error instanceof PlanInvalidEditError ||
 		error instanceof PlanSourceNotFoundError ||
 		error instanceof TargetBelowFloorError ||
-		error instanceof MissingRationaleError
+		error instanceof MissingRationaleError ||
+		error instanceof CloToPloMapSourceNotFoundError
 	) {
+		set.status = 409;
+		return { error: error.message };
+	}
+	if (error instanceof CloToPloMapDuplicateError) {
 		set.status = 409;
 		return { error: error.message };
 	}
@@ -451,6 +466,141 @@ export const planPlugin = new Elysia({
 					403: { description: "Attempt to delete a fixed line item" },
 					404: { description: "Submission or line item not found" },
 					409: { description: "Submission not editable" },
+				},
+			},
+		},
+	)
+	// --- clo_to_plo_map ----------------------------------------------------------
+	.get(
+		"/clo-plo-map",
+		cached(60, async ({ query, set }) => {
+			try {
+				return await cloToPloMapService.list(query.programId, {
+					courseId: query.courseId,
+				});
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		}),
+		{
+			auth: true,
+			query: t.Object({
+				programId: t.String({ description: "Program to list mappings for" }),
+				courseId: t.Optional(t.String({ description: "Filter by course id" })),
+			}),
+			detail: {
+				summary: "List CLO-PLO mappings for a program",
+				description:
+					"Returns all CloToPloMap entries with CLO and PLO details. Optionally filter by course.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of mappings" },
+					401: { description: "Unauthorized" },
+					409: { description: "Program not found" },
+				},
+			},
+		},
+	)
+	.get(
+		"/clo-plo-map/entities",
+		cached(60, async ({ query, set }) => {
+			try {
+				return await cloToPloMapService.listEntities(query.programId);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		}),
+		{
+			auth: true,
+			query: t.Object({
+				programId: t.String({
+					description: "Program to list CLOs and PLOs for",
+				}),
+			}),
+			detail: {
+				summary: "List CLOs and PLOs for a program",
+				description:
+					"Returns all CLOs (grouped by course) and PLOs for the program. Used to populate mapping dropdowns.",
+				...SECURITY,
+				responses: {
+					200: { description: "CLOs and PLOs lists" },
+					401: { description: "Unauthorized" },
+					409: { description: "Program not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/clo-plo-map",
+		async ({ body, set }) => {
+			try {
+				return await cloToPloMapService.create(body);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CloToPloMapInputSchema,
+			detail: {
+				summary: "Create a CLO-PLO mapping",
+				description:
+					"Link a CLO to a PLO with an optional weight and I-P-D stage.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created mapping" },
+					401: { description: "Unauthorized" },
+					409: {
+						description: "CLO or PLO not found, or mapping already exists",
+					},
+				},
+			},
+		},
+	)
+	.put(
+		"/clo-plo-map/:id",
+		async ({ params, body, set }) => {
+			try {
+				return await cloToPloMapService.update(params.id, body);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: UpdateCloToPloMapSchema,
+			detail: {
+				summary: "Update a CLO-PLO mapping",
+				description: "Change the weight and/or stage of an existing mapping.",
+				...SECURITY,
+				responses: {
+					200: { description: "Updated mapping" },
+					401: { description: "Unauthorized" },
+					404: { description: "Mapping not found" },
+				},
+			},
+		},
+	)
+	.delete(
+		"/clo-plo-map/:id",
+		async ({ params, set }) => {
+			try {
+				await cloToPloMapService.delete(params.id);
+				return { ok: true };
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			detail: {
+				summary: "Delete a CLO-PLO mapping",
+				description: "Remove a CLO-PLO connection.",
+				...SECURITY,
+				responses: {
+					200: { description: "Deleted" },
+					401: { description: "Unauthorized" },
+					404: { description: "Mapping not found" },
 				},
 			},
 		},

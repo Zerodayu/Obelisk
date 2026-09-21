@@ -15,7 +15,7 @@ const app = new Elysia()
 				info: {
 					version: "v0",
 					title:
-						"Obelisk — Outcomes-based Educational Learning and Intelligent System Kit for Jose Maria College Foundation Inc.",
+						"Obelisk(backend) — Outcomes-based Educational Learning and Intelligent System Kit for Jose Maria College Foundation Inc.",
 				},
 				components: (await OpenAPI.components) as OpenAPIV3.ComponentsObject,
 				paths: (await OpenAPI.getPaths()) as OpenAPIV3.PathsObject,
