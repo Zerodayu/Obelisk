@@ -276,7 +276,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] Analytics rollups (Formulas 2A/7A/7C, Rule 3)
 - [ ] Real loader/delivery to backend (currently `DummyLoader`)
 - [x] Real LLM integration (currently `IS_DEBUG_MODE` placeholder)
-- [ ] Indirect (30%) attainment pipeline (needs survey data)
+- [x] Indirect (30%) attainment pipeline (needs survey data)
 - [ ] Persistent job queue (currently in-memory)
 
 ### backend (Elysia + Prisma) — **active focus**
