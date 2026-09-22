@@ -418,3 +418,54 @@ export type PloDto = {
 	code: string;
 	description: string;
 };
+
+// --- plo entity (CRUD) ---------------------------------------------------------
+
+export const CreatePloSchema = t.Object({
+	programId: t.String({ description: "Program the PLO belongs to" }),
+	code: t.String({
+		minLength: 1,
+		description: "PLO code (unique within the program)",
+	}),
+	description: t.String({ minLength: 1, description: "PLO statement" }),
+	targetAttainmentPct: t.Optional(
+		t.Number({
+			minimum: 0,
+			maximum: 100,
+			default: 70,
+			description:
+				"Target attainment % — the >=70% institutional hard floor is enforced in the service layer",
+		}),
+	),
+});
+
+export type CreatePlo = typeof CreatePloSchema.static;
+
+export const UpdatePloSchema = t.Object({
+	code: t.Optional(
+		t.String({
+			minLength: 1,
+			description: "New code (unique within the program)",
+		}),
+	),
+	description: t.Optional(
+		t.String({ minLength: 1, description: "New statement" }),
+	),
+	targetAttainmentPct: t.Optional(
+		t.Number({
+			minimum: 0,
+			maximum: 100,
+			description: "New target attainment % (>=70% hard floor)",
+		}),
+	),
+});
+
+export type UpdatePlo = typeof UpdatePloSchema.static;
+
+export type PloEntityDto = {
+	id: string;
+	programId: string;
+	code: string;
+	description: string;
+	targetAttainmentPct: number;
+};
