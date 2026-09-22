@@ -2,7 +2,6 @@
 
 import { createListCollection } from "@ark-ui/react";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +13,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,18 +25,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { isDevMode } from "@/lib/dev-mode";
 import {
   type CloEntity,
   type CloPloMapDto,
   createCloPloMap,
+  createPlo,
   deleteCloPloMap,
+  deletePlo,
   listCloPloEntities,
   listCloPloMaps,
+  listPlos,
   type PloEntity,
+  type PloRecord,
   updateCloPloMap,
+  updatePlo,
 } from "@/server/actions/plan";
-import { isDevMode } from "@/lib/dev-mode";
 
 const STAGES = ["i", "p", "d"] as const;
 
@@ -102,6 +109,12 @@ const SAMPLE_PLOS: PloEntity[] = [
   { id: "plo-4", code: "PLO4", description: "Communicate effectively" },
 ];
 
+const SAMPLE_PLO_RECORDS: PloRecord[] = SAMPLE_PLOS.map((plo) => ({
+  ...plo,
+  programId: "program-1",
+  targetAttainmentPct: 70,
+}));
+
 const SAMPLE_MAPS: CloPloMapDto[] = [
   {
     id: "map-1",
@@ -158,10 +171,14 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
   const [maps, setMaps] = useState<CloPloMapDto[]>([]);
   const [clos, setClos] = useState<CloEntity[]>([]);
   const [plos, setPlos] = useState<PloEntity[]>([]);
+  const [ploRecords, setPloRecords] = useState<PloRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingMap, setEditingMap] = useState<CloPloMapDto | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [ploDialogOpen, setPloDialogOpen] = useState(false);
+  const [editingPlo, setEditingPlo] = useState<PloRecord | null>(null);
+  const [deletePloId, setDeletePloId] = useState<string | null>(null);
 
   // Form state
   const [selectedCloId, setSelectedCloId] = useState("");
@@ -169,13 +186,19 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
   const [weight, setWeight] = useState("1.0");
   const [stage, setStage] = useState<string>("");
 
+  // PLO form state
+  const [ploCode, setPloCode] = useState("");
+  const [ploDescription, setPloDescription] = useState("");
+  const [ploTarget, setPloTarget] = useState("70");
+
   const fetchData = useCallback(async () => {
     setLoading(true);
 
     // In dev mode, use sample data if API fails
-    const [mapsResult, entitiesResult] = await Promise.all([
+    const [mapsResult, entitiesResult, plosResult] = await Promise.all([
       listCloPloMaps(programId),
       listCloPloEntities(programId),
+      listPlos(programId),
     ]);
 
     if (mapsResult.ok) {
@@ -201,6 +224,18 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
         title: "Failed to load CLOs/PLOs",
         description: entitiesResult.error,
         scope: "clo-plo-map:entities",
+      });
+    }
+
+    if (plosResult.ok) {
+      setPloRecords(plosResult.data);
+    } else if (isDevMode) {
+      setPloRecords(SAMPLE_PLO_RECORDS);
+    } else {
+      toastError({
+        title: "Failed to load PLOs",
+        description: plosResult.error,
+        scope: "plo:list",
       });
     }
 
@@ -330,6 +365,126 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
     }
   };
 
+  const openPloCreateDialog = () => {
+    setEditingPlo(null);
+    setPloCode("");
+    setPloDescription("");
+    setPloTarget("70");
+    setPloDialogOpen(true);
+  };
+
+  const openPloEditDialog = (plo: PloRecord) => {
+    setEditingPlo(plo);
+    setPloCode(plo.code);
+    setPloDescription(plo.description);
+    setPloTarget(plo.targetAttainmentPct.toString());
+    setPloDialogOpen(true);
+  };
+
+  const handlePloSave = async () => {
+    const code = ploCode.trim();
+    const description = ploDescription.trim();
+    const targetNum = parseFloat(ploTarget);
+
+    if (!code) {
+      toast.create({ title: "PLO code is required", type: "error" });
+      return;
+    }
+    if (!description) {
+      toast.create({ title: "PLO statement is required", type: "error" });
+      return;
+    }
+    if (Number.isNaN(targetNum) || targetNum < 70 || targetNum > 100) {
+      toast.create({
+        title: "Target must be between 70 and 100",
+        type: "error",
+      });
+      return;
+    }
+
+    if (editingPlo) {
+      const result = await updatePlo(editingPlo.id, {
+        code,
+        description,
+        targetAttainmentPct: targetNum,
+      });
+      if (result.ok) {
+        toast.create({ title: "PLO updated", type: "success" });
+        setPloDialogOpen(false);
+        fetchData();
+      } else if (isDevMode) {
+        // Dev mode: simulate update locally
+        setPloRecords((prev) =>
+          prev.map((p) =>
+            p.id === editingPlo.id
+              ? { ...p, code, description, targetAttainmentPct: targetNum }
+              : p,
+          ),
+        );
+        toast.create({ title: "PLO updated (dev)", type: "success" });
+        setPloDialogOpen(false);
+      } else {
+        toastError({
+          title: "Update failed",
+          description: result.error,
+          scope: "plo:update",
+        });
+      }
+    } else {
+      const result = await createPlo({
+        programId,
+        code,
+        description,
+        targetAttainmentPct: targetNum,
+      });
+      if (result.ok) {
+        toast.create({ title: "PLO created", type: "success" });
+        setPloDialogOpen(false);
+        fetchData();
+      } else if (isDevMode) {
+        // Dev mode: simulate create locally
+        setPloRecords((prev) => [
+          ...prev,
+          {
+            id: `plo-${Date.now()}`,
+            programId,
+            code,
+            description,
+            targetAttainmentPct: targetNum,
+          },
+        ]);
+        toast.create({ title: "PLO created (dev)", type: "success" });
+        setPloDialogOpen(false);
+      } else {
+        toastError({
+          title: "Create failed",
+          description: result.error,
+          scope: "plo:create",
+        });
+      }
+    }
+  };
+
+  const handlePloDelete = async (id: string) => {
+    const result = await deletePlo(id);
+    if (result.ok) {
+      toast.create({ title: "PLO deleted", type: "success" });
+      setDeletePloId(null);
+      fetchData();
+    } else if (isDevMode) {
+      // Dev mode: simulate delete locally
+      setPloRecords((prev) => prev.filter((p) => p.id !== id));
+      toast.create({ title: "PLO deleted (dev)", type: "success" });
+      setDeletePloId(null);
+    } else {
+      toastError({
+        title: "Delete failed",
+        description: result.error,
+        scope: "plo:delete",
+      });
+    }
+  };
+
   // Group clos by course for the dropdown
   const closByCourse = clos.reduce(
     (acc, clo) => {
@@ -373,6 +528,175 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
 
   return (
     <div className="space-y-3">
+      {/* Program Learning Outcomes (PLO) management */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-sm font-medium">
+            Program Learning Outcomes (PLO)
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Manage the program's PLOs. Targets must clear the 70% institutional
+            hard floor.
+          </p>
+        </div>
+        <Button size="sm" variant="outline" onClick={openPloCreateDialog}>
+          + Add PLO
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="py-4 text-center text-sm text-muted-foreground">
+          Loading...
+        </div>
+      ) : ploRecords.length === 0 ? (
+        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+          No PLOs yet. Click "Add PLO" to create one.
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/50 text-left text-muted-foreground">
+                <th className="px-3 py-2 font-medium">Code</th>
+                <th className="px-3 py-2 font-medium">Statement</th>
+                <th className="px-3 py-2 font-medium text-center">Target</th>
+                <th className="px-3 py-2 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ploRecords.map((plo) => (
+                <tr
+                  key={plo.id}
+                  className="border-b last:border-0 hover:bg-muted/30"
+                >
+                  <td className="px-3 py-2 font-medium">{plo.code}</td>
+                  <td className="px-3 py-2 text-muted-foreground">
+                    {plo.description}
+                  </td>
+                  <td className="px-3 py-2 text-center">
+                    {plo.targetAttainmentPct}%
+                  </td>
+                  <td className="px-3 py-2 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={() => openPloEditDialog(plo)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-destructive"
+                      onClick={() => setDeletePloId(plo.id)}
+                    >
+                      Delete
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* PLO Create/Edit Dialog */}
+      <AlertDialog
+        open={ploDialogOpen}
+        onOpenChange={(details) => setPloDialogOpen(details.open)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {editingPlo ? "Edit PLO" : "Add PLO"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {editingPlo
+                ? "Update this Program Learning Outcome."
+                : "Add a Program Learning Outcome to the program."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogBody>
+            <div className="space-y-4">
+              <Field>
+                <FieldLabel>Code</FieldLabel>
+                <FieldDescription>
+                  Unique within the program (e.g. PLO1).
+                </FieldDescription>
+                <Input
+                  value={ploCode}
+                  onChange={(e) => setPloCode(e.target.value)}
+                  placeholder="PLO1"
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Statement</FieldLabel>
+                <FieldDescription>
+                  The Program Learning Outcome statement.
+                </FieldDescription>
+                <Textarea
+                  value={ploDescription}
+                  onChange={(e) => setPloDescription(e.target.value)}
+                  placeholder="Apply knowledge of computing..."
+                />
+              </Field>
+
+              <Field>
+                <FieldLabel>Target Attainment (%)</FieldLabel>
+                <FieldDescription>
+                  Must be at least 70 — the institutional hard floor.
+                </FieldDescription>
+                <Input
+                  type="number"
+                  min={70}
+                  max={100}
+                  value={ploTarget}
+                  onChange={(e) => setPloTarget(e.target.value)}
+                />
+              </Field>
+            </div>
+          </AlertDialogBody>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePloSave}>
+              {editingPlo ? "Save Changes" : "Create"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* PLO Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deletePloId !== null}
+        onOpenChange={(details) => {
+          if (!details.open) setDeletePloId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete PLO</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this PLO? PLOs mapped to CLOs or
+              with attainment history cannot be deleted. This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => deletePloId && handlePloDelete(deletePloId)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-medium">CLO-PLO Connections</h3>
