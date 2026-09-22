@@ -7,6 +7,11 @@ import {
 	assessmentCalendarService,
 	curriculumMapService,
 	PlanTemplateProtectedError,
+	PloDuplicateError,
+	PloInUseError,
+	PloNotFoundError,
+	PloSourceNotFoundError,
+	ploService,
 	targetSettingMatrixService,
 } from "@v1/plan/service";
 
@@ -427,6 +432,149 @@ describe.skipIf(!db)("PLAN-phase setup forms (integration)", () => {
 			expect(audits).toBeGreaterThan(0);
 		} finally {
 			await cleanup(draftIds);
+		}
+	}, 60000);
+
+	it("PLO entity CRUD: create, list, update, and guarded delete", async () => {
+		await resetPlanData();
+		await seedAcademicChain();
+		try {
+			// --- list (seeded rows, ordered by code) ---------------------------
+			const initial = await ploService.list(IDS.program);
+			expect(initial.map((p) => p.code)).toEqual([
+				"ITPLAN-PLO1",
+				"ITPLAN-PLO2",
+			]);
+			expect(initial[0].targetAttainmentPct).toBe(70);
+
+			// --- create --------------------------------------------------------
+			const created = await ploService.create(
+				{
+					programId: IDS.program,
+					code: "ITPLAN-PLO3",
+					description: "PLAN integration PLO 3",
+					targetAttainmentPct: 75,
+				},
+				IDS.user,
+			);
+			expect(created.programId).toBe(IDS.program);
+			expect(created.targetAttainmentPct).toBe(75);
+
+			// Default target lands on the 70% floor.
+			const defaulted = await ploService.create(
+				{ programId: IDS.program, code: "ITPLAN-PLO4", description: "4th" },
+				IDS.user,
+			);
+			expect(defaulted.targetAttainmentPct).toBe(70);
+
+			// Duplicate code within the program is rejected.
+			await expect(
+				ploService.create(
+					{
+						programId: IDS.program,
+						code: "ITPLAN-PLO3",
+						description: "duplicate",
+					},
+					IDS.user,
+				),
+			).rejects.toThrow(PloDuplicateError);
+
+			// Target below the 70% institutional hard floor is rejected.
+			await expect(
+				ploService.create(
+					{
+						programId: IDS.program,
+						code: "ITPLAN-PLO5",
+						description: "below floor",
+						targetAttainmentPct: 69,
+					},
+					IDS.user,
+				),
+			).rejects.toThrow(TargetBelowFloorError);
+
+			// Unknown program is rejected.
+			await expect(
+				ploService.create(
+					{ programId: "it-plan-missing", code: "X", description: "x" },
+					IDS.user,
+				),
+			).rejects.toThrow(PloSourceNotFoundError);
+
+			const createdAudit = await prisma.auditLog.findFirst({
+				where: { action: "plo.created", targetRecordId: created.id },
+			});
+			expect(auditLogged(createdAudit)).toBe(true);
+
+			// --- update --------------------------------------------------------
+			const updated = await ploService.update(
+				created.id,
+				{ description: "Revised statement", targetAttainmentPct: 80 },
+				IDS.user,
+			);
+			expect(updated.description).toBe("Revised statement");
+			expect(updated.targetAttainmentPct).toBe(80);
+
+			// Code uniqueness and the floor are re-checked on patch.
+			await expect(
+				ploService.update(created.id, { code: "ITPLAN-PLO1" }, IDS.user),
+			).rejects.toThrow(PloDuplicateError);
+			await expect(
+				ploService.update(created.id, { targetAttainmentPct: 65 }, IDS.user),
+			).rejects.toThrow(TargetBelowFloorError);
+			await expect(
+				ploService.update("it-plan-missing", { description: "x" }, IDS.user),
+			).rejects.toThrow(PloNotFoundError);
+
+			const updatedAudit = await prisma.auditLog.findFirst({
+				where: { action: "plo.updated", targetRecordId: created.id },
+			});
+			expect(auditLogged(updatedAudit)).toBe(true);
+
+			// --- guarded delete ------------------------------------------------
+			// A mapped PLO cannot be deleted...
+			await prisma.course.create({
+				data: {
+					id: "it-plan-course",
+					programId: IDS.program,
+					code: "ITPLAN 101",
+					title: "Intro to Computing",
+				},
+			});
+			await prisma.clo.create({
+				data: {
+					id: "it-plan-clo",
+					courseId: "it-plan-course",
+					code: "CLO1",
+					description: "Test CLO",
+				},
+			});
+			await prisma.cloToPloMap.create({
+				data: { id: "it-plan-map", cloId: "it-plan-clo", ploId: created.id },
+			});
+			await expect(ploService.delete(created.id, IDS.user)).rejects.toThrow(
+				PloInUseError,
+			);
+
+			// ...until unmapped, then it deletes cleanly.
+			await prisma.cloToPloMap.delete({ where: { id: "it-plan-map" } });
+			await ploService.delete(created.id, IDS.user);
+			expect(
+				await prisma.plo.findUnique({ where: { id: created.id } }),
+			).toBeNull();
+			expect(
+				await prisma.plo.findUnique({ where: { id: defaulted.id } }),
+			).not.toBeNull();
+
+			const deletedAudit = await prisma.auditLog.findFirst({
+				where: { action: "plo.deleted", targetRecordId: created.id },
+			});
+			expect(auditLogged(deletedAudit)).toBe(true);
+
+			await expect(
+				ploService.delete("it-plan-missing", IDS.user),
+			).rejects.toThrow(PloNotFoundError);
+		} finally {
+			await cleanup([]);
 		}
 	}, 60000);
 });
