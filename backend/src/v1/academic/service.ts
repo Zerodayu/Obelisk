@@ -24,9 +24,7 @@ export async function listTerms() {
 export async function listClassSections(programId?: string, termId?: string) {
 	return prisma.classSection.findMany({
 		where: {
-			...(programId
-				? { course: { programId } }
-				: {}),
+			...(programId ? { course: { programId } } : {}),
 			...(termId ? { termId } : {}),
 		},
 		select: {
