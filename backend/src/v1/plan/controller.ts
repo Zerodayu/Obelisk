@@ -4,6 +4,7 @@ import { Elysia, t } from "elysia";
 import { MissingRationaleError, TargetBelowFloorError } from "./compute";
 import {
 	CloToPloMapInputSchema,
+	CreatePloSchema,
 	PlanInitSchema,
 	PlanListQuerySchema,
 	SaveAssessmentBudgetSchema,
@@ -11,6 +12,7 @@ import {
 	SaveCurriculumMapSchema,
 	SaveTargetSettingMatrixSchema,
 	UpdateCloToPloMapSchema,
+	UpdatePloSchema,
 } from "./model";
 import {
 	assessmentBudgetService,
@@ -25,6 +27,11 @@ import {
 	PlanSourceNotFoundError,
 	PlanSubmissionNotFoundError,
 	PlanTemplateProtectedError,
+	PloDuplicateError,
+	PloInUseError,
+	PloNotFoundError,
+	PloSourceNotFoundError,
+	ploService,
 	targetSettingMatrixService,
 } from "./service";
 
@@ -48,12 +55,19 @@ function mapPlanErrors(
 		set.status = 403;
 		return { error: error.message };
 	}
+	if (error instanceof PloNotFoundError) {
+		set.status = 404;
+		return { error: error.message };
+	}
 	if (
 		error instanceof PlanInvalidEditError ||
 		error instanceof PlanSourceNotFoundError ||
 		error instanceof TargetBelowFloorError ||
 		error instanceof MissingRationaleError ||
-		error instanceof CloToPloMapSourceNotFoundError
+		error instanceof CloToPloMapSourceNotFoundError ||
+		error instanceof PloSourceNotFoundError ||
+		error instanceof PloDuplicateError ||
+		error instanceof PloInUseError
 	) {
 		set.status = 409;
 		return { error: error.message };
@@ -466,6 +480,113 @@ export const planPlugin = new Elysia({
 					403: { description: "Attempt to delete a fixed line item" },
 					404: { description: "Submission or line item not found" },
 					409: { description: "Submission not editable" },
+				},
+			},
+		},
+	)
+	// --- plo entity ---------------------------------------------------------------
+	.get(
+		"/plos",
+		async ({ query, set }) => {
+			try {
+				return await ploService.list(query.programId);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			query: t.Object({
+				programId: t.String({ description: "Program to list PLOs for" }),
+			}),
+			detail: {
+				summary: "List PLOs for a program",
+				description: "Returns the program's PLO entities ordered by code.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of PLOs" },
+					401: { description: "Unauthorized" },
+					409: { description: "Program not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/plos",
+		async ({ body, user, set }) => {
+			try {
+				return await ploService.create(body, user.id);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreatePloSchema,
+			detail: {
+				summary: "Create a PLO",
+				description:
+					"Add a Program Learning Outcome to a program. The code must be unique within the program and the target must clear the 70% institutional hard floor.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created PLO" },
+					401: { description: "Unauthorized" },
+					409: {
+						description:
+							"Program not found, duplicate code, or target below the 70% floor",
+					},
+				},
+			},
+		},
+	)
+	.put(
+		"/plos/:id",
+		async ({ params, body, user, set }) => {
+			try {
+				return await ploService.update(params.id, body, user.id);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: UpdatePloSchema,
+			detail: {
+				summary: "Update a PLO",
+				description:
+					"Change a PLO's code, statement, and/or target; uniqueness and the 70% floor are re-checked.",
+				...SECURITY,
+				responses: {
+					200: { description: "Updated PLO" },
+					401: { description: "Unauthorized" },
+					404: { description: "PLO not found" },
+					409: { description: "Duplicate code or target below the 70% floor" },
+				},
+			},
+		},
+	)
+	.delete(
+		"/plos/:id",
+		async ({ params, user, set }) => {
+			try {
+				await ploService.delete(params.id, user.id);
+				return { ok: true };
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			detail: {
+				summary: "Delete a PLO",
+				description:
+					"Remove an unused PLO. Blocked when the PLO is mapped to a CLO or carries attainment, gap, or CQI history.",
+				...SECURITY,
+				responses: {
+					200: { description: "Deleted" },
+					401: { description: "Unauthorized" },
+					404: { description: "PLO not found" },
+					409: { description: "PLO is mapped or has assessment history" },
 				},
 			},
 		},
