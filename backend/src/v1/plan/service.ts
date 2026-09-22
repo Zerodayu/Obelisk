@@ -7,6 +7,7 @@ import {
 	budgetTotals,
 	coverageCheck,
 	programPloAverages,
+	TargetBelowFloorError,
 } from "./compute";
 import type {
 	AssessmentBudgetPayload,
@@ -14,15 +15,18 @@ import type {
 	CloDto,
 	CloToPloMapDto,
 	CloToPloMapInput,
+	CreatePlo,
 	CurriculumMapPayload,
 	PlanSubmissionListItem,
 	PloDto,
+	PloEntityDto,
 	SaveAssessmentBudget,
 	SaveAssessmentCalendar,
 	SaveCurriculumMap,
 	SaveTargetSettingMatrix,
 	TargetSettingMatrixPayload,
 	UpdateCloToPloMap,
+	UpdatePlo,
 } from "./model";
 
 const CURRICULUM_MAP_CODE = "curriculum_map";
@@ -954,6 +958,185 @@ export class AssessmentBudgetService {
 	}
 }
 
+// --- plo entity ----------------------------------------------------------------
+
+export class PloNotFoundError extends Error {
+	constructor(id: string) {
+		super(`PLO '${id}' not found`);
+		this.name = "PloNotFoundError";
+	}
+}
+
+export class PloDuplicateError extends Error {
+	constructor(code: string) {
+		super(`A PLO with code '${code}' already exists for this program`);
+		this.name = "PloDuplicateError";
+	}
+}
+
+export class PloSourceNotFoundError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "PloSourceNotFoundError";
+	}
+}
+
+export class PloInUseError extends Error {
+	constructor(code: string) {
+		super(
+			`PLO '${code}' is mapped to a CLO or carries attainment/gap/CQI history and cannot be deleted`,
+		);
+		this.name = "PloInUseError";
+	}
+}
+
+async function assertPloProgramExists(programId: string): Promise<void> {
+	const program = await prisma.program.findUnique({
+		where: { id: programId },
+		select: { id: true },
+	});
+	if (!program) {
+		throw new PloSourceNotFoundError(`Program '${programId}' not found`);
+	}
+}
+
+function toPloEntity(plo: {
+	id: string;
+	programId: string;
+	code: string;
+	description: string;
+	targetAttainmentPct: string | number | { toString(): string };
+}): PloEntityDto {
+	return {
+		id: plo.id,
+		programId: plo.programId,
+		code: plo.code,
+		description: plo.description,
+		targetAttainmentPct: Number(plo.targetAttainmentPct),
+	};
+}
+
+export class PloService {
+	/**
+	 * List a program's PLO entities ordered by code.
+	 */
+	async list(programId: string): Promise<PloEntityDto[]> {
+		await assertPloProgramExists(programId);
+		const plos = await prisma.plo.findMany({
+			where: { programId },
+			orderBy: { code: "asc" },
+		});
+		return plos.map(toPloEntity);
+	}
+
+	/**
+	 * Create a PLO for a program. The code must be unique within the program
+	 * and the target must clear the >=70% institutional hard floor.
+	 */
+	async create(input: CreatePlo, userId: string): Promise<PloEntityDto> {
+		await assertPloProgramExists(input.programId);
+
+		const target = input.targetAttainmentPct ?? DEFAULT_TARGET;
+		if (target < MIN_ATTAINMENT_PCT) {
+			throw new TargetBelowFloorError(input.code, target);
+		}
+
+		const duplicate = await prisma.plo.findFirst({
+			where: { programId: input.programId, code: input.code },
+			select: { id: true },
+		});
+		if (duplicate) throw new PloDuplicateError(input.code);
+
+		const created = await prisma.plo.create({
+			data: {
+				id: crypto.randomUUID(),
+				programId: input.programId,
+				code: input.code,
+				description: input.description,
+				targetAttainmentPct: target,
+			},
+		});
+		await planAudit(userId, "plo.created", {
+			targetRecordId: created.id,
+			programId: input.programId,
+			code: input.code,
+		});
+		return toPloEntity(created);
+	}
+
+	/**
+	 * Update a PLO's code, statement, and/or target. Uniqueness and the
+	 * >=70% floor are re-checked on the patched values.
+	 */
+	async update(
+		id: string,
+		body: UpdatePlo,
+		userId: string,
+	): Promise<PloEntityDto> {
+		const existing = await prisma.plo.findUnique({ where: { id } });
+		if (!existing) throw new PloNotFoundError(id);
+
+		const patch: Prisma.PloUpdateInput = {};
+		if (body.code !== undefined && body.code !== existing.code) {
+			const duplicate = await prisma.plo.findFirst({
+				where: {
+					programId: existing.programId,
+					code: body.code,
+					id: { not: id },
+				},
+				select: { id: true },
+			});
+			if (duplicate) throw new PloDuplicateError(body.code);
+			patch.code = body.code;
+		}
+		if (body.description !== undefined) patch.description = body.description;
+		if (body.targetAttainmentPct !== undefined) {
+			if (body.targetAttainmentPct < MIN_ATTAINMENT_PCT) {
+				throw new TargetBelowFloorError(
+					body.code ?? existing.code,
+					body.targetAttainmentPct,
+				);
+			}
+			patch.targetAttainmentPct = body.targetAttainmentPct;
+		}
+
+		const updated = await prisma.plo.update({ where: { id }, data: patch });
+		await planAudit(userId, "plo.updated", {
+			targetRecordId: id,
+			programId: existing.programId,
+			code: updated.code,
+		});
+		return toPloEntity(updated);
+	}
+
+	/**
+	 * Delete a PLO that is not mapped to a CLO and carries no attainment,
+	 * gap, or CQI history — those references cascade and deleting would
+	 * silently destroy assessment history.
+	 */
+	async delete(id: string, userId: string): Promise<void> {
+		const existing = await prisma.plo.findUnique({ where: { id } });
+		if (!existing) throw new PloNotFoundError(id);
+
+		const [maps, attainments, gaps, cqiEntries] = await Promise.all([
+			prisma.cloToPloMap.count({ where: { ploId: id } }),
+			prisma.ploAttainment.count({ where: { ploId: id } }),
+			prisma.gapRow.count({ where: { ploId: id } }),
+			prisma.cqiEntry.count({ where: { ploId: id } }),
+		]);
+		if (maps > 0 || attainments > 0 || gaps > 0 || cqiEntries > 0) {
+			throw new PloInUseError(existing.code);
+		}
+
+		await prisma.plo.delete({ where: { id } });
+		await planAudit(userId, "plo.deleted", {
+			targetRecordId: id,
+			programId: existing.programId,
+			code: existing.code,
+		});
+	}
+}
+
 // --- clo_to_plo_map ----------------------------------------------------------------
 
 export class CloToPloMapNotFoundError extends Error {
@@ -1182,4 +1365,5 @@ export const curriculumMapService = new CurriculumMapService();
 export const assessmentCalendarService = new AssessmentCalendarService();
 export const targetSettingMatrixService = new TargetSettingMatrixService();
 export const assessmentBudgetService = new AssessmentBudgetService();
+export const ploService = new PloService();
 export const cloToPloMapService = new CloToPloMapService();
