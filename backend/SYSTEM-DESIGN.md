@@ -220,6 +220,14 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/plan/assessment-budget/init` | `auth: true` | F06 — ensure the budget draft and seed the 12 fixed line items grouped by PDCA phase once. |
 | GET | `/api/v1/plan/assessment-budget` / `:id` | `auth: true` | List / re-assemble budget submissions; TOTAL row computed (estimated + approved). |
 | PUT | `/api/v1/plan/assessment-budget/:id` | `auth: true` | Patch line-item costs/source/notes and add program-specific items; fixed items are **non-deletable**; `draft`/`returned` only. |
+| GET | `/api/v1/plan/plos` | `auth: true` | List a program's PLO entities (ordered by code). |
+| POST | `/api/v1/plan/plos` | `auth: true` | Create a PLO — code unique per program, `targetAttainmentPct` default 70 with the **≥70% hard floor** enforced (`TargetBelowFloorError`); **audited** `plo.created`. |
+| PUT | `/api/v1/plan/plos/:id` | `auth: true` | Patch a PLO's code/description/target — uniqueness + floor re-checked on patched values; **audited** `plo.updated`. |
+| DELETE | `/api/v1/plan/plos/:id` | `auth: true` | Delete an unused PLO — **blocked with 409** (`PloInUseError`) while mapped to a CLO or carrying `PloAttainment`/`GapRow`/`CqiEntry` history; **audited** `plo.deleted`. |
+| GET | `/api/v1/plan/clo-plo-map` / `/entities` | `auth: true` | List CLO↔PLO mappings (optional `courseId` filter) / list the program's CLOs (grouped by course) + PLOs for the mapping dropdowns. |
+| POST | `/api/v1/plan/clo-plo-map` | `auth: true` | Link a CLO to a PLO (weight 0–1, optional I-P-D stage); duplicate pair → 409. |
+| PUT | `/api/v1/plan/clo-plo-map/:id` | `auth: true` | Update a mapping's weight and/or stage. |
+| DELETE | `/api/v1/plan/clo-plo-map/:id` | `auth: true` | Remove a CLO↔PLO mapping. |
 | GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
@@ -423,6 +431,8 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   - `AssessmentCalendarService` F03 — `init` seeds the 17 institutional template rows once (unique `[assessmentCalendarId, templateKey]`); `save` patches by id / creates program-specific events / removes only non-template rows (`PlanTemplateProtectedError` otherwise); unknown event ids rejected.
   - `TargetSettingMatrixService` F04 — `init` seeds one 70%-default target row per program PLO; `save` validates every row through `assertPloTargetsValid`, then full-replaces PLO + course-CLO target rows.
   - `AssessmentBudgetService` F06 — `init` seeds the 12 fixed line items (11 manual-named + Contingency/Miscellaneous, grouped plan/do/check/act); `save` patches costs/source/notes, adds program-specific items (default phase `plan`), and protects fixed items from removal.
+  - `PloService` — standalone PLO entity CRUD (`/plan/plos`): `list` (program's PLOs by code), `create` (program + per-program code uniqueness + ≥70% floor via `TargetBelowFloorError`, defaults to `DEFAULT_TARGET` 70), `update` (uniqueness/floor re-checked on patched values), `delete` (**guarded** — `PloInUseError` while the PLO has `CloToPloMap`/`PloAttainment`/`GapRow`/`CqiEntry` references, since they cascade); audits `plo.created`/`plo.updated`/`plo.deleted`. Errors: `PloNotFoundError` (404), `PloDuplicateError`/`PloSourceNotFoundError`/`PloInUseError` (409).
+  - `CloToPloMapService` — CRUD for the many-to-many CLO↔PLO mapping (`/plan/clo-plo-map/*`): `list` (optional `courseId` filter), `listEntities` (program CLOs grouped by course + PLOs, populates mapping dropdowns), `create` (existence-checked CLO/PLO, duplicate pair rejected), `update` (weight/stage), `delete`; errors map to 404/409.
   - Shared: `ensurePlanFormType` (race-safe `curriculum_map` seq 1, `assessment_calendar` seq 3, `target_setting_matrix` seq 4, `assessment_budget` seq 6, `pdcaStage` PLAN) / `ensureDraft` (find-or-create per formType+program+term, reusing editable/submitted/approved submissions) / `listPlanSubmissions` / `mergeFormData` / `assertEditable` / module-level `planAudit` (moduleAffected `plan`).
 
 ### Planned
