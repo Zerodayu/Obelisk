@@ -25,6 +25,21 @@ export class MissingRationaleError extends Error {
 	}
 }
 
+export class PloForbiddenError extends Error {
+	constructor() {
+		super("Only the dean may create, update, or delete PLOs");
+		this.name = "PloForbiddenError";
+	}
+}
+
+/**
+ * PLO entity mutations are dean-only (faculty map the resulting PLOs; see
+ * SYSTEM-DESIGN §3). Read access stays with any authenticated role.
+ */
+export function assertCanManagePlos(role: string | undefined): void {
+	if (role !== "dean") throw new PloForbiddenError();
+}
+
 export type CurriculumCellLike = {
 	ploCode: string;
 	stage: string | null | undefined;

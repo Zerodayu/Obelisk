@@ -1,7 +1,12 @@
 import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
-import { MissingRationaleError, TargetBelowFloorError } from "./compute";
+import {
+	assertCanManagePlos,
+	MissingRationaleError,
+	PloForbiddenError,
+	TargetBelowFloorError,
+} from "./compute";
 import {
 	CloToPloMapInputSchema,
 	CreatePloSchema,
@@ -57,6 +62,10 @@ function mapPlanErrors(
 	}
 	if (error instanceof PloNotFoundError) {
 		set.status = 404;
+		return { error: error.message };
+	}
+	if (error instanceof PloForbiddenError) {
+		set.status = 403;
 		return { error: error.message };
 	}
 	if (
@@ -515,6 +524,7 @@ export const planPlugin = new Elysia({
 		"/plos",
 		async ({ body, user, set }) => {
 			try {
+				assertCanManagePlos((user as { role?: string }).role);
 				return await ploService.create(body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
@@ -526,11 +536,12 @@ export const planPlugin = new Elysia({
 			detail: {
 				summary: "Create a PLO",
 				description:
-					"Add a Program Learning Outcome to a program. The code must be unique within the program and the target must clear the 70% institutional hard floor.",
+					"Add a Program Learning Outcome to a program. Dean-only. The code must be unique within the program and the target must clear the 70% institutional hard floor.",
 				...SECURITY,
 				responses: {
 					200: { description: "Created PLO" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller is not the dean" },
 					409: {
 						description:
 							"Program not found, duplicate code, or target below the 70% floor",
@@ -543,6 +554,7 @@ export const planPlugin = new Elysia({
 		"/plos/:id",
 		async ({ params, body, user, set }) => {
 			try {
+				assertCanManagePlos((user as { role?: string }).role);
 				return await ploService.update(params.id, body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
@@ -554,11 +566,12 @@ export const planPlugin = new Elysia({
 			detail: {
 				summary: "Update a PLO",
 				description:
-					"Change a PLO's code, statement, and/or target; uniqueness and the 70% floor are re-checked.",
+					"Change a PLO's code, statement, and/or target — dean-only. Uniqueness and the 70% floor are re-checked.",
 				...SECURITY,
 				responses: {
 					200: { description: "Updated PLO" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller is not the dean" },
 					404: { description: "PLO not found" },
 					409: { description: "Duplicate code or target below the 70% floor" },
 				},
@@ -569,6 +582,7 @@ export const planPlugin = new Elysia({
 		"/plos/:id",
 		async ({ params, user, set }) => {
 			try {
+				assertCanManagePlos((user as { role?: string }).role);
 				await ploService.delete(params.id, user.id);
 				return { ok: true };
 			} catch (error) {
@@ -580,11 +594,12 @@ export const planPlugin = new Elysia({
 			detail: {
 				summary: "Delete a PLO",
 				description:
-					"Remove an unused PLO. Blocked when the PLO is mapped to a CLO or carries attainment, gap, or CQI history.",
+					"Remove an unused PLO — dean-only. Blocked when the PLO is mapped to a CLO or carries attainment, gap, or CQI history.",
 				...SECURITY,
 				responses: {
 					200: { description: "Deleted" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller is not the dean" },
 					404: { description: "PLO not found" },
 					409: { description: "PLO is mapped or has assessment history" },
 				},
