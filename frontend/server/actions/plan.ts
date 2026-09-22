@@ -383,3 +383,65 @@ export async function deleteCloPloMap(id: string): Promise<ActionResult<void>> {
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// PLO Entity CRUD
+// ---------------------------------------------------------------------------
+
+export interface PloRecord {
+  id: string;
+  programId: string;
+  code: string;
+  description: string;
+  targetAttainmentPct: number;
+}
+
+export async function listPlos(
+  programId: string,
+): Promise<ActionResult<PloRecord[]>> {
+  try {
+    const data = await actionApi.get<PloRecord[]>("/plan/plos", { programId });
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: errorMessage(err, "Failed to load PLOs.") };
+  }
+}
+
+export async function createPlo(body: {
+  programId: string;
+  code: string;
+  description: string;
+  targetAttainmentPct?: number;
+}): Promise<ActionResult<PloRecord>> {
+  try {
+    const data = await actionApi.post<PloRecord>("/plan/plos", body);
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: errorMessage(err, "Failed to create PLO.") };
+  }
+}
+
+export async function updatePlo(
+  id: string,
+  body: {
+    code?: string;
+    description?: string;
+    targetAttainmentPct?: number;
+  },
+): Promise<ActionResult<PloRecord>> {
+  try {
+    const data = await actionApi.put<PloRecord>(`/plan/plos/${id}`, body);
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: errorMessage(err, "Failed to update PLO.") };
+  }
+}
+
+export async function deletePlo(id: string): Promise<ActionResult<void>> {
+  try {
+    await actionApi.delete(`/plan/plos/${id}`);
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return { ok: false, error: errorMessage(err, "Failed to delete PLO.") };
+  }
+}
