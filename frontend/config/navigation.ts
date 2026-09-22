@@ -32,7 +32,12 @@ import {
   WalletIcon,
 } from "lucide-react";
 
-import { ACADEMIC_ROLES, hasAccess, type UserRole } from "@/lib/roles";
+import {
+  ACADEMIC_ROLES,
+  hasAccess,
+  PLO_MANAGEMENT_ROLES,
+  type UserRole,
+} from "@/lib/roles";
 import { app } from "@/utils/app-info";
 
 export interface NavChild {
@@ -214,6 +219,12 @@ export function workspaceNav(role: UserRole): NavItem[] {
   const items: NavItem[] = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
   ];
+  if (hasAccess(role, PLO_MANAGEMENT_ROLES))
+    items.push({
+      title: "PLO Management",
+      url: "/plo-management",
+      icon: ListChecksIcon,
+    });
   const archives = hasAccess(role, ["aqau", "vpaa", "dean", "system_admin"]);
   if (archives)
     items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
@@ -242,6 +253,7 @@ const ALL_LINKS: { title: string; url: string }[] = [
 function workspaceRootLinks() {
   return [
     { title: "Dashboard", url: "/dashboard" },
+    { title: "PLO Management", url: "/plo-management" },
     { title: "Archives", url: "/archives" },
   ];
 }

@@ -51,6 +51,12 @@ export const ARCHIVE_ROLES: readonly UserRole[] = [
   "system_admin",
 ] as const;
 
+/**
+ * Roles that may create/edit/delete PLO entities (`/plo-management`).
+ * Faculty map the resulting PLOs to CLOs via the curriculum map afterwards.
+ */
+export const PLO_MANAGEMENT_ROLES: readonly UserRole[] = ["dean"] as const;
+
 /** All-role accept list (used by anything any logged-in role may open). */
 export const ANY_AUTHENTICATED_ROLES: readonly UserRole[] = ALL_ROLES;
 
