@@ -35,6 +35,20 @@ export interface ApprovalStepRecord {
   decidedAt: string | null;
 }
 
+/** Form-type identity joined by `GET /forms` / `GET /forms/:id`. */
+export interface FormTypeRef {
+  code: string;
+  name: string;
+  pdcaStage: string;
+}
+
+/** Submitter identity joined by `GET /forms` / `GET /forms/:id`. */
+export interface SubmissionUserRef {
+  id: string;
+  name: string;
+  role: string;
+}
+
 /** Mirrors the backend `FormSubmission` JSON contract. */
 export interface FormSubmissionRecord {
   id: string;
@@ -49,7 +63,30 @@ export interface FormSubmissionRecord {
   createdAt: string;
   updatedAt: string;
   approvalSteps?: ApprovalStepRecord[];
+  formType?: FormTypeRef;
+  submittedBy?: SubmissionUserRef | null;
 }
+
+/** Display labels + badge tones for each submission status. */
+export const FORM_STATUS_LABELS: Record<FormSubmissionStatus, string> = {
+  draft: "Draft",
+  submitted: "Submitted",
+  returned: "Returned",
+  approved: "Approved",
+  archived: "Archived",
+};
+
+/** `Badge` variant tone per status (matches `components/reui/badge.tsx`). */
+export const FORM_STATUS_TONES: Record<
+  FormSubmissionStatus,
+  "secondary" | "info" | "warning" | "success" | "invert"
+> = {
+  draft: "secondary",
+  submitted: "info",
+  returned: "warning",
+  approved: "success",
+  archived: "invert",
+};
 
 /** Filters that shape the `GET /forms` query. `null` = no filter. */
 export const formTypeIdFilterAtom = atom<string | null>(null);
@@ -93,3 +130,33 @@ export const formStatusCountsAtom = atom<FormStatusDatum[]>((get) => {
     count: counts.get(status) ?? 0,
   }));
 });
+
+/**
+ * "My Submissions" inbox — the session user's own submissions
+ * (`GET /forms?scope=mine`; scoping is resolved server-side from the session).
+ */
+export const {
+  dataAtom: mySubmissionsDataAtom,
+  stateAtom: mySubmissionsStateAtom,
+  refreshAtom: refreshMySubmissionsAtom,
+} = atomWithAsyncData<FormSubmissionRecord[]>([], (_get, signal) =>
+  api.get<FormSubmissionRecord[]>("/forms", {
+    query: { scope: "mine" },
+    signal,
+  }),
+);
+
+/**
+ * "Pending Approvals" inbox — submitted records waiting on the session's
+ * role (`GET /forms?scope=pending`; a system_admin sees every pending step).
+ */
+export const {
+  dataAtom: pendingApprovalsDataAtom,
+  stateAtom: pendingApprovalsStateAtom,
+  refreshAtom: refreshPendingApprovalsAtom,
+} = atomWithAsyncData<FormSubmissionRecord[]>([], (_get, signal) =>
+  api.get<FormSubmissionRecord[]>("/forms", {
+    query: { scope: "pending" },
+    signal,
+  }),
+);

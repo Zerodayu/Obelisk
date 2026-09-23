@@ -34,6 +34,7 @@ import {
 
 import {
   ACADEMIC_ROLES,
+  APPROVER_ROLES,
   hasAccess,
   PLO_MANAGEMENT_ROLES,
   type UserRole,
@@ -45,6 +46,11 @@ export interface NavChild {
   url: string;
   /** allow-list roles; empty = any authenticated role. */
   roles?: readonly UserRole[];
+  /**
+   * Stable snake_case `FormType.code` for form screens — used by the
+   * submission inboxes to link a record back to its screen.
+   */
+  code?: string;
 }
 
 export interface NavItem extends NavChild {
@@ -68,12 +74,14 @@ const FORM_SECTIONS: NavSection[] = [
         url: "/forms/clo-raw-data",
         icon: ClipboardListIcon,
         roles: ACADEMIC_ROLES,
+        code: "clo_raw_data",
       },
       {
         title: "Course Assessment Report",
         url: "/forms/course-assessment-report",
         icon: FileChartColumnIcon,
         roles: ACADEMIC_ROLES,
+        code: "course_assessment_report",
       },
     ],
   },
@@ -84,16 +92,19 @@ const FORM_SECTIONS: NavSection[] = [
         title: "CLO Attainment Summary",
         url: "/forms/attainment/clo-attainment-summary",
         icon: BarChart3Icon,
+        code: "clo_attainment_summary",
       },
       {
         title: "PLO Attainment Summary",
         url: "/forms/attainment/plo-attainment-summary",
         icon: BarChart3Icon,
+        code: "plo_attainment_summary",
       },
       {
         title: "Cohort Tracking",
         url: "/forms/attainment/cohort-tracking",
         icon: LandmarkIcon,
+        code: "cohort_tracking",
       },
     ],
   },
@@ -104,21 +115,25 @@ const FORM_SECTIONS: NavSection[] = [
         title: "PLO Gap Analysis",
         url: "/forms/cqi/plo-gap-analysis",
         icon: TargetIcon,
+        code: "plo_gap_analysis",
       },
       {
         title: "CQI Action Plan",
         url: "/forms/cqi/cqi-action-plan",
         icon: ListChecksIcon,
+        code: "cqi_action_plan",
       },
       {
         title: "Closing the Loop",
         url: "/forms/cqi/closing-the-loop",
         icon: RefreshCwIcon,
+        code: "closing_the_loop",
       },
       {
         title: "Annual Program Report",
         url: "/forms/cqi/annual-program-report",
         icon: FileTextIcon,
+        code: "annual_program_report",
       },
     ],
   },
@@ -129,21 +144,25 @@ const FORM_SECTIONS: NavSection[] = [
         title: "Curriculum Map",
         url: "/forms/plan/curriculum-map",
         icon: BookOpenIcon,
+        code: "curriculum_map",
       },
       {
         title: "Assessment Calendar",
         url: "/forms/plan/assessment-calendar",
         icon: CalendarRangeIcon,
+        code: "assessment_calendar",
       },
       {
         title: "Target Setting Matrix",
         url: "/forms/plan/target-setting-matrix",
         icon: TargetIcon,
+        code: "target_setting_matrix",
       },
       {
         title: "Assessment Budget",
         url: "/forms/plan/assessment-budget",
         icon: CalendarDaysIcon,
+        code: "assessment_budget",
       },
     ],
   },
@@ -154,40 +173,60 @@ const FORM_SECTIONS: NavSection[] = [
         title: "Peer Observation",
         url: "/forms/check/peer-observation",
         icon: ClipboardCheckIcon,
+        code: "peer_observation",
       },
       {
         title: "CLO Perception Survey",
         url: "/forms/check/clo-perception-survey",
         icon: ClipboardListIcon,
+        code: "clo_perception_survey",
       },
       {
         title: "Student Exit Survey",
         url: "/forms/check/student-exit-survey",
         icon: ClipboardListIcon,
+        code: "student_exit_survey",
       },
       {
         title: "Exhibition Feedback",
         url: "/forms/check/exhibition-feedback",
         icon: StarIcon,
+        code: "exhibition_feedback",
       },
       {
         title: "Portfolio Assessment",
         url: "/forms/check/portfolio-assessment",
         icon: FileChartColumnIcon,
+        code: "portfolio_assessment_record",
       },
       {
         title: "Capstone Panel Evaluation",
         url: "/forms/check/capstone-panel",
         icon: ListChecksIcon,
+        code: "capstone_panel_evaluation",
       },
       {
         title: "Mid-Cycle Attainment",
         url: "/forms/check/mid-cycle-attainment",
         icon: WalletIcon,
+        code: "mid_cycle_attainment",
       },
     ],
   },
 ];
+
+/**
+ * Stable form code → screen path, for linking inbox rows back to their form
+ * screen. Codes without a built screen (periodic forms, `stakeholder_
+ * consultation`) are absent — render those rows unlinked.
+ */
+export const formPathByCode: Record<string, string> = Object.fromEntries(
+  FORM_SECTIONS.flatMap((section) =>
+    section.items
+      .filter((item) => item.code)
+      .map((item) => [item.code as string, item.url]),
+  ),
+);
 
 function allowRoles(item: NavChild, role: UserRole): boolean {
   return hasAccess(role, item.roles);
@@ -225,6 +264,17 @@ export function workspaceNav(role: UserRole): NavItem[] {
       url: "/plo-management",
       icon: ListChecksIcon,
     });
+  items.push({
+    title: "My Submissions",
+    url: "/submissions",
+    icon: FileTextIcon,
+  });
+  if (hasAccess(role, APPROVER_ROLES))
+    items.push({
+      title: "Pending Approvals",
+      url: "/approvals",
+      icon: ClipboardCheckIcon,
+    });
   const archives = hasAccess(role, ["aqau", "vpaa", "dean", "system_admin"]);
   if (archives)
     items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
@@ -254,6 +304,8 @@ function workspaceRootLinks() {
   return [
     { title: "Dashboard", url: "/dashboard" },
     { title: "PLO Management", url: "/plo-management" },
+    { title: "My Submissions", url: "/submissions" },
+    { title: "Pending Approvals", url: "/approvals" },
     { title: "Archives", url: "/archives" },
   ];
 }

@@ -52,6 +52,20 @@ export const ARCHIVE_ROLES: readonly UserRole[] = [
 ] as const;
 
 /**
+ * Roles that may sit on a form-approval step (`ApproverRole`), plus the
+ * `system_admin` override — gates the `/approvals` inbox. Note this is
+ * narrower than `ARCHIVE_ROLES` (dean may open `/archives` but may not
+ * archive a submission; the backend enforces `aqau`/`vpaa`/`system_admin`).
+ */
+export const APPROVER_ROLES: readonly UserRole[] = [
+  "program_chair",
+  "dean",
+  "aqau",
+  "vpaa",
+  "system_admin",
+] as const;
+
+/**
  * Roles that may create/edit/delete PLO entities (`/plo-management`).
  * Faculty map the resulting PLOs to CLOs via the curriculum map afterwards.
  */
