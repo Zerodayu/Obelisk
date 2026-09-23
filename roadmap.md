@@ -249,10 +249,10 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [ ] `institutional_review` — program reviews + CQI completion table
 - [ ] `portfolio_roadmap` — 4-year roadmap rows + rubric standards with weight validation
 
-### Workflow UI (all pending)
+### Workflow UI (partially done)
 
-- [ ] Approval workflow — submit / review / approve / return buttons on form screens
-- [ ] Submission inbox — "My Submissions" + "Pending Approvals" pages
+- [x] Approval workflow — submit / review / approve / return buttons on form screens — **Done:** shared `FormWorkflow` bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive) embedded on all 13 Phase 0–5 form screens; chain + RBAC enforced server-side (`backend/lib/forms/approval-routes.ts`)
+- [x] Submission inbox — "My Submissions" + "Pending Approvals" pages — **Done:** `/submissions` + `/approvals` backed by `GET /forms?scope=mine|pending` (session-derived)
 - [ ] Export / print — PDF / Excel / Word on form screens
 
 ### Archives
@@ -291,7 +291,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
   - [x] CAR routes (`/api/v1/car/*`) — submit-time assembly, per-section CAR resolution, editable-parts save (Phases 1–2)
   - [x] Check routes (`/api/v1/check/*`) — F08/F10/F11/F12/F17/F18/F19 (Phase 6)
   - [x] Periodic routes (`/api/v1/periodic/*`) — F09/F20/F21/F26/F27/F28/F02 (Phase 6)
-- [ ] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC to follow
+- [x] Approval workflow on `FormSubmission`/`ApprovalStep` — lifecycle implemented in Phase 0; per-form routing/RBAC now server-derived from `lib/forms/approval-routes.ts` (28 stable form codes, preparer roles + ordered chains, submit/decide/archive guards, `system_admin` override)
 - [ ] Archival pipeline — see Phase 7
 
 ### frontend (Next.js 16) — **foundation landed; screens deferred until backend stable**
@@ -327,8 +327,11 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### Forms & Workflow
 
-- [ ] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs
+- [x] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs — **Done:** server registry (`backend/lib/forms/approval-routes.ts`) derives each form's approval chain from its stable code (client `steps` deprecated); submit/decide/archive/update are role- and ownership-gated with proper 401/403/404/409; `FormWorkflow` bar on all 13 Phase 0–5 screens; `/submissions` + `/approvals` inboxes with nav entries and per-form-code deep links; seeded one demo user per role (`<role>@jmcfi.edu.ph`)
 
 ### Bug / Investigation
 
 - [ ] **Phantom GET calls on server** — investigate and fix unidentified/phantom GET requests hitting the backend; root-cause whether these are client-side misfires, stale polling, or external probes
+- [ ] **Workflow bar on Phase 6 screens** — embed `FormWorkflow` on the 7 CHECK-phase form screens (`peer_observation`, `clo_perception_survey`, `student_exit_survey`, `exhibition_feedback`, `portfolio_assessment_record`, `capstone_panel_evaluation`, `mid_cycle_attainment`) — their payloads use `payload.id` instead of `payload.formSubmissionId`
+- [ ] **Sanity-check ambiguous approval chains** — confirm registry mappings: `curriculum_map` → `[aqau]`, `systemic_gap_report` → `[vpaa]`, `institutional_review` → `[vpaa]` (President mapped to vpaa); `peer_observation` keeps a same-role `[program_chair]` chain (no self-approval rule)
+- [ ] **Feature-plugin draft save ownership** — decide whether shared-draft editing stays allowed or plugin save endpoints (`assertCanEdit`) become strictly owner-only like `PUT /forms/:id`
