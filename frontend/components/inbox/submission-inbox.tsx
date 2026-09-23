@@ -11,12 +11,12 @@ import {
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Status } from "@/components/ui/status";
 import { formPathByCode } from "@/config/navigation";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import type { AsyncState } from "@/lib/store/async-atom";
 import {
   FORM_STATUS_LABELS,
-  FORM_STATUS_TONES,
   type FormSubmissionRecord,
   mySubmissionsDataAtom,
   mySubmissionsStateAtom,
@@ -61,6 +61,34 @@ function previewInboxAtoms(data: FormSubmissionRecord[]): InboxAtoms {
 const PREVIEW_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
   mine: previewInboxAtoms(SAMPLE_MY_SUBMISSIONS),
   pending: previewInboxAtoms(SAMPLE_PENDING_APPROVALS),
+};
+
+/**
+ * Soft status chips for the inbox pages only — each status keeps its current
+ * color family (theme tokens: info=blue-500, warning=amber-500,
+ * success=emerald-500, invert=zinc-900, secondary=neutral) in the
+ * `border-{c}-200/20 bg-{c}-500/10 text-{c}-500` tint style.
+ */
+const STATUS_BADGE_CLASS: Record<FormSubmissionRecord["status"], string> = {
+  draft: "border-gray-200/20 bg-gray-500/10 text-gray-500",
+  submitted: "border-blue-200/20 bg-blue-500/10 text-blue-500",
+  returned: "border-amber-200/20 bg-amber-500/10 text-amber-500",
+  approved: "border-emerald-200/20 bg-emerald-500/10 text-emerald-500",
+  archived: "border-zinc-200/20 bg-zinc-500/10 text-zinc-500",
+};
+
+/**
+ * Solid dot colors for the leading Status indicator — same hue families as
+ * the chip tints (theme tokens: info=blue, warning=amber, success=emerald,
+ * secondary=neutral, invert=zinc), passed as custom colors per the Status
+ * sample usage.
+ */
+const STATUS_DOT_CLASS: Record<FormSubmissionRecord["status"], string> = {
+  draft: "bg-gray-500",
+  submitted: "bg-blue-500",
+  returned: "bg-amber-500",
+  approved: "bg-emerald-500",
+  archived: "bg-zinc-500",
 };
 
 /**
@@ -146,7 +174,11 @@ export function SubmissionInbox({
                   </p>
                 </div>
 
-                <Badge variant={FORM_STATUS_TONES[submission.status]}>
+                <Badge className={STATUS_BADGE_CLASS[submission.status]}>
+                  <Status
+                    className={STATUS_DOT_CLASS[submission.status]}
+                    size="sm"
+                  />
                   {FORM_STATUS_LABELS[submission.status]}
                 </Badge>
 
