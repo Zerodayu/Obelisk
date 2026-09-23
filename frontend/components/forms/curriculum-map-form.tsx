@@ -316,7 +316,6 @@ export function CurriculumMapForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setPlos([]);
@@ -325,7 +324,7 @@ export function CurriculumMapForm() {
         >
           Re-initialize
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>

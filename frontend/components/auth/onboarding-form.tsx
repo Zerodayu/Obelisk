@@ -69,7 +69,6 @@ export const OnboardingForm = () => {
         className="w-full hover:cursor-pointer"
         disabled={submitting || !requestedRole}
         onClick={() => void onSubmit()}
-        size="lg"
         type="button"
       >
         {submitting ? "Submitting…" : "Request role"}

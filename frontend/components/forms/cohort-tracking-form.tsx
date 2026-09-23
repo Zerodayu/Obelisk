@@ -300,7 +300,6 @@ export function CohortTrackingForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setAnnotations([]);
@@ -309,7 +308,7 @@ export function CohortTrackingForm() {
           Generate Another
         </Button>
         {annotations.length > 0 && (
-          <Button size="sm" onClick={handleSaveAnnotations} disabled={saving}>
+          <Button onClick={handleSaveAnnotations} disabled={saving}>
             {saving ? "Saving..." : "Save Annotations"}
           </Button>
         )}

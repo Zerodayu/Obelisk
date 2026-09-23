@@ -324,7 +324,6 @@ export function PloGapAnalysisForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setGapRows([]);
@@ -333,7 +332,7 @@ export function PloGapAnalysisForm() {
           Generate Another
         </Button>
         {gapRows.length > 0 && (
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         )}

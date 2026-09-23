@@ -343,7 +343,6 @@ export default function ExhibitionFeedbackForm() {
                   <td className="px-3 py-2">
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => removeGuestRow(i)}
                       className="text-destructive"
                     >
@@ -354,12 +353,7 @@ export default function ExhibitionFeedbackForm() {
               ))}
             </tbody>
           </table>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addGuestRow}
-            className="mt-2"
-          >
+          <Button variant="outline" onClick={addGuestRow} className="mt-2">
             + Add Row
           </Button>
         </FramePanel>

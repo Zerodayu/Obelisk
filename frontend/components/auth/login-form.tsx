@@ -103,7 +103,6 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
       <Button
         className="mt-6 w-full hover:cursor-pointer"
         disabled={submitting}
-        size="lg"
         type="submit"
       >
         <Mail className="mr-2" />

@@ -461,7 +461,6 @@ export default function PortfolioAssessmentForm() {
                     <td className="px-3 py-2">
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => removeRow(i)}
                         className="text-destructive"
                       >
@@ -473,7 +472,7 @@ export default function PortfolioAssessmentForm() {
               </tbody>
             </table>
           </div>
-          <Button variant="outline" size="sm" onClick={addRow} className="mt-2">
+          <Button variant="outline" onClick={addRow} className="mt-2">
             + Add Row
           </Button>
         </FramePanel>

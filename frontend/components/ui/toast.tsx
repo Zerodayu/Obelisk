@@ -172,7 +172,7 @@ export const ToastItem = (props: ToastItemProps) => {
           <ArkToast.ActionTrigger
             data-slot="toast-action-trigger"
             onClick={toastData.action.onClick}
-            render={<Button size="sm" variant="secondary" />}
+            render={<Button variant="secondary" />}
           >
             {toastData.action.label}
           </ArkToast.ActionTrigger>

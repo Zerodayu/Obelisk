@@ -422,7 +422,6 @@ export default function CapstonePanelForm() {
                   <td className="px-3 py-2">
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => removePanelistRow(i)}
                       className="text-destructive"
                     >
@@ -433,12 +432,7 @@ export default function CapstonePanelForm() {
               ))}
             </tbody>
           </table>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addPanelistRow}
-            className="mt-2"
-          >
+          <Button variant="outline" onClick={addPanelistRow} className="mt-2">
             + Add Row
           </Button>
         </FramePanel>

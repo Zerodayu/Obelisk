@@ -381,7 +381,7 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
             weight and I-P-D stage.
           </p>
         </div>
-        <Button size="sm" variant="outline" onClick={openCreateDialog}>
+        <Button variant="outline" onClick={openCreateDialog}>
           + Add Connection
         </Button>
       </div>
@@ -445,7 +445,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
                   <td className="px-3 py-2 text-right">
                     <Button
                       variant="ghost"
-                      size="sm"
                       className="h-7 px-2"
                       onClick={() => openEditDialog(map)}
                     >
@@ -453,7 +452,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
                       className="h-7 px-2 text-destructive"
                       onClick={() => setDeleteConfirmId(map.id)}
                     >

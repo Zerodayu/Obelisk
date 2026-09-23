@@ -296,7 +296,6 @@ export function AssessmentCalendarForm() {
                             {!event.isTemplate && (
                               <Button
                                 variant="ghost"
-                                size="sm"
                                 onClick={() => removeEvent(globalIdx)}
                                 className="h-8 px-2 text-destructive"
                               >
@@ -316,12 +315,11 @@ export function AssessmentCalendarForm() {
       })}
 
       <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={addProgramEvent}>
+        <Button variant="outline" onClick={addProgramEvent}>
           + Add Program Event
         </Button>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setEvents([]);
@@ -329,7 +327,7 @@ export function AssessmentCalendarForm() {
         >
           Re-initialize
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>

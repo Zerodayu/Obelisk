@@ -340,7 +340,6 @@ export function CtlForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setRows([]);
@@ -348,7 +347,7 @@ export function CtlForm() {
         >
           Generate Another
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>

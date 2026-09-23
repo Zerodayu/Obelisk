@@ -99,7 +99,6 @@ export function SubmissionInbox({
         <Button
           disabled={state.status === "loading"}
           onClick={() => refresh()}
-          size="sm"
           type="button"
           variant="outline"
         >
@@ -117,12 +116,7 @@ export function SubmissionInbox({
           <p className="text-sm text-destructive">
             Could not load submissions. Please try again.
           </p>
-          <Button
-            onClick={() => refresh()}
-            size="sm"
-            type="button"
-            variant="outline"
-          >
+          <Button onClick={() => refresh()} type="button" variant="outline">
             Retry
           </Button>
         </div>

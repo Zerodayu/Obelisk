@@ -234,7 +234,6 @@ export function FormWorkflow({
                   () => submitFormAction(submission.id),
                 )
               }
-              size="sm"
               type="button"
             >
               {busy === "submit" ? (
@@ -262,7 +261,6 @@ export function FormWorkflow({
                       ),
                   )
                 }
-                size="sm"
                 type="button"
               >
                 {busy === "approve" ? (
@@ -283,7 +281,6 @@ export function FormWorkflow({
                     setReturnComment("");
                     setReturnOpen(true);
                   }}
-                  size="sm"
                   type="button"
                   variant="outline"
                 >
@@ -320,7 +317,6 @@ export function FormWorkflow({
                             }),
                         )
                       }
-                      size="sm"
                       type="button"
                     >
                       {busy === "return" ? (
@@ -339,12 +335,7 @@ export function FormWorkflow({
           {canArchive ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button
-                  disabled={busy != null}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
+                <Button disabled={busy != null} type="button" variant="outline">
                   <ArchiveIcon />
                   Archive
                 </Button>
@@ -393,11 +384,7 @@ export function FormWorkflow({
                 <span className="text-xs font-medium">
                   {step.sequenceNo}. {roleLabel(step.approverRole as UserRole)}
                 </span>
-                <Badge
-                  radius="full"
-                  size="sm"
-                  variant={DECISION_TONES[step.decision]}
-                >
+                <Badge radius="full" variant={DECISION_TONES[step.decision]}>
                   {DECISION_LABELS[step.decision]}
                 </Badge>
               </div>

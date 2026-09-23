@@ -98,7 +98,6 @@ export function RoleRequestsPanel() {
         <Button
           disabled={loading}
           onClick={() => void load()}
-          size="sm"
           type="button"
           variant="outline"
         >
@@ -142,7 +141,6 @@ export function RoleRequestsPanel() {
                 <Button
                   disabled={busyId === request.id}
                   onClick={() => void decide(request.id, "approve")}
-                  size="sm"
                   type="button"
                 >
                   Approve
@@ -150,7 +148,6 @@ export function RoleRequestsPanel() {
                 <Button
                   disabled={busyId === request.id}
                   onClick={() => void decide(request.id, "deny")}
-                  size="sm"
                   type="button"
                   variant="outline"
                 >

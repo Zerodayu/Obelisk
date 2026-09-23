@@ -48,7 +48,7 @@ function DataGridColumnFilter<TData extends object, TValue>({
     <Popover>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm">
+          <Button variant="outline">
             <CirclePlusIcon className="size-4" />
             {title}
             {selectedValues?.size > 0 && (

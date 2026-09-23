@@ -307,7 +307,6 @@ export function CqiActionPlanForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          size="sm"
           onClick={() => {
             setPayload(null);
             setEntries([]);
@@ -315,15 +314,10 @@ export function CqiActionPlanForm() {
         >
           Generate Another
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleTrack}
-          disabled={tracking}
-        >
+        <Button variant="outline" onClick={handleTrack} disabled={tracking}>
           {tracking ? "Tracking..." : "Track End-of-Cycle"}
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}
         </Button>
       </div>

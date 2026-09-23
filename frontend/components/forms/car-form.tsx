@@ -372,7 +372,6 @@ function Part5({
                   <td className="py-1 pr-2">
                     <Button
                       variant="ghost"
-                      size="sm"
                       onClick={() => removeRow(idx)}
                       className="h-8 px-2 text-destructive"
                     >
@@ -385,7 +384,7 @@ function Part5({
           </table>
         </div>
       )}
-      <Button variant="outline" size="sm" onClick={addRow}>
+      <Button variant="outline" onClick={addRow}>
         + Add Entry
       </Button>
     </div>
@@ -701,7 +700,6 @@ export function CarForm() {
           {dirty && <Badge variant="warning">Unsaved</Badge>}
           <Button
             variant="outline"
-            size="sm"
             onClick={handleSave}
             disabled={!dirty || saving}
           >
@@ -747,14 +745,10 @@ export function CarForm() {
         {dirty && (
           <FrameFooter>
             <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDirty(false)}
-              >
+              <Button variant="outline" onClick={() => setDirty(false)}>
                 Discard
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
+              <Button onClick={handleSave} disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
             </div>

@@ -200,7 +200,7 @@ export function PloSummaryForm() {
       </Frame>
 
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={() => setPayload(null)}>
+        <Button variant="outline" onClick={() => setPayload(null)}>
           Generate Another
         </Button>
       </div>

@@ -60,7 +60,6 @@ export const GoogleSignInButton = ({
         className="w-full hover:cursor-pointer"
         disabled={submitting}
         onClick={() => void signIn()}
-        size="lg"
         type="button"
       >
         <GoogleLogo className="mr-2 size-4" />

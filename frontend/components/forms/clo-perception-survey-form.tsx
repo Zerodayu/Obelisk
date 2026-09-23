@@ -435,7 +435,6 @@ export function CloPerceptionSurveyForm() {
                     <td className="px-3 py-2">
                       <Button
                         variant="ghost"
-                        size="sm"
                         onClick={() => removeCloRow(idx)}
                         className="h-8 px-2 text-destructive"
                       >
@@ -448,7 +447,7 @@ export function CloPerceptionSurveyForm() {
             </table>
           </div>
           <div className="mt-2">
-            <Button variant="outline" size="sm" onClick={addCloRow}>
+            <Button variant="outline" onClick={addCloRow}>
               + Add CLO Row
             </Button>
           </div>
@@ -486,10 +485,10 @@ export function CloPerceptionSurveyForm() {
           {payload.status}
         </Badge>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPayload(null)}>
+          <Button variant="outline" onClick={() => setPayload(null)}>
             Re-initialize
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>

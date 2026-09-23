@@ -300,7 +300,6 @@ export function PloManagementPanel() {
                   <td className="px-3 py-2 text-right">
                     <Button
                       variant="ghost"
-                      size="sm"
                       className="h-7 px-2"
                       onClick={() => openEditDialog(record)}
                     >
@@ -308,7 +307,6 @@ export function PloManagementPanel() {
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
                       className="h-7 px-2 text-destructive"
                       onClick={() => setDeleteId(record.id)}
                     >

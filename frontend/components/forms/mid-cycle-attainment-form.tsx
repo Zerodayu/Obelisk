@@ -457,11 +457,7 @@ export default function MidCycleAttainmentForm() {
                       />
                     </td>
                     <td className="px-3 py-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeRow(idx)}
-                      >
+                      <Button variant="ghost" onClick={() => removeRow(idx)}>
                         Remove
                       </Button>
                     </td>
@@ -471,7 +467,7 @@ export default function MidCycleAttainmentForm() {
             </table>
           </div>
           <div className="mt-3">
-            <Button variant="outline" size="sm" onClick={addRow}>
+            <Button variant="outline" onClick={addRow}>
               Add Row
             </Button>
           </div>
