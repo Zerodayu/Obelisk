@@ -1,9 +1,13 @@
 "use client";
 
 import type { Atom, WritableAtom } from "jotai";
-import { useAtomValue, useSetAtom } from "jotai";
+import { atom, useAtomValue, useSetAtom } from "jotai";
 import { ArrowRightIcon, RefreshCwIcon } from "lucide-react";
 import Link from "next/link";
+import {
+  SAMPLE_MY_SUBMISSIONS,
+  SAMPLE_PENDING_APPROVALS,
+} from "@/components/charts/obe-sample-data";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -42,12 +46,39 @@ const INBOX_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
 };
 
 /**
+ * Dev-mode preview atoms — synchronous canned rows, so the inboxes render
+ * populated during SSR with no API call. `DEVELOPMENT` is only visible to
+ * the server, which passes `devPreview` down from the route.
+ */
+function previewInboxAtoms(data: FormSubmissionRecord[]): InboxAtoms {
+  return {
+    data: atom(data),
+    state: atom<AsyncState<FormSubmissionRecord[]>>({ status: "ready", data }),
+    refresh: atom(null, () => {}),
+  };
+}
+
+const PREVIEW_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
+  mine: previewInboxAtoms(SAMPLE_MY_SUBMISSIONS),
+  pending: previewInboxAtoms(SAMPLE_PENDING_APPROVALS),
+};
+
+/**
  * Submission inbox table shared by `/submissions` (own records) and
  * `/approvals` (records waiting on the caller's role). Data comes from the
- * scoped atoms — the backend resolves the scope from the session.
+ * scoped atoms — the backend resolves the scope from the session. With
+ * `devPreview` (DEVELOPMENT=true) the canned rows render instead, so the UI
+ * can be reviewed without a backend session.
  */
-export function SubmissionInbox({ scope }: { scope: "mine" | "pending" }) {
-  const atoms = INBOX_ATOMS[scope];
+export function SubmissionInbox({
+  scope,
+  devPreview = false,
+}: {
+  scope: "mine" | "pending";
+  /** True when `DEVELOPMENT=true` — render the canned rows, skip the API. */
+  devPreview?: boolean;
+}) {
+  const atoms = devPreview ? PREVIEW_ATOMS[scope] : INBOX_ATOMS[scope];
   const submissions = useAtomValue(atoms.data);
   const state = useAtomValue(atoms.state);
   const refresh = useSetAtom(atoms.refresh);

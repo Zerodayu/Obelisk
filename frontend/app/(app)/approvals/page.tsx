@@ -1,4 +1,5 @@
 import { SubmissionInbox } from "@/components/inbox/submission-inbox";
+import { isDevMode } from "@/lib/dev-mode";
 import { APPROVER_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
@@ -21,7 +22,7 @@ export default async function PendingApprovalsPage() {
           return with a comment.
         </p>
       </div>
-      <SubmissionInbox scope="pending" />
+      <SubmissionInbox devPreview={isDevMode} scope="pending" />
     </div>
   );
 }

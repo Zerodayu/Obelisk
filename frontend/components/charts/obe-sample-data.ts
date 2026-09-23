@@ -46,6 +46,8 @@
  *   MOCK_USER_ROLES             direct     user.role
  *   MOCK_CLUSTER_STATUSES       direct     GraduationCluster.status
  *   MOCK_COMPUTATION_RUNS       direct     ComputationRun
+ *   SAMPLE_MY_SUBMISSIONS       direct     FormSubmission (`scope=mine` inbox)
+ *   SAMPLE_PENDING_APPROVALS    direct     FormSubmission (`scope=pending` inbox)
  *
  * ── Consistency rules honoured across every dataset ─────────────────────────
  *   - Composite CLO attainment = Direct × 70% + Indirect × 30%.
@@ -55,6 +57,13 @@
  *   - Score-band counts sum to the same class size the at-risk watchlist draws from.
  *   - Root-cause categories / loop statuses match the canonical enums.
  */
+
+import type {
+  ApprovalStepRecord,
+  FormSubmissionRecord,
+  FormTypeRef,
+  SubmissionUserRef,
+} from "@/lib/store/atoms/forms";
 
 /** Mirrors `CloAttainment` — one row per CLO for the active computation run. */
 export interface CloAttainmentDatum {
@@ -381,6 +390,251 @@ export const MOCK_APPROVAL_FLOW: ApprovalFlowDatum[] = [
   { approverRole: "dean", pending: 4, approved: 11, returned: 2 },
   { approverRole: "aqau", pending: 2, approved: 9, returned: 1 },
   { approverRole: "vpaa", pending: 1, approved: 5, returned: 0 },
+];
+
+// ── Inbox sample rows (dev-mode `scope=mine` / `scope=pending` previews) ─────
+// Consumed by `components/inbox/submission-inbox.tsx` (via the server-passed
+// `devPreview` flag) when `DEVELOPMENT=true`, so `/submissions` and
+// `/approvals` render populated without a backend session. Approval chains and
+// form names mirror `backend/lib/forms/approval-routes.ts` + the stable-code
+// catalogue in `backend/SYSTEM-DESIGN.md`.
+
+/** One `ApprovalStep` decision before it is expanded into a full record. */
+interface SampleStepSeed {
+  approverRole: ApprovalStepRecord["approverRole"];
+  decision: ApprovalStepRecord["decision"];
+  comment?: string;
+  decidedAt?: string;
+}
+
+const SAMPLE_SUBMITTERS = {
+  chair: {
+    id: "sample-user-chair",
+    name: "Prof. Maria Lourdes Santos",
+    role: "program_chair",
+  },
+  faculty: {
+    id: "sample-user-faculty",
+    name: "Dr. Juan Dela Cruz",
+    role: "faculty",
+  },
+} satisfies Record<string, SubmissionUserRef>;
+
+const SAMPLE_FORM_TYPES = {
+  targetSettingMatrix: {
+    code: "target_setting_matrix",
+    name: "Target-Setting Matrix",
+    pdcaStage: "PLAN",
+  },
+  assessmentCalendar: {
+    code: "assessment_calendar",
+    name: "Assessment Calendar with Cohort Tracking Milestones",
+    pdcaStage: "PLAN",
+  },
+  curriculumMap: {
+    code: "curriculum_map",
+    name: "CLO-PLO Curriculum Map",
+    pdcaStage: "PLAN",
+  },
+  courseAssessmentReport: {
+    code: "course_assessment_report",
+    name: "Course Assessment Report (CAR)",
+    pdcaStage: "CHECK",
+  },
+  annualProgramReport: {
+    code: "annual_program_report",
+    name: "Annual Program Assessment Report (APAR)",
+    pdcaStage: "ACT",
+  },
+  cqiActionPlan: {
+    code: "cqi_action_plan",
+    name: "CQI Action Plan",
+    pdcaStage: "ACT",
+  },
+  ploAttainmentSummary: {
+    code: "plo_attainment_summary",
+    name: "PLO Attainment Summary",
+    pdcaStage: "CHECK",
+  },
+} satisfies Record<string, FormTypeRef>;
+
+/** Assemble one inbox-shaped `FormSubmissionRecord` with its approval chain. */
+function sampleSubmission(opts: {
+  id: string;
+  formType: FormTypeRef;
+  status: FormSubmissionRecord["status"];
+  currentApproverRole: string | null;
+  submittedBy: SubmissionUserRef;
+  createdAt: string;
+  updatedAt: string;
+  steps: SampleStepSeed[];
+}): FormSubmissionRecord {
+  return {
+    id: opts.id,
+    formTypeId: `sample-formtype-${opts.formType.code}`,
+    classSectionId: null,
+    programId: "sample-program-bsit",
+    termId: "sample-term-2026-1",
+    submittedByUserId: opts.submittedBy.id,
+    status: opts.status,
+    currentApproverRole: opts.currentApproverRole,
+    formData: {},
+    createdAt: opts.createdAt,
+    updatedAt: opts.updatedAt,
+    formType: opts.formType,
+    submittedBy: opts.submittedBy,
+    approvalSteps: opts.steps.map((step, index) => ({
+      id: `${opts.id}-step-${index + 1}`,
+      formSubmissionId: opts.id,
+      approverRole: step.approverRole,
+      sequenceNo: index + 1,
+      decision: step.decision,
+      approverUserId:
+        step.decision === "pending" ? null : `sample-user-${step.approverRole}`,
+      comment: step.comment ?? null,
+      decidedAt: step.decidedAt ?? null,
+    })),
+  };
+}
+
+/** `scope=mine` — one submission per status, for `/submissions`. */
+export const SAMPLE_MY_SUBMISSIONS: FormSubmissionRecord[] = [
+  sampleSubmission({
+    id: "sample-submission-1",
+    formType: SAMPLE_FORM_TYPES.targetSettingMatrix,
+    status: "draft",
+    currentApproverRole: null,
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-09-22T08:15:00.000Z",
+    updatedAt: "2026-09-23T07:02:00.000Z",
+    steps: [],
+  }),
+  sampleSubmission({
+    id: "sample-submission-2",
+    formType: SAMPLE_FORM_TYPES.assessmentCalendar,
+    status: "submitted",
+    currentApproverRole: "dean",
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-09-16T06:30:00.000Z",
+    updatedAt: "2026-09-21T02:45:00.000Z",
+    steps: [
+      { approverRole: "dean", decision: "pending" },
+      { approverRole: "aqau", decision: "pending" },
+    ],
+  }),
+  sampleSubmission({
+    id: "sample-submission-3",
+    formType: SAMPLE_FORM_TYPES.curriculumMap,
+    status: "returned",
+    currentApproverRole: null,
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-09-08T09:10:00.000Z",
+    updatedAt: "2026-09-18T01:42:00.000Z",
+    steps: [
+      {
+        approverRole: "aqau",
+        decision: "returned",
+        comment:
+          "Please add the CLO-PLO validation evidence for the newly mapped courses before resubmitting.",
+        decidedAt: "2026-09-18T01:42:00.000Z",
+      },
+    ],
+  }),
+  sampleSubmission({
+    id: "sample-submission-4",
+    formType: SAMPLE_FORM_TYPES.courseAssessmentReport,
+    status: "approved",
+    currentApproverRole: null,
+    submittedBy: SAMPLE_SUBMITTERS.faculty,
+    createdAt: "2026-08-15T08:00:00.000Z",
+    updatedAt: "2026-09-01T03:20:00.000Z",
+    steps: [
+      {
+        approverRole: "program_chair",
+        decision: "approved",
+        decidedAt: "2026-08-20T05:12:00.000Z",
+      },
+      {
+        approverRole: "dean",
+        decision: "approved",
+        decidedAt: "2026-08-25T07:34:00.000Z",
+      },
+      {
+        approverRole: "aqau",
+        decision: "approved",
+        decidedAt: "2026-09-01T03:20:00.000Z",
+      },
+    ],
+  }),
+  sampleSubmission({
+    id: "sample-submission-5",
+    formType: SAMPLE_FORM_TYPES.annualProgramReport,
+    status: "archived",
+    currentApproverRole: null,
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-06-10T08:45:00.000Z",
+    updatedAt: "2026-07-02T06:05:00.000Z",
+    steps: [
+      {
+        approverRole: "dean",
+        decision: "approved",
+        decidedAt: "2026-06-20T04:30:00.000Z",
+      },
+      {
+        approverRole: "vpaa",
+        decision: "approved",
+        decidedAt: "2026-07-02T06:05:00.000Z",
+      },
+    ],
+  }),
+];
+
+/** `scope=pending` — submitted rows waiting on chair/dean/AQAU, for `/approvals`. */
+export const SAMPLE_PENDING_APPROVALS: FormSubmissionRecord[] = [
+  sampleSubmission({
+    id: "sample-submission-6",
+    formType: SAMPLE_FORM_TYPES.courseAssessmentReport,
+    status: "submitted",
+    currentApproverRole: "program_chair",
+    submittedBy: SAMPLE_SUBMITTERS.faculty,
+    createdAt: "2026-09-19T07:25:00.000Z",
+    updatedAt: "2026-09-22T08:40:00.000Z",
+    steps: [
+      { approverRole: "program_chair", decision: "pending" },
+      { approverRole: "dean", decision: "pending" },
+      { approverRole: "aqau", decision: "pending" },
+    ],
+  }),
+  sampleSubmission({
+    id: "sample-submission-7",
+    formType: SAMPLE_FORM_TYPES.cqiActionPlan,
+    status: "submitted",
+    currentApproverRole: "dean",
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-09-17T05:50:00.000Z",
+    updatedAt: "2026-09-21T09:15:00.000Z",
+    steps: [
+      { approverRole: "dean", decision: "pending" },
+      { approverRole: "aqau", decision: "pending" },
+    ],
+  }),
+  sampleSubmission({
+    id: "sample-submission-8",
+    formType: SAMPLE_FORM_TYPES.ploAttainmentSummary,
+    status: "submitted",
+    currentApproverRole: "aqau",
+    submittedBy: SAMPLE_SUBMITTERS.chair,
+    createdAt: "2026-09-15T06:05:00.000Z",
+    updatedAt: "2026-09-20T02:30:00.000Z",
+    steps: [
+      {
+        approverRole: "dean",
+        decision: "approved",
+        decidedAt: "2026-09-19T04:48:00.000Z",
+      },
+      { approverRole: "aqau", decision: "pending" },
+    ],
+  }),
 ];
 
 export const MOCK_PLO_GAPS: PloGapDatum[] = [

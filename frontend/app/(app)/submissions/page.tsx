@@ -1,4 +1,5 @@
 import { SubmissionInbox } from "@/components/inbox/submission-inbox";
+import { isDevMode } from "@/lib/dev-mode";
 import { requireUser } from "@/server/auth";
 
 /**
@@ -16,7 +17,7 @@ export default async function MySubmissionsPage() {
           Forms you have prepared or submitted, from draft through approval.
         </p>
       </div>
-      <SubmissionInbox scope="mine" />
+      <SubmissionInbox devPreview={isDevMode} scope="mine" />
     </div>
   );
 }
