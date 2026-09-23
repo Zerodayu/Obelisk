@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -17,12 +18,11 @@ import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { ROOT_CAUSES } from "@/lib/constants/obe";
 import {
   generatePloGapAnalysis,
   savePloGapAnalysis,
 } from "@/server/actions/cqi";
-
-import { ROOT_CAUSES } from "@/lib/constants/obe";
 
 interface GapRow {
   id: string;
@@ -159,6 +159,7 @@ export function PloGapAnalysisForm() {
 
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       {/* PLO overview */}
       <Frame>
         <FrameHeader>

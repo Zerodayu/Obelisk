@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -183,6 +184,7 @@ export function CtlForm() {
 
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       <Frame>
         <FrameHeader>
           <FrameTitle>{payload.program.name} — Closing the Loop</FrameTitle>

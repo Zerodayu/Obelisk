@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -145,6 +146,7 @@ export function AparForm() {
 
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       {/* KPIs */}
       <Frame>
         <FrameHeader>

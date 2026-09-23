@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -10,8 +11,8 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { ClassSectionSelect } from "@/components/ui/class-section-select";
+import { Field, FieldLabel } from "@/components/ui/field";
 import { toast, toastError } from "@/components/ui/toast";
 import { generateCloSummary } from "@/server/actions/rollup";
 
@@ -93,7 +94,10 @@ export function CloSummaryForm() {
           <div className="flex items-end gap-3">
             <Field className="flex-1">
               <FieldLabel>Class Section</FieldLabel>
-              <ClassSectionSelect value={classSectionId} onValueChange={setClassSectionId} />
+              <ClassSectionSelect
+                value={classSectionId}
+                onValueChange={setClassSectionId}
+              />
             </Field>
             <Button
               onClick={handleGenerate}
@@ -109,6 +113,7 @@ export function CloSummaryForm() {
 
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       {/* Summary header */}
       <Frame>
         <FrameHeader>

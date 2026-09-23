@@ -2,6 +2,7 @@
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -12,10 +13,10 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
+import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
-import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { ROOT_CAUSES } from "@/lib/constants/obe";
@@ -681,6 +682,7 @@ export function CarForm() {
   // Payload loaded — show 7-part tabbed view
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       {/* Header bar */}
       <div className="flex items-center justify-between">
         <div className="space-y-1">

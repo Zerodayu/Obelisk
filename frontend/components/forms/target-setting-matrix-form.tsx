@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import {
   Frame,
   FrameDescription,
@@ -165,6 +166,7 @@ export function TargetSettingMatrixForm() {
 
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.formSubmissionId} />
       {/* PLO targets */}
       <Frame>
         <FrameHeader>
