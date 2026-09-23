@@ -8,7 +8,7 @@
 ## 1. Architecture & Runtime
 
 - **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (Google OAuth for new accounts — restricted to the organization's Workspace domain; email/password sign-in kept for existing accounts, new email sign-ups disabled). **Validation:** Elysia `t` (backend) and Zod.
-- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
+- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/forms/approval-routes.ts` (server-side registry mapping each `FormType.code` to its preparer roles + ordered approval chain, plus workflow authorization — submit/approve/return/archive guards), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
 - **App bootstrap** `src/index.ts`:
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
   2. `@elysia/cors` — origins from `FRONTEND_URL` + `http://localhost:3000`, credentials enabled.
@@ -147,7 +147,13 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 
 **Role request:** new accounts (org Google sign-in) file a `requestedRole` on the `/onboarding` route and start as `user` (`roleRequestStatus = pending`). Only `system_admin` may list/approve/deny requests; approval promotes `role = requestedRole`, denial leaves the account at `user`.
 
-**Approval chain (target):** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. Canonical descent: `faculty → program_chair → dean → aqau → vpaa` (exact chain and who prepares/receives each form is form-specific; see §5 catalog).
+**Approval chain:** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. The chain is **server-derived**: `POST /forms/:id/submit` looks up the form's `FormType.code` in the registry `lib/forms/approval-routes.ts` (per-form preparer roles + chain, derived from the manual's per-form "Prepared by" lines) and materializes the `ApprovalStep` rows itself — clients cannot supply `steps`. Canonical descent `faculty → program_chair → dean → aqau → vpaa`; a form's exact chain may skip roles (e.g. `assessment_budget` → `[vpaa]`), unknown codes fall back to the full canonical chain. **Workflow RBAC** (all enforced in `lib/forms/approval-routes.ts`):
+
+- **submit** — owner (or `system_admin`) **and** caller's role ∈ the form's `preparerRoles`.
+- **approve / return** — caller must hold exactly the pending step's role; `system_admin` may act on any step (override).
+- **archive** — `aqau`, `vpaa`, or `system_admin`.
+- **update (`PUT /forms/:id`)** — owner or `system_admin`, `draft`/`returned` only.
+- **inbox scoping** — `GET /forms?scope=mine` filters to the session's own submissions; `?scope=pending` filters to `submitted` records waiting on the session's role (`system_admin` sees all pending); resolved server-side from the session, never from client-supplied ids.
 
 **Cluster confirm:** a `GraduationCluster` is confirmed for compile by `aqau` or `system_admin` (no registrar role exists yet). Confirmation flips the cluster `open → compiling → archived` and locks its entries read-only.
 
@@ -166,14 +172,14 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | GET | `/api/v1/auth/role-requests` | `auth: true` + system_admin | list role requests (filter by `status`, default `pending`) |
 | POST | `/api/v1/auth/role-requests/:userId/approve` | `auth: true` + system_admin | grant the user's requested role |
 | POST | `/api/v1/auth/role-requests/:userId/deny` | `auth: true` + system_admin | reject the role request (keeps `user` role) |
-| GET | `/api/v1/forms` | `auth: true` | list form submissions (filter by formTypeId/classSectionId/status) |
+| GET | `/api/v1/forms` | `auth: true` | list form submissions (filter by formTypeId/classSectionId/status, or session-derived `scope=mine\|pending` for the inboxes; joins formType + submitter) |
 | POST | `/api/v1/forms` | `auth: true` | create a draft `FormSubmission` |
-| GET | `/api/v1/forms/:id` | `auth: true` | get a submission with its ordered `ApprovalStep` chain |
-| PUT | `/api/v1/forms/:id` | `auth: true` | edit a draft/returned submission |
-| POST | `/api/v1/forms/:id/submit` | `auth: true` | submit — creates the ordered approval chain, `draft → submitted` |
-| POST | `/api/v1/forms/:id/approve/:role` | `auth: true` | approve the current pending step for the given role; advances the chain or `submitted → approved` |
-| POST | `/api/v1/forms/:id/return` | `auth: true` | return the current pending step (`submitted → returned`) |
-| POST | `/api/v1/forms/:id/archive` | `auth: true` | archive an approved submission (`approved → archived`) |
+| GET | `/api/v1/forms/:id` | `auth: true` | get a submission with its ordered `ApprovalStep` chain, form type, and submitter (uncached) |
+| PUT | `/api/v1/forms/:id` | `auth: true` + owner/admin | edit a draft/returned submission |
+| POST | `/api/v1/forms/:id/submit` | `auth: true` + owner + preparer role | submit — derives the ordered approval chain from `lib/forms/approval-routes.ts` (client `steps` ignored), `draft → submitted` |
+| POST | `/api/v1/forms/:id/approve/:role` | `auth: true` + step role (or system_admin) | approve the current pending step for the given role; advances the chain or `submitted → approved` |
+| POST | `/api/v1/forms/:id/return` | `auth: true` + step role (or system_admin) | return the current pending step (`submitted → returned`) |
+| POST | `/api/v1/forms/:id/archive` | `auth: true` + aqau/vpaa/system_admin | archive an approved submission (`approved → archived`) |
 | POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, starts ETL, returns `{ jobId }`. Records an `UploadRecord` (`queued`) for the user's history. |
 | GET | `/api/v1/ingest/upload/:jobId/status` | `auth: true` | poll an ETL job; on completion triggers persistence and marks the `UploadRecord` `completed`/`failed`. |
 | GET | `/api/v1/ingest/history` | `auth: true` | List the current user's upload history (any class section), newest first, including failed attempts. |
@@ -297,7 +303,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | GET | `/api/v1/periodic/portfolio-roadmap/:id` | `auth: true` | Get portfolio roadmap by submission id (incl. `PortfolioRoadmapRow` + `PortfolioRubricRow` rows) |
 | PUT | `/api/v1/periodic/portfolio-roadmap/:id` | `auth: true` | Save header + roadmap rows + rubric rows (weight total must = 100%); `draft`/`returned` only |
 
-> **Status machine** (enforced in `lib/forms/state-machine.ts`): `draft → submitted → returned → approved → archived`. `returned` is re-submittable; edits are restricted to `draft`/`returned`; approval chains must ascend the canonical role order (`program_chair → dean → aqau → vpaa`, skipping allowed). Every lifecycle action writes an `AuditLog` row (`forms` module).
+> **Status machine** (enforced in `lib/forms/state-machine.ts`): `draft → submitted → returned → approved → archived`. `returned` is re-submittable; edits are restricted to `draft`/`returned`; approval chains must ascend the canonical role order (`program_chair → dean → aqau → vpaa`, skipping allowed) and are materialized on submit from the per-form registry in `lib/forms/approval-routes.ts`. Every lifecycle action writes an `AuditLog` row (`forms` module).
 
 ### Planned (feature plugins, one per module mirroring the form catalog)
 
@@ -390,7 +396,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 ## 7. Service Layer
 
 ### Implemented
-- **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts`; ordered approval-chain routing by role; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa`.
+- **`submission-service`** *(src/v1/forms/service.ts)* — `FormSubmission`/`ApprovalStep` CRUD + lifecycle (submit/approve/return/archive) driven by `lib/forms/state-machine.ts` + authorization from `lib/forms/approval-routes.ts` (server-derived chain on `submit`, role-gated `decide`/`archive`, owner-gated `update`); `scopeWhere(scope, caller)` maps the session-derived inbox scopes (`mine`/`pending`) to list filters; `findById`/`list` join `formType` + `submittedBy` for the workflow UI; `AuditLog` writes. Chain order: `program_chair → dean → aqau → vpaa` (per-form chains registered in `lib/forms/approval-routes.ts`).
 - **`ingest-service`** *(src/v1/ingest/service.ts)* — `IngestService.startUpload` records an `UploadRecord` (`queued`) then forwards the file to python-server; `getJobStatus` polls the ETL job, triggers persistence once, and marks the matching `UploadRecord` `completed` (with `computationRunId` + persistence `summary`) or `failed`; `listHistory` returns the current user's upload records (any class section) newest first.
 - **`attainment-service`** *(src/v1/ingest/service.ts)* — `AttainmentService.persistAttainment`: takes a completed ETL job result, creates a `ComputationRun` (70/30 weights), then iterates through attainment records to find or create `Student` rows, create the corresponding `CloAttainment` records (persisting the per-assessment-category percentages `exam_pct`/`at_pct`/`tla_pct`/`output_pct` as 0–100), and auto-flag at-risk students (below the ≥70% threshold) via `AtRiskFlag`. Also exposes the editable-roster flows: `listAttainments` (returns the per-student CLO attainment rows for a class section's computation run, each with its student, CLO, scores, and at-risk state), `updateScores` (manually edits direct scores, recomputes `compositeScorePct` via `direct×0.70 + indirect×0.30` and `isBelowThreshold`, and reconciles `AtRiskFlag` rows — computed, never manual), and `reimportScores` (parses a wide-format roster CSV/TSV via `lib/ingest/csv.ts`, finds-or-creates students by student id or normalized name, upserts the matching `CloAttainment` rows, and reconciles at-risk flags).
 - **`car-service`** *(src/v1/car/service.ts)* — `CarService.buildPart1/2/3/4/5/6/7`: assembles the 7-part CAR by rolling up the section's stored `CloAttainment` rows from the computation run into a Decimal-free `NormalizedRow` shape. `ensureDraft` find-or-creates the `course_assessment_report` form type and the section's CAR submission (recording `computationRunId`); `generate` derives parts 2/3/4 live (assessment-category means vs the ≥70% floor, year-level cohort summaries, at-risk watchlist) and merges saved parts 1/5/6/7 from `formData`; `save` writes those parts (guarded: idempotent JSON merge, root-cause categories validated, `draft`/`returned` only, `AuditLog` written); `generateFromSubmission` reassembles a CAR from a submission id.
