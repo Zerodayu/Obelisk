@@ -31,11 +31,17 @@ export const DecideApprovalStepSchema = t.Object({
 	comment: t.Optional(t.String()),
 });
 
+/**
+ * `steps` is deprecated and ignored — the approval chain is derived
+ * server-side from the form's registered route
+ * (`lib/forms/approval-routes.ts`). Kept optional for backward compatibility.
+ */
 export const SubmitFormSchema = t.Object({
-	steps: t.Array(CreateApprovalStepSchema, {
-		description: "Ordered approval chain for this submission",
-		minItems: 1,
-	}),
+	steps: t.Optional(
+		t.Array(CreateApprovalStepSchema, {
+			description: "Deprecated — ignored; the server derives the chain",
+		}),
+	),
 });
 
 export type CreateFormSubmission = typeof CreateFormSubmissionSchema.static;

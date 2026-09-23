@@ -1,33 +1,71 @@
 import {
+	approvalRouteFor,
+	assertCanArchive,
+	assertCanDecide,
+	assertCanSubmit,
+	chainSteps,
+	NotOwnerError,
+} from "@lib/forms/approval-routes";
+import {
 	assertEditable,
 	assertTransition,
 	firstPendingRole,
 	type InvalidTransitionError,
-	validateApprovalChain,
 } from "@lib/forms/state-machine";
 import { assertSubmitGate } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import type { ApproverRole, Prisma } from "@prisma/generated/prisma/client";
 import type {
-	ApproverRole,
-	FormSubmission,
-	Prisma,
-} from "@prisma/generated/prisma/client";
-import type {
-	CreateApprovalStep,
 	CreateFormSubmission,
 	DecideApprovalStep,
 	UpdateFormSubmission,
 } from "./model";
 
-export type { InvalidTransitionError };
+export type { InvalidTransitionError, NotOwnerError };
+
+const SUBMISSION_INCLUDE = {
+	approvalSteps: { orderBy: { sequenceNo: "asc" as const } },
+	formType: { select: { code: true, name: true, pdcaStage: true } },
+	submittedBy: { select: { id: true, name: true, role: true } },
+} as const;
 
 export type FormSubmissionWithSteps = Prisma.FormSubmissionGetPayload<{
-	include: { approvalSteps: { orderBy: { sequenceNo: "asc" } } };
+	include: typeof SUBMISSION_INCLUDE;
 }>;
 
-const APPROVAL_STEP_INCLUDE = {
-	include: { approvalSteps: { orderBy: { sequenceNo: "asc" } } },
-} as const;
+const APPROVAL_STEP_INCLUDE = { include: SUBMISSION_INCLUDE } as const;
+
+/** Who a user-scoped list query is for — resolved server-side, never spoofable. */
+export type ListScope = "mine" | "pending";
+
+/**
+ * Translate an inbox scope into a Prisma where-clause for the caller.
+ * `mine` → the caller's own submissions; `pending` → submitted records waiting
+ * on the caller's role (a `system_admin` sees every pending step).
+ */
+export function scopeWhere(
+	scope: ListScope | undefined,
+	caller: { id: string; role: string },
+): Prisma.FormSubmissionWhereInput {
+	if (scope === "mine") return { submittedByUserId: caller.id };
+	if (scope === "pending") {
+		if (caller.role === "system_admin") return { status: "submitted" };
+		// Non-approver roles have no pending inbox — match nothing rather than
+		// feeding an invalid enum value to Prisma.
+		if (
+			!(
+				["program_chair", "dean", "aqau", "vpaa"] as readonly string[]
+			).includes(caller.role)
+		) {
+			return { id: { in: [] } };
+		}
+		return {
+			status: "submitted",
+			currentApproverRole: caller.role as ApproverRole,
+		};
+	}
+	return {};
+}
 
 function newId(): string {
 	return crypto.randomUUID();
@@ -56,9 +94,7 @@ export class SubmissionService {
 	}
 
 	async list(
-		where: Partial<
-			Pick<FormSubmission, "formTypeId" | "classSectionId" | "status">
-		> = {},
+		where: Prisma.FormSubmissionWhereInput = {},
 	): Promise<FormSubmissionWithSteps[]> {
 		return prisma.formSubmission.findMany({
 			where,
@@ -95,11 +131,18 @@ export class SubmissionService {
 	async update(
 		id: string,
 		userId: string,
+		callerRole: string,
 		data: UpdateFormSubmission,
 	): Promise<FormSubmissionWithSteps> {
 		const existing = await this.findById(id);
 		if (!existing) throw new SubmissionNotFoundError();
 		assertEditable(existing.status);
+		if (
+			callerRole !== "system_admin" &&
+			existing.submittedByUserId !== userId
+		) {
+			throw new NotOwnerError();
+		}
 
 		const submission = await prisma.formSubmission.update({
 			where: { id },
@@ -121,12 +164,18 @@ export class SubmissionService {
 	async submit(
 		id: string,
 		userId: string,
-		steps: CreateApprovalStep[],
+		callerRole: string,
 	): Promise<FormSubmissionWithSteps> {
 		const existing = await this.findById(id);
 		if (!existing) throw new SubmissionNotFoundError();
 		assertTransition(existing.status, "submitted");
-		validateApprovalChain(steps);
+
+		// The approval chain is server-derived from the form's registered
+		// route (lib/forms/approval-routes.ts) — clients cannot pick it.
+		const route = approvalRouteFor(existing.formType.code);
+		assertCanSubmit({ id: userId, role: callerRole }, existing, route);
+		const steps = chainSteps(route.chain);
+
 		await assertSubmitGate(existing.formTypeId, {
 			id: existing.id,
 			status: existing.status,
@@ -164,10 +213,13 @@ export class SubmissionService {
 		id: string,
 		approverRole: ApproverRole,
 		userId: string,
+		callerRole: string,
 		{ decision, comment }: DecideApprovalStep,
 	): Promise<FormSubmissionWithSteps> {
 		const existing = await this.findById(id);
 		if (!existing) throw new SubmissionNotFoundError();
+		// RBAC first: the caller must hold the step's role (admin overrides).
+		assertCanDecide(callerRole, approverRole);
 		assertTransition(
 			existing.status,
 			decision === "approved" ? "approved" : "returned",
@@ -229,9 +281,14 @@ export class SubmissionService {
 		return submission;
 	}
 
-	async archive(id: string, userId: string): Promise<FormSubmissionWithSteps> {
+	async archive(
+		id: string,
+		userId: string,
+		callerRole: string,
+	): Promise<FormSubmissionWithSteps> {
 		const existing = await prisma.formSubmission.findUnique({ where: { id } });
 		if (!existing) throw new SubmissionNotFoundError();
+		assertCanArchive(callerRole);
 		assertTransition(existing.status, "archived");
 
 		const submission = await prisma.formSubmission.update({
