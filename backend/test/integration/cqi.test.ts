@@ -101,6 +101,8 @@ async function seedAcademicChain() {
 			id: IDS.user,
 			name: "CQI User",
 			email: "cqi@obelisktest.local",
+			// annual_program_report is prepared by the program chair.
+			role: "program_chair",
 		},
 	});
 }
@@ -572,10 +574,7 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 				attachments: { clo_attainment_summary_s1: true },
 			});
 			await expect(
-				submissionService.submit(apar.id, IDS.user, [
-					{ approverRole: "program_chair", sequenceNo: 1 },
-					{ approverRole: "dean", sequenceNo: 2 },
-				]),
+				submissionService.submit(apar.id, IDS.user, "program_chair"),
 			).rejects.toThrow(/Cohort Tracking Sheet/);
 
 			const after = await prisma.formSubmission.findUniqueOrThrow({
@@ -587,12 +586,14 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 			await annualProgramReportService.save(apar.id, IDS.user, {
 				attachments: { cohort_tracking: true, closing_the_loop: true },
 			});
-			const submitted = await submissionService.submit(apar.id, IDS.user, [
-				{ approverRole: "program_chair", sequenceNo: 1 },
-				{ approverRole: "dean", sequenceNo: 2 },
-			]);
+			// Chain derived from the route registry: dean → vpaa.
+			const submitted = await submissionService.submit(
+				apar.id,
+				IDS.user,
+				"program_chair",
+			);
 			expect(submitted.status).toBe("submitted");
-			expect(submitted.currentApproverRole).toBe("program_chair");
+			expect(submitted.currentApproverRole).toBe("dean");
 
 			const steps = await prisma.approvalStep.findMany({
 				where: { formSubmissionId: apar.id },
