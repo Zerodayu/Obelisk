@@ -108,7 +108,9 @@ async function main() {
 	await prisma.cloAttainment.deleteMany({});
 	await prisma.computationRun.deleteMany({});
 	await prisma.student.deleteMany({});
-	await prisma.user.deleteMany({ where: { email: "dev@jmcfi.edu.ph" } });
+	await prisma.user.deleteMany({
+		where: { email: { endsWith: "@jmcfi.edu.ph" } },
+	});
 	await prisma.department.deleteMany({ where: { code: TEST_DEPT_CODE } });
 	await prisma.classSection.deleteMany({
 		where: { id: TARGET_CLASS_SECTION_ID },
@@ -152,6 +154,34 @@ async function main() {
 
 	console.log(`Created development user: ${devEmail} (ID: ${devUser.id})`);
 	console.log(`Working dev credentials: ${devEmail} / ${devPassword}`);
+
+	// One demo user per approval-workflow role, so the form approval chain
+	// (lib/forms/approval-routes.ts) can be exercised end-to-end. All share
+	// the same demo password.
+	const ROLE_ACCOUNTS = [
+		{ role: "faculty", name: "Faculty User" },
+		{ role: "program_chair", name: "Program Chair User" },
+		{ role: "dean", name: "Dean User" },
+		{ role: "aqau", name: "AQAU User" },
+		{ role: "vpaa", name: "VPAA User" },
+	] as const;
+
+	for (const account of ROLE_ACCOUNTS) {
+		const email = `${account.role}@jmcfi.edu.ph`;
+		await seedAuth.api.signUpEmail({
+			body: { email, password: devPassword, name: account.name },
+		});
+		const created = await prisma.user.findUnique({ where: { email } });
+		if (!created) {
+			throw new Error(`Failed to create role user ${email}`);
+		}
+		await prisma.user.update({
+			where: { id: created.id },
+			data: { role: account.role },
+		});
+		console.log(`Created role user: ${email} (${account.role})`);
+	}
+	console.log(`Role demo credentials: <role>@jmcfi.edu.ph / ${devPassword}`);
 
 	// Create other academic data
 	const department = await prisma.department.create({
