@@ -10,8 +10,8 @@ that will not change without a real conversation first:
 
 1. **No database access.** This service never reads from or writes to
    the database. It receives data via HTTP request body, computes
-   something, and returns JSON. Nothing is persisted here — the job
-   queue is in-memory only and is wiped on every restart.
+   something, and returns JSON. Background jobs and queue state are
+   managed in Redis, but no application domain data is persisted here.
 
 2. **No authentication or authorization.** This service trusts every
    request it receives. The webapp backend is responsible for verifying
@@ -22,11 +22,11 @@ that will not change without a real conversation first:
 
 This service can optionally enforce a simple shared-secret caller check
 using the `X-Webapp-Secret` header. It is **disabled by default** — if
-`WEBAPP_SHARED_SECRET` is unset or empty, the service behaves exactly
-as it does today and trusts every request.
+`OBELISK_WEBAPP_SHARED_SECRET` is unset or empty, the service behaves
+exactly as it does today and trusts every request.
 
 **To enable it:**
-1. Set `WEBAPP_SHARED_SECRET` on the python-server to a long, random
+1. Set `OBELISK_WEBAPP_SHARED_SECRET` on the python-server to a long, random
    secret value.
 2. Have the webapp backend send that exact same value in an
    `X-Webapp-Secret` header on every request it makes to this service,
@@ -43,11 +43,11 @@ verifies that the *caller* is the webapp backend itself — not which
 end user initiated the request.
 
 **Example:**
-```
+```env
 # python-server .env
-WEBAPP_SHARED_SECRET=your-long-random-secret
+OBELISK_WEBAPP_SHARED_SECRET=your-long-random-secret
 ```
-```
+```http
 # webapp backend — header on every outgoing request
 X-Webapp-Secret: your-long-random-secret
 ```
@@ -63,7 +63,7 @@ Upload one class-record `.xlsx` file.
 ```
 
 ### `GET /jobs`
-Returns a list of all job objects currently in memory.
+Returns a list of all job objects currently tracked in Redis.
 
 ### `GET /jobs/{job_id}`
 Poll until `status` is `"completed"` or `"failed"`.
@@ -163,7 +163,7 @@ The `error` field will contain a structured JSON object with details about the f
 ```
 
 ### `GET /analytics/jobs/{job_id}/recommendation`
-Per-course AI gap analysis. Triggers a real LLM call.
+Per-course AI gap analysis. Triggers an LLM call (or mock placeholder if `IS_DEBUG_MODE` is enabled). Returns `409 Conflict` if the job is not yet completed.
 
 ---
 
@@ -206,7 +206,7 @@ The `attainments` arrays forwarded in each submission may contain rows with `exc
 
 ### `POST /analytics/institutional-summary` (VPAA ONLY)
 
-> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It always triggers an AI/LLM call.
+> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It triggers an AI/LLM call (or mock placeholder if `IS_DEBUG_MODE` is enabled).
 
 **Request body:**
 Same as `/analytics/summary`, but the webapp should always send the full set of institutional data.

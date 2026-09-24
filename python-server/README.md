@@ -17,7 +17,8 @@ This service is intentionally designed with a strict architectural boundary that
 
 -   **No Database Access**: This service **never** connects to a database for application data (e.g., it does not store user info or attainment results). It is a stateless compute engine. All data is received via HTTP requests, and all results are returned as JSON in the HTTP response. The calling application is solely responsible for all data persistence.
 
--   **No Authentication/Authorization**: This service has **no concept of users, roles, or permissions**. It trusts every API call it receives. The calling application (the webapp backend) **MUST** perform all necessary authentication and authorization checks *before* calling any endpoint on this service. This is especially critical for the `POST /analytics/institutional-summary` endpoint, which should only be accessible to authorized roles like the VPAA.
+-   **No Authentication/Authorization (RBAC)**: This service has **no concept of users, roles, or permissions**. It trusts every API call it receives. The calling application (the webapp backend) **MUST** perform all necessary authentication and authorization checks *before* calling any endpoint on this service. This is especially critical for the `POST /analytics/institutional-summary` endpoint, which should only be accessible to authorized roles like the VPAA.
+    - *Note:* An optional caller check using `OBELISK_WEBAPP_SHARED_SECRET` (`X-Webapp-Secret` header) can be enabled to verify the caller is the legitimate backend server.
 
 -   **Job Queue**: The service uses **Redis** as a durable, scalable job queue to manage background ETL tasks. This is an infrastructure dependency, not an application database.
 
@@ -33,7 +34,7 @@ This is the simplest and most reliable way to run the service and all its depend
 
 **Prerequisites:**
 -   Docker Desktop (with Compose) installed and running.
--   An LLM API key (e.g., from Google AI Studio).
+-   An LLM API key (e.g., from Google AI Studio) if live LLM generation is desired.
 
 **Instructions:**
 
@@ -43,6 +44,8 @@ This is the simplest and most reliable way to run the service and all its depend
     # .env
     OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
     OBELISK_LLM_API_KEY="your_api_key_here"
+    # Optional shared secret to enforce caller authentication:
+    # OBELISK_WEBAPP_SHARED_SECRET="your_shared_secret_here"
     ```
 
 2.  **Build and start the services:**
@@ -90,8 +93,8 @@ The project includes several scripts in the `testing_modules/` directory to vali
 | Script | Purpose | How to Run (from project root) |
 | :--- | :--- | :--- |
 | `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. | `python testing_modules/test_validate.py` |
-| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course, including a real LLM call. | `python testing_modules/test_upload_e2e.py` |
-| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint, including a real LLM call. | `python testing_modules/test_institutional_summary_e2e.py` |
+| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course (returns live LLM analysis or mock response if debug mode is active). | `python testing_modules/test_upload_e2e.py` |
+| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint (returns live LLM analysis or mock response if debug mode is active). | `python testing_modules/test_institutional_summary_e2e.py` |
 
 ---
 
@@ -102,7 +105,7 @@ The project includes several scripts in the `testing_modules/` directory to vali
 | `POST` | `/upload` | Upload a class-record `.xlsx` file to start a new ETL job. |
 | `GET` | `/jobs` | Get a list of all jobs currently tracked in Redis. |
 | `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
-| `GET` | `/analytics/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job. |
+| `GET` | `/analytics/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job (409 if pending). |
 | `POST` | `/analytics/summary` | Get pure data rollups for a given set of course submissions. |
 | `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and AI recommendation. |
 | `GET` | `/health` | A simple health check endpoint. |

@@ -2,9 +2,9 @@
 
 This document lists known limitations, design trade-offs, and deferred implementation details for the OBELISK ETL & Analytics Service.
 
-1.  **No Real LLM Integration**
-    -   **Status**: Resolved
-    -   **Details**: The AI-powered recommendation features now make real API calls to Google's Gemini model (`gemini-1.5-flash`). The `IS_DEBUG_MODE` flag in `app/analytics/cqi_recommender.py` can be set to `True` to revert to the placeholder behavior for testing or if the API key is unavailable.
+1.  **LLM Integration Status**
+    -   **Status**: Implemented (Debug/Mock Mode Currently Active by Default)
+    -   **Details**: The AI-powered recommendation features are wired to Google's Gemini API (`gemini-3.6-flash` in `app/analytics/cqi_recommender.py`). By default, `IS_DEBUG_MODE` is currently set to `True` to provide deterministic mock responses without requiring an active API key or incurring external latency. To activate live LLM generation, set `IS_DEBUG_MODE = False` in `cqi_recommender.py` and supply a valid `OBELISK_LLM_API_KEY` in `.env`.
 
 2.  **Indirect Attainment Not Computed**
     -   **Status**: Not Implemented

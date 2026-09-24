@@ -28,7 +28,7 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 
 - **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts.
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
-- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**.
+- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEY`**, **`WEBAPP_SHARED_SECRET`**.
 - **CORS:** default allow `http://localhost:3000` + `http://127.0.0.1:3000`, credentials enabled.
 - **Logging:** structlog key=value events (`configure_logging` in `app/core/logging.py`).
 
@@ -45,8 +45,8 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 |---|---|---|
 | POST | `/upload` | Accept class-record `.xlsx`; enqueue ETL job (202 → `job_id`); 413 if too large; 503 if queue full |
 | GET | `/jobs` | List all jobs tracked in Redis |
-| GET | `/jobs/{job_id}` | Poll job status/result; 404 unknown, 409 if not `completed` |
-| GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job). |
+| GET | `/jobs/{job_id}` | Poll job status/result; 404 if not found |
+| GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job; 409 if job pending or failed) |
 | POST | `/analytics/summary` | Pure rollups by department/program/AVP group + worst-performing CLOs (safe for any role; no AI) |
 | POST | `/analytics/institutional-summary` | Full institution-wide summary + AI recommendation (VPAA-only; no internal guard) |
 | GET | `/health` | Health check |
@@ -93,12 +93,12 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
 - **Docker:** `docker compose up --build -d` starts the application container and a Redis container.
 - **Local:** `docker compose up -d redis` followed by `uv sync` and `uv run dev`.
-- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, etc.
+- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, `OBELISK_LLM_API_KEY`, `OBELISK_WEBAPP_SHARED_SECRET`.
 
 ## 10. Known limitations / deferred
 
 From `documentations/KNOWN_LIMITATIONS.md`: **indirect (30%) attainment not computed** (no survey data pipeline — reporting direct-only is the correct interim behavior); `correlation_strength` is metadata only (not a weight); Rule 1 may false-negative CLOs intentionally not assessed in all three periods; unused SQLAlchemy/Alembic scaffolding in `app/database` + `app/models` pending removal decision.
 
-## 11. Future roadmap (from `TODOs.md`)
+## 11. Future roadmap
 
 37 OBE forms processing; CLO→PLO aggregation pipeline polish; student cohort analytics; CQI recommendation engine (rules + data science); approval-workflow/registrar integration; real loader/delivery; tests + CI.

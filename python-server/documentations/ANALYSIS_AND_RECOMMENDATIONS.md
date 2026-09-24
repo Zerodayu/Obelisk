@@ -6,11 +6,11 @@ This document summarizes the findings from a review of the OBELISK ETL & Analyti
 
 ## 1. Security Analysis
 
-### 1.1. No Authentication/Authorization (By Design)
+### 1.1. Service-to-Service Caller Authentication (Resolved)
 
--   **Observation**: The service explicitly trusts all incoming requests and delegates all authentication and authorization to the client (the Elysia webapp backend). This is a documented design decision.
--   **Risk**: If the service is ever exposed to a network where unauthorized clients can reach it, there is no internal protection. Sensitive endpoints like `POST /analytics/institutional-summary` could be invoked by any party that discovers the service address.
--   **Recommendation (High Priority)**: For defense-in-depth, consider adding a simple, non-user-facing authentication mechanism. A pre-shared secret passed in an `X-API-Key` header would provide a basic layer of protection against accidental exposure or unauthorized internal access, without complicating the service's core "pure compute" role.
+-   **Observation**: The service originally trusted all incoming requests unconditionally, delegating all user-level authentication and authorization to the client (the Elysia webapp backend).
+-   **Risk**: If the service was exposed on an internal network, unauthorized clients could invoke compute-heavy or sensitive endpoints such as `POST /analytics/institutional-summary`.
+-   **Resolution**: An optional shared-secret caller authentication mechanism has been implemented via the `X-Webapp-Secret` header (`OBELISK_WEBAPP_SHARED_SECRET`). When configured, requests missing or failing this check receive `401 Unauthorized` (`UnauthorizedCaller`). User-facing RBAC remains the responsibility of the webapp backend.
 
 ### 1.2. File Upload Vulnerabilities
 
@@ -28,11 +28,11 @@ This document summarizes the findings from a review of the OBELISK ETL & Analyti
 
 ## 2. Potential Bottlenecks & Performance
 
-### 2.1. In-Memory Job Queue
+### 2.1. Job Queue Durability & Scaling (Resolved / Evolving)
 
--   **Observation**: The job queue is an in-memory `asyncio.Queue`, which is not durable.
--   **Risk**: As documented in `KNOWN_LIMITATIONS.md`, all queued and running jobs are lost if the server restarts. During peak load (e.g., end-of-semester processing), the queue could hit its `JOB_QUEUE_MAXSIZE` limit, causing the server to reject new jobs (`QueueOverloadedError`). This is the most significant bottleneck to scalability and resilience.
--   **Recommendation (High Priority)**: For production use, plan the migration to a persistent, external job queue like **Redis** (managed by a library like **Celery** or **RQ**). This is a standard pattern for scalable and durable background task processing.
+-   **Observation**: The original queue was an in-memory `asyncio.Queue`, which lost all state upon container restart.
+-   **Resolution**: The queue was migrated to a Redis-backed queue (`obelisk:job_queue`) and Redis hash storage (`obelisk:job:*`). Background workers run via `BRPOP` and job progress persists across application restarts.
+-   **Future Consideration**: For full production durability, ensure the Redis container has a persistent data volume or AOF (`--appendonly yes`) enabled in `docker-compose.yml`. For extreme scale, worker execution could be extracted from FastAPI `asyncio.Task` into dedicated worker processes (e.g., Celery, RQ, or ARQ).
 
 ### 2.2. Synchronous File I/O
 
@@ -60,11 +60,12 @@ The following design choices are significant strengths of the service:
 
 ## 4. Summary of Recommendations
 
--   **High Priority**:
-    1.  Implement a shared secret/API key for service-to-service authentication.
-    2.  Plan the migration to a persistent job queue (e.g., Redis) to ensure durability and scalability.
+-   **Completed / Implemented**:
+    1.  ✅ Implemented shared-secret service-to-service authentication (`X-Webapp-Secret`).
+    2.  ✅ Migrated in-memory job queue to durable Redis queue.
 -   **Medium Priority**:
     1.  Consider using a `ProcessPoolExecutor` for CPU-bound tasks if performance with large files becomes an issue.
     2.  Keep `openpyxl` and other dependencies updated to mitigate security risks.
+    3.  Add volume persistence or AOF to the Redis service in `docker-compose.yml`.
 -   **Low Priority**:
     1.  Periodically audit logging to prevent accidental PII leakage.
