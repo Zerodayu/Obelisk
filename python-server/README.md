@@ -88,13 +88,38 @@ This method allows for faster iteration on the Python code but requires Redis to
 
 ## 4. Testing the Service
 
-The project includes several scripts in the `testing_modules/` directory to validate its functionality. Before running any test, ensure the application is running using one of the methods above.
+The project includes test modules in the `testing_modules/` directory covering unit logic, standalone component validation, and end-to-end HTTP flows.
+
+### Running All Automated Tests (Batch)
+
+To automatically discover and run all `unittest`-based suites:
+
+```sh
+python testing_modules/run_all.py
+# or using uv:
+uv run python testing_modules/run_all.py
+```
+
+### Individual Test Modules
+
+#### Unit & Standalone Tests (No running server required)
 
 | Script | Purpose | How to Run (from project root) |
 | :--- | :--- | :--- |
-| `test_validate.py` | **Low-Level Validation**: Tests the `extractor` and `transformer` logic directly without the web server. | `python testing_modules/test_validate.py` |
-| `test_upload_e2e.py` | **Single-Course E2E Test**: Validates the full HTTP flow for one course (returns live LLM analysis or mock response if debug mode is active). | `python testing_modules/test_upload_e2e.py` |
-| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Validates the high-level analytics endpoint (returns live LLM analysis or mock response if debug mode is active). | `python testing_modules/test_institutional_summary_e2e.py` |
+| `run_all.py` | **Test Runner**: Discovers and runs all `unittest` test suites in `testing_modules/`. | `python testing_modules/run_all.py` |
+| `test_validate.py` | **ETL Logic Validation**: Tests `ExcelExtractor` and `SimpleTransformer` directly against sample workbooks (Formula 1A, Rule 1, roster extraction). | `python testing_modules/test_validate.py` |
+| `test_ai_module.py` | **Standalone AI/CQI Module**: Exercises `generate_cqi_recommendation()` with sample data, verifying student anonymization, gap extraction, and prompt formatting. | `python testing_modules/test_ai_module.py` |
+| `test_shared_secret_auth.py` | **Shared-Secret Auth Suite**: Validates `X-Webapp-Secret` enforcement and rejection (`401 UnauthorizedCaller`) via FastAPI's `TestClient`. | `python testing_modules/test_shared_secret_auth.py` |
+| `test_unsupported_course_type.py` | **Course Type Enforcement**: Verifies that unsupported course types (e.g. `RESEARCH`) fail gracefully with a structured `UnsupportedCourseType` error. | `python testing_modules/test_unsupported_course_type.py` |
+| `test_indirect_attainment.py` | **Indirect Attainment Formulas**: Unit tests for the `compute_indirect_clo_attainment` scaling and boundary validation. | `python testing_modules/test_indirect_attainment.py` |
+
+#### End-to-End Tests (Require running server + Redis at `http://localhost:8000`)
+
+| Script | Purpose | How to Run (from project root) |
+| :--- | :--- | :--- |
+| `test_upload_e2e.py` | **Single-Course E2E Test**: Uploads a real workbook to `POST /upload`, polls `GET /jobs/{job_id}`, and verifies attainment results and recommendations. | `python testing_modules/test_upload_e2e.py` |
+| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Posts a multi-course payload to `/analytics/summary` and `/analytics/institutional-summary`, verifying rollups and executive recommendations. | `python testing_modules/test_institutional_summary_e2e.py` |
+| `test_error_handling_e2e.py` | **Error Handling E2E Test**: Uploads a malformed workbook (e.g., missing sheets) to confirm the worker fails gracefully and stores a structured `MissingWorksheet` error. | `python testing_modules/test_error_handling_e2e.py` |
 
 ---
 
