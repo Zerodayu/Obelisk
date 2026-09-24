@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import List
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.logging import logger
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
@@ -10,7 +11,7 @@ from app.core.config import settings
 # Manual toggle — set to False only once a real LLM API integration is implemented below.
 # True  = use the placeholder response (no real API call, safe for testing/demo)
 # False = attempt a real API call.
-IS_DEBUG_MODE: bool = True
+IS_DEBUG_MODE: bool = False
 
 # --- LLM System Prompt ---
 # This defines the persona, constraints, and output format for the LLM.
@@ -132,11 +133,16 @@ async def call_llm_api(prompt: str) -> str:
         )
 
     try:
-        logger.info("llm_real_call_attempt", provider="google_gemini")
-        genai.configure(api_key=settings.LLM_API_KEY)
-        # Use the standard, stable model identifier.
-        model = genai.GenerativeModel('gemini-3.6-flash')
-        response = await model.generate_content_async(prompt)
+        logger.info("llm_real_call_attempt", provider="google_gemini", model=settings.LLM_MODEL)
+        client = genai.Client(api_key=settings.LLM_API_KEY)
+        config = types.GenerateContentConfig(
+            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
+        )
+        response = await client.aio.models.generate_content(
+            model=settings.LLM_MODEL,
+            contents=prompt,
+            config=config,
+        )
 
         logger.info("llm_real_call_success", provider="google_gemini")
         return response.text

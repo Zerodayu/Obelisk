@@ -37,10 +37,11 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
-    # --- LLM API Key ---
-    # The secret key for the LLM provider (e.g., Gemini, OpenAI).
+    # --- LLM Settings ---
+    # The secret key for the LLM provider (e.g., Gemini).
     # This is loaded from the OBELISK_LLM_API_KEY environment variable.
     LLM_API_KEY: str | None = None
+    LLM_MODEL: str = "gemini-3.6-flash"
 
     # --- Optional Webapp Shared Secret ---
     # When set, incoming requests must present a matching X-Webapp-Secret header.
