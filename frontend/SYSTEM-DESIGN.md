@@ -16,7 +16,7 @@
 | `/onboarding` | `app/onboarding/page.tsx` | Role picker / role-request status for `user`-role accounts | `requireUser` (outside `(app)`) |
 | `/dashboard` | `app/(app)/dashboard/page.tsx` | **Single adaptive home** → `dashboard/role-dashboard.tsx` renders the role's scoped dashboard | `(app)` shell |
 | `/forms` | `app/(app)/forms/page.tsx` | Form index, filtered by role (catalog from `config/navigation.ts`) | `(app)` shell |
-| `/forms/clo-raw-data` | `app/(app)/forms/clo-raw-data/` | Class-record upload panel + per-student entry (absorbed old `/faculty`) | `layout.tsx` → `requireRole(ACADEMIC_ROLES)` |
+| `/forms/clo-raw-data` | `app/(app)/forms/clo-raw-data/` | Class-record upload panel + per-student entry (absorbed old `/faculty`) | `layout.tsx` + `page.tsx` → `requireRole(formRoles("clo_raw_data"))` |
 | `/forms/course-assessment-report` | `app/(app)/forms/course-assessment-report/` | 7-part tabbed CAR | `(app)` shell (nav-filtered) |
 | `/forms/attainment/{clo-attainment-summary,plo-attainment-summary,cohort-tracking}` | `app/(app)/forms/attainment/…` | Roll-up chain generate + display | `(app)` shell |
 | `/forms/cqi/{plo-gap-analysis,cqi-action-plan,closing-the-loop,annual-program-report}` | `app/(app)/forms/cqi/…` | CQI / ACT loop | `(app)` shell |
@@ -29,7 +29,7 @@
 | `/archives/[clusterId]` | `app/(app)/archives/[clusterId]/page.tsx` | Read-only per-student snapshot (placeholder content) | inherits archives layout |
 | `/faculty` | `app/faculty/page.tsx` | **Legacy redirect** → `/forms/clo-raw-data` | — |
 
-Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/layout/app-shell.tsx` (auth gate + shell), `components/layout/app-sidebar.tsx` (registry-driven), `lib/roles.ts`, `config/navigation.ts`, `lib/api-client.ts`, `server/api-client.ts`, `server/auth.ts`, `server/actions/`, `utils/env.ts`.
+Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/layout/app-shell.tsx` (auth gate + shell), `components/layout/app-sidebar.tsx` (registry-driven), `lib/role-access.ts`, `lib/roles.ts`, `config/navigation.ts`, `lib/api-client.ts`, `server/api-client.ts`, `server/auth.ts`, `server/actions/`, `utils/env.ts`.
 
 The 7 Periodic/ACT screens (`resource_monitoring`, `alumni_tracer`, `employer_satisfaction_survey`, `systemic_gap_report`, `capa_plan`, `institutional_review`, `portfolio_roadmap`) have **no routes yet** — the backend `/api/v1/periodic` plugin is live, the frontend screens are not.
 
@@ -55,7 +55,8 @@ The frontend uses **both** layers, each doing what it does best — the backend 
 - **`proxy.ts`** (Next 16 `proxy`, formerly middleware) — the **coarse** gate. It only covers `/dashboard`, `/forms`, `/archives` (`PROTECTED_PREFIXES` + `matcher`): it checks for the better-auth session cookie prefix (`obelisk-app.session`) and redirects unauthenticated requests to `/login?next=…`. It never authorizes — reading a cookie is all it does. The newer routes (`/submissions`, `/approvals`, `/plo-management`, `/onboarding`) are **not** in the proxy matcher; they rely entirely on `requireUser`/`requireRole` below.
 - **`app/(app)/layout.tsx`** (Server Component) — real session validation via `server/auth.requireUser()` → `GET /auth/me`; redirects to `/login` when invalid, and to `/onboarding` for role-less `user` accounts.
 - **Role-restricted routes** call `requireRole([...])` — either in a nested `layout.tsx` (`forms/clo-raw-data`, `archives`, `plo-management`) or directly in the **page** (`approvals`). Unauthorized roles are redirected to `/dashboard`.
-- **`lib/roles.ts`** — central allow/deny logic: role groups (`ACADEMIC_ROLES`, `ARCHIVE_ROLES`, `APPROVER_ROLES`, `PLO_MANAGEMENT_ROLES`, `ADMIN_ROLES`, `QA_ROLES`), `hasAccess`, and scope resolvers (`scopeForRole`). Nav and route gates are filtered through it.
+- **`lib/role-access.ts`** — **central role → feature/form access map**: `USER_ROLES`, `FEATURE_ACCESS` (allow-lists: `captureClassRecords`, `archive`, `viewArchives`, `approveForms`, `managePlos`, `manageRoleRequests`, `confirmClusterCompile`), `FORM_ACCESS` (per-form preparers + chain), helpers `formRoles`/`featureRoles`/`canAccess`. Pure data (no imports); mirrors `backend/lib/role-access.ts` + `backend/lib/forms/approval-routes.ts`, drift-guarded by `backend/test/unit/role-access-sync.test.ts`.
+- **`lib/roles.ts`** — re-exports the `lib/role-access.ts` vocabulary (role groups `ACADEMIC_ROLES`, `ARCHIVE_ROLES`, `APPROVER_ROLES`, `PLO_MANAGEMENT_ROLES`, `CLASS_RECORD_ROLES`, `ADMIN_ROLES`, `QA_ROLES`) plus `hasAccess`, `ROLE_LABELS`, and scope resolvers (`scopeForRole`). Nav and route gates are filtered through it.
 
 ### 2.3 Layout & shell
 

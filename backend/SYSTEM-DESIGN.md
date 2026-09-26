@@ -8,7 +8,7 @@
 ## 1. Architecture & Runtime
 
 - **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (Google OAuth for new accounts — restricted to the organization's Workspace domain; email/password sign-in kept for existing accounts, new email sign-ups disabled). **Validation:** Elysia `t` (backend) and Zod.
-- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/forms/approval-routes.ts` (server-side registry mapping each `FormType.code` to its preparer roles + ordered approval chain, plus workflow authorization — submit/approve/return/archive guards), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
+- **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/role-access.ts` (**role → feature vocabulary** — `FEATURE_ACCESS` allow-lists for class-record capture, archive, PLO management, role requests, cluster confirm + `assertCanCaptureClassRecords`; mirrored by `frontend/lib/role-access.ts`, drift-guarded by `test/unit/role-access-sync.test.ts`), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/forms/approval-routes.ts` (server-side registry mapping each `FormType.code` to its preparer roles + ordered approval chain, plus workflow authorization — submit/approve/return/archive guards; sources `ARCHIVE_ROLES` from `lib/role-access.ts`), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
 - **App bootstrap** `src/index.ts`:
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
   2. `@elysia/cors` — origins from `FRONTEND_URL` + `http://localhost:3000`, credentials enabled.
@@ -139,23 +139,24 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | --- | --- | --- |
 | `user` | default | — |
 | `faculty` | own `ClassSection` + own courses | Enter per-student raw scores (`clo_raw_data`), author CAR, fill direct instruments |
-| `program_chair` | one `Program` | Set targets, publish calendar, approve faculty records, gap analysis, CQI plans |
+| `program_chair` | one `Program` | **Capture class records (`clo_raw_data`)**, set targets, publish calendar, approve faculty records, gap analysis, CQI plans |
 | `dean` | `department` | Approve budgets/plans, endorse APAR, **manage (create/update/delete) PLOs** |
 | `aqau` | institution-wide QA | Receive/review filings, cohort tracking oversight, **confirm graduation-cluster compile** |
-| `vpaa` | institution-wide | Approve CAPA/budget, institutional decisions |
-| `system_admin` | everything | Admin/roles, **confirm role requests**, **confirm graduation-cluster compile** |
+| `vpaa` | institution-wide | Approve CAPA/budget, **archive approved submissions + browse `/archives`**, institutional decisions |
+| `system_admin` | everything | Admin/roles, **confirm role requests**, **confirm graduation-cluster compile**, workflow override (bypasses preparer/step/archive gates) |
 
 **Role request:** new accounts (org Google sign-in) file a `requestedRole` on the `/onboarding` route and start as `user` (`roleRequestStatus = pending`). Only `system_admin` may list/approve/deny requests; approval promotes `role = requestedRole`, denial leaves the account at `user`.
 
-**Approval chain:** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. The chain is **server-derived**: `POST /forms/:id/submit` looks up the form's `FormType.code` in the registry `lib/forms/approval-routes.ts` (per-form preparer roles + chain, derived from the manual's per-form "Prepared by" lines) and materializes the `ApprovalStep` rows itself — clients cannot supply `steps`. Canonical descent `faculty → program_chair → dean → aqau → vpaa`; a form's exact chain may skip roles (e.g. `assessment_budget` → `[vpaa]`), unknown codes fall back to the full canonical chain. **Workflow RBAC** (all enforced in `lib/forms/approval-routes.ts`):
+**Approval chain:** governed by `FormSubmission.currentApproverRole` + ordered `ApprovalStep` rows. The chain is **server-derived**: `POST /forms/:id/submit` looks up the form's `FormType.code` in the registry `lib/forms/approval-routes.ts` (per-form preparer roles + chain, derived from the manual's per-form "Prepared by" lines) and materializes the `ApprovalStep` rows itself — clients cannot supply `steps`. Canonical descent `faculty → program_chair → dean → aqau → vpaa`; a form's exact chain may skip roles (e.g. `assessment_budget` → `[vpaa]`), unknown codes fall back to the full canonical chain. **Workflow RBAC** — per-form preparer/chain rules are enforced in `lib/forms/approval-routes.ts`; cross-cutting feature gates (class-record capture, archive, PLO management, role requests, cluster confirm) live in **`lib/role-access.ts`** (`FEATURE_ACCESS`, mirrored by the frontend in `frontend/lib/role-access.ts` and pinned by `test/unit/role-access-sync.test.ts`):
 
-- **submit** — owner (or `system_admin`) **and** caller's role ∈ the form's `preparerRoles`.
+- **submit** — owner (or `system_admin`) **and** caller's role ∈ the form's `preparerRoles` (`clo_raw_data` → `faculty`/`program_chair`).
 - **approve / return** — caller must hold exactly the pending step's role; `system_admin` may act on any step (override).
-- **archive** — `aqau`, `vpaa`, or `system_admin`.
+- **archive** — `vpaa` or `system_admin` only (`ARCHIVE_ROLES` in `lib/role-access.ts`; `aqau` approves forms but may not archive).
+- **class-record capture** (`/ingest/*` — upload, roster edit/re-import, history, job status) — `faculty`, `program_chair`, or `system_admin` (`assertCanCaptureClassRecords`).
 - **update (`PUT /forms/:id`)** — owner or `system_admin`, `draft`/`returned` only.
 - **inbox scoping** — `GET /forms?scope=mine` filters to the session's own submissions; `?scope=pending` filters to `submitted` records waiting on the session's role (`system_admin` sees all pending); resolved server-side from the session, never from client-supplied ids.
 
-**Cluster confirm:** a `GraduationCluster` is confirmed for compile by `aqau` or `system_admin` (no registrar role exists yet). Confirmation flips the cluster `open → compiling → archived` and locks its entries read-only.
+**Cluster confirm:** a `GraduationCluster` is confirmed for compile by `aqau` or `system_admin` (`CLUSTER_CONFIRM_ROLES` in `lib/role-access.ts`; no registrar role exists yet). Confirmation flips the cluster `open → compiling → archived` and locks its entries read-only.
 
 ## 4. API Endpoints
 
@@ -182,13 +183,13 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/forms/:id/submit` | `auth: true` + owner + preparer role | submit — derives the ordered approval chain from `lib/forms/approval-routes.ts` (client `steps` ignored), `draft → submitted` |
 | POST | `/api/v1/forms/:id/approve/:role` | `auth: true` + step role (or system_admin) | approve the current pending step for the given role; advances the chain or `submitted → approved` |
 | POST | `/api/v1/forms/:id/return` | `auth: true` + step role (or system_admin) | return the current pending step (`submitted → returned`) |
-| POST | `/api/v1/forms/:id/archive` | `auth: true` + aqau/vpaa/system_admin | archive an approved submission (`approved → archived`) |
-| POST | `/api/v1/ingest/upload` | `auth: true` | Uploads class record, starts ETL, returns `{ jobId }`. Records an `UploadRecord` (`queued`) for the user's history. |
-| GET | `/api/v1/ingest/upload/:jobId/status` | `auth: true` | poll an ETL job; on completion triggers persistence and marks the `UploadRecord` `completed`/`failed`. |
-| GET | `/api/v1/ingest/history` | `auth: true` | List the current user's upload history (any class section), newest first, including failed attempts. |
-| GET | `/api/v1/ingest/attainments` | `auth: true` | List per-student CLO attainment rows (editable roster) for a class section's computation run (latest by default). |
-| PUT | `/api/v1/ingest/attainments` | `auth: true` | Manually edit per-student CLO direct scores; recomputes composite/threshold and reconciles at-risk flags (computed, never manual). |
-| POST | `/api/v1/ingest/attainments/reimport` | `auth: true` | Re-import scores from a wide-format roster CSV/TSV (`student_name, student_id?, CLO1, CLO2, …`); upserts `CloAttainment` rows and reconciles at-risk flags. |
+| POST | `/api/v1/forms/:id/archive` | `auth: true` + vpaa/system_admin | archive an approved submission (`approved → archived`) |
+| POST | `/api/v1/ingest/upload` | `auth: true` + class-record capture (faculty/program_chair/system_admin) | Uploads class record, starts ETL, returns `{ jobId }`. Records an `UploadRecord` (`queued`) for the user's history. |
+| GET | `/api/v1/ingest/upload/:jobId/status` | `auth: true` + class-record capture | poll an ETL job; on completion triggers persistence and marks the `UploadRecord` `completed`/`failed`. |
+| GET | `/api/v1/ingest/history` | `auth: true` + class-record capture | List the current user's upload history (any class section), newest first, including failed attempts. |
+| GET | `/api/v1/ingest/attainments` | `auth: true` + class-record capture | List per-student CLO attainment rows (editable roster) for a class section's computation run (latest by default). Assert runs before the cache lookup. |
+| PUT | `/api/v1/ingest/attainments` | `auth: true` + class-record capture | Manually edit per-student CLO direct scores; recomputes composite/threshold and reconciles at-risk flags (computed, never manual). |
+| POST | `/api/v1/ingest/attainments/reimport` | `auth: true` + class-record capture | Re-import scores from a wide-format roster CSV/TSV (`student_name, student_id?, CLO1, CLO2, …`); upserts `CloAttainment` rows and reconciles at-risk flags. |
 | POST | `/api/v1/car/generate` | `auth: true` | Ensure the section's CAR draft and assemble all 7 parts; `computationRunId` optional (defaults to the section's latest run). |
 | GET | `/api/v1/car` | `auth: true` | List CAR submissions (optional `classSectionId` filter), newest first. |
 | GET | `/api/v1/car/:id` | `auth: true` | Assemble a CAR from its submission id (re-derives 2/3/4, merges saved 1/5/6/7). |
@@ -237,7 +238,7 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | POST | `/api/v1/plan/clo-plo-map` | `auth: true` | Link a CLO to a PLO (weight 0–1, optional I-P-D stage); duplicate pair → 409. |
 | PUT | `/api/v1/plan/clo-plo-map/:id` | `auth: true` | Update a mapping's weight and/or stage. |
 | DELETE | `/api/v1/plan/clo-plo-map/:id` | `auth: true` | Remove a CLO↔PLO mapping. |
-| GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` | poll a python-server ETL job (raw; deprecated) |
+| GET | `/api/v1/ingest/jobs/:jobId` | `auth: true` + class-record capture | poll a python-server ETL job (raw; deprecated) |
 | GET | `/openapi` | — | OpenAPI docs |
 
 **CHECK / Supporting Instruments** (`check-plugin`, prefix `/api/v1/check`):
