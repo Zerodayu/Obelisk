@@ -2,6 +2,7 @@ import type {
 	AnalyticsCourseSubmission,
 	AnalyticsSubmissionsPayload,
 	AnalyticsSummaryResponse,
+	EtlSnapshot,
 } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { prisma } from "@lib/prisma";
@@ -52,13 +53,6 @@ export class RollupInvalidEditError extends Error {
 		this.name = "RollupInvalidEditError";
 	}
 }
-
-/** Shape stored on `ComputationRun.etlSnapshotJson` at persist time. */
-type EtlSnapshot = {
-	header: Record<string, unknown>;
-	attainments: Record<string, unknown>[];
-	clo_plo_mapping: Record<string, unknown>[];
-};
 
 type AttainmentRow = Prisma.CloAttainmentGetPayload<{
 	include: {

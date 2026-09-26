@@ -109,6 +109,17 @@ export interface AnalyticsSummaryResponse {
 	worst_performing_clos: AnalyticsWorstPerformer[];
 }
 
+/**
+ * Shape stored on `ComputationRun.etlSnapshotJson` at persist time — the raw
+ * ETL output (header + per-student rows + CLO→PLO map) replayed back to
+ * python-server for rollups and AI analysis.
+ */
+export interface EtlSnapshot {
+	header: Record<string, unknown>;
+	attainments: Record<string, unknown>[];
+	clo_plo_mapping: Record<string, unknown>[];
+}
+
 export class PythonServerError extends Error {
 	public readonly error_type: string;
 	public readonly details?: Record<string, unknown>;
@@ -222,15 +233,15 @@ class IngestClient {
 	}
 
 	/**
-	 * Requests Python-Formula 2A/7A/7C rollups from the python-server's
-	 * synchronous `/analytics/summary` endpoint. The payload's per-student CLO
-	 * records are the raw ETL `StudentCLOAttainment` rows (0–1 fraction scale);
-	 * the webapp assembles them from its persisted `etlSnapshotJson`.
+	 * POST JSON to the python-server, mapping its structured FastAPI error
+	 * body (`{ detail: StructuredError }`) onto `PythonServerError`.
 	 */
-	async analyticsSummary(
-		payload: AnalyticsSubmissionsPayload,
-	): Promise<AnalyticsSummaryResponse> {
-		const response = await fetch(`${this.baseUrl}/analytics/summary`, {
+	private async postJson<T>(
+		payload: unknown,
+		path: string,
+		label: string,
+	): Promise<T> {
+		const response = await fetch(`${this.baseUrl}${path}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify(payload),
@@ -246,16 +257,28 @@ class IngestClient {
 				}
 			} catch (error) {
 				if (error instanceof PythonServerError) throw error;
-				throw new Error(
-					`Analytics summary failed with status ${response.status}`,
-				);
+				throw new Error(`${label} failed with status ${response.status}`);
 			}
-			throw new Error(
-				`Analytics summary failed with status ${response.status}`,
-			);
+			throw new Error(`${label} failed with status ${response.status}`);
 		}
 
-		return (await response.json()) as AnalyticsSummaryResponse;
+		return (await response.json()) as T;
+	}
+
+	/**
+	 * Requests Python-Formula 2A/7A/7C rollups from the python-server's
+	 * synchronous `/analytics/summary` endpoint. The payload's per-student CLO
+	 * records are the raw ETL `StudentCLOAttainment` rows (0–1 fraction scale);
+	 * the webapp assembles them from its persisted `etlSnapshotJson`.
+	 */
+	async analyticsSummary(
+		payload: AnalyticsSubmissionsPayload,
+	): Promise<AnalyticsSummaryResponse> {
+		return this.postJson<AnalyticsSummaryResponse>(
+			payload,
+			"/analytics/summary",
+			"Analytics summary",
+		);
 	}
 }
 
