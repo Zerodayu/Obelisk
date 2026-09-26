@@ -3,9 +3,11 @@
  * appears in the sidebar and which routes each role may reach.
  *
  * Adding a role or a route = add/edit one entry here (plus the corresponding
- * page under `app/`). The sidebar, archive/form gates, and any future
- * breadcrumbs all derive from this. Backend still enforces authority; this
- * drives navigation and rendering only.
+ * page under `app/`). Form items carry a stable `code`; their per-form role
+ * visibility derives from `FORM_ACCESS` in `lib/role-access.ts` (mirrors the
+ * backend approval-routes registry). The sidebar, archive/form gates, and any
+ * future breadcrumbs all derive from this. Backend still enforces authority;
+ * this drives navigation and rendering only.
  *
  * Pure config module (`.ts`): icons are referenced as components, not JSX, so
  * consumers render `<item.icon />` themselves.
@@ -33,22 +35,28 @@ import {
 } from "lucide-react";
 
 import {
-  ACADEMIC_ROLES,
   APPROVER_ROLES,
-  hasAccess,
+  ARCHIVE_ROLES,
+  formRoles,
   PLO_MANAGEMENT_ROLES,
   type UserRole,
-} from "@/lib/roles";
+} from "@/lib/role-access";
+import { hasAccess } from "@/lib/roles";
 import { app } from "@/utils/app-info";
 
 export interface NavChild {
   title: string;
   url: string;
-  /** allow-list roles; empty = any authenticated role. */
+  /**
+   * Explicit allow-list roles; empty/absent = any authenticated role.
+   * Items carrying a `code` ignore this — their roles derive from
+   * `formRoles(code)` in `lib/role-access.ts` (preparers ∪ chain ∪ admin).
+   */
   roles?: readonly UserRole[];
   /**
    * Stable snake_case `FormType.code` for form screens — used by the
-   * submission inboxes to link a record back to its screen.
+   * submission inboxes to link a record back to its screen, and to derive
+   * per-form role visibility from `lib/role-access.ts`.
    */
   code?: string;
 }
@@ -73,14 +81,12 @@ const FORM_SECTIONS: NavSection[] = [
         title: "CLO Raw Data",
         url: "/forms/clo-raw-data",
         icon: ClipboardListIcon,
-        roles: ACADEMIC_ROLES,
         code: "clo_raw_data",
       },
       {
         title: "Course Assessment Report",
         url: "/forms/course-assessment-report",
         icon: FileChartColumnIcon,
-        roles: ACADEMIC_ROLES,
         code: "course_assessment_report",
       },
     ],
@@ -228,8 +234,18 @@ export const formPathByCode: Record<string, string> = Object.fromEntries(
   ),
 );
 
+/**
+ * Effective allow-list for a nav item: form screens derive from
+ * `formRoles(code)` (preparers ∪ approval chain ∪ system_admin) in
+ * `lib/role-access.ts`; items without a code use their explicit `roles`.
+ */
+function rolesFor(item: NavChild): readonly UserRole[] | undefined {
+  if (item.code) return formRoles(item.code);
+  return item.roles;
+}
+
 function allowRoles(item: NavChild, role: UserRole): boolean {
-  return hasAccess(role, item.roles);
+  return hasAccess(role, rolesFor(item));
 }
 
 /** Does the item (or any child) remain visible for the given role? */
@@ -275,8 +291,7 @@ export function workspaceNav(role: UserRole): NavItem[] {
       url: "/approvals",
       icon: ClipboardCheckIcon,
     });
-  const archives = hasAccess(role, ["aqau", "vpaa", "dean", "system_admin"]);
-  if (archives)
+  if (hasAccess(role, ARCHIVE_ROLES))
     items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
   return items;
 }

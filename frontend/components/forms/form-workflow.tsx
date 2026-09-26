@@ -32,6 +32,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { api } from "@/lib/api-client";
+import { ARCHIVE_ROLES } from "@/lib/role-access";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
   type ApprovalStepRecord,
@@ -51,18 +52,6 @@ import {
   submitFormAction,
   type WorkflowActionResult,
 } from "@/server/actions/forms";
-
-/**
- * Roles that may archive an approved submission — mirrors
- * `ARCHIVE_ROLES` in `backend/lib/forms/approval-routes.ts`
- * (aqau/vpaa/system_admin; note `dean` may open `/archives` but not archive
- * submissions).
- */
-const SUBMISSION_ARCHIVE_ROLES: readonly UserRole[] = [
-  "aqau",
-  "vpaa",
-  "system_admin",
-];
 
 const DECISION_LABELS: Record<ApprovalStepRecord["decision"], string> = {
   pending: "Pending",
@@ -193,9 +182,7 @@ export function FormWorkflow({
     user != null &&
     (user.role === pendingStep.approverRole || isAdmin);
   const canArchive =
-    status === "approved" &&
-    user != null &&
-    SUBMISSION_ARCHIVE_ROLES.includes(user.role);
+    status === "approved" && user != null && ARCHIVE_ROLES.includes(user.role);
 
   const submitterLine =
     submission.submittedBy && submission.submittedBy.id !== user?.id
