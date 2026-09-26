@@ -110,6 +110,18 @@ export interface AnalyticsSummaryResponse {
 }
 
 /**
+ * Response of `POST /analytics/institutional-summary` — the same pure rollups
+ * as `/analytics/summary` plus the AI-generated CQI recommendation text
+ * (contract: python-server `documentations/INTEGRATION.md`).
+ */
+export interface InstitutionalSummaryResponse {
+	status: "ok" | string;
+	summary: AnalyticsSummaryResponse;
+	prompt_used: string;
+	recommendation: string;
+}
+
+/**
  * Shape stored on `ComputationRun.etlSnapshotJson` at persist time — the raw
  * ETL output (header + per-student rows + CLO→PLO map) replayed back to
  * python-server for rollups and AI analysis.
@@ -278,6 +290,23 @@ class IngestClient {
 			payload,
 			"/analytics/summary",
 			"Analytics summary",
+		);
+	}
+
+	/**
+	 * Requests the institution-wide CQI summary **with** an AI recommendation
+	 * from `/analytics/institutional-summary`. This triggers an LLM call on
+	 * the python-server — per `INTEGRATION.md` the webapp must verify the
+	 * requester's role before calling it (vpaa/system_admin gate lives in
+	 * `src/v1/ai/controller.ts`).
+	 */
+	async institutionalSummary(
+		payload: AnalyticsSubmissionsPayload,
+	): Promise<InstitutionalSummaryResponse> {
+		return this.postJson<InstitutionalSummaryResponse>(
+			payload,
+			"/analytics/institutional-summary",
+			"Institutional summary",
 		);
 	}
 }
