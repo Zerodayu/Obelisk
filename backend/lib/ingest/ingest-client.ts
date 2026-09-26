@@ -8,6 +8,12 @@ export interface StructuredError {
 	details?: Record<string, unknown>;
 }
 
+/** One FastAPI/pydantic 422 issue (`detail` array entry). */
+interface PydanticIssue {
+	loc?: unknown[];
+	msg?: string;
+}
+
 // This is the actual shape of the data loaded by the python-server
 export interface EtlLoadedData {
 	header: unknown;
@@ -262,8 +268,28 @@ class IngestClient {
 		if (!response.ok) {
 			try {
 				const errorBody = (await response.json()) as {
-					detail: StructuredError;
+					detail: StructuredError | PydanticIssue[];
 				};
+				// FastAPI 422s arrive as a pydantic issue array rather than the
+				// structured OBELISKError shape — compose a readable message so
+				// downstream502s (e.g. the AI drawer toast) aren't blank.
+				if (Array.isArray(errorBody.detail)) {
+					const issues = errorBody.detail
+						.slice(0, 5)
+						.map(
+							(issue) =>
+								`${(issue.loc ?? []).slice(1).join(".")}: ${issue.msg ?? "invalid"}`,
+						)
+						.join("; ");
+					const overflow =
+						errorBody.detail.length > 5
+							? ` (+${errorBody.detail.length - 5} more)`
+							: "";
+					throw new PythonServerError({
+						error_type: "request_validation_error",
+						message: `${label} rejected by python-server: ${issues}${overflow}`,
+					});
+				}
 				if (errorBody.detail) {
 					throw new PythonServerError(errorBody.detail);
 				}
