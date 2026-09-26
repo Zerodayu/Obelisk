@@ -10,16 +10,17 @@ import {
   FramePanel,
   FrameTitle,
 } from "@/components/reui/frame";
-import { ACADEMIC_ROLES } from "@/lib/roles";
+import { formRoles } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
 
 /**
- * `/forms/clo-raw-data` — primary data-capture form. Faculty author per-student
- * CLO scores (or import a class-record sheet); chairs/deans review. Restricted
- * to academic roles; the backend enforces per-user class-section scope.
+ * `/forms/clo-raw-data` — primary data-capture form. Faculty and program
+ * chairs author per-student CLO scores (or import a class-record sheet);
+ * restricted to the class-record capture roles (`formRoles("clo_raw_data")`),
+ * and the backend enforces per-user class-section scope.
  */
 export default async function CloRawDataPage() {
-  await requireRole(ACADEMIC_ROLES);
+  await requireRole(formRoles("clo_raw_data"));
   return (
     <div className="px-4 lg:px-6 space-y-6">
       <div className="space-y-1">

@@ -1,7 +1,10 @@
 import { AssessmentCalendarForm } from "@/components/forms/assessment-calendar-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function AssessmentCalendarPage() {
+export default async function AssessmentCalendarPage() {
+  await requireRole(formRoles("assessment_calendar"));
   return (
     <FormPlaceholder
       title="Assessment Calendar"

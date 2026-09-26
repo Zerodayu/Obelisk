@@ -1,7 +1,10 @@
 import CapstonePanelForm from "@/components/forms/capstone-panel-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function CapstonePanelPage() {
+export default async function CapstonePanelPage() {
+  await requireRole(formRoles("capstone_panel_evaluation"));
   return (
     <FormPlaceholder
       title="Capstone Panel Evaluation"

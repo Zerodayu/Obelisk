@@ -1,7 +1,10 @@
 import { AparForm } from "@/components/forms/apar-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function AnnualProgramReportPage() {
+export default async function AnnualProgramReportPage() {
+  await requireRole(formRoles("annual_program_report"));
   return (
     <FormPlaceholder
       title="Annual Program Assessment Report"

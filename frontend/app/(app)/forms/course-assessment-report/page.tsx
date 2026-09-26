@@ -1,11 +1,11 @@
 import { CarForm } from "@/components/forms/car-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
-import { ACADEMIC_ROLES } from "@/lib/roles";
+import { formRoles } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
 
 /** `/forms/course-assessment-report` — the term-level CAR hub (7 parts). */
 export default async function CourseAssessmentReportPage() {
-  await requireRole(ACADEMIC_ROLES);
+  await requireRole(formRoles("course_assessment_report"));
   return (
     <FormPlaceholder
       title="Course Assessment Report"

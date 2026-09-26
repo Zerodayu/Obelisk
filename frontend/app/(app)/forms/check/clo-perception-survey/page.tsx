@@ -1,7 +1,10 @@
 import { CloPerceptionSurveyForm } from "@/components/forms/clo-perception-survey-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function CloPerceptionSurveyPage() {
+export default async function CloPerceptionSurveyPage() {
+  await requireRole(formRoles("clo_perception_survey"));
   return (
     <FormPlaceholder
       title="CLO Achievement Perception Survey Tabulation"

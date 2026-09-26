@@ -1,7 +1,10 @@
 import { CurriculumMapForm } from "@/components/forms/curriculum-map-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function CurriculumMapPage() {
+export default async function CurriculumMapPage() {
+  await requireRole(formRoles("curriculum_map"));
   return (
     <FormPlaceholder
       title="Curriculum Map"

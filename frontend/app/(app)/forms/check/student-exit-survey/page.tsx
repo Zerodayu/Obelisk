@@ -1,7 +1,10 @@
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 import { StudentExitSurveyForm } from "@/components/forms/student-exit-survey-form";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function StudentExitSurveyPage() {
+export default async function StudentExitSurveyPage() {
+  await requireRole(formRoles("student_exit_survey"));
   return (
     <FormPlaceholder
       title="Student Exit Survey Tabulation"

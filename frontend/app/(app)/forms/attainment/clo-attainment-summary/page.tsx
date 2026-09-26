@@ -1,7 +1,10 @@
 import { CloSummaryForm } from "@/components/forms/clo-summary-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function CloAttainmentSummaryPage() {
+export default async function CloAttainmentSummaryPage() {
+  await requireRole(formRoles("clo_attainment_summary"));
   return (
     <FormPlaceholder
       title="CLO Attainment Summary (Full Term)"

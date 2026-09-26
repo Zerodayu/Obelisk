@@ -1,7 +1,10 @@
 import ExhibitionFeedbackForm from "@/components/forms/exhibition-feedback-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function ExhibitionFeedbackPage() {
+export default async function ExhibitionFeedbackPage() {
+  await requireRole(formRoles("exhibition_feedback"));
   return (
     <FormPlaceholder
       title="Portfolio Exhibition Industry Feedback"

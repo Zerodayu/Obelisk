@@ -19,6 +19,7 @@
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api-client";
+import { featureRoles } from "@/lib/role-access";
 import { actionApi } from "@/server/api-client";
 import { requireRole } from "@/server/auth";
 
@@ -73,12 +74,12 @@ export async function fileRoleRequest(
   }
 }
 
-/** Approve or deny a pending role request (system_admin only). */
+/** Approve or deny a pending role request (`manageRoleRequests` — system_admin only). */
 export async function decideRoleRequest(
   userId: string,
   decision: "approve" | "deny",
 ): Promise<ActionResult> {
-  await requireRole(["system_admin"]);
+  await requireRole(featureRoles("manageRoleRequests"));
   try {
     await actionApi.post(`/auth/role-requests/${userId}/${decision}`);
     return { ok: true, data: undefined };

@@ -1,7 +1,10 @@
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 import { TargetSettingMatrixForm } from "@/components/forms/target-setting-matrix-form";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function TargetSettingMatrixPage() {
+export default async function TargetSettingMatrixPage() {
+  await requireRole(formRoles("target_setting_matrix"));
   return (
     <FormPlaceholder
       title="Target Setting Matrix"

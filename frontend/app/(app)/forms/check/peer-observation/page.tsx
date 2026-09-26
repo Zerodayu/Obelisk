@@ -1,7 +1,10 @@
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 import PeerObservationForm from "@/components/forms/peer-observation-form";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function PeerObservationPage() {
+export default async function PeerObservationPage() {
+  await requireRole(formRoles("peer_observation"));
   return (
     <FormPlaceholder
       title="Peer Observation Record"

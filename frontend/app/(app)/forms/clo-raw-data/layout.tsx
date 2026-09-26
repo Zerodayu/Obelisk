@@ -1,10 +1,10 @@
-import { ACADEMIC_ROLES } from "@/lib/roles";
+import { formRoles } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
 
-/** Role gate for the academic-authored CLO raw data screen. */
+/** Role gate for the class-record capture (CLO raw data) screen. */
 export default async function CloRawDataLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await requireRole(ACADEMIC_ROLES);
+  await requireRole(formRoles("clo_raw_data"));
   return children;
 }

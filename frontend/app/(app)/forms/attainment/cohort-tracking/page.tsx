@@ -1,8 +1,11 @@
 import { CohortTrackingForm } from "@/components/forms/cohort-tracking-form";
 import { CohortTrackingGrid } from "@/components/forms/cohort-tracking-grid";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function CohortTrackingPage() {
+export default async function CohortTrackingPage() {
+  await requireRole(formRoles("cohort_tracking"));
   return (
     <FormPlaceholder
       title="Cohort Tracking"

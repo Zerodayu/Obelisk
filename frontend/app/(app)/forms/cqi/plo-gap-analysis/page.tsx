@@ -1,7 +1,10 @@
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
 import { PloGapAnalysisForm } from "@/components/forms/plo-gap-analysis-form";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function PloGapAnalysisPage() {
+export default async function PloGapAnalysisPage() {
+  await requireRole(formRoles("plo_gap_analysis"));
   return (
     <FormPlaceholder
       title="PLO Attainment Report with Gap Analysis"

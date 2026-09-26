@@ -1,7 +1,10 @@
 import { CtlForm } from "@/components/forms/ctl-form";
 import { FormPlaceholder } from "@/components/forms/form-placeholder";
+import { formRoles } from "@/lib/role-access";
+import { requireRole } from "@/server/auth";
 
-export default function ClosingTheLoopPage() {
+export default async function ClosingTheLoopPage() {
+  await requireRole(formRoles("closing_the_loop"));
   return (
     <FormPlaceholder
       title="Closing the Loop"
