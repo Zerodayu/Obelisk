@@ -1,6 +1,8 @@
 "use client";
 
-import { Bot, SparklesIcon } from "lucide-react";
+import { useAtomValue } from "jotai";
+import { Bot, RefreshCw, SparklesIcon } from "lucide-react";
+import { Fragment, useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -13,17 +15,231 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toastError } from "@/components/ui/toast";
+import { canAccess } from "@/lib/role-access";
+import { userAtom } from "@/lib/store/atoms/user";
+import {
+  type AiRecommendation,
+  generateAiRecommendationAction,
+  getLatestAiRecommendationAction,
+} from "@/server/actions/ai";
 
 /**
  * Floating AI suggestions drawer for dashboards. Opens a bottom-sheet drawer
- * with a typeset-formatted content area ready for AI-generated markdown.
+ * with the latest persisted AI CQI recommendation (`ai_recommendation`,
+ * backend `src/v1/ai` → python-server `/analytics/institutional-summary`).
  *
- * Content is currently a placeholder — swap the inner typeset block with
- * real AI suggestions when the backend endpoint lands.
+ * The recommendation text is Markdown (LLM output — the python-server's debug
+ * stub while `IS_DEBUG_MODE=True`). It is rendered by the minimal converter
+ * below into plain HTML elements, styled by the `typeset` classes — no
+ * markdown library (see `renderMarkdown`). The "key gaps" block is pure
+ * computed rollup data, independent of the LLM.
  */
+
+type DrawerState =
+  | { phase: "loading" }
+  | { phase: "ready"; recommendation: AiRecommendation | null }
+  | { phase: "error"; message: string };
+
+const STATUS_LABELS: Record<string, string> = {
+  pending_review: "Pending review",
+  acknowledged: "Acknowledged",
+  actioned: "Actioned",
+  dismissed: "Dismissed",
+};
+
+function scopeLabel(recommendation: AiRecommendation): string | null {
+  if (recommendation.period) return recommendation.period.label;
+  if (recommendation.term) {
+    return `${recommendation.term.schoolYear} ${recommendation.term.semester}`;
+  }
+  return null;
+}
+
+// --- Minimal Markdown → React rendering ------------------------------------
+// NOTE: intentionally hand-rolled — no markdown dependency (project decision).
+// Covers the subset the python-server's CQI prompt guarantees: `#`–`####`
+// headings, paragraphs, `-`/`*` bullets, `1.` ordered lists, `> ` quotes, and
+// inline `**bold**` / `*italic*` / `_italic_`. Unknown syntax falls through as
+// plain text; `typeset` styles the resulting elements. No raw HTML passes
+// through (everything is built as React elements).
+
+type InlineNode = string | { marker: "strong" | "em"; content: string };
+
+const INLINE_PATTERN = /(\*\*[^*]+\*\*|\*[^*\n]+\*|_[^_\n]+_)/g;
+
+function parseInline(text: string): InlineNode[] {
+  return text
+    .split(INLINE_PATTERN)
+    .filter((part) => part !== "" && part !== undefined)
+    .map((part) => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        return { marker: "strong" as const, content: part.slice(2, -2) };
+      }
+      if (
+        (part.startsWith("*") && part.endsWith("*")) ||
+        (part.startsWith("_") && part.endsWith("_"))
+      ) {
+        if (part.length > 2) {
+          return { marker: "em" as const, content: part.slice(1, -1) };
+        }
+      }
+      return part;
+    });
+}
+
+function renderInline(text: string, keyBase: string): React.ReactNode {
+  return parseInline(text).map((node, index) => {
+    const key = `${keyBase}-${index}`;
+    if (typeof node === "string") return <Fragment key={key}>{node}</Fragment>;
+    const content = renderInline(node.content, key);
+    if (node.marker === "strong") return <strong key={key}>{content}</strong>;
+    return <em key={key}>{content}</em>;
+  });
+}
+
+function renderMarkdown(markdown: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  const lines = markdown.split(/\r?\n/);
+  let paragraph: string[] = [];
+  let list: { ordered: boolean; items: string[] } | null = null;
+  let key = 0;
+
+  const nextKey = () => `md-${key++}`;
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    const text = paragraph.join(" ").trim();
+    paragraph = [];
+    if (!text) return;
+    const nodeKey = nextKey();
+    nodes.push(<p key={nodeKey}>{renderInline(text, nodeKey)}</p>);
+  };
+
+  const flushList = () => {
+    if (!list) return;
+    const { ordered, items } = list;
+    const nodeKey = nextKey();
+    const children = items.map((item, index) => {
+      const itemKey = `${nodeKey}-${index}`;
+      return <li key={itemKey}>{renderInline(item, itemKey)}</li>;
+    });
+    list = null;
+    nodes.push(
+      ordered ? (
+        <ol key={nodeKey}>{children}</ol>
+      ) : (
+        <ul key={nodeKey}>{children}</ul>
+      ),
+    );
+  };
+
+  const flush = () => {
+    flushParagraph();
+    flushList();
+  };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      flush();
+      continue;
+    }
+
+    const heading = /^(#{1,4})\s+(.*)$/.exec(line);
+    if (heading) {
+      flush();
+      const nodeKey = nextKey();
+      const content = renderInline(heading[2], nodeKey);
+      const level = heading[1].length;
+      if (level === 1) nodes.push(<h1 key={nodeKey}>{content}</h1>);
+      else if (level === 2) nodes.push(<h2 key={nodeKey}>{content}</h2>);
+      else nodes.push(<h3 key={nodeKey}>{content}</h3>);
+      continue;
+    }
+
+    const ordered = /^\d+[.)]\s+(.*)$/.exec(line);
+    const bullet = !ordered ? /^[-*+]\s+(.*)$/.exec(line) : null;
+    if (ordered || bullet) {
+      flushParagraph();
+      const isOrdered = Boolean(ordered);
+      if (!list || list.ordered !== isOrdered) {
+        flushList();
+        list = { ordered: isOrdered, items: [] };
+      }
+      list.items.push((ordered ?? bullet)?.[1] ?? "");
+      continue;
+    }
+
+    const quote = /^>\s?(.*)$/.exec(line);
+    if (quote) {
+      flush();
+      const nodeKey = nextKey();
+      nodes.push(
+        <blockquote key={nodeKey}>
+          {renderInline(quote[1], nodeKey)}
+        </blockquote>,
+      );
+      continue;
+    }
+
+    flushList();
+    paragraph.push(line);
+  }
+  flush();
+
+  return nodes;
+}
+
+// --- Drawer ----------------------------------------------------------------
+
 export function AiSuggestionsDrawer() {
+  const user = useAtomValue(userAtom);
+  const canGenerate = canAccess(user?.role, "generateAiInsights");
+
+  const [state, setState] = useState<DrawerState>({ phase: "loading" });
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const load = useCallback(async () => {
+    setState({ phase: "loading" });
+    const result = await getLatestAiRecommendationAction();
+    if (result.ok) {
+      setState({ phase: "ready", recommendation: result.data });
+    } else {
+      setState({ phase: "error", message: result.error });
+    }
+    setHasLoaded(true);
+  }, []);
+
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      // Fetch on first open; `hasLoaded` keeps reopening cheap and stable.
+      if (open && !hasLoaded && !generating) void load();
+    },
+    [hasLoaded, generating, load],
+  );
+
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true);
+    const result = await generateAiRecommendationAction();
+    setGenerating(false);
+    if (result.ok) {
+      setState({ phase: "ready", recommendation: result.data });
+      return;
+    }
+    // NOTE: no HTTP status crosses the ActionResult boundary, so the toast
+    // dedupes on the flow scope instead of a status code.
+    toastError({
+      scope: "ai-insights-generate",
+      title: "Could not generate AI insights",
+      description: result.error,
+    });
+  }, []);
+
   return (
-    <Drawer swipeDirection="right">
+    <Drawer swipeDirection="right" onOpenChange={handleOpenChange}>
       <DrawerTrigger
         render={
           <Button variant="secondary">
@@ -39,233 +255,173 @@ export function AiSuggestionsDrawer() {
             AI Suggestions
           </DrawerTitle>
           <DrawerDescription className="flex items-center justify-center">
-            Insights and recommendations based on your current dashboard data.
+            CQI insights generated from your persisted assessment data.
           </DrawerDescription>
         </DrawerHeader>
         <ScrollArea className="m-4 flex-1 overflow-y-auto rounded-lg bg-input/40">
           <div className="w-full typeset typeset-docs p-6 items-center justify-center">
-            <SampleAi />
+            {state.phase === "loading" ? <LoadingBlock /> : null}
+            {state.phase === "error" ? (
+              <ErrorBlock message={state.message} onRetry={load} />
+            ) : null}
+            {state.phase === "ready" ? (
+              <ReadyBlock
+                recommendation={state.recommendation}
+                canGenerate={canGenerate}
+                generating={generating}
+                onGenerate={handleGenerate}
+              />
+            ) : null}
           </div>
         </ScrollArea>
-        <DrawerFooter>
-          <DrawerClose render={<Button>Close</Button>} />
+        <DrawerFooter className="flex-row justify-center gap-2">
+          {canGenerate && state.phase === "ready" ? (
+            <Button
+              variant="secondary"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              <RefreshCw className={generating ? "animate-spin" : undefined} />
+              {generating ? "Generating…" : "Regenerate"}
+            </Button>
+          ) : null}
+          <DrawerClose render={<Button className="flex-1">Close</Button>} />
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
 }
 
-const SampleAi = () => {
+const LoadingBlock = () => (
+  <div className="space-y-3" aria-busy="true" aria-live="polite">
+    <span className="sr-only">Loading AI insights…</span>
+    <Skeleton className="h-5 w-1/3" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-5/6" />
+    <Skeleton className="h-24 w-full" />
+    <Skeleton className="h-4 w-2/3" />
+  </div>
+);
+
+const ErrorBlock = ({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => Promise<void>;
+}) => (
+  <div className="space-y-4 flex flex-col w-full text-sm not-typeset">
+    <p className="text-muted-foreground self-center">{message}</p>
+    <Button variant="secondary" onClick={onRetry}>
+      Try again
+    </Button>
+  </div>
+);
+
+const EmptyBlock = ({
+  canGenerate,
+  generating,
+  onGenerate,
+}: {
+  canGenerate: boolean;
+  generating: boolean;
+  onGenerate: () => Promise<void>;
+}) => (
+  <div className="space-y-4 text-sm not-typeset">
+    <p className="text-muted-foreground">
+      No AI insight has been generated yet.
+    </p>
+    <p className="text-muted-foreground">
+      {canGenerate
+        ? "Generate one to analyse the persisted class records and surface the critical CLO gaps."
+        : "Ask a VPAA or system administrator to generate one."}
+    </p>
+    {canGenerate ? (
+      <Button variant="secondary" onClick={onGenerate} disabled={generating}>
+        <RefreshCw className={generating ? "animate-spin" : undefined} />
+        {generating ? "Generating…" : "Generate insight"}
+      </Button>
+    ) : null}
+  </div>
+);
+
+const ReadyBlock = ({
+  recommendation,
+  canGenerate,
+  generating,
+  onGenerate,
+}: {
+  recommendation: AiRecommendation | null;
+  canGenerate: boolean;
+  generating: boolean;
+  onGenerate: () => Promise<void>;
+}) => {
+  if (!recommendation) {
+    return (
+      <EmptyBlock
+        canGenerate={canGenerate}
+        generating={generating}
+        onGenerate={onGenerate}
+      />
+    );
+  }
+
+  const label = scopeLabel(recommendation);
+  const gaps = recommendation.worstPerformingClos;
+
   return (
-    <span>
-      <h1>Dashboard Summary</h1>
-      <p>
-        AI-powered analysis of your current assessment cycle. All metrics are
-        derived from the latest rollup data; flagged items require attention
-        before the next deadline.
-      </p>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2 not-typeset">
+        {label ? (
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+            {label}
+          </span>
+        ) : null}
+        <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+          {STATUS_LABELS[recommendation.status] ?? recommendation.status}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          Generated {new Date(recommendation.generatedAt).toLocaleString()}
+        </span>
+      </div>
 
-      <h2>Highlights</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Metric</th>
-            <th>Value</th>
-            <th>Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Attainment Floor</td>
-            <td>12 / 15 CLOs met</td>
-            <td>80% compliance — above target</td>
-          </tr>
-          <tr>
-            <td>Pending Reviews</td>
-            <td>4 items</td>
-            <td>2 CAPA plans + 2 CQI actions overdue</td>
-          </tr>
-          <tr>
-            <td>At-Risk Students</td>
-            <td>7 flagged</td>
-            <td>CLO scores below 70% threshold</td>
-          </tr>
-          <tr>
-            <td>Upload Status</td>
-            <td>3 pending</td>
-            <td>Class records awaiting spreadsheet upload</td>
-          </tr>
-        </tbody>
-      </table>
+      {renderMarkdown(recommendation.recommendationText)}
 
-      <h2>CLO Attainment Breakdown</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>CLO</th>
-            <th>Direct</th>
-            <th>Indirect</th>
-            <th>Composite</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>CLO-1</td>
-            <td>78%</td>
-            <td>72%</td>
-            <td>76.2%</td>
-            <td>Met ✓</td>
-          </tr>
-          <tr>
-            <td>CLO-2</td>
-            <td>65%</td>
-            <td>58%</td>
-            <td>62.9%</td>
-            <td>Not Met ✗</td>
-          </tr>
-          <tr>
-            <td>CLO-3</td>
-            <td>82%</td>
-            <td>80%</td>
-            <td>81.4%</td>
-            <td>Met ✓</td>
-          </tr>
-          <tr>
-            <td>CLO-4</td>
-            <td>71%</td>
-            <td>68%</td>
-            <td>70.1%</td>
-            <td>Met ✓</td>
-          </tr>
-        </tbody>
-      </table>
-      <p>
-        <em>Composite = Direct × 70% + Indirect × 30%. Floor is ≥ 70%.</em>
-      </p>
+      {gaps.length > 0 ? (
+        <>
+          <h2>Key gaps (computed)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th>Unit</th>
+                <th>CLO</th>
+                <th>Mean</th>
+                <th>Records</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gaps.map((gap) => (
+                <tr key={`${gap.groupName}-${gap.key}-${gap.cloCode}`}>
+                  <td>{gap.groupName}</td>
+                  <td>{gap.key}</td>
+                  <td>{gap.cloCode}</td>
+                  <td>{gap.meanAttainmentPct}%</td>
+                  <td>{gap.recordCount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      ) : null}
 
-      <h2>At-Risk Watchlist</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Student</th>
-            <th>Section</th>
-            <th>CLO</th>
-            <th>Score</th>
-            <th>Root Cause</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>J. Santos</td>
-            <td>BSIT-3A</td>
-            <td>CLO-2</td>
-            <td>54%</td>
-            <td>Assessment Design</td>
-          </tr>
-          <tr>
-            <td>M. Cruz</td>
-            <td>BSIT-3A</td>
-            <td>CLO-2</td>
-            <td>61%</td>
-            <td>Student Factors</td>
-          </tr>
-          <tr>
-            <td>A. Reyes</td>
-            <td>BSIT-3B</td>
-            <td>CLO-4</td>
-            <td>66%</td>
-            <td>Instruction & Pedagogy</td>
-          </tr>
-        </tbody>
-      </table>
       <p>
         <em>
-          Showing 3 of 7 at-risk students. Full list available on the faculty
-          dashboard.
+          AI-generated suggestions — validate against institutional policy
+          before acting. Gap figures are computed from persisted attainment data
+          (70% institutional floor).
         </em>
       </p>
-
-      <h2>Approval Flow Status</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Progress</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>CAR — Term 1, 2025-26</td>
-            <td>100%</td>
-            <td>Complete</td>
-          </tr>
-          <tr>
-            <td>CQI Action Plan — Q3</td>
-            <td>60%</td>
-            <td>In progress</td>
-          </tr>
-          <tr>
-            <td>Institutional Report — D1-D5</td>
-            <td>30%</td>
-            <td>In progress</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h2>Cohort Trend (Last 4 Terms)</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Term</th>
-            <th>T1</th>
-            <th>T2</th>
-            <th>T3</th>
-            <th>T4</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Avg. Attainment</td>
-            <td>72%</td>
-            <td>75%</td>
-            <td>71%</td>
-            <td>78%</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <h2>Recommended Actions</h2>
-      <ol>
-        <li>
-          <strong>Escalate CLO-2 gap</strong> — coordinate with the program
-          chair on a targeted intervention for the two affected sections.
-        </li>
-        <li>
-          <strong>Follow up on overdue CAPA plans</strong> — nudge assigned
-          owners before the end-of-quarter deadline.
-        </li>
-        <li>
-          <strong>Upload class records</strong> — 3 sections still have pending
-          spreadsheet uploads for Term 1.
-        </li>
-        <li>
-          <strong>Review at-risk students</strong> — verify that corrective
-          feedback has been given to all 7 flagged students.
-        </li>
-      </ol>
-
-      <h2>AI Insight</h2>
-      <blockquote>
-        CLO-2 shows a persistent 3-term decline (74% → 71% → 68% → 62.9%). The
-        root-cause pattern points to assessment design rather than instruction —
-        consider revisiting the rubric alignment with the program's PLO mapping.
-      </blockquote>
-      <p>
-        These suggestions are generated by AI and should be validated against
-        institutional policies before acting on them.
-      </p>
-    </span>
+    </div>
   );
 };
