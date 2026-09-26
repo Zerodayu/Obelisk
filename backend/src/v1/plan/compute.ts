@@ -1,3 +1,4 @@
+import { hasRole, PLO_MANAGEMENT_ROLES } from "@lib/role-access";
 import { MIN_ATTAINMENT_PCT } from "@lib/validators/attainment";
 
 /**
@@ -34,10 +35,11 @@ export class PloForbiddenError extends Error {
 
 /**
  * PLO entity mutations are dean-only (faculty map the resulting PLOs; see
- * SYSTEM-DESIGN §3). Read access stays with any authenticated role.
+ * SYSTEM-DESIGN §3). The allow-list lives in `lib/role-access.ts` and has no
+ * system_admin bypass. Read access stays with any authenticated role.
  */
 export function assertCanManagePlos(role: string | undefined): void {
-	if (role !== "dean") throw new PloForbiddenError();
+	if (!hasRole(role, PLO_MANAGEMENT_ROLES)) throw new PloForbiddenError();
 }
 
 export type CurriculumCellLike = {

@@ -1,4 +1,5 @@
 import { prisma } from "@lib/prisma";
+import { hasRole, ROLE_REQUEST_ROLES } from "@lib/role-access";
 import type { UserRole } from "@prisma/generated/prisma/enums";
 import type { Session, User } from "better-auth";
 import { Elysia, t } from "elysia";
@@ -98,9 +99,9 @@ export const roleRequestService = {
 	},
 };
 
-/** Throws a 403 when the authenticated user is not a system admin. */
+/** Throws a 403 when the caller's role is not in `ROLE_REQUEST_ROLES`. */
 function requireSystemAdmin(user: User) {
-	if ((user as { role?: string }).role !== "system_admin") {
+	if (!hasRole((user as { role?: string }).role, ROLE_REQUEST_ROLES)) {
 		throw new RoleRequestError("Forbidden — system admin only", 403);
 	}
 }

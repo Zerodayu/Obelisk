@@ -1,9 +1,17 @@
+import { ARCHIVE_ROLES } from "@lib/role-access";
 import type { ApproverRole, UserRole } from "@prisma/generated/prisma/enums";
 import {
 	APPROVAL_CHAIN,
 	type ApprovalStepInput,
 	validateApprovalChain,
 } from "./state-machine";
+
+/**
+ * Canonical location for the archive allow-list is `lib/role-access.ts`
+ * (the role → feature vocabulary); re-exported here because the archive
+ * workflow action lives in this module.
+ */
+export { ARCHIVE_ROLES };
 
 /**
  * Per-form approval routing + workflow authorization.
@@ -33,13 +41,6 @@ const INSTITUTIONAL_ROLES = [
 	"aqau",
 	"vpaa",
 ] as const satisfies readonly UserRole[];
-
-/** Roles allowed to archive an approved submission. */
-export const ARCHIVE_ROLES: readonly string[] = [
-	"aqau",
-	"vpaa",
-	"system_admin",
-];
 
 export interface ApprovalRoute {
 	/** Roles allowed to prepare/submit this form (`UserRole` values). */
@@ -88,8 +89,8 @@ export const APPROVAL_ROUTES: Record<string, ApprovalRoute> = {
 
 	// --- DO / data capture -----------------------------------------------------
 	clo_raw_data: {
-		// "Faculty → Program Chair"
-		preparerRoles: ["faculty"],
+		// "Faculty → Program Chair" — chairs capture on behalf of their program.
+		preparerRoles: ["faculty", "program_chair"],
 		chain: ["program_chair"],
 	},
 	mid_cycle_attainment: {

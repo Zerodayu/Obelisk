@@ -129,7 +129,7 @@ describe("workflow authorization", () => {
 	});
 
 	it("requires owner + preparer role to submit", () => {
-		const route = approvalRouteFor("clo_raw_data"); // preparers: faculty
+		const route = approvalRouteFor("clo_raw_data"); // preparers: faculty, program_chair
 		const owner = { id: "u1", role: "faculty" };
 
 		expect(() =>
@@ -160,12 +160,19 @@ describe("workflow authorization", () => {
 		).not.toThrow();
 	});
 
-	it("restricts archiving to aqau/vpaa/system_admin", () => {
-		expect(ARCHIVE_ROLES).toEqual(["aqau", "vpaa", "system_admin"]);
-		expect(() => assertCanArchive("aqau")).not.toThrow();
+	it("restricts archiving to vpaa/system_admin", () => {
+		expect(ARCHIVE_ROLES).toEqual(["vpaa", "system_admin"]);
 		expect(() => assertCanArchive("vpaa")).not.toThrow();
 		expect(() => assertCanArchive("system_admin")).not.toThrow();
+		expect(() => assertCanArchive("aqau")).toThrow(ApprovalForbiddenError);
 		expect(() => assertCanArchive("faculty")).toThrow(ApprovalForbiddenError);
 		expect(() => assertCanArchive("dean")).toThrow(ApprovalForbiddenError);
+	});
+
+	it("lets faculty and program chairs prepare class records", () => {
+		expect(approvalRouteFor("clo_raw_data").preparerRoles).toEqual([
+			"faculty",
+			"program_chair",
+		]);
 	});
 });

@@ -181,14 +181,18 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(approved.approvalSteps[0].decision).toBe("approved");
 			expect(approved.approvalSteps[0].comment).toBe("looks good");
 
-			// --- archive: role-gated ------------------------------------------------
+			// --- archive: role-gated (vpaa/system_admin only) ---------------------
 			await expect(
 				submissionService.archive(draft.id, IDS.owner, "faculty"),
+			).rejects.toThrow(ApprovalForbiddenError);
+			// aqau approves forms but may no longer archive.
+			await expect(
+				submissionService.archive(draft.id, IDS.owner, "aqau"),
 			).rejects.toThrow(ApprovalForbiddenError);
 			const archived = await submissionService.archive(
 				draft.id,
 				IDS.owner,
-				"aqau",
+				"vpaa",
 			);
 			expect(archived.status).toBe("archived");
 		} finally {
