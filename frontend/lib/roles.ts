@@ -1,5 +1,12 @@
 /**
- * Central role definitions for the Obelisk frontend.
+ * Role helpers for the Obelisk frontend.
+ *
+ * The **role vocabulary** — role values, feature allow-lists, and per-form
+ * access — lives in `lib/role-access.ts` (the frontend mirror of the
+ * backend's `lib/role-access.ts` + `lib/forms/approval-routes.ts`; kept in
+ * sync by `backend/test/unit/role-access-sync.test.ts`). This module
+ * re-exports that vocabulary for existing importers and adds the label,
+ * scope, and `hasAccess` helpers on top.
  *
  * These mirror the backend's `UserRole` enum in `01-enums.prisma` and the
  * authorization matrix in `backend/SYSTEM-DESIGN.md` §3. The client uses this
@@ -7,72 +14,27 @@
  * the source of truth** for enforcement. We only hide/navigate client-side.
  */
 
-/**
- * Role values. Match `UserRole` exactly (backend enum).
- * `user` is the default post-signup role with no institutional scope.
- */
-export const USER_ROLES = [
-  "user",
-  "faculty",
-  "program_chair",
-  "dean",
-  "aqau",
-  "vpaa",
-  "system_admin",
-] as const;
+import { USER_ROLES, type UserRole } from "./role-access";
 
-export type UserRole = (typeof USER_ROLES)[number];
-
-export const ALL_ROLES: readonly UserRole[] = USER_ROLES;
-
-/** Convenience groups used to gate route groups / nav sections. */
-export const ADMIN_ROLES: readonly UserRole[] = [
-  "system_admin",
-  "vpaa",
-  "aqau",
-] as const;
-
-export const QA_ROLES: readonly UserRole[] = [
-  "aqau",
-  "vpaa",
-  "system_admin",
-] as const;
-
-export const ACADEMIC_ROLES: readonly UserRole[] = [
-  "faculty",
-  "program_chair",
-  "dean",
-] as const;
-
-export const ARCHIVE_ROLES: readonly UserRole[] = [
-  "aqau",
-  "vpaa",
-  "dean",
-  "system_admin",
-] as const;
-
-/**
- * Roles that may sit on a form-approval step (`ApproverRole`), plus the
- * `system_admin` override — gates the `/approvals` inbox. Note this is
- * narrower than `ARCHIVE_ROLES` (dean may open `/archives` but may not
- * archive a submission; the backend enforces `aqau`/`vpaa`/`system_admin`).
- */
-export const APPROVER_ROLES: readonly UserRole[] = [
-  "program_chair",
-  "dean",
-  "aqau",
-  "vpaa",
-  "system_admin",
-] as const;
-
-/**
- * Roles that may create/edit/delete PLO entities (`/plo-management`).
- * Faculty map the resulting PLOs to CLOs via the curriculum map afterwards.
- */
-export const PLO_MANAGEMENT_ROLES: readonly UserRole[] = ["dean"] as const;
-
-/** All-role accept list (used by anything any logged-in role may open). */
-export const ANY_AUTHENTICATED_ROLES: readonly UserRole[] = ALL_ROLES;
+export {
+  ACADEMIC_ROLES,
+  ADMIN_ROLES,
+  ALL_ROLES,
+  ANY_AUTHENTICATED_ROLES,
+  APPROVER_ROLES,
+  ARCHIVE_ROLES,
+  CLASS_RECORD_ROLES,
+  canAccess,
+  FEATURE_ACCESS,
+  type FeatureKey,
+  FORM_ACCESS,
+  featureRoles,
+  formRoles,
+  PLO_MANAGEMENT_ROLES,
+  QA_ROLES,
+  USER_ROLES,
+  type UserRole,
+} from "./role-access";
 
 export function isUserRole(value: unknown): value is UserRole {
   return (
@@ -103,7 +65,7 @@ export function roleLabel(role: UserRole | undefined): string {
  */
 export function hasAccess(
   role: UserRole | undefined,
-  allowed?: readonly UserRole[] | typeof ANY_AUTHENTICATED_ROLES,
+  allowed?: readonly UserRole[],
 ): boolean {
   if (role === undefined) return false;
   if (!allowed || allowed.length === 0) return true;
