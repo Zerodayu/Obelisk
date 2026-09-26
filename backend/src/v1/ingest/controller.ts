@@ -102,7 +102,7 @@ export const ingestPlugin = new Elysia({
 	.get(
 		"/attainments",
 		async (ctx) => {
-			// Assert outside `cached` so a cache hit skips nothing.
+			// NOTE: assert outside `cached` so a cache hit skips nothing.
 			assertCanCaptureClassRecords(callerRole(ctx.user));
 			return listAttainmentsCached(ctx);
 		},

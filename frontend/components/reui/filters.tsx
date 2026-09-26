@@ -46,7 +46,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-// i18n Configuration Interface
 export interface FilterI18nConfig {
   // UI Labels
   addFilter: string;
@@ -199,7 +198,6 @@ export const DEFAULT_I18N: FilterI18nConfig = {
   },
 };
 
-// Context for all Filter component props
 interface FilterContextValue {
   variant: "solid" | "default";
   size: "sm" | "default" | "lg";
@@ -224,13 +222,12 @@ const FilterContext = createContext<FilterContextValue>({
 
 const useFilterContext = () => useContext(FilterContext);
 
-// Map the filters' `size` scale to real Button/InputGroup heights. `default`
-// maps to md; sm/lg step down/up from it. Do not pass `default` straight to a
-// Button — tailwind-variants resolves it to no size variant (no padding).
+// NOTE: maps the filters' `size` scale onto real Button/InputGroup heights —
+// `default` means md, sm/lg step down/up. Never pass `default` straight to a
+// Button: tailwind-variants resolves it to no size variant at all (no padding).
 const mapButtonSize = (size: "sm" | "default" | "lg") =>
   size === "sm" ? "sm" : size === "lg" ? "lg" : "md";
 
-// Container variant for filters wrapper
 const filtersContainerVariants = cva("flex flex-wrap items-center", {
   variants: {
     variant: {
@@ -273,32 +270,26 @@ function FilterInput<T = unknown>({
     }
   }, [props.autoFocus]);
 
-  // Validation function to check if input matches pattern
   const validateInput = (value: string, pattern?: string): boolean => {
     if (!pattern || !value) return true;
     const regex = new RegExp(pattern);
     return regex.test(value);
   };
 
-  // Get validation message for field type
   const getValidationMessage = (): string => {
     return context.i18n.validation.invalid;
   };
 
-  // Handle blur event - validate when user leaves input
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
     const pattern = field?.pattern || props.pattern;
 
-    // Only validate if there's a value and (pattern or validation function)
     if (value && (pattern || field?.validation)) {
       let valid = true;
       let customMessage = "";
 
-      // If there's a custom validation function, use it
       if (field?.validation) {
         const result = field.validation(value);
-        // Handle both boolean and object return types
         if (typeof result === "boolean") {
           valid = result;
         } else {
@@ -306,7 +297,6 @@ function FilterInput<T = unknown>({
           customMessage = result.message || "";
         }
       } else if (pattern) {
-        // Use pattern validation
         valid = validateInput(value, pattern);
       }
 
@@ -315,18 +305,15 @@ function FilterInput<T = unknown>({
         valid ? "" : customMessage || getValidationMessage(),
       );
     } else {
-      // Reset validation state for empty values or no validation
       setIsValid(true);
       setValidationMessage("");
     }
 
-    // Call the original onBlur if provided
     onBlur?.(e);
   };
 
-  // Handle keydown event - hide validation error when user starts typing
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Hide validation error when user starts typing (any key except special keys)
+    // Typing dismisses the error; arrows, Tab, Escape and Enter don't count.
     if (
       !isValid &&
       ![
@@ -343,7 +330,6 @@ function FilterInput<T = unknown>({
       setValidationMessage("");
     }
 
-    // Call the original onKeyDown if provided
     onKeyDown?.(e);
   };
 
@@ -351,15 +337,12 @@ function FilterInput<T = unknown>({
     <InputGroup
       className={cn(
         "w-36",
-        // Height follows each style's own control ladder. `default` sets no
-        // height on purpose so the style's `.cn-input-group` applies (h-8 nova,
-        // h-9 maia/luma, h-7 mira, h-10 sera); sm/lg step down/up from it.
-        // Base covers nova/lyra/rhea/vega; only deviating styles are listed.
+        // `default` sets no height so each style's own `.cn-input-group` applies
+        // (nova/lyra/rhea/vega h-8, maia/luma h-9, mira h-7, sera h-10); sm/lg step off it.
         context.size == "sm" && "h-7! h-8!",
         context.size == "lg" && "h-9! h-10!",
-        // Sera's `.cn-input` is `px-0` (underline inputs sit flush); inside a
-        // segmented chip that collides with the neighbouring segment, so give
-        // the value input the same inline padding sera uses elsewhere.
+        // Sera's `.cn-input` is px-0 (flush underline), which would collide with
+        // the neighbouring chip segment — give the input sera's inline padding.
         "",
         className,
       )}
@@ -437,7 +420,6 @@ function FilterRemoveButton({
   );
 }
 
-// Generic types for flexible filter system
 export interface FilterOption<T = unknown> {
   value: T;
   label: string;
@@ -452,7 +434,6 @@ export interface FilterOperator {
   supportsMultiple?: boolean;
 }
 
-// Custom renderer props interface
 export interface CustomRendererProps<T = unknown> {
   field: FilterFieldConfig<T>;
   values: T[];
@@ -460,29 +441,25 @@ export interface CustomRendererProps<T = unknown> {
   operator: string;
 }
 
-// Props passed to a field's `renderOptionList` slot. Lets a consumer render the
-// options list however they like (e.g. windowing / virtualization with a
-// library of their choice) while staying bound to the primitive's selection and
+// Props passed to a field's `renderOptionList` slot: render the list however you
+// like (e.g. windowed) while staying bound to the primitive's selection and
 // keyboard behavior.
 export interface FilterOptionListRenderProps<T = unknown> {
   // Options to render: already resolved, query-filtered, and selected-first.
   options: FilterOption<T>[];
-  // Index into `options` of the keyboard-highlighted row (-1 if none). A
-  // virtualized implementation should scroll this row into view and keep it
-  // mounted so the combobox's aria-activedescendant stays valid.
+  // Keyboard-highlighted row index (-1 if none); a virtualized list must keep it
+  // mounted and scrolled into view so aria-activedescendant stays valid.
   highlightedIndex: number;
   // Renders one option row with the correct id, selection state, highlight, and
   // toggle handler wired to the primitive. Call it for each row you render.
   renderOption: (option: FilterOption<T>, index: number) => React.ReactNode;
 }
 
-// Grouped field configuration interface
 export interface FilterFieldGroup<T = unknown> {
   group?: string;
   fields: FilterFieldConfig<T>[];
 }
 
-// Union type for both flat and grouped field configurations
 export type FilterFieldsConfig<T = unknown> =
   | FilterFieldConfig<T>[]
   | FilterFieldGroup<T>[];
@@ -497,18 +474,15 @@ export interface FilterFieldConfig<T = unknown> {
   fields?: FilterFieldConfig<T>[];
   // Field-specific options
   options?: FilterOption<T>[];
-  // Async / large-list options loader. Receives the current search query and
-  // may return a Promise. Use it to prefetch a remote list once (ignore the
-  // query) or to run server-side search (filter by the query). When both
-  // `options` and `loadOptions` are provided, `options` seeds the initial view
-  // and the value->label cache while `loadOptions` supplies live results.
+  // Async options loader; gets the search query, may return a Promise — ignore
+  // it to prefetch once, use it to search server-side. When `options` is also
+  // set, that seeds the first view and value->label cache; this feeds live results.
   loadOptions?: (
     query: string,
   ) => FilterOption<T>[] | Promise<FilterOption<T>[]>;
-  // Bring-your-own rendering for the options list (e.g. virtualization with a
-  // windowing library of your choice). Return the full scrollable list, call
-  // `renderOption` for each row, and scroll `highlightedIndex` into view. When
-  // omitted, the options render as a plain scrollable list.
+  // Bring-your-own rendering for the options list (e.g. windowing). Return the
+  // full scrollable list, call `renderOption` per row, scroll `highlightedIndex`
+  // into view. Omitted → a plain scrollable list.
   renderOptionList?: (props: FilterOptionListRenderProps<T>) => React.ReactNode;
   operators?: FilterOperator[];
   customRenderer?: (props: CustomRendererProps<T>) => React.ReactNode;
@@ -545,14 +519,12 @@ export interface FilterFieldConfig<T = unknown> {
   onValueChange?: (values: T[]) => void;
 }
 
-// Helper functions to handle both flat and grouped field configurations
 const isFieldGroup = <T = unknown>(
   item: FilterFieldConfig<T> | FilterFieldGroup<T>,
 ): item is FilterFieldGroup<T> => {
   return "fields" in item && Array.isArray(item.fields);
 };
 
-// Helper function to check if a FilterFieldConfig is a group-level configuration
 const isGroupLevelField = <T = unknown>(
   field: FilterFieldConfig<T>,
 ): boolean => {
@@ -566,7 +538,6 @@ const flattenFields = <T = unknown>(
     if (isFieldGroup(item)) {
       return [...acc, ...item.fields];
     }
-    // Handle group-level fields (new structure)
     if (isGroupLevelField(item)) {
       return [...acc, ...item.fields!];
     }
@@ -580,7 +551,7 @@ const getFieldsMap = <T = unknown>(
   const flatFields = flattenFields(fields);
   return flatFields.reduce(
     (acc, field) => {
-      // Only add fields that have a key (skip group-level configurations)
+      // Only keyed fields are addressable by a filter; keyless ones are skipped.
       if (field.key) {
         acc[field.key] = field;
       }
@@ -590,10 +561,9 @@ const getFieldsMap = <T = unknown>(
   );
 };
 
-// Whether a field exposes any option source (a static list or an async loader).
-// IMPORTANT: never gate on `field.options?.length` once `loadOptions` exists —
-// a function's `.length` is its arity, not an option count, which silently
-// breaks the submenu gate for async fields.
+// NOTE: `fieldHasOptions` covers a static list OR an async `loadOptions`; never
+// gate on `field.options?.length` alone once loadOptions exists — a function's
+// `.length` is its arity, not an option count, silently breaking the submenu gate.
 const fieldHasOptions = <T = unknown>(field: FilterFieldConfig<T>): boolean =>
   (field.options?.length ?? 0) > 0 || typeof field.loadOptions === "function";
 
@@ -608,11 +578,9 @@ interface ResolvedFieldOptions<T = unknown> {
   resolveSelected: (values: T[]) => FilterOption<T>[];
 }
 
-// Value->option cache shared across every component instance rendering the
-// SAME field object (the Add Filter submenu and the active-filter chip both
-// receive the same config reference from the fields map). Keyed by the field
-// object so it is shared when fields are memoized and garbage-collected
-// otherwise. This keeps a value selected in the submenu labelled in the chip.
+// Value->option cache shared across every component rendering the SAME field
+// object (the submenu and chip receive the same config reference), keyed by the
+// field so memoized fields share one — keeps a submenu choice labelled in the chip.
 const fieldOptionCaches = new WeakMap<object, Map<unknown, FilterOption>>();
 
 const getFieldOptionCache = <T = unknown>(
@@ -626,10 +594,9 @@ const getFieldOptionCache = <T = unknown>(
   return cache as Map<T, FilterOption<T>>;
 };
 
-// Resolves a field's options for a popover/submenu. Static fields return their
-// list verbatim (unchanged legacy behavior). Async fields (`loadOptions`)
-// debounce the query, guard against out-of-order responses, and expose
-// loading/error state plus a value->label cache.
+// Resolves a field's options for a popover/submenu: static lists return
+// verbatim; async (`loadOptions`) fields debounce the query, guard out-of-order
+// responses, and expose loading/error state plus a value->label cache.
 function useFieldOptions<T = unknown>(
   field: FilterFieldConfig<T>,
   searchInput: string,
@@ -722,7 +689,6 @@ function useFieldOptions<T = unknown>(
   };
 }
 
-// Helper function to create operators from i18n config
 const createOperatorsFromI18n = (
   i18n: FilterI18nConfig,
 ): Record<string, FilterOperator[]> => ({
@@ -758,11 +724,9 @@ const createOperatorsFromI18n = (
   ],
 });
 
-// Default operators for different field types (using default i18n)
 export const DEFAULT_OPERATORS: Record<string, FilterOperator[]> =
   createOperatorsFromI18n(DEFAULT_I18N);
 
-// Helper function to get operators for a field
 const getOperatorsForField = <T = unknown>(
   field: FilterFieldConfig<T>,
   values: T[],
@@ -772,7 +736,6 @@ const getOperatorsForField = <T = unknown>(
 
   const operators = createOperatorsFromI18n(i18n);
 
-  // Determine field type for operator selection
   let fieldType = field.type || "select";
 
   // If it's a select field but has multiple values, treat as multiselect
@@ -780,7 +743,6 @@ const getOperatorsForField = <T = unknown>(
     fieldType = "multiselect";
   }
 
-  // If it's a multiselect field or has multiselect operators, use multiselect operators
   if (fieldType === "multiselect" || field.type === "multiselect") {
     return operators.multiselect;
   }
@@ -807,7 +769,6 @@ function FilterOperatorDropdown<T = unknown>({
     [field, values, context.i18n],
   );
 
-  // Find the operator label, with fallback to formatted operator name
   const operatorLabel =
     operators.find((op) => op.value === operator)?.label ||
     context.i18n.helpers.formatOperator(operator);
@@ -1307,10 +1268,9 @@ export const FiltersContent = <T = unknown>({
         return (
           <ButtonGroup
             key={filter.id}
-            // Sera is an underline style: its group text and input group carry
-            // only a bottom border. Normalise the boxed segments (the operator,
-            // value and remove buttons) to the same treatment so the whole chip
-            // reads as one underlined group instead of mixing boxes and rules.
+            // Sera is an underline style — its group text and input group carry
+            // only a bottom border, so the boxed segments (operator, value,
+            // remove) are normalised to it and the chip reads as one group.
             className=""
           >
             <ButtonGroupText>
@@ -2121,10 +2081,8 @@ export function Filters<T = unknown>({
           return (
             <ButtonGroup
               key={filter.id}
-              // Sera is an underline style: its group text and input group carry
-              // only a bottom border. Normalise the boxed segments (operator,
-              // value, remove) to the same treatment so the whole chip reads as
-              // one underlined group instead of mixing boxes and rules.
+              // Same Sera underline treatment as above: normalise the boxed
+              // segments so the whole chip reads as one underlined group.
               className=""
             >
               <ButtonGroupText className="bg-background dark:bg-input/30">

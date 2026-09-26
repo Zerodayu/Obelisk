@@ -39,7 +39,7 @@ export interface IngestResult {
 
 // --- Analytics summary (/analytics/summary) --------------------------
 // Contract mirrors python-server app/schemas/institutional_summary.py +
-// app/analytics/institutional_summary.py (pure rollups, synchronous, no auth).
+// app/analytics/institutional_summary.py — pure sync rollups, no auth.
 
 export type SummaryPeriodType = "semester" | "year" | "custom";
 

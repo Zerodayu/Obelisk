@@ -168,8 +168,8 @@ function RootTheme({
     colorMode: colorModeProp,
   };
 
-  // Start with defaults for SSR; on the client, initialize synchronously from
-  // localStorage so the first paint matches the persisted theme (no flash).
+  // NOTE: initialize synchronously from localStorage on the client so the first
+  // paint matches the persisted theme (no flash); SSR starts from defaults.
   const [settings, setSettings] = useState<StoredSettings>(() => {
     const stored = loadSettings(storageKey, defaults);
     // No material-shadcn settings yet — migrate the legacy `theme` key.
@@ -209,12 +209,10 @@ function RootTheme({
     [resolvedSeed, settings.variant, contrast],
   );
 
-  // Apply to <html>
   useEffect(() => {
     applyTheme(document.documentElement, theme, resolvedDark);
   }, [theme, resolvedDark]);
 
-  // System preference listener
   useEffect(() => {
     setResolvedDark(resolveColorMode(settings.colorMode));
 
@@ -226,7 +224,6 @@ function RootTheme({
     }
   }, [settings.colorMode]);
 
-  // Persist
   useEffect(() => {
     saveSettings(storageKey, settings);
   }, [settings, storageKey]);

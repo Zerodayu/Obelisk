@@ -1256,7 +1256,6 @@ export class CloToPloMapService {
 	 * Create a new CLO-PLO mapping.
 	 */
 	async create(input: CloToPloMapInput): Promise<CloToPloMapDto> {
-		// Verify CLO exists
 		const clo = await prisma.clo.findUnique({
 			where: { id: input.cloId },
 			select: { id: true, code: true, description: true, courseId: true },
@@ -1267,7 +1266,6 @@ export class CloToPloMapService {
 			);
 		}
 
-		// Verify PLO exists
 		const plo = await prisma.plo.findUnique({
 			where: { id: input.ploId },
 			select: { id: true, code: true, description: true },
@@ -1278,7 +1276,6 @@ export class CloToPloMapService {
 			);
 		}
 
-		// Check for duplicate
 		const existing = await prisma.cloToPloMap.findFirst({
 			where: { cloId: input.cloId, ploId: input.ploId },
 		});

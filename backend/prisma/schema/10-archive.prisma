@@ -1,19 +1,6 @@
-// Graduation-Cluster Archival (compiled, read-only)
-//
-// A graduation cluster groups every student who finishes their relationship
-// with a program in a given term (graduates, plus transferees-out / withdrawn
-// who must be preserved but never join a graduation cluster).
-//
-// Membership is keyed by a student's ACTUAL graduation/departure term
-// (Student.graduationTermId) -- never by nominal yearLevel. This keeps
-// transferees (data spans programs/terms) and irregular students (graduate off
-// the standard Y1-Y4 path) safe.
-//
-// When a cluster is confirmed and compiled, each student's granular data is
-// consolidated into a write-once GraduationClusterEntry (the read-only
-// snapshot), its full detail is exported to an offline detail artifact, and the
-// granular hot rows are purged to reclaim space. Entries are permanent
-// (accreditation evidence) and intentionally have no updatedAt.
+// Graduation-Cluster Archival (compiled, read-only) — a cluster groups every student finishing their relationship with a program in a given term (graduates, transferees-out, withdrawn).
+// Membership keys on the student's ACTUAL graduation/departure term (Student.graduationTermId), never nominal yearLevel — keeps transferees and off-standard-path students safe.
+// Compiling consolidates granular rows into write-once GraduationClusterEntry (permanent accreditation evidence, no updatedAt), exports a detail artifact, then purges the hot rows.
 
 model GraduationCluster {
   id                      String                  @id

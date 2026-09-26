@@ -13,9 +13,8 @@ import {
 
 export type TooltipVariant = "default" | "frosted-glass";
 export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
-// Tooltip anchoring: "variable" follows both axes (ECharts default, current
-// behavior); "fixed" tracks the pointer's X (centered) but stays pinned near
-// the top (fixed Y).
+// "variable" follows both axes (ECharts default); "fixed" tracks the pointer's X
+// (centered) but stays pinned near the top.
 export type TooltipPosition = "fixed" | "variable";
 
 export const roundnessClass: Record<TooltipRoundness, string> = {
@@ -30,16 +29,14 @@ export const tooltipVariantClass: Record<TooltipVariant, string> = {
   "frosted-glass": "bg-background/50 backdrop-blur-md",
 };
 
-// The standard series indicator swatch — a rounded square filled with the
-// series' solid var or multi-stop gradient (indicatorBackground). A chart drops
-// this into a tooltipRow's `indicatorHtml`.
+// The standard series indicator swatch — a rounded square filled with the series'
+// solid var or multi-stop gradient; a chart drops it into a tooltipRow.
 export function tooltipIndicatorHtml(key: string, colorsCount: number): string {
   return `<div class="h-2.5 w-2.5 shrink-0 rounded-[2px]" style="background:${indicatorBackground(key, colorsCount)}"></div>`;
 }
 
-// One tooltip row: indicator swatch + label/value pair. `dimmed` is a class
-// fragment (e.g. " opacity-30") appended to the row so the selection/hover dim
-// stays byte-identical to the inlined markup.
+// One tooltip row: indicator swatch + label/value pair. `dimmed` is a class fragment
+// appended to the row so the selection/hover dim stays byte-identical to inlined markup.
 export function tooltipRow({
   indicatorHtml,
   labelText,
@@ -79,10 +76,9 @@ export function tooltipShell({
     </div>`;
 }
 
-// Maps the TooltipPosition prop onto the ECharts tooltip `position` field.
-// "variable" → undefined (default follow-both-axes, current behavior); "fixed" →
-// a callback that centers the tooltip on the pointer's X but pins it near the
-// top (fixed Y).
+// Maps TooltipPosition onto the ECharts tooltip `position` field: "variable" →
+// undefined (default follow-both-axes); "fixed" → a callback centering the tooltip
+// on the pointer's X while pinning it near the top.
 export function resolveTooltipPosition(
   position: TooltipPosition,
 ): TooltipComponentOption["position"] {
@@ -93,10 +89,8 @@ export function resolveTooltipPosition(
   ];
 }
 
-// The chart-agnostic tooltip option fields (show, trigger, confine,
-// background/border/padding/extraCssText, axisPointer, position). The chart
-// supplies only `formatter` and spreads this in. `axisPointerColor` is the
-// pre-resolved cursor-line color, so this helper needs no live token read.
+// Chart-agnostic tooltip option fields; the chart supplies only `formatter` and
+// spreads this in. `axisPointerColor` is pre-resolved, so no live token read here.
 export function tooltipBaseOption(params: {
   present: boolean;
   cursor: boolean;

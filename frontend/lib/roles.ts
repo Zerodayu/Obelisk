@@ -93,9 +93,7 @@ export function scopeForRole(role: UserRole | undefined): UserScope {
   switch (role) {
     case "program_chair":
     case "faculty":
-      // faculty is actually scoped to their own class sections/courses, but the
-      // program id is the useful coarse filter for nav/dashboards; the backend
-      // narrows further to the current user's class sections.
+      // NOTE: faculty are actually scoped to their own class sections, but the program id is the useful coarse filter for nav/dashboards — the backend narrows further to the current user's sections.
       return { programId: undefined };
     case "dean":
       return { departmentId: undefined };

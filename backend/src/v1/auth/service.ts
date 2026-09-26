@@ -1,4 +1,3 @@
-// If your Prisma file is located elsewhere, you can change the path
 import { prisma } from "@lib/prisma";
 import { env } from "@utils/env";
 import { betterAuth } from "better-auth";
@@ -63,10 +62,9 @@ export const auth = betterAuth({
 
 	emailAndPassword: {
 		enabled: true,
-		// New accounts are created through the org-restricted Google provider
-		// only; email/password remains available for existing users to sign in.
-		// Allow email/password sign-ups (was previously disabled causing 404s
-		// on HTTP /sign-up/email endpoints after .env.local restore).
+		// NOTE: `disableSignUp: false` — disabling email/password sign-ups made
+		// HTTP /sign-up/email 404 after the .env.local restore. Org-restricted
+		// Google covers new accounts; email/password serves existing users.
 		disableSignUp: false,
 		password: {
 			hash: (pass) => Bun.password.hash(pass),
@@ -74,10 +72,8 @@ export const auth = betterAuth({
 		},
 	},
 
-	// Only enable the Google social provider when real credentials are set.
-	// During local development the .env may contain placeholder values which
-	// cause the client-side Google flow to immediately fail; omit the
-	// provider in that case so users fall back to email/password signin.
+	// NOTE: local .env placeholder Google creds make the client-side Google flow
+	// fail immediately; users fall back to email/password signin.
 	socialProviders: {
 		google: {
 			prompt: "select_account",

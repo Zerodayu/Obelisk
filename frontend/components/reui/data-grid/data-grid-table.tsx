@@ -997,12 +997,9 @@ function DataGridTableHeadRowCellResize<TData extends object>({
                   // cell instead of straddling the boundary, where the next
                   // sticky cell would paint over it.
                   "end-0 w-5 justify-end",
-                  // With the pin affordance on, the pinned edge already draws
-                  // its own separator and a resize line would double it. But
-                  // pinning is also usable purely as an ordering lock, with no
-                  // affordance and no separator -- and there this line is the
-                  // only thing marking the edge, so hiding it left a resizable
-                  // column showing a resize cursor and no indicator at all.
+                  // NOTE: with the pin affordance on, the pinned edge draws its own
+                  // separator (a line would double it); without it — pinning as a plain
+                  // ordering lock — hiding it left a resize cursor and no indicator.
                   props.tableLayout?.columnsPinnable
                     ? "before:hidden"
                     : "before:absolute before:inset-y-0 before:end-0 before:w-px before:bg-border",
@@ -1047,10 +1044,9 @@ function DataGridTableResizeIndicator({
     resizingColumnId
   );
 
-  // Positioning happens imperatively after each drag-frame render: layout
-  // reads (viewport rect, thead height) and ref access belong outside render,
-  // and writing styles directly avoids holding the viewport node in React
-  // state, which would cost every grid a second render pass at mount.
+  // Positioned imperatively after each drag-frame render: layout reads and ref
+  // access belong outside render, and writing styles directly avoids holding the
+  // viewport node in React state (a second render pass at mount).
   useLayoutEffect(() => {
     const indicator = indicatorRef.current;
     const indicatorHead = indicatorHeadRef.current;

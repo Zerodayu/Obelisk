@@ -701,10 +701,9 @@ function DataGridTableVirtual<TData extends object>({
   const lastScrollRequestRef = useRef<DataGridTableVirtualScrollRequest | null>(
     null,
   );
-  // Latch onFetchMore per row count: virtualItems gets a new identity every
-  // scroll frame, so without it the effect fires duplicate page requests
-  // before the consumer flips isFetchingMore, and loops at end-of-data when
-  // hasMore is never set.
+  // NOTE: latch onFetchMore per row count — virtualItems gets a new identity
+  // every scroll frame, so without the latch the effect fires duplicate page
+  // requests before isFetchingMore flips, and loops when hasMore stays unset.
   const fetchMoreFiredAtCountRef = useRef<number | null>(null);
 
   // Resolve after every commit so a stable getter can expose a replaced ref;

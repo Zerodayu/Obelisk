@@ -123,8 +123,8 @@ async function main() {
 
 	// --- Seeding New Data ---
 
-	// 1. Create the development user through Better Auth so password hashing
-	//    and account rows are handled by the library itself.
+	// Create the dev user through Better Auth so password hashing and account
+	// rows are handled by the library itself.
 	const devEmail = "dev@jmcfi.edu.ph";
 	const devPassword = "password123";
 	const devName = "Development User";
@@ -155,9 +155,8 @@ async function main() {
 	console.log(`Created development user: ${devEmail} (ID: ${devUser.id})`);
 	console.log(`Working dev credentials: ${devEmail} / ${devPassword}`);
 
-	// One demo user per approval-workflow role, so the form approval chain
-	// (lib/forms/approval-routes.ts) can be exercised end-to-end. All share
-	// the same demo password.
+	// One demo user per approval-workflow role so the approval chain
+	// (lib/forms/approval-routes.ts) can be exercised end-to-end; same password.
 	const ROLE_ACCOUNTS = [
 		{ role: "faculty", name: "Faculty User" },
 		{ role: "program_chair", name: "Program Chair User" },
@@ -183,7 +182,6 @@ async function main() {
 	}
 	console.log(`Role demo credentials: <role>@jmcfi.edu.ph / ${devPassword}`);
 
-	// Create other academic data
 	const department = await prisma.department.create({
 		data: {
 			id: crypto.randomUUID(),

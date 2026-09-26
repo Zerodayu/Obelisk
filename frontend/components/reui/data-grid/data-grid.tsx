@@ -95,10 +95,9 @@ export const dataGridFeatures = tableFeatures({
   // columnResizingFeature requires columnSizingFeature, declared above.
   columnResizingFeature,
   columnFilteringFeature,
-  // Powers DataGridColumnFilter's column.getFacetedUniqueValues(). On v8 an
-  // unregistered facet silently returned an empty map; on v9 the method would
-  // not exist at all, so the faceted row models below are required, not
-  // optional.
+  // NOTE: powers getFacetedUniqueValues() in DataGridColumnFilter. On v8 an
+  // unregistered facet silently returned an empty map; on v9 the method does
+  // not exist, so the faceted row models below are required, not optional.
   columnFacetingFeature,
   // globalFilteringFeature requires columnFilteringFeature, declared above.
   globalFilteringFeature,
@@ -113,10 +112,9 @@ export const dataGridFeatures = tableFeatures({
   expandedRowModel: createExpandedRowModel(),
   facetedRowModel: createFacetedRowModel(),
   facetedUniqueValues: createFacetedUniqueValues(),
-  // Every built-in v9 ships. A string `sortFn` resolves against this map
-  // alone, and `sortFn: "auto"` infers a name ("alphanumeric", "text" or
-  // "datetime") from the first row's value - so a partial map makes auto
-  // sorting warn and silently fall back on ordinary string columns.
+  // NOTE: v9 resolves a string `sortFn` against this map alone, and `"auto"`
+  // infers a name ("alphanumeric", "text" or "datetime") from the first row's
+  // value; a partial map warns and silently falls back to string sorting.
   sortFns: {
     alphanumeric: sortFn_alphanumeric,
     alphanumericCaseSensitive: sortFn_alphanumericCaseSensitive,
@@ -245,26 +243,17 @@ function createDataGridAutoSizeController<TData extends object>(
         return false;
       }
 
-      // A width this coordinator did not write belongs to someone else -
-      // almost always the user, who just dragged the column's resize handle.
-      // Filling over it is what made a `meta.autoSize` column look
-      // un-resizable: the drag committed, the next viewport measurement
-      // stamped the fill back on top, and the column snapped to its old width.
-      //
-      // Deliberately keyed on observed state rather than on `applied`, which
-      // is per-coordinator memory: anything that rebuilds the coordinator
-      // (a remount, a new table store) forgets what it did, and the guard has
-      // to survive that. An explicit reset clears the entry and re-arms the
-      // fill, which is what makes double-click-to-reset still work.
+      // NOTE: a width this coordinator did not write is the user's drag, and
+      // overwriting it made the column look un-resizable. Keyed on observed
+      // state, not `applied` (lost on rebuild); an explicit reset clears it.
       const currentSize = columnSizing[autoSizeColumn.id];
       if (currentSize !== undefined && currentSize !== applied?.grown) {
         return false;
       }
 
-      // Candidate switched (e.g. the grown column was hidden and another
-      // meta.autoSize column took over): revert the previous growth if the
-      // user hasn't manually resized that column since, so visibility
-      // toggles cannot ratchet the table wider than its container forever.
+      // Candidate switched (grown column hidden, another autoSize column took
+      // over): revert the previous growth unless the user resized it since, so
+      // visibility toggles cannot ratchet the table wider than its container.
       const revert =
         applied && columnSizing[applied.columnId] === applied.grown
           ? applied
@@ -372,26 +361,21 @@ function DataGridProvider<TData extends object>({
   table: DataGridTableInstance<TData>;
   children?: ReactNode;
 }) {
-  // Latest-props ref: context reads always resolve fresh props through the
-  // getter below without the memoized context value depending on unstable
-  // ReactNode/function prop identities (inline emptyMessage/onRowClick would
-  // otherwise publish a new context value on every consumer render - at
-  // mousemove rate during a resize drag, piercing the body-rows memo).
+  // Latest-props ref: reads resolve fresh props through the getter without
+  // the memoized value depending on unstable ReactNode/function identities -
+  // inline emptyMessage/onRowClick would republish context every render.
   const propsRef = useRef(props);
   propsRef.current = props;
 
-  // Same treatment for the table itself, which v9 - unlike v8 - re-creates on
-  // every state change. Depending on it directly would republish the context
-  // on each resize tick, which is exactly what the memo below exists to
-  // prevent; the getter still hands every consumer the current instance.
+  // Same treatment for the table: v9 - unlike v8 - re-creates it on every
+  // state change, so depending on it directly would republish the context on
+  // each resize tick; the getter still hands consumers the current instance.
   const tableRef = useRef(table);
   tableRef.current = table;
 
-  // Re-assert an explicit tableLayout resize mode so consumer-level useTable
-  // options cannot flip it back between drags. v9 makes `table.options`
-  // readonly, so this goes through setOptions in an effect rather than a
-  // render-phase mutation. Without an explicit mode, the consumer's own
-  // tanstack columnResizeMode (default "onEnd") is honored.
+  // Re-assert the explicit tableLayout resize mode so consumer useTable
+  // options cannot flip it between drags. v9 makes `table.options` readonly,
+  // so the re-assertion goes through setOptions in an effect, not render.
   const resizeMode =
     props.tableLayout?.columnsResizable && props.tableLayout.columnsResizeMode
       ? props.tableLayout.columnsResizeMode
@@ -403,11 +387,9 @@ function DataGridProvider<TData extends object>({
     table.setOptions((old) => ({ ...old, columnResizeMode: resizeMode }));
   }, [table, resizeMode]);
 
-  // One autoSize coordinator per table instance so split header/body viewports
-  // cannot apply the growth twice. Keyed on `table.store`, which v9 keeps
-  // stable for the life of the table, rather than on `table` itself: the
-  // wrapper is re-created on every state change, and re-creating the
-  // controller with it would reset its applied-once bookkeeping mid-drag.
+  // One autoSize coordinator per table instance, or split header/body
+  // viewports would apply the growth twice. Keyed on `table.store` (stable
+  // for the table's life), not `table`: its re-creation resets the guard.
   const autoSize = useMemo(
     () => createDataGridAutoSizeController(() => tableRef.current),
     [table.store],
@@ -415,12 +397,9 @@ function DataGridProvider<TData extends object>({
 
   const tableState = table.state;
 
-  // Memoize context value so consumers don't re-render during column resize.
-  // Column sizing state is intentionally excluded from deps -- CSS variables
-  // on the <table> element handle width updates without React re-renders.
-  // ReactNode/function props (messages, onRowClick) are also excluded: they
-  // are served fresh through the props getter, so unstable inline identities
-  // cannot invalidate the context value.
+  // Memoized so consumers don't re-render during column resize: column sizing
+  // is excluded (CSS variables on <table> handle widths, no re-render) and
+  // unstable ReactNode/function props are served fresh through the getter.
   const value = useMemo(
     () => ({
       get props() {
@@ -458,10 +437,9 @@ function DataGridProvider<TData extends object>({
   );
 
   return (
-    // One React context serves every TData, but v9 declares both TFeatures and
-    // TData invariant, so a `DataGridContextProps<any>` context cannot accept a
-    // `DataGridContextProps<TData>` value structurally. The erasure happens
-    // here and is undone by the TData generic on each consumer component.
+    // One context serves every TData, but v9 declares TFeatures and TData
+    // invariant, so an `any` context cannot structurally accept a `TData`
+    // value; the erasure here is undone by each consumer's TData generic.
     <DataGridContext.Provider
       value={value as unknown as DataGridContextProps<TData>}
     >
@@ -526,15 +504,13 @@ function DataGrid<TFeatures extends TableFeatures, TData extends object>({
     },
   };
 
-  // Ensure table is provided
   if (!table) {
     throw new Error('DataGrid requires a "table" prop');
   }
 
-  // The single widening point. Consumers own the TanStack core and may hand
-  // over any feature bundle; internals need a concrete one to resolve the
-  // feature-gated APIs they call, and v9's invariant TFeatures rules out
-  // expressing that with a generic constraint.
+  // The single widening point: consumers own the TanStack core and may hand
+  // over any feature bundle; internals need a concrete one for feature-gated
+  // APIs, and v9's invariant TFeatures rules out a generic constraint.
   const internalTable = table as unknown as DataGridTableInstance<TData>;
   const internalProps = mergedProps as unknown as DataGridLayoutProps<TData>;
 

@@ -86,8 +86,8 @@ const STUDENT_NAMES = [
 ];
 
 // Composite score per cohort-term, kept consistent with the `CohortTrendDatum`
-// series the chart above renders. Individual students vary around the cohort
-// mean so the MET/NOT MET badges (≥70% floor, server-derived in prod) spread.
+// series the chart above renders — students vary around the mean so the MET/NOT
+// MET badges (≥70% floor, server-derived in prod) spread.
 const COHORT_MEANS: Record<YearKey, Record<string, number>> = {
   Y1: { "2023-1S": 74.0, "2023-2S": 76.5, "2024-1S": 78.2, "2024-2S": 80.1 },
   Y2: { "2023-1S": 75.8, "2023-2S": 78.0, "2024-1S": 79.4, "2024-2S": 81.5 },

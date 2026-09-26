@@ -113,9 +113,9 @@ export const authPlugin = new Elysia({ name: "auth" })
 				request: { headers },
 				set,
 			}): Promise<{ user: User; session: Session } | undefined> {
-				// Bypass the session cookie cache: role gating must reflect the
-				// DB immediately (e.g. right after a role request is filed), not
-				// whatever the up-to-5-min `session_data` cookie cached at login.
+				// NOTE: role gating must read the DB, not the up-to-5-min
+				// `session_data` cookie cached at login — a role request
+				// filed moments ago has to apply immediately.
 				const session = await auth.api.getSession({
 					headers,
 					query: { disableCookieCache: true },

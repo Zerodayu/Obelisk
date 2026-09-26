@@ -86,7 +86,6 @@ export function PloManagementPanel() {
   const [editing, setEditing] = useState<PloRecord | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  // Form state
   const [code, setCode] = useState("");
   const [description, setDescription] = useState("");
   const [target, setTarget] = useState("70");
@@ -164,7 +163,6 @@ export function PloManagementPanel() {
         setDialogOpen(false);
         fetchRecords(programId);
       } else if (isDevMode) {
-        // Dev mode: simulate update locally
         setRecords((prev) =>
           prev.map((record) =>
             record.id === editing.id
@@ -198,7 +196,6 @@ export function PloManagementPanel() {
         setDialogOpen(false);
         fetchRecords(programId);
       } else if (isDevMode) {
-        // Dev mode: simulate create locally
         setRecords((prev) => [
           ...prev,
           {
@@ -228,7 +225,6 @@ export function PloManagementPanel() {
       setDeleteId(null);
       fetchRecords(programId);
     } else if (isDevMode) {
-      // Dev mode: simulate delete locally
       setRecords((prev) => prev.filter((record) => record.id !== id));
       toast.create({ title: "PLO deleted (dev)", type: "success" });
       setDeleteId(null);

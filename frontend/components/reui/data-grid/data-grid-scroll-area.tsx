@@ -206,11 +206,9 @@ function DataGridScrollArea({
 
     if (!areMetricsEqual(nextMetrics, metricsRef.current)) {
       metricsRef.current = nextMetrics;
-      // Scoped to the overlay, never to the container. These four properties
-      // inherit, and thumbTop changes on essentially every scroll frame, so
-      // writing them on the element that wraps the whole grid invalidates
-      // computed style for every row and cell each frame. The overlay subtree
-      // is their only reader.
+      // Scoped to the overlay, never the container: these four inherit and
+      // thumbTop changes on essentially every scroll frame, so writing them on
+      // the grid wrapper would invalidate style for every row and cell per frame.
       if (overlayRef.current) applyMetrics(overlayRef.current, nextMetrics);
     }
 

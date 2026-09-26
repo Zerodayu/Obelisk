@@ -25,13 +25,9 @@ const frameVariants = cva(
     "(1)] (1)] (1.25)] (1.5)] (1.5)] (0.5)] (1)] (1)]",
     // Default panel token values — overridden per-variant below
     "[--frame-panel-bg:var(--color-card)] [--frame-panel-border-color:var(--color-border)] [--frame-border-color:var(--color-border)]",
-    // Concentric inner radius: the panel corner nests smoothly inside the frame
-    // corner instead of matching it. The panel sits inset from the frame's outer
-    // edge by the frame's 1px border + --frame-px padding, so its radius is
-    // reduced by that same gap (radius − gap keeps the two arcs parallel). This
-    // base value assumes the bordered default/inverse frame; `ghost` drops the
-    // 1px border term and `dense` pins it back to the frame radius (its panels
-    // are pulled flush to the edge).
+    // Concentric radius: the panel corner nests inside the frame corner, inset
+    // by 1px border + --frame-px padding, so radius − gap keeps the arcs
+    // parallel. Base value assumes the bordered default/inverse frame.
     "[--frame-panel-radius:calc(var(--frame-radius)_-_var(--frame-px)_-_1px)]",
   ],
   {
@@ -44,14 +40,9 @@ const frameVariants = cva(
         ghost:
           "[--frame-panel-radius:calc(var(--frame-radius)_-_var(--frame-px))]",
       },
-      // Header/footer vertical rhythm is tighter than the panel body's, and
-      // the gap widens as the frame grows: the bars read as chrome rather than
-      // as another content block. py ladder is 0.5 / 1.5 / 2 / 2.5 against a
-      // body py of 2 / 3.5 / 4 / 5. These vars are style-agnostic - no
-      // style-*.css overrides them - so this single ladder drives all shadcn
-      // styles. `px` is deliberately left level with the body so header,
-      // content and footer stay left-aligned. `xs` holds at 0.5 (2px): it is
-      // the practical floor, since anything lower stops reading as padding.
+      // Header/footer py is tighter than the body's and widens as the frame
+      // grows so bars read as chrome: 0.5/1.5/2/2.5 vs body 2/3.5/4/5. `px`
+      // stays level for left alignment; `xs` 0.5 (2px) is the padding floor.
       spacing: {
         xs: "[--frame-panel-px-base:--spacing(2)] [--frame-panel-py-base:--spacing(2)] [--frame-panel-header-px-base:--spacing(2)] [--frame-panel-header-py-base:--spacing(0.5)] [--frame-panel-footer-px-base:--spacing(2)] [--frame-panel-footer-py-base:--spacing(0.5)]",
         sm: "[--frame-panel-px-base:--spacing(3)] [--frame-panel-py-base:--spacing(3.5)] [--frame-panel-header-px-base:--spacing(3)] [--frame-panel-header-py-base:--spacing(1.5)] [--frame-panel-footer-px-base:--spacing(3)] [--frame-panel-footer-py-base:--spacing(1.5)]",

@@ -10,16 +10,15 @@ import { prisma } from "@lib/prisma";
 import type { Prisma } from "@prisma/generated/prisma/client";
 
 // --- In-memory Cache for Idempotency ---
-// This ensures that even if the client polls a completed job multiple times,
-// the persistence logic only runs once. The result is cached and returned on
-// subsequent requests.
+// NOTE: clients poll completed jobs repeatedly — the cache runs the persistence
+// logic once and replays the stored result on every later poll.
 const jobCompletionCache = new Map<
 	string,
 	| { status: "completed"; persistence: PersistenceSummary; etl: unknown }
 	| { status: "failed"; error: unknown }
 >();
 
-// --- Interfaces (assuming these might be moved to a model file later) ---
+// --- Interfaces ---
 
 export interface AttainmentRecord {
 	student_name: string;
@@ -1066,11 +1065,9 @@ export class IngestService {
 		classSectionId: string,
 		triggeredByUserId?: string,
 	) {
-		// 1. Check if the job result is already in our cache.
 		const cached = jobCompletionCache.get(jobId);
 		if (cached) return cached;
 
-		// 2. If not cached, get the current job status from python-server.
 		const job = await ingestClient.getJob(jobId);
 
 		if (job.status === "running" || job.status === "queued") {

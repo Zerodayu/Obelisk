@@ -50,8 +50,8 @@ export function scopeWhere(
 	if (scope === "mine") return { submittedByUserId: caller.id };
 	if (scope === "pending") {
 		if (caller.role === "system_admin") return { status: "submitted" };
-		// Non-approver roles have no pending inbox — match nothing rather than
-		// feeding an invalid enum value to Prisma.
+		// Non-approvers have no pending inbox — match nothing rather than feed
+		// Prisma an invalid enum value.
 		if (
 			!(
 				["program_chair", "dean", "aqau", "vpaa"] as readonly string[]
@@ -170,8 +170,8 @@ export class SubmissionService {
 		if (!existing) throw new SubmissionNotFoundError();
 		assertTransition(existing.status, "submitted");
 
-		// The approval chain is server-derived from the form's registered
-		// route (lib/forms/approval-routes.ts) — clients cannot pick it.
+		// Chain is server-derived from the form's registered route
+		// (lib/forms/approval-routes.ts) — clients cannot pick it.
 		const route = approvalRouteFor(existing.formType.code);
 		assertCanSubmit({ id: userId, role: callerRole }, existing, route);
 		const steps = chainSteps(route.chain);
@@ -218,7 +218,7 @@ export class SubmissionService {
 	): Promise<FormSubmissionWithSteps> {
 		const existing = await this.findById(id);
 		if (!existing) throw new SubmissionNotFoundError();
-		// RBAC first: the caller must hold the step's role (admin overrides).
+		// NOTE: RBAC first — the caller must hold the step's role (admin overrides).
 		assertCanDecide(callerRole, approverRole);
 		assertTransition(
 			existing.status,

@@ -172,8 +172,7 @@ async function upload<T>(
       credentials: credentials ? "include" : "omit",
       signal,
       cache: "no-store",
-      // Note: Do not set 'Content-Type' here. The browser will correctly set it
-      // to 'multipart/form-data' with the proper boundary.
+      // NOTE: don't set 'Content-Type' here — the browser sets multipart/form-data with the proper boundary.
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

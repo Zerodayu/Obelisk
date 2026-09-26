@@ -272,9 +272,8 @@ export class CloSummaryService {
 }
 
 // --- PloSummaryService -----------------------------------------------------
-// F15 `plo_attainment_summary`: feeds the program's section snapshots to the
-// python-server `/analytics/summary` (Formulas 7A/7C) and persists the PLO
-// roll-ups into `PloAttainment` under a fresh `ComputationRun`.
+// F15 `plo_attainment_summary`: feeds section snapshots to python-server
+// `/analytics/summary` (Formulas 7A/7C); persists `PloAttainment` per fresh `ComputationRun`.
 
 export type AnalyticsSummaryFetcher = (
 	payload: AnalyticsSubmissionsPayload,
@@ -575,8 +574,7 @@ export class PloSummaryService {
 
 // --- CohortTrackingService -------------------------------------------------
 // F16 `cohort_tracking` (Permanent retention + strict audit): snapshots the
-// longitudinal per-year-level CLO grid into the submission's `formData` at
-// generation and audits every write.
+// longitudinal per-year-level CLO grid into `formData` at generation; audits every write.
 
 export class CohortTrackingService {
 	async ensureFormType(): Promise<string> {

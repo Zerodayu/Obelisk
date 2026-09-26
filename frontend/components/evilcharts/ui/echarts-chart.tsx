@@ -58,12 +58,9 @@ export function distributeColors(colors: string[], maxCount: number): string[] {
   return result;
 }
 
-// Series keys become CSS custom-property names (`--color-{key}-{n}`). A config
-// keyed by a human label — e.g. "Curriculum Design" — would otherwise produce an
-// invalid declaration the browser silently drops (whitespace, `&`, …), leaving
-// that series with no injected color. Collapse any run of non-identifier
-// characters to a single dash; every site that emits OR reads the var must use
-// the same transform.
+// NOTE: series keys become CSS custom-property names (`--color-{key}-{n}`) — a key
+// with whitespace/`&` would emit a declaration the browser silently drops, leaving
+// the series colorless. Collapse non-identifier runs to one dash; all sites must match.
 export function cssVarKey(key: string): string {
   return key.replace(/[^a-zA-Z0-9_-]+/g, "-");
 }
@@ -116,12 +113,9 @@ export function normalizeColor(value: string): string {
   return `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
 }
 
-// Resolves a color that may reference a CSS custom property — e.g. a theme token
-// from globals.css (`var(--card)`) or a Frame variable (`var(--frame-panel-bg)`)
-// — into a concrete normalized rgba string the canvas can paint. The canvas
-// itself cannot resolve `var()`, so the value is applied to a probe span inside
-// the container and read back through the cascade (handles chained vars and
-// `.dark` overrides). Plain CSS colors pass straight through normalizeColor.
+// NOTE: resolves `var(--…)` theme/Frame colors that the canvas can't paint — applies
+// the value to a probe span and reads it back through the cascade (handles chained
+// vars and `.dark`). Plain CSS colors pass straight to normalizeColor.
 export function resolveCssColor(value: string, container: HTMLElement): string {
   const raw = value.trim();
   if (!raw.startsWith("var(")) return normalizeColor(raw);
@@ -135,9 +129,9 @@ export function resolveCssColor(value: string, container: HTMLElement): string {
   return resolved;
 }
 
-// Scales the alpha of a normalized `rgba(r, g, b, a)` string. Multiplying (not
-// replacing) keeps translucent theme tokens honest: a border that is 10%-white
-// at `withAlpha(border, 0.5)` lands at 5%, matching Tailwind's `border/50`.
+// Scales the alpha of a normalized `rgba(r, g, b, a)` string — multiplies rather
+// than replaces, so translucent tokens stay honest (10%-white × 0.5 lands at 5%,
+// matching Tailwind's `border/50`).
 export function withAlpha(color: string, alpha: number): string {
   const match = color.match(/rgba?\(([^)]+)\)/);
   if (!match) return color;
@@ -156,9 +150,9 @@ export type ResolvedColors = {
   };
 };
 
-// Reads the injected CSS vars + theme tokens from the live DOM. Series slots come
-// from `getComputedStyle` on the container; tokens are read off a throwaway probe
-// carrying the matching Tailwind class (robust to the var naming a theme uses).
+// Reads the injected CSS vars + theme tokens off the live DOM: series slots from
+// `getComputedStyle` on the container, tokens from a throwaway probe carrying the
+// matching Tailwind class (robust to the var naming a theme uses).
 export function resolveColors(
   container: HTMLElement,
   config: ChartConfig,
@@ -198,9 +192,8 @@ export function resolveColors(
   return { series, tokens };
 }
 
-// Horizontal multi-stop color for a series — a solid string when there is only
-// one color, else an evenly-distributed left→right LinearGradient. Reused for the
-// stroke, symbol fills, and as the base tint for the area fill.
+// Horizontal multi-stop gradient for a series (solid when there's one color) —
+// reused for stroke, symbol fills, and the area fill's base tint.
 export function seriesPaint(
   slots: string[],
 ): string | echarts.graphic.LinearGradient {
@@ -224,9 +217,9 @@ export function indicatorBackground(key: string, colorsCount: number): string {
   return `linear-gradient(to right, ${stops})`;
 }
 
-// Composites a translucent color over an opaque base into a FLAT color. The
-// tick dots need this: a translucent stroke double-paints where its round caps
-// overlap the line body, which reads as two stacked colors.
+// Composites a translucent color over an opaque base into a FLAT color. Needed by
+// the tick dots: a translucent stroke double-paints where its round caps overlap
+// the line body and reads as two stacked colors.
 export function flattenColor(color: string, base: string): string {
   const parse = (value: string) =>
     value

@@ -13,10 +13,9 @@ const BRUSH_BORDER_OPACITY = 1; // brush frame, × border alpha (evil-brush uses
 export { BRUSH_BORDER_OPACITY };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Brush marker — the declarative `<Chart.Brush/>` child. Rendering nothing, its
-// PRESENCE turns the brush on (replacing the old showBrush prop) and its props
-// carry the brush's height, handle-label formatter, and range callback. Shared
-// so every cartesian chart attaches the SAME component to its root.
+// Brush marker — the declarative `<Chart.Brush/>` child. Renders nothing: its
+// PRESENCE turns the brush on, its props carry height/label formatter/range
+// callback. Shared so every cartesian chart attaches the SAME component.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BrushProps {
@@ -29,12 +28,11 @@ export interface BrushProps {
 export const Brush: FC<BrushProps> = () => null;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Brush overlays — the evil-brush look: a rounded border around the SELECTED
-// range, dimmed unselected sides, centered grip-dot handle pills, and range
-// label pills below the frame. None of that is a dataZoom capability. They are
-// raw zrender elements updated imperatively — routing them through setOption
-// re-renders the dataZoom component mid-drag, resetting its drag anchor (the
-// handle progressively lags the pointer).
+// Brush overlays — the evil-brush look: rounded border around the SELECTED range,
+// dimmed sides, grip-dot handle pills, range label pills. None of that is a
+// dataZoom capability, so they are raw zrender elements updated imperatively —
+// routing them through setOption re-renders dataZoom mid-drag and the handle
+// progressively lags the pointer.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type BrushRange = { start: number; end: number };
@@ -164,10 +162,9 @@ export function syncBrushOverlay(
     els.grips[i + 3].setStyle({ fill: gripFill });
   });
 
-  // Range label pills straddle the frame's bottom line — an overlay, so they
-  // occupy no layout space; half the pill sits above the line, half below. Each
-  // pill grows INWARD from its handle with a small inset, like the Recharts
-  // labels, instead of hanging past the frame edge.
+  // Range label pills straddle the frame's bottom line — an overlay, so no layout
+  // space — and grow INWARD from their handle with a small inset, like the
+  // Recharts labels, instead of hanging past the frame edge.
   const label = (
     el: ZrText,
     text: string,
@@ -196,11 +193,10 @@ export function syncBrushOverlay(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// dataZoom slider — the transparent drag layer laid over the mini chart. Fully
-// chart-agnostic: the visible frame/handles/labels are the graphic overlays
-// above; this provides interaction only. Both zoom entries target only the MAIN
-// x-axis (index 0), so the mini chart never filters itself. The per-chart
-// mini-series (which differ per chart type) are built by the chart, not here.
+// dataZoom slider — the transparent drag layer over the mini chart. Chart-agnostic:
+// the visible frame/handles/labels are the graphic overlays above, this is
+// interaction only. Both zoom entries target only the MAIN x-axis (index 0) so the
+// mini chart never filters itself; per-chart mini-series are built by the chart.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function buildBrushDataZoom(params: {
@@ -225,9 +221,9 @@ export function buildBrushDataZoom(params: {
       start: brushRange.start,
       end: brushRange.end,
       brushSelect: false,
-      // Range labels are overlay pills below the frame (see
-      // syncBrushOverlay) — the native detail text renders INSIDE the
-      // track, which is not the evil-brush look.
+      // Range labels are overlay pills below the frame (see syncBrushOverlay) —
+      // the native detail text renders INSIDE the track, which is not the
+      // evil-brush look.
       showDetail: false,
       backgroundColor: "transparent",
       // The visible frame is the graphic overlay riding the selection —

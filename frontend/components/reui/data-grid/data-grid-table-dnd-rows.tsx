@@ -208,12 +208,8 @@ function DataGridTableDndRow<TData extends object>({
   });
 
   // Which edge of THIS row the carried row would land on, or null when it is
-  // not the drop target. Nothing slides apart any more, so the bar is the only
-  // thing that says where the drop goes: it marks the row at the destination
-  // index, on the side the carried row comes to rest.
-  //
-  // Dragging down it lands after the target, dragging up before it, so the
-  // edge follows the direction of travel.
+  // not the drop target — nothing slides apart, so this bar is the only thing
+  // saying where the drop goes. Down lands after the target, up before it.
   const dropEdge =
     dropIndicator && activeIndex !== -1 && index === overIndex && !isDragging
       ? activeIndex < overIndex
@@ -223,21 +219,15 @@ function DataGridTableDndRow<TData extends object>({
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    // dnd-kit's transition is deliberately dropped. A transition on a transform
-    // property of a `tr` does not merely fail to animate in Chrome, it stops the
-    // transform applying at all: the element sits at the start value forever.
-    // The drag source escapes it because dnd-kit disables its own transition
-    // while it is being dragged, which is why the carried row used to be the
-    // ONLY one that moved and every other row silently refused to open a gap.
-    // Displacement therefore lands in one step, which is what a table wants.
+    // NOTE: dnd-kit's transition is dropped — on a `tr` a transition on
+    // `transform` stops the transform applying at all in Chrome, and only the
+    // dragged row escaped it (dnd-kit mutes its own mid-drag): one-step motion.
     zIndex: isDragging ? 1 : 0,
     position: "relative",
     cursor: isDragging ? "grabbing" : undefined,
-    // The row you are holding is drawn by the DragOverlay, so the one left
-    // behind is not a second copy of it - it is the slot you came from, and it
-    // stays exactly where it was. Fading alone read as "this row is busy";
-    // the outline says "this is the space you are moving out of", which is the
-    // thing you need if you change your mind mid-drag.
+    // The overlay draws the held row, so the one left behind is the origin slot,
+    // not a copy — it dims in place. Fading alone read as "this row is busy"; the
+    // outline says "the space you're moving out of", what you need to back out mid-drag.
     ...(isDragging && {
       opacity: 0.4,
       // Inset so the dashes sit inside the row box and cannot be clipped by
@@ -259,16 +249,9 @@ function DataGridTableDndRow<TData extends object>({
               <DataGridTableBodyRowCell cell={cell} key={cell.id}>
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 {decoration && index === cells.length - 1 ? (
-                  // Rides inside the last cell rather than in a `td` of its own.
-                  // An absolutely positioned `td` is still a cell as far as table
-                  // layout is concerned, so it added a NINTH column with no width
-                  // of its own, and under `table-layout: fixed` that new column
-                  // swallowed the whole surplus the real columns had been sharing
-                  // — every column snapped back to its declared size and the row's
-                  // content visibly narrowed the moment a drag began. A plain
-                  // element adds no column. It still anchors to the ROW, because
-                  // the row is the nearest positioned ancestor, so the decoration
-                  // spans the full width and is not clipped by the cell.
+                  // NOTE: rides inside the last cell, not in a `td` of its own — an
+                  // absolutely positioned `td` is a ninth column that under
+                  // `table-layout: fixed` visibly narrows every column on drag start.
                   <div
                     aria-hidden="true"
                     data-slot="data-grid-table-row-decoration"
@@ -278,10 +261,8 @@ function DataGridTableDndRow<TData extends object>({
                   </div>
                 ) : null}
                 {dropEdge && index === cells.length - 1 ? (
-                  // Same anchoring trick as the decoration above: a plain
-                  // element inside the last cell, so it adds no column and
-                  // cannot disturb `table-layout: fixed`. It spans the row
-                  // because the row is the nearest positioned ancestor.
+                  // Plain element in the last cell (no extra column), absolutely
+                  // positioned against the row so the bar spans it unclipped.
                   <div
                     aria-hidden="true"
                     data-slot="data-grid-table-row-drop-indicator"
@@ -432,20 +413,13 @@ function DataGridTableDndRows<TData extends object>({
   const { table, props } = useDataGrid<TData>();
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [isDraggingRow, setIsDraggingRow] = useState(false);
-  // The overlay is portalled to the document body. dnd-kit renders DragOverlay
-  // in place, and it positions with `position: fixed` against viewport
-  // coordinates - so any ancestor that establishes a containing block for fixed
-  // descendants silently re-anchors it. `content-visibility`, `contain`,
-  // `transform`, `filter` and `will-change` all do that, and the first two are
-  // exactly what a card grid uses to defer off-screen work. The clone then
-  // lands offset by that ancestor's own top/left, and the container clamp
-  // below mis-clamps too, because its rects are measured in viewport space.
-  //
-  // Resolved in an effect rather than read at render so the server and the
-  // first client render agree. A drag cannot start before hydration, so the
-  // overlay being absent for one frame costs nothing.
+  // NOTE: portalled to document.body — `position: fixed` re-anchors to any
+  // ancestor that makes a containing block (`content-visibility`, `contain`,
+  // `transform`, `filter`, `will-change`), offsetting the clone and the clamp.
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
+  // Resolved in an effect so server and first client render agree — no drag can
+  // start before hydration, so the overlay missing one frame costs nothing.
   useEffect(() => {
     setPortalTarget(document.body);
   }, []);
@@ -467,21 +441,17 @@ function DataGridTableDndRows<TData extends object>({
       return;
     }
 
-    // The clone has to be exactly as tall as the row it was lifted from.
-    // A fixed height reads as the grid growing under the pointer the moment
-    // you pick a row up, and it is wrong in both directions: rows whose
-    // content wraps are taller than any constant, and dense rows are shorter.
+    // The clone must be exactly as tall as its source row: a fixed height reads
+    // as the grid growing under the pointer, and is wrong both ways — wrapped
+    // rows exceed any constant, dense rows are shorter.
     const source = Array.from(
       container.querySelectorAll<HTMLElement>("tbody tr[data-row-id]"),
     ).find((candidate) => candidate.dataset.rowId === String(id));
     const height = source?.getBoundingClientRect().height ?? 0;
 
-    // The fill cell is a header-only spacer that soaks up the surplus a column
-    // resize leaves behind, and the clone renders data cells only. Measuring it
-    // in would make the clone's table wider than the cells it actually holds,
-    // and `table-fixed` hands that orphaned width back out across every column
-    // -- the carried row comes out visibly wider than the row it was lifted
-    // from. So the width is the sum of what we render, never the header's own.
+    // NOTE: the fill cell is a header-only spacer the clone never renders;
+    // measuring it in would let `table-fixed` hand its orphaned width back out
+    // across every column, so the carried row comes out wider than its source.
     const columns = Array.from(head.children)
       .filter(
         (cell) =>
@@ -548,13 +518,9 @@ function DataGridTableDndRows<TData extends object>({
 
       return {
         ...transform,
-        // The horizontal rail only engages while the default axis restriction
-        // is in force. A row is exactly as wide as the viewport, so minX and
-        // maxX both collapse to 0 and clamping x erases it entirely: harmless
-        // under restrictToVerticalAxis, which zeroes x anyway, but fatal for a
-        // caller that replaced the restriction precisely to READ x, as a tree
-        // does to resolve drop depth. Vertical is railed either way, which is
-        // what actually keeps a dragged row inside the grid.
+        // NOTE: the x rail only engages with the default axis restriction — the
+        // row spans the viewport so minX/maxX collapse to 0, and clamping x would
+        // erase the read a tree uses for drop depth. Vertical is railed either way.
         x: modifiers ? x : Math.max(minX, Math.min(maxX, x)),
         y: Math.max(minY, Math.min(maxY, y)),
       };

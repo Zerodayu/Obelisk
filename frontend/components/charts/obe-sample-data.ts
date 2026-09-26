@@ -393,11 +393,9 @@ export const MOCK_APPROVAL_FLOW: ApprovalFlowDatum[] = [
 ];
 
 // ── Inbox sample rows (dev-mode `scope=mine` / `scope=pending` previews) ─────
-// Consumed by `components/inbox/submission-inbox.tsx` (via the server-passed
-// `devPreview` flag) when `DEVELOPMENT=true`, so `/submissions` and
-// `/approvals` render populated without a backend session. Approval chains and
-// form names mirror `backend/lib/forms/approval-routes.ts` + the stable-code
-// catalogue in `backend/SYSTEM-DESIGN.md`.
+// Rendered by `components/inbox/submission-inbox.tsx` when `DEVELOPMENT=true`
+// so `/submissions` and `/approvals` populate without a backend session.
+// Approval chains + form names mirror `backend/lib/forms/approval-routes.ts`.
 
 /** One `ApprovalStep` decision before it is expanded into a full record. */
 interface SampleStepSeed {

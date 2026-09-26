@@ -58,11 +58,9 @@ export function dotItemStyle(
       // Background-filled core with a thin colored ring (Recharts r3 / sw1).
       return { color: background, borderColor: paint, borderWidth: 1 };
     case "ping": {
-      // Solid core wrapped in a wide, translucent same-color ring — a static
-      // "ping". The ring is the symbol's BORDER (a stroke ~1.25× the core
-      // radius), which fills out to a soft halo disc; a genuinely large symbol
-      // would silently fail to render on a category-axis line, so we stroke a
-      // small one instead.
+      // Solid core in a wide translucent same-color ring — a static "ping". The ring
+      // is the symbol's BORDER (~1.25× the core radius): a genuinely large symbol
+      // silently fails to render on a category-axis line, so we stroke a small one.
       const halo = typeof paint === "string" ? withAlpha(paint, 0.28) : paint;
       return { color: paint, borderColor: halo, borderWidth: 10 };
     }
@@ -73,9 +71,9 @@ export function dotItemStyle(
   }
 }
 
-// Sizes mirror the Recharts markers: default r3, border r6 (mostly halo), and
-// colored-border r3+ring. Flattening these to one size makes the hover ring read
-// LARGER than a haloed resting dot — the opposite of the Recharts twin.
+// Sizes mirror the Recharts markers (default r3, border r6, colored-border r3+ring).
+// Flattening them makes the hover ring read LARGER than a haloed resting dot — the
+// opposite of the twin.
 export const DOT_SIZES: Record<DotVariant, number> = {
   none: 0,
   default: 6,
@@ -95,10 +93,9 @@ export function dotStyle(
   };
 }
 
-// The color the horizontal series gradient shows at position t ∈ [0, 1]. ECharts
-// paints a gradient itemStyle relative to each symbol's own bounding box — a full
-// rainbow inside every dot — while the Recharts dots clip a chart-wide gradient,
-// so each takes the gradient's color at its x-position. Sampling reproduces that.
+// NOTE: sample the horizontal series gradient at t ∈ [0,1] — ECharts paints a gradient
+// itemStyle relative to each symbol's own bbox (a rainbow per dot); Recharts dots clip
+// a chart-wide gradient at their x-position — sampling reproduces that.
 export function sampleGradient(slots: string[], t: number): string {
   if (slots.length <= 1) return slots[0] ?? "rgba(120, 120, 120, 1)";
 

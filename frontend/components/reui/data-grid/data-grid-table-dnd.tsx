@@ -71,7 +71,6 @@ function DataGridTableDndHeader<TData extends object>({
   const { props } = useDataGrid();
   const { column } = header;
 
-  // Check if column ordering is enabled for this column
   const canOrder =
     (column.columnDef as { enableColumnOrdering?: boolean })
       .enableColumnOrdering !== false;
@@ -269,7 +268,7 @@ function DataGridTableDnd<TData extends object>({
     };
   }, [isDraggingColumn]);
 
-  // Custom modifier to restrict dragging within table bounds with edge offset
+  // Clamps the drag to the table's horizontal bounds (vertical stays locked).
   const modifiers = useMemo(() => {
     const restrictToTableBounds: Modifier = ({
       draggingNodeRect,

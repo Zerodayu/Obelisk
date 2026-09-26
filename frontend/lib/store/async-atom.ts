@@ -51,10 +51,9 @@ export function atomWithAsyncData<T>(
 
   const fetchAtom = atom(async (get, { signal }) => {
     get(refreshKeyAtom);
-    // Never fetch during SSR: the browser-only `api` client relies on cookies
-    // the server render has no access to. Skipping keeps the atom in its
-    // non-ready state so consumers render the `initial` fallback — matching
-    // the first client paint and avoiding a hydration mismatch.
+    // NOTE: never fetch during SSR — the browser-only `api` client needs cookies
+    // the server render can't read; skipping keeps the atom non-ready so consumers
+    // render `initial`, matching first client paint (no hydration mismatch).
     if (typeof window === "undefined") throw new Error("skip fetch during SSR");
     return fetcher(get, signal);
   });

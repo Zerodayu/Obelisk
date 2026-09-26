@@ -1,8 +1,6 @@
-// Helper to normalize names for matching
 export const normalizeName = (name: string) =>
 	name.toLowerCase().replace(/[^a-z0-9]/g, "");
 
-// Helper to parse student name into last and first names
 export function parseStudentName(name: string): {
 	lastName: string;
 	firstName: string;

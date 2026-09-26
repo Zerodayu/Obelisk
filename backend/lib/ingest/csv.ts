@@ -90,7 +90,7 @@ export function csvPercent(value: string | undefined): number | undefined {
 	const parsed = Number(text);
 	if (Number.isNaN(parsed)) return undefined;
 
-	// Accept both 0–100 scale and 0–1 fraction (ETL output uses fractions).
+	// NOTE: accepts 0–100 and 0–1 scales — ETL output uses fractions.
 	const normalized = parsed <= 1 ? parsed * 100 : parsed;
 	if (normalized < 0 || normalized > 100) return undefined;
 	return Math.round(normalized * 100) / 100;

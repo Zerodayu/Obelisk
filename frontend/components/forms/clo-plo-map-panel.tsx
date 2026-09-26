@@ -163,7 +163,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
   const [editingMap, setEditingMap] = useState<CloPloMapDto | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Form state
   const [selectedCloId, setSelectedCloId] = useState("");
   const [selectedPloId, setSelectedPloId] = useState("");
   const [weight, setWeight] = useState("1.0");
@@ -246,7 +245,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
         setDialogOpen(false);
         fetchData();
       } else if (isDevMode) {
-        // Dev mode: simulate update locally
         setMaps((prev) =>
           prev.map((m) =>
             m.id === editingMap.id
@@ -283,7 +281,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
         setDialogOpen(false);
         fetchData();
       } else if (isDevMode) {
-        // Dev mode: simulate create locally
         const clo = clos.find((c) => c.id === selectedCloId);
         const plo = plos.find((p) => p.id === selectedPloId);
         if (clo && plo) {
@@ -317,7 +314,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
       setDeleteConfirmId(null);
       fetchData();
     } else if (isDevMode) {
-      // Dev mode: simulate delete locally
       setMaps((prev) => prev.filter((m) => m.id !== id));
       toast.create({ title: "Mapping deleted (dev)", type: "success" });
       setDeleteConfirmId(null);
@@ -341,7 +337,6 @@ export function CloPloMapPanel({ programId }: CloPloMapPanelProps) {
     {} as Record<string, CloEntity[]>,
   );
 
-  // Create collections for Ark UI Select
   const cloCollection = createListCollection({
     items: clos,
     itemToValue: (item) => item.id,

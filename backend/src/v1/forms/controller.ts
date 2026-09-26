@@ -72,8 +72,8 @@ export const formsPlugin = new Elysia({
 					? { classSectionId: query.classSectionId }
 					: {}),
 				...(query.status ? { status: query.status } : {}),
-				// Session-derived inbox scoping — the caller cannot spoof whose
-				// submissions or which approval queue they are listing.
+				// Session-derived scoping — the caller cannot spoof whose inbox
+				// or approval queue they are listing.
 				...scopeWhere(query.scope, {
 					id: user.id,
 					role: callerRole(user),
@@ -131,8 +131,8 @@ export const formsPlugin = new Elysia({
 	.get(
 		"/:id",
 		async ({ params, set }) => {
-			// Uncached: the workflow stepper must reflect the latest decision
-			// immediately after an approve/return.
+			// Uncached: the stepper must reflect the latest decision right after
+			// an approve/return.
 			const submission = await submissionService.findById(params.id);
 			if (!submission) {
 				set.status = 404;
@@ -190,8 +190,8 @@ export const formsPlugin = new Elysia({
 		"/:id/submit",
 		async ({ params, user, set }) => {
 			try {
-				// Body steps are ignored — the chain comes from the form's
-				// registered approval route (lib/forms/approval-routes.ts).
+				// Body steps ignored — the chain comes from the form's registered
+				// route (lib/forms/approval-routes.ts).
 				return await submissionService.submit(
 					params.id,
 					user.id,

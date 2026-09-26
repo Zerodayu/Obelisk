@@ -108,8 +108,8 @@ export function FormWorkflow({
         await api.get<FormSubmissionRecord>(`/forms/${submissionId}`),
       );
     } catch {
-      // The host screen surfaces its own load errors; a missing submission
-      // just means the workflow strip stays in its empty state.
+      // Host screen surfaces its own load errors; a missing submission just
+      // leaves the workflow strip in its empty state.
       setSubmission(null);
     } finally {
       setLoading(false);

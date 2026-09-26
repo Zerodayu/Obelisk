@@ -1,9 +1,8 @@
 "use client";
 
-// This file keeps "use no memo": its own cell/header templates read state
-// through builder calls on a stable row/column, which React Compiler cannot
-// see. The primitive wraps its own such reads in TanStack's Subscribe; a
-// consumer template has to opt out or subscribe itself.
+// NOTE: this file keeps "use no memo" — its cell/header templates read state through
+// builder calls on a stable row/column, which React Compiler cannot see; a consumer
+// template must opt out or subscribe itself (the primitive wraps its own reads).
 "use no memo";
 
 import {

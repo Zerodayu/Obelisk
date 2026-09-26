@@ -163,13 +163,12 @@ export function ClassRecordUpload() {
     patchItem({ status: "uploading", error: undefined });
 
     try {
-      // 1. Start the upload and get the job ID.
       const { jobId: nextJobId } = await api.upload<{ jobId: string }>(
         "/ingest/upload",
         file,
         { classSectionId: TEST_CLASS_SECTION_ID },
       );
-      // 2. Move to the polling phase; the effect above takes over.
+      // Hand off to the polling effect above.
       setMarkProcessing(nextJobId);
     } catch (error) {
       const message = isApiError(error)

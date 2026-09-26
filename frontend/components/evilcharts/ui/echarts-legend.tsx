@@ -92,9 +92,7 @@ export function LegendIndicator({
 // ─────────────────────────────────────────────────────────────────────────────
 // LegendOverlay — the positioned HTML legend row. The chart computes the
 // absolute-positioned `style` (it owns the brush/verticalAlign layout math) and
-// passes it in; this renders the entries, their indicators, and the
-// selection/hover dim. `verticalAlign` is carried on the props for parity with
-// the chart's LegendSlot even though positioning arrives fully via `style`.
+// passes it in; this renders entries, indicators, and the selection/hover dim.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type LegendOverlayProps = {
