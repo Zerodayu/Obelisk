@@ -1,5 +1,9 @@
 import { cached } from "@lib/cache";
 import { ingestClient } from "@lib/ingest/ingest-client";
+import {
+	assertCanCaptureClassRecords,
+	RoleAccessForbiddenError,
+} from "@lib/role-access";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
@@ -15,15 +19,38 @@ import {
 	MalformedRosterCsvError,
 } from "./service";
 
+/** The authenticated caller's role (better-auth additional field). */
+function callerRole(user: unknown): string {
+	return (user as { role?: string } | undefined)?.role ?? "user";
+}
+
+/**
+ * Class-record read of the per-student roster, wrapped so the role assert
+ * runs **before** the cache lookup — a warm cache must never let a
+ * non-capture role past the gate.
+ */
+const listAttainmentsCached = cached(60, async ({ query }) => {
+	return attainmentService.listAttainments(
+		query.classSectionId,
+		query.computationRunId,
+	);
+});
+
 export const ingestPlugin = new Elysia({
 	prefix: "/ingest",
 	name: "ingest",
 	tags: ["Ingest"],
 })
 	.use(authPlugin)
+	.onError(({ error, status }) => {
+		if (error instanceof RoleAccessForbiddenError) {
+			return status(403, { error: error.message });
+		}
+	})
 	.post(
 		"/upload",
 		async ({ body, user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			// Start the ETL job but do not wait for it to complete.
 			return ingestService.startUpload(
 				body.file,
@@ -43,6 +70,7 @@ export const ingestPlugin = new Elysia({
 				responses: {
 					200: { description: "ETL job started successfully." },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 					500: { description: "Python server failure on job creation." },
 				},
 			},
@@ -51,6 +79,7 @@ export const ingestPlugin = new Elysia({
 	.get(
 		"/history",
 		async ({ user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			return ingestService.listHistory(user.id);
 		},
 		{
@@ -65,18 +94,18 @@ export const ingestPlugin = new Elysia({
 						description: "List of upload records for the current user.",
 					},
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 				},
 			},
 		},
 	)
 	.get(
 		"/attainments",
-		cached(60, async ({ query }) => {
-			return attainmentService.listAttainments(
-				query.classSectionId,
-				query.computationRunId,
-			);
-		}),
+		async (ctx) => {
+			// Assert outside `cached` so a cache hit skips nothing.
+			assertCanCaptureClassRecords(callerRole(ctx.user));
+			return listAttainmentsCached(ctx);
+		},
 		{
 			auth: true,
 			query: ListAttainmentsSchema,
@@ -88,6 +117,7 @@ export const ingestPlugin = new Elysia({
 				responses: {
 					200: { description: "List of attainment roster rows" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 					404: {
 						description: "No computation run found for the class section",
 					},
@@ -98,6 +128,7 @@ export const ingestPlugin = new Elysia({
 	.put(
 		"/attainments",
 		async ({ body, user, set }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			try {
 				return await attainmentService.updateScores(
 					body.classSectionId,
@@ -123,6 +154,7 @@ export const ingestPlugin = new Elysia({
 				responses: {
 					200: { description: "Score update summary" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 					404: {
 						description: "No computation run found for the class section",
 					},
@@ -132,7 +164,8 @@ export const ingestPlugin = new Elysia({
 	)
 	.post(
 		"/attainments/reimport",
-		async ({ body, set }) => {
+		async ({ body, user, set }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			try {
 				return await attainmentService.reimportScores(
 					body.file,
@@ -165,6 +198,7 @@ export const ingestPlugin = new Elysia({
 							"Malformed roster or no computation run for the class section",
 					},
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 				},
 			},
 		},
@@ -172,6 +206,7 @@ export const ingestPlugin = new Elysia({
 	.get(
 		"/upload/:jobId/status",
 		async ({ params, query, user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			const result = await ingestService.getJobStatus(
 				params.jobId,
 				query.classSectionId,
@@ -195,13 +230,15 @@ export const ingestPlugin = new Elysia({
 							"Returns current job status ('queued', 'running') or the final result ('completed', 'failed').",
 					},
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 				},
 			},
 		},
 	)
 	.get(
 		"/jobs/:jobId",
-		async ({ params }) => {
+		async ({ params, user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
 			const job = await ingestClient.getJob(params.jobId);
 			return job;
 		},
@@ -215,6 +252,7 @@ export const ingestPlugin = new Elysia({
 				responses: {
 					200: { description: "Current job state" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
 				},
 			},
 		},
