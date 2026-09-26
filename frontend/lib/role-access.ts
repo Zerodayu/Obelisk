@@ -46,6 +46,13 @@ export const FEATURE_ACCESS = {
   manageRoleRequests: ["system_admin"],
   /** Confirm a graduation cluster for compile. */
   confirmClusterCompile: ["aqau", "system_admin"],
+  /**
+   * Trigger an AI CQI recommendation (`POST /ai/recommendation/generate` →
+   * python-server `/analytics/institutional-summary`, which runs an LLM
+   * call — INTEGRATION.md mandates the webapp enforce VPAA here).
+   * Viewing the latest persisted recommendation stays open to every role.
+   */
+  generateAiInsights: ["vpaa", "system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type FeatureKey = keyof typeof FEATURE_ACCESS;

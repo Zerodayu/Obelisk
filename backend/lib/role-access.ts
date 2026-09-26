@@ -29,6 +29,13 @@ export const FEATURE_ACCESS = {
 	manageRoleRequests: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
 	confirmClusterCompile: ["aqau", "system_admin"],
+	/**
+	 * Trigger an AI CQI recommendation (`POST /ai/recommendation/generate` →
+	 * python-server `/analytics/institutional-summary`, which runs an LLM
+	 * call — INTEGRATION.md mandates the webapp enforce VPAA here).
+	 * Viewing the latest persisted recommendation stays open to every role.
+	 */
+	generateAiInsights: ["vpaa", "system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type FeatureKey = keyof typeof FEATURE_ACCESS;
@@ -70,6 +77,19 @@ export function assertCanCaptureClassRecords(role: string | undefined): void {
 	if (!hasRole(role, CLASS_RECORD_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not capture class records — expected one of: ${CLASS_RECORD_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** Roles allowed to trigger an AI CQI recommendation (LLM call). */
+export const AI_INSIGHT_GENERATION_ROLES: readonly string[] =
+	FEATURE_ACCESS.generateAiInsights;
+
+/** May `role` trigger an AI recommendation generation? */
+export function assertCanGenerateAiInsights(role: string | undefined): void {
+	if (!hasRole(role, AI_INSIGHT_GENERATION_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not generate AI insights — expected one of: ${AI_INSIGHT_GENERATION_ROLES.join(", ")}`,
 		);
 	}
 }
