@@ -1,105 +1,71 @@
 #!/usr/bin/env python3
 """
-Comprehensive validation test for extractor and transformer fixes.
-Validates RawScoreRecord counts, transformer output, and CO-PO Attainment sheet values.
+Comprehensive validation test for extractor and transformer (v2 AUN-OBE template).
+Validates raw CLO record counts, transformer output, independent attainment calculation,
+and dynamic CLO detection.
 """
 
 import asyncio
 import sys
 from pathlib import Path
 from collections import defaultdict
-from typing import cast
-from openpyxl import load_workbook
 
 # Add project root to path to allow imports from `app`
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.etl.extract.extractor import ExcelExtractor
-from app.etl.abstracts import Extractor, Loader, run_full_pipeline
 from app.etl.transform.transformer import SimpleTransformer
 from app.etl import etl_const
-from app.schemas.class_record import ClassRecordHeader, RawScoreRecord
+from app.schemas.class_record import ClassRecordHeader
+from app.schemas.extracted import StudentRawCloData
 
 # Define the path to the templates directory relative to the project root
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
-
-# Known-good baseline counts from the sample file (no gap rows)
-EXPECTED_COUNTS = {
-    ("PRELIM", "TLA"): 12,
-    ("PRELIM", "AT"): 6,
-    ("PRELIM", "EXAM"): 3,
-    ("PRELIM", "OUTPUT"): 3,
-    ("MIDTERM", "TLA"): 24,
-    ("MIDTERM", "AT"): 9,
-    ("MIDTERM", "EXAM"): 6,
-    ("FINAL", "TLA"): 18,
-    ("FINAL", "AT"): 15,
-    ("FINAL", "EXAM"): 9,
-}
+TEST_FILE = TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE.xlsx"
 
 
 async def step1_validate_extraction():
     """
-    Step 1: Extract data and validate RawScoreRecord counts.
+    Step 1: Extract data and validate StudentRawCloData counts.
     """
     print("\n" + "=" * 80)
-    print("STEP 1: Validate Extraction - RawScoreRecord Counts")
+    print("STEP 1: Validate Extraction - Raw CLO Data Counts")
     print("=" * 80)
-    
-    file_path = TEMPLATES_DIR / "E-classrecord(LECTURE ONLY).xlsx"
-    if not file_path.exists():
-        print(f"ERROR: Sample file not found at {file_path}")
+
+    if not TEST_FILE.exists():
+        print(f"ERROR: Sample file not found at {TEST_FILE}")
         return None, None, None
-    
+
     try:
         extractor = ExcelExtractor()
-        header, records, clo_plo_mapping = await extractor.extract(source=file_path)
+        header, records, clo_plo_mapping = await extractor.extract(source=TEST_FILE)
     except Exception as e:
         print(f"ERROR during extraction: {e}")
         import traceback
         traceback.print_exc()
         return None, None, None
-    
-    counts = defaultdict(int)
-    for record in records:
-        key = (record.grading_period, record.assessment_category)
-        counts[key] += 1
-    
-    print(f"\nTotal RawScoreRecords: {len(records)}")
-    print("\nCounts by (grading_period, assessment_category):")
-    print("-" * 50)
-    
-    all_match = True
-    for key in sorted(EXPECTED_COUNTS.keys()):
-        expected = EXPECTED_COUNTS[key]
-        actual = counts[key]
-        match = "✓" if actual == expected else "✗ MISMATCH"
-        print(f"  {key[0]}/{key[1]:8s}: {actual:3d} (expected {expected:3d}) {match}")
-        if actual != expected:
-            all_match = False
-    
-    for key in counts:
-        if key not in EXPECTED_COUNTS:
-            print(f"  UNEXPECTED: {key[0]}/{key[1]} = {counts[key]}")
-            all_match = False
-    
-    if not all_match:
-        print("\n❌ COUNTS DO NOT MATCH BASELINE - STOPPING HERE")
-        return None, None, None
-    
-    print("\n✅ All counts match baseline - proceeding to next steps")
+
+    print(f"\nHeader: course={header.course_code} - {header.course_title}, students={header.no_of_students}")
+    print(f"Total StudentRawCloData records: {len(records)}")
+    print(f"CLO-PLO mapping (should be empty): {clo_plo_mapping}")
+
+    assert len(clo_plo_mapping) == 0, f"Expected empty mapping, got {len(clo_plo_mapping)}"
+    assert header.no_of_students == 15, f"Expected 15 students, got {header.no_of_students}"
+    assert len(records) == 75, f"Expected 75 records (15 students x 5 CLOs), got {len(records)}"
+
+    print("\n[OK] Extraction counts match expected baseline (15 students, 5 CLOs, 75 records)")
     return header, records, clo_plo_mapping
 
 
 async def step2_validate_transform(header, records, clo_plo_mapping):
     """
-    Step 2: Transform data and pick one student to inspect.
+    Step 2: Transform data and verify independent calculations.
     """
     print("\n" + "=" * 80)
-    print("STEP 2: Transform Data and Pick One Student")
+    print("STEP 2: Transform Data and Verify Independent Calculation")
     print("=" * 80)
-    
+
     try:
         transformer = SimpleTransformer()
         attainments = await transformer.transform((header, records, clo_plo_mapping))
@@ -108,173 +74,50 @@ async def step2_validate_transform(header, records, clo_plo_mapping):
         import traceback
         traceback.print_exc()
         return None
-    
+
     print(f"\nTotal StudentCLOAttainment records: {len(attainments)}")
-    
-    if not attainments:
-        print("ERROR: No attainment records produced")
-        return None
-    
-    selected = attainments[0]
-    
-    print(f"\nSelected Student: {selected.student_name}")
-    print(f"Student ID: {selected.student_id}")
-    print(f"CLO Code: {selected.clo_code}")
-    selected_pct = selected.direct_clo_attainment_pct if selected.direct_clo_attainment_pct is not None else 0.0
-    print(f"Direct CLO Attainment %: {selected_pct:.2%}")
-    print(f"Met Threshold (at {etl_const.Transformation.INSTITUTIONAL_THRESHOLD:.0%}): {selected.met_threshold}")
-    print(f"CLO Level: {selected.clo_level}")
-    
-    return selected
+    assert len(attainments) == 75, f"Expected 75 attainments, got {len(attainments)}"
 
+    first = attainments[0]
+    print(f"\nSample Student: {first.student_name} (ID: {first.student_id}) - {first.clo_code}")
+    print(f"  Direct CLO Attainment: {first.direct_clo_attainment_pct:.4f} (expected {91/105:.4f})")
+    print(f"  Indirect CLO Attainment: {first.indirect_clo_attainment_pct}% (expected 60.0%)")
+    print(f"  Met Threshold: {first.met_threshold}")
+    print(f"  CLO Level: {first.clo_level}")
+    print(f"  Excluded Reason: {first.excluded_reason} (expected None)")
 
-async def step3_validate_mapping_gate():
-    """
-    Step 3: Synthetic validation for the CLO-PLO mapping gate.
-    """
-    print("\n" + "=" * 80)
-    print("STEP 3: Validate CLO-PLO Mapping Gate")
-    print("=" * 80)
+    # Assertions on independent calculation
+    assert abs(first.direct_clo_attainment_pct - (91 / 105)) < 1e-6
+    assert first.indirect_clo_attainment_pct == 60.0
+    assert first.excluded_reason is None
+    assert first.met_threshold is True
+    assert first.is_record_complete is True
 
-    header = ClassRecordHeader(
-        course_code="TEST-101",
-        course_title="Synthetic Test Course",
-        course_type="Lecture",
-        section="A",
-        semester_year="SY 2025-2026, 1st Sem",
-        instructor_name="Test Instructor",
-        no_of_students=2,
-        threshold=0.75,
-        grading_system="Numeric",
-        workbook_configured_weights_unused=None,
-    )
+    # Assert that all records have excluded_reason=None
+    assert all(a.excluded_reason is None for a in attainments)
 
-    mapped_records = [
-        RawScoreRecord(student_id="S1", student_name="Mapped Student", grading_period=etl_const.GradingPeriod.PRELIM, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO1", activity_name="Activity 1", max_score=10, raw_score=8),
-        RawScoreRecord(student_id="S1", student_name="Mapped Student", grading_period=etl_const.GradingPeriod.MIDTERM, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO1", activity_name="Activity 2", max_score=10, raw_score=8),
-        RawScoreRecord(student_id="S1", student_name="Mapped Student", grading_period=etl_const.GradingPeriod.FINAL, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO1", activity_name="Activity 3", max_score=10, raw_score=8),
-    ]
-    excluded_records = [
-        RawScoreRecord(student_id="S2", student_name="Excluded Student", grading_period=etl_const.GradingPeriod.PRELIM, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO2", activity_name="Activity 1", max_score=10, raw_score=9),
-        RawScoreRecord(student_id="S2", student_name="Excluded Student", grading_period=etl_const.GradingPeriod.MIDTERM, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO2", activity_name="Activity 2", max_score=10, raw_score=9),
-        RawScoreRecord(student_id="S2", student_name="Excluded Student", grading_period=etl_const.GradingPeriod.FINAL, assessment_category=etl_const.AssessmentCategory.TLA, assessment_no=1, clo_code="CLO2", activity_name="Activity 3", max_score=10, raw_score=9),
-    ]
-
-    clo_plo_mapping = [
-        {"clo_code": "CLO1", "plo_code": "PLO1", "correlation_strength": 1},
-        {"clo_code": "CLO2", "plo_code": "PLO1", "correlation_strength": 0},
-    ]
-
-    transformer = SimpleTransformer()
-    attainments = await transformer.transform((header, mapped_records + excluded_records, clo_plo_mapping))
-
-    assert len(attainments) == 2, f"Expected 2 attainment rows, got {len(attainments)}"
-
-    mapped = next(item for item in attainments if item.clo_code == "CLO1")
-    excluded = next(item for item in attainments if item.clo_code == "CLO2")
-
-    assert mapped.direct_clo_attainment_pct == 0.8
-    assert mapped.met_threshold is True
-    assert mapped.clo_level == etl_const.Transformation.CloLevels.PROFICIENT
-    assert mapped.is_record_complete is True
-    assert mapped.excluded_reason is None
-
-    assert excluded.excluded_reason == "no_plo_mapping"
-    assert excluded.direct_clo_attainment_pct is None
-    assert excluded.met_threshold is None
-    assert excluded.clo_level is None
-    assert excluded.is_record_complete is None
-
-    class StubExtractor(Extractor):
-        async def extract(self, source):
-            return header, mapped_records + excluded_records, clo_plo_mapping
-
-    class StubLoader(Loader):
-        async def load(self, payload):
-            header_obj, records_obj, mapping_obj = payload
-            return {
-                "header": header_obj.model_dump(),
-                "attainments": [record.model_dump() for record in records_obj],
-                "clo_plo_mapping": mapping_obj,
-            }
-
-    pipeline_result = await run_full_pipeline(cast(Extractor, StubExtractor()), transformer, cast(Loader, StubLoader()), source=None)
-    loaded_attainments = pipeline_result["loaded"]["attainments"]
-
-    assert any(record.get("excluded_reason") == "no_plo_mapping" for record in loaded_attainments)
-    print("\n✅ Mapping gate unit checks passed and the pipeline completed successfully.")
-
-
-def step4_read_copa_sheet(student):
-    """
-    Step 3: Read the CO-PO Attainment sheet directly and find the student's value.
-    """
-    print("\n" + "=" * 80)
-    print("STEP 4: Inspect CO-PO Attainment Sheet Structure")
-    print("=" * 80)
-    
-    file_path = TEMPLATES_DIR / "E-classrecord(LECTURE ONLY).xlsx"
-    
-    try:
-        wb = load_workbook(file_path, read_only=True, data_only=True)
-    except Exception as e:
-        print(f"ERROR opening workbook: {e}")
-        return None
-    
-    if "CO-PO Attainment" not in wb.sheetnames:
-        print("ERROR: 'CO-PO Attainment' sheet not found")
-        return None
-    
-    print("\nThis sheet contains CLASS-LEVEL summary, not per-student attainment.")
-    print("→ Skipping direct sheet lookup - transformer output is the source of truth")
-    
-    wb.close()
-    return None
-
-
-
-def step5_compare_values(student, sheet_attainment, sheet_cell):
-    """
-    Step 5: Compare computed vs. sheet values (if available).
-    """
-    print("\n" + "=" * 80)
-    print("STEP 5: Summary of Computed Attainment")
-    print("=" * 80)
-
-    if sheet_attainment is None:
-        print("\n✅ Transformer Computed Values (no sheet comparison available):")
-        print(f"\n  Student: {student.student_name}")
-        print(f"  CLO Code: {student.clo_code}")
-        print(f"  Computed Direct CLO Attainment: {student.direct_clo_attainment_pct:.4f} ({student.direct_clo_attainment_pct*100:.2f}%)")
-        print(f"  Met Threshold (@ {etl_const.Transformation.INSTITUTIONAL_THRESHOLD:.0%}): {student.met_threshold}")
-        print(f"  CLO Level: {student.clo_level}")
-        return
+    print("\n[OK] Transformation and independent calculation verified successfully!")
+    return attainments
 
 
 async def main():
     """Run all validation steps."""
     print("\n" + "=" * 80)
-    print("OBELISK ETL - EXTRACTION & TRANSFORMATION VALIDATION TEST")
+    print("OBELISK ETL - AUN-OBE EXTRACTION & TRANSFORMATION VALIDATION TEST")
     print("=" * 80)
-    
+
     header, records, clo_plo_mapping = await step1_validate_extraction()
     if header is None or records is None:
-        print("\n❌ Extraction validation failed - exiting")
-        return
-    
-    selected_student = await step2_validate_transform(header, records, clo_plo_mapping)
-    if selected_student is None:
-        print("\n❌ Transform validation failed - exiting")
+        print("\n[FAIL] Extraction validation failed - exiting")
         return
 
-    await step3_validate_mapping_gate()
-
-    copa_result = step4_read_copa_sheet(selected_student)
-
-    step5_compare_values(selected_student, None, None)
+    attainments = await step2_validate_transform(header, records, clo_plo_mapping)
+    if attainments is None:
+        print("\n[FAIL] Transform validation failed - exiting")
+        return
 
     print("\n" + "=" * 80)
-    print("VALIDATION TEST COMPLETE")
+    print("VALIDATION TEST COMPLETE - ALL TESTS PASSED")
     print("=" * 80)
 
 

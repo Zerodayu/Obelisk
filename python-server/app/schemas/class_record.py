@@ -42,18 +42,21 @@ class StudentCLOAttainment(BaseModel):
     clo_code: str
     
     # Informational breakdown fields; not used in the main calculation.
-    tla_pct: float | None
-    at_pct: float | None
-    exam_pct: float | None
-    output_pct: float | None
+    tla_pct: float | None = None
+    at_pct: float | None = None
+    exam_pct: float | None = None
+    output_pct: float | None = None
     
     # The primary output based on the institutional formula (Formula 1A).
     direct_clo_attainment_pct: float | None
 
+    # Indirect CLO attainment independently computed from raw rating: (rating / 5) * 100
+    indirect_clo_attainment_pct: float | None = None
+
     # Based on the fixed institutional threshold of 70%.
     met_threshold: bool | None
 
-    # The new 4-tier descriptive level.
+    # The 4-tier descriptive level.
     clo_level: Literal["Exceptional", "Proficient", "Basic", "Below Basic"] | None
 
     formula_version: str

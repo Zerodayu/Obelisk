@@ -12,19 +12,21 @@ The OBELISK Python server is an **authoritative, pure-compute engine** for Outco
 It does **not** store student records in a database, manage logins, or render user interfaces. Instead, it performs two distinct data processing jobs:
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 THE DUAL RESPONSIBILITY                                │
-├───────────────────────────────────────────┬────────────────────────────────────────────┤
-│         PROCESS 1: PER-COURSE ETL         │      PROCESS 2: INSTITUTIONAL ANALYTICS    │
-│            (Asynchronous / Jobs)          │                (Synchronous)               │
-├───────────────────────────────────────────┼────────────────────────────────────────────┤
-│ • Ingests instructor Excel workbooks      │ • Receives consolidated semester data from │
-│ • Validates worksheets and templates      │   multiple courses across departments      │
-│ • Calculates individual Direct CLO scores │ • Aggregates CLO means by Dept / Prog / AVP│
-│ • Evaluates data completeness (Rule 1)    │ • Rolls up CLOs into PLO Attainment        │
-│ • Detects learning gaps & generates course│ • Evaluates program completeness (Rule 3)  │
-│   CQI action recommendations              │ • Generates executive AI summaries (VPAA)  │
-└───────────────────────────────────────────┴────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                 THE DUAL RESPONSIBILITY                     │
+├───────────────────────────────────────────┬─────────────────────────────────┤
+│         PROCESS 1: PER-COURSE ETL         │      PROCESS 2: INSTITUTIONAL   │
+│            (Asynchronous / Jobs)          │             ANALYTICS           │
+├───────────────────────────────────────────┼─────────────────────────────────┤
+│ • Ingests AUN-OBE Excel workbooks         │ • Receives consolidated         │
+│ • Validates worksheets and markers        │   semester data from webapp     │
+│ • Discovers dynamic CLO blocks & rosters  │ • Aggregates CLO means by Dept  │
+│ • Recomputes Direct Attainment (from raw) │ • Rolls up CLOs into PLO        │
+│ • Recomputes Indirect Attainment (rating) │   Attainment (Formulas 7A/7C)   │
+│ • Evaluates data completeness (Rule 1)    │ • Evaluates program completeness│
+│ • Detects learning gaps & generates       │   (Rule 3)                      │
+│   AI CQI action recommendations           │ • Generates executive AI briefs │
+└───────────────────────────────────────────┴─────────────────────────────────┘
 ```
 
 ---
@@ -38,17 +40,18 @@ If you search the codebase for user tables, database migrations, or login checks
 │                    ELYSIA WEBAPP (TS)                   │
 │ • Manages User Logins & Roles (Instructor, Dean, VPAA)  │
 │ • Owns Application Database (Postgres / Prisma)         │
+│ • Manages Curriculum Map & CLO-to-PLO correlations      │
 │ • Handles Course Submission & Approval Workflows        │
 │ • Persists Computed Attainment & Audit Logs             │
-└──────────────┬───────────────────────────▲──────────────┘
+└──────────────┬──────────────────────────▲───────────────┘
                │ HTTP API Requests         │ JSON Attainment
                │ (Workbooks & Payloads)    │ & Summaries
-┌──────────────▼───────────────────────────┴──────────────┐
+┌──────────────▼──────────────────────────┴───────────────┐
 │             OBELISK PYTHON SERVICE (Port 8000)          │
 │ • Pure Compute: No Application DB, No RBAC              │
 │ • Redis: Used strictly as a durable task queue          │
-│ • Excel Parsing: openpyxl extraction                    │
-│ • OBE Math: Formulas 1A, 2A, 7A, 7C, Rules 1 & 3       │
+│ • Excel Parsing: openpyxl extraction (v2 AUN-OBE)       │
+│ • OBE Math: Formulas 1A, 1B, 2A, 7A, 7C, Rules 1 & 3    │
 │ • AI/CQI: Gap detection & Google Gemini generation      │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -60,11 +63,12 @@ If you search the codebase for user tables, database migrations, or login checks
 | User authentication & role checks (RBAC) | **YES** | NO (Trusts calling server) |
 | Optional caller secret check (`X-Webapp-Secret`) | Sends header | Validates header |
 | Excel file storage & long-term persistence | **YES** | NO (Stores temporarily during job) |
-| Extracting messy cell coordinates from `.xlsx` | NO | **YES** (`ExcelExtractor`) |
+| CLO-to-PLO curriculum mapping definition | **YES** (Prisma / DB) | NO (Retired from Excel) |
+| Extracting raw scores from AUN-OBE `.xlsx` | NO | **YES** (`ExcelExtractor`) |
 | Calculating Formula 1A (Student Direct CLO %) | NO | **YES** (`SimpleTransformer`) |
+| Calculating Formula 1B (Student Indirect CLO %) | NO | **YES** (`SimpleTransformer`) |
 | Applying 70% threshold & 4-tier CLO levels | NO | **YES** (`SimpleTransformer`) |
-| Rule 1 (Prelim/Midterm/Final exam completeness)| NO | **YES** (`SimpleTransformer`) |
-| Long-term database records (`CloAttainment`) | **YES** | NO |
+| Rule 1 (Prelim/Midterm/Final completeness) | NO | **YES** (`SimpleTransformer`) |
 | Rolling up CLO attainment into PLOs (Formulas 7A/7C)| NO | **YES** (`institutional_summary.py`) |
 | Rule 3 (PLO 60% completeness check) | NO | **YES** (`institutional_summary.py`) |
 | AI CQI strategic text generation | NO | **YES** (`cqi_recommender.py`) |
@@ -86,8 +90,8 @@ flowchart TD
     
     subgraph Background Worker Loop
         F["Worker pops job_id from Redis (BRPOP)"]
-        F --> G["Extract Phase (openpyxl)"]
-        G --> H["Transform Phase (Formula 1A, Rule 1)"]
+        F --> G["Extract Phase (openpyxl; Direct & Indirect sheets)"]
+        G --> H["Transform Phase (Formulas 1A & 1B, Rule 1)"]
         H --> I["Load Phase (DummyLoader formats JSON)"]
         I --> J["Save result to Redis (obelisk:job:job_id)"]
     end
@@ -117,42 +121,40 @@ flowchart TD
 #### Step 3: Extraction (`app/etl/extract/extractor.py`)
 1. **Workbook Load**: Opens `.xlsx` using `openpyxl` with `data_only=True` to read calculated formula values rather than formulas.
 2. **Sheet Verification**: Verifies presence of mandatory worksheets:
-   - `Database (LECTURE-RES-PRAC)`
-   - `Exam (LECTURE ONLY)`
-   - `COVERPAGE`
-   - `OUTPUT` (optional, for project deliverables)
-   - *Fails gracefully with a structured `MissingWorksheet` error if missing.*
-3. **Template Validation**: Checks marker cells (e.g., `B12` in Database sheet contains `"STUDENT NAME"`).
-4. **Course Type Gating**: Verifies cell `B6` declares `"LECTURE"`. If any other course type (like `"RESEARCH"`) is present, halts with structured `UnsupportedCourseType` error.
-5. **Roster Extraction**: Reads student IDs and names starting from row 17 (Database sheet) and row 22 (Exam/Output sheets).
-6. **Assessment Blocks**: Reads assessment headers (category, number, mapped CLO code, max score) and aligns student rows to column scores:
-   - Prelim, Midterm, and Final TLA/AT activities from Database sheet.
-   - Major exams from Exam sheet.
-   - Major outputs from Output sheet.
-7. **CLO-PLO Mapping**: Reads the correlation matrix on the `COVERPAGE` (starts at cell `A26` with header `"CLO-PLO"` until the sentinel row `"AVERAGE"`).
+   - `Direct CLO`
+   - `Indirect CLO`
+   - *If either is missing, fails immediately with a structured `MissingWorksheet` error.*
+3. **Template Validation**: Checks marker cells (`A1` on both sheets) to ensure the file is an authentic AUN-OBE template. Old templates (with `Database`/`Exam`/`COVERPAGE` sheets) raise structured errors immediately.
+4. **Course Type Gating**: If the workbook has a `SETUP` sheet, verifies cell `B6` declares `"LECTURE"`. If any other course type (like `"RESEARCH"`) is present, halts with structured `UnsupportedCourseType` error.
+5. **Dynamic CLO Block Discovery**:
+   - `Direct CLO`: Scans row 3 starting at Column C (col 3), stepping by 7 columns until an empty cell is encountered.
+   - `Indirect CLO`: Scans row 4 starting at Column C (col 3), stepping by 2 columns until an empty cell is encountered.
+6. **Dynamic Roster Discovery**: Reads student IDs and names starting from row 5, terminating at the first empty row or known summary-row label (`CLASS AVERAGE`, `MEAN RATING`, `%age CO ATTAINMENT`).
+7. **Raw Value Extraction**:
+   - Direct: Extracts 6 raw cells per block: Prelim Score/Max, Midterm Score/Max, Final Score/Max. (Never reads the Excel "Attainment %" formula column).
+   - Indirect: Extracts raw Likert Rating (1–5) per block. (Never reads the Excel "Attainment %" formula column).
+8. **CLO-PLO Mapping**: CLO-PLO mapping is permanently retired from python-server; returns an empty list `[]`.
 
 #### Step 4: Transformation (`app/etl/transform/transformer.py`)
-1. **Sanity Check**: Ensures every student's `raw_score <= max_score`. If violated, raises `TransformationError`.
-2. **CLO-PLO Correlation Gating**:
-   - Inspects the COVERPAGE mapping table.
-   - If a CLO has no valid non-zero correlation to any PLO, that CLO is **excluded** from calculation.
-   - The resulting record is emitted with `excluded_reason = "no_plo_mapping"` and all attainment numbers set to `null` so downstream systems know it was intentionally skipped.
-3. **Formula 1A Calculation (Direct CLO Attainment)**:
-   $$\text{Direct CLO Attainment \%} = \frac{\sum \text{Raw Scores of all assessments mapped to this CLO}}{\sum \text{Max Scores of those same assessments}}$$
-   *(Note: This is a direct mathematical ratio across all eligible tasks; no category weighting is applied).*
-4. **Institutional Threshold Evaluation**:
+1. **Formula 1A Calculation (Direct CLO Attainment)**:
+   Recomputed independently from the raw scores:
+   $$\text{direct\_clo\_attainment\_pct} = \frac{\text{Prelim Score} + \text{Midterm Score} + \text{Final Score}}{\text{Prelim Max} + \text{Midterm Max} + \text{Final Max}}$$
+2. **Formula 1B Calculation (Indirect CLO Attainment)**:
+   Recomputed independently from the survey rating:
+   $$\text{indirect\_clo\_attainment\_pct} = \left(\frac{\text{Rating}}{5.0}\right) \times 100$$
+3. **Institutional Threshold Evaluation**:
    - Compares the attainment percentage against the fixed institutional standard:
      $$\text{met\_threshold} = (\text{direct\_clo\_attainment\_pct} \ge 0.70)$$
-   - Note: The course-specific threshold written in cell `B10` is kept for metadata only; institutional evaluation always uses 70%.
-5. **4-Tier CLO Attainment Level**:
+4. **4-Tier CLO Attainment Level**:
    - $\ge 85\%$ $\rightarrow$ **Exceptional**
    - $70\% - 84\%$ $\rightarrow$ **Proficient**
    - $60\% - 69\%$ $\rightarrow$ **Basic**
    - $< 60\%$ $\rightarrow$ **Below Basic**
-6. **Rule 1: Assessment Completeness**:
-   - Checks if the student has at least one recorded score in **PRELIM**, **MIDTERM**, and **FINAL** periods for that specific CLO.
+5. **Rule 1: Assessment Completeness**:
+   - Checks if the student has recorded scores in **PRELIM**, **MIDTERM**, and **FINAL** periods for that specific CLO.
    - Flags `is_record_complete = true/false`.
    - Computes section-level completeness percentage (`section_completeness_pct`) and flags `rule1_met = (section_completeness_pct >= 0.60)`.
+6. **Output Shape Stability**: `excluded_reason` is set to `null` across all rows.
 7. **Formula Versioning**: Computes a deterministic SHA-256 hash representing the formula configuration for audit traceability.
 
 #### Step 5: Loading & Completion (`app/etl/load/loader.py`)
@@ -160,9 +162,9 @@ flowchart TD
    ```json
    {
      "loaded": {
-       "header": { "course_code": "IT101", ... },
+       "header": { "course_code": "GE 1", ... },
        "attainments": [ ... ],
-       "clo_plo_mapping": [ ... ]
+       "clo_plo_mapping": []
      }
    }
    ```
@@ -173,7 +175,7 @@ flowchart TD
 - Once the job is `completed`, the webapp can request an AI recommendation for that specific course.
 - Scans `attainments` for any CLO where students failed to meet the 70% threshold.
 - Replaces student names with anonymized placeholders (`Student A`, `Student B`) to protect privacy.
-- Sends the prompt to Google Gemini (`gemini-3.6-flash`).
+- Calls Google Gemini using the `google-genai` SDK (`gemini-3.6-flash`).
 - Returns structured Markdown with **Summary**, **Findings**, **Recommendations**, and **Pattern Flagged**.
 
 ---
@@ -218,13 +220,11 @@ Submissions are partitioned using `_generic_aggregator()` into:
 
 #### 3. Formula 2A: Section CLO Attainment (True Mean)
 Computes the true arithmetic mean of all student direct CLO attainment percentages in that group:
-$$\text{Mean CLO Attainment \%} = \frac{\sum \text{direct\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
-*(Rows with `excluded_reason = "no_plo_mapping"` are automatically omitted).*
+$$\text{Mean CLO Attainment} = \frac{\sum \text{direct\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
 
 #### 4. Formula 7A: Per-PLO Attainment Rollup
 For every Program Learning Outcome (PLO), finds all CLOs mapped to it across the courses:
-$$\text{PLO Attainment (Direct)} = \frac{\sum \text{Mean Attainment \% of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
-*(Unweighted average across mapped CLOs).*
+$$\text{PLO Attainment (Direct)} = \frac{\sum \text{Mean Attainment of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
 
 #### 5. Rule 3: PLO Data Completeness Standard
 Checks whether the underlying data for each PLO is statistically reliable:
@@ -232,7 +232,7 @@ $$\text{plo\_completeness\_pct} = \frac{\text{Count of mapped CLOs that satisfie
 $$\text{plo\_rule3\_met} = (\text{plo\_completeness\_pct} \ge 0.60)$$
 
 #### 6. Formula 7C: Program-Wide PLO Average
-Calculated **only** at the Program level (since PLOs belong to specific degree programs):
+Calculated **only** at the Program level:
 $$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\text{Total number of PLOs in program}}$$
 
 #### 7. Worst-Performing CLO Identification
@@ -260,15 +260,15 @@ The engine identifies the 3 lowest-scoring CLOs in each department, program, and
 
 ## 6. How Errors are Handled
 
-The service avoids unhandled 500 crashes. All predictable parsing and business logic issues raise subclasses of [`OBELISKError`](file:///D:/Jetbrains_IDE_Projects/pycharm/OBELISK-final/python-server/app/core/exceptions.py), which generate structured JSON responses:
+The service avoids unhandled 500 crashes. All predictable parsing and business logic issues raise subclasses of `OBELISKError`, which generate structured JSON responses:
 
 | Exception Class | Trigger Condition | Details Returned |
 |---|---|---|
 | `InvalidWorkbook` | Uploaded file cannot be opened as an Excel workbook | `file_path`, `underlying_error` |
-| `MissingWorksheet` | Workbook is missing a required sheet (e.g. `COVERPAGE`) | `expected_sheet_name`, `available_sheets` |
-| `InvalidTemplate` | Marker cell text does not match (e.g. `B12` != `"STUDENT NAME"`) | `sheet_name`, `cell`, `expected`, `found` |
-| `UnsupportedCourseType` | Workbook cell `B6` is not `"LECTURE"` | `course_type`, `supported_types` |
-| `TransformationError` | A student's raw score exceeds max score | Student name, CLO code, raw score, max score |
+| `MissingWorksheet` | Workbook is missing a required sheet (e.g. `Direct CLO`) | `expected_sheet_name`, `available_sheets` |
+| `InvalidTemplate` | Marker cell text does not match (e.g. `A1` marker mismatch) | `sheet_name`, `cell`, `expected`, `found` |
+| `UnsupportedCourseType` | Workbook cell `B6` in `SETUP` is not `"LECTURE"` | `course_type`, `supported_types` |
+| `TransformationError` | Invalid record format or computation impossibility | Contextual message |
 | `QueueOverloadedError` | Redis job queue has reached its maximum configured capacity | Current queue size, max capacity |
 | `UnauthorizedCaller` | Missing or invalid `X-Webapp-Secret` header | `header_name`, `reason` |
 
@@ -276,12 +276,12 @@ The service avoids unhandled 500 crashes. All predictable parsing and business l
 
 ## 7. Current Configurations and Toggles
 
-All configuration is managed in [`app/core/config.py`](file:///D:/Jetbrains_IDE_Projects/pycharm/OBELISK-final/python-server/app/core/config.py) via environment variables (`OBELISK_*` prefix):
+All configuration is managed in `app/core/config.py` via environment variables (`OBELISK_*` prefix):
 
 * **`OBELISK_REDIS_HOST` & `OBELISK_REDIS_PORT`**: Points to the Redis instance (default `localhost:6379`).
 * **`OBELISK_JOB_WORKER_COUNT`**: Number of parallel ETL worker coroutines (default `4`).
 * **`OBELISK_WEBAPP_SHARED_SECRET`**: If set, activates `X-Webapp-Secret` verification on protected endpoints.
 * **`OBELISK_LLM_API_KEY`**: API key for Google Gemini.
-* **`IS_DEBUG_MODE` in [`cqi_recommender.py`](file:///D:/Jetbrains_IDE_Projects/pycharm/OBELISK-final/python-server/app/analytics/cqi_recommender.py)**:
+* **`IS_DEBUG_MODE` in `cqi_recommender.py`**:
   - When `True` (default): Returns instant mock CQI responses so the system works completely offline without API keys.
   - When `False`: Makes real API calls to Google Gemini (`gemini-3.6-flash`).

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 from openpyxl import Workbook
 
+from app.etl import etl_const
 from app.workers import worker
 
 
@@ -15,23 +16,28 @@ class TestUnsupportedCourseType(unittest.IsolatedAsyncioTestCase):
             workbook_path = Path(tmpdir) / "unsupported_course_type.xlsx"
             wb = Workbook()
 
-            db = wb.active
-            db.title = "Database (LECTURE-RES-PRAC)"
-            db["B12"] = "STUDENT NAME"
-            db["B3"] = "SY 2025-2026, 1st Sem"
-            db["B4"] = "TEST-101"
-            db["B5"] = "Synthetic Test Course"
-            db["B6"] = "RESEARCH"
-            db["B7"] = "A"
-            db["B8"] = 1
-            db["B9"] = "Test Instructor"
-            db["B10"] = 0.75
-            db["B11"] = "Numeric"
+            # Direct CLO sheet with valid marker
+            ws_d = wb.active
+            ws_d.title = etl_const.SheetNames.DIRECT_CLO
+            ws_d[etl_const.TemplateValidation.DIRECT_CLO_MARKER_CELL] = etl_const.TemplateValidation.DIRECT_CLO_MARKER_VALUE
+            ws_d.cell(row=etl_const.DirectCloSheet.CLO_LABEL_ROW, column=etl_const.DirectCloSheet.FIRST_BLOCK_START_COL, value="CLO1")
+            ws_d.cell(row=etl_const.DirectCloSheet.DATA_START_ROW, column=1, value="S001")
+            ws_d.cell(row=etl_const.DirectCloSheet.DATA_START_ROW, column=2, value="Test Student")
 
-            exam = wb.create_sheet("Exam (LECTURE ONLY)")
-            exam["B18"] = "STUDENT NAME"
+            # Indirect CLO sheet with valid marker
+            ws_i = wb.create_sheet(etl_const.SheetNames.INDIRECT_CLO)
+            ws_i[etl_const.TemplateValidation.INDIRECT_CLO_MARKER_CELL] = etl_const.TemplateValidation.INDIRECT_CLO_MARKER_VALUE
+            ws_i.cell(row=etl_const.IndirectCloSheet.HEADER_ROW, column=etl_const.IndirectCloSheet.FIRST_BLOCK_START_COL, value="CLO1 Rating (1-5)")
 
-            wb.create_sheet("COVERPAGE")
+            # SETUP sheet with unsupported course type 'RESEARCH'
+            ws_setup = wb.create_sheet(etl_const.SheetNames.SETUP)
+            ws_setup["B3"] = "Synthetic Test Course"
+            ws_setup["D3"] = "TEST-101"
+            ws_setup["B4"] = "A"
+            ws_setup["D4"] = "SY 2025-2026, 1st Sem"
+            ws_setup["B5"] = "Test Instructor"
+            ws_setup["B6"] = "RESEARCH"  # Course type
+
             wb.save(workbook_path)
             wb.close()
 
@@ -56,4 +62,3 @@ class TestUnsupportedCourseType(unittest.IsolatedAsyncioTestCase):
                 "Course type 'RESEARCH' is not yet supported. Only LECTURE course records can be processed at this time.",
             )
             self.assertEqual(error_payload["details"], {"course_type": "RESEARCH", "supported_types": ["LECTURE"]})
-

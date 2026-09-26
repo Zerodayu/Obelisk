@@ -1,302 +1,356 @@
 import asyncio
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 from openpyxl import load_workbook
-from openpyxl.utils.cell import column_index_from_string
 from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.utils.cell import column_index_from_string
 
 from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType
 from app.core.logging import logger
 from app.etl.abstracts import Extractor
 from app.schemas.class_record import ClassRecordHeader, RawScoreRecord
+from app.schemas.extracted import StudentRawCloData
 
 from .. import etl_const
 
 
 class ExcelExtractor(Extractor):
-    """Extracts data from a standard JMCFI class-record Excel workbook."""
+    """
+    Extracts data from the AUN-OBE JMCFI class-record Excel workbook (v2 layout).
+    Reads 'Direct CLO' and 'Indirect CLO' sheets.
+    CLO-PLO mapping is permanently retired and returns an empty list.
+    """
 
-    async def extract(self, source: Any) -> tuple[ClassRecordHeader, list[RawScoreRecord], list[dict[str, Any]]]:
+    async def extract(self, source: Any) -> tuple[ClassRecordHeader, list[StudentRawCloData | RawScoreRecord], list[dict[str, Any]]]:
         """
         Main entrypoint to extract all data from a given workbook source.
         """
         file_path = self._resolve_file_path(source)
         return await asyncio.to_thread(self._extract_sync, file_path)
 
-    def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[RawScoreRecord], list[dict[str, Any]]]:
+    def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[StudentRawCloData], list[dict[str, Any]]]:
         """Synchronous wrapper for all extraction operations."""
         try:
             workbook = load_workbook(file_path, data_only=True)
         except Exception as exc:
             raise InvalidWorkbook(file_path=file_path, underlying_error=str(exc))
 
-        db_sheet = self._require_sheet(workbook, etl_const.SheetNames.DATABASE)
-        exam_sheet = self._require_sheet(workbook, etl_const.SheetNames.EXAM)
-        cover_sheet = self._require_sheet(workbook, etl_const.SheetNames.COVERPAGE)
-        output_sheet = workbook[etl_const.SheetNames.OUTPUT] if etl_const.SheetNames.OUTPUT in workbook.sheetnames else None
+        # 1. Template Validation BEFORE any extraction
+        # Must contain REQUIRED_SHEETS: 'Direct CLO' and 'Indirect CLO'
+        for req_sheet in etl_const.TemplateValidation.REQUIRED_SHEETS:
+            if req_sheet not in workbook.sheetnames:
+                raise MissingWorksheet(expected_sheet_name=req_sheet, available_sheets=list(workbook.sheetnames))
 
-        self._validate_template(db_sheet, etl_const.TemplateValidation.DATABASE_STUDENT_NAME_CELL)
-        self._validate_template(exam_sheet, etl_const.TemplateValidation.EXAM_OUTPUT_STUDENT_NAME_CELL)
-        if output_sheet is not None:
-            self._validate_template(output_sheet, etl_const.TemplateValidation.EXAM_OUTPUT_STUDENT_NAME_CELL)
+        direct_sheet = workbook[etl_const.SheetNames.DIRECT_CLO]
+        indirect_sheet = workbook[etl_const.SheetNames.INDIRECT_CLO]
 
-        header = self._build_header(db_sheet, cover_sheet)
-        clo_plo_mapping = self._extract_clo_plo_mapping(cover_sheet)
+        # Validate marker cells
+        self._validate_sheet_marker(
+            sheet=direct_sheet,
+            cell=etl_const.TemplateValidation.DIRECT_CLO_MARKER_CELL,
+            expected=etl_const.TemplateValidation.DIRECT_CLO_MARKER_VALUE,
+        )
+        self._validate_sheet_marker(
+            sheet=indirect_sheet,
+            cell=etl_const.TemplateValidation.INDIRECT_CLO_MARKER_CELL,
+            expected=etl_const.TemplateValidation.INDIRECT_CLO_MARKER_VALUE,
+        )
 
-        db_students = self._read_roster(db_sheet, start_row=etl_const.Roster.DATABASE_START_ROW)
-        records: list[RawScoreRecord] = []
+        # 2. Dynamic CLO block discovery
+        direct_clos = self._discover_direct_clos(direct_sheet)
+        indirect_clos = self._discover_indirect_clos(indirect_sheet)
 
-        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period=etl_const.GradingPeriod.PRELIM, columns=etl_const.DatabaseSheet.PRELIM_COLS))
-        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period=etl_const.GradingPeriod.MIDTERM, columns=etl_const.DatabaseSheet.MIDTERM_COLS))
-        records.extend(self._extract_database_block(sheet=db_sheet, students=db_students, grading_period=etl_const.GradingPeriod.FINAL, columns=etl_const.DatabaseSheet.FINAL_COLS))
+        logger.info(
+            "dynamic_clos_discovered",
+            direct_clos=[c[1] for c in direct_clos],
+            indirect_clos=[c[1] for c in indirect_clos],
+        )
 
-        db_students_by_name = {self._normalize_name(student["student_name"]): student for student in db_students if student["student_name"]}
-        records.extend(self._extract_exam_sheet(exam_sheet, db_students_by_name))
+        # 3. Dynamic Student Roster discovery from Direct CLO sheet
+        students = self._read_direct_roster(direct_sheet, start_row=etl_const.DirectCloSheet.DATA_START_ROW)
 
-        if output_sheet is not None:
-            records.extend(self._extract_output_sheet(output_sheet, db_students_by_name))
+        # 4. Extract raw Direct CLO scores per student per CLO
+        # Key: (student_id, student_name, clo_code)
+        extracted_map: dict[tuple[str | None, str, str], StudentRawCloData] = {}
+
+        for student in students:
+            s_row = student["row"]
+            s_id = student["student_id"]
+            s_name = student["student_name"]
+
+            for col_idx, clo_code in direct_clos:
+                p_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_SCORE).value)
+                p_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_MAX).value)
+                m_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_SCORE).value)
+                m_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_MAX).value)
+                f_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_SCORE).value)
+                f_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_MAX).value)
+
+                extracted_map[(s_id, s_name, clo_code)] = StudentRawCloData(
+                    student_id=s_id,
+                    student_name=s_name,
+                    clo_code=clo_code,
+                    prelim_score=p_score,
+                    prelim_max=p_max,
+                    midterm_score=m_score,
+                    midterm_max=m_max,
+                    final_score=f_score,
+                    final_max=f_max,
+                    indirect_rating=None,
+                )
+
+        # 5. Extract raw Indirect CLO ratings per student per CLO
+        indirect_students = self._read_indirect_roster(indirect_sheet, start_row=etl_const.IndirectCloSheet.DATA_START_ROW)
+        indirect_students_by_id = {s["student_id"]: s for s in indirect_students if s["student_id"]}
+        indirect_students_by_name = {self._normalize_name(s["student_name"]): s for s in indirect_students if s["student_name"]}
+
+        for col_idx, clo_code in indirect_clos:
+            for student in students:
+                s_id = student["student_id"]
+                s_name = student["student_name"]
+                
+                matched = indirect_students_by_id.get(s_id) or indirect_students_by_name.get(self._normalize_name(s_name))
+                if matched:
+                    rating = self._as_optional_float(indirect_sheet.cell(row=matched["row"], column=col_idx + etl_const.IndirectCloSheet.BlockOffsets.RATING).value)
+                else:
+                    rating = None
+
+                key = (s_id, s_name, clo_code)
+                if key in extracted_map:
+                    extracted_map[key].indirect_rating = rating
+                else:
+                    extracted_map[key] = StudentRawCloData(
+                        student_id=s_id,
+                        student_name=s_name,
+                        clo_code=clo_code,
+                        indirect_rating=rating,
+                    )
+
+        records = list(extracted_map.values())
+
+        # 6. Extract Header metadata
+        header = self._build_header(workbook, num_students=len(students))
+
+        # CLO-PLO mapping is permanently retired
+        clo_plo_mapping: list[dict[str, Any]] = []
 
         return header, records, clo_plo_mapping
 
-    def _extract_clo_plo_mapping(self, sheet: Worksheet) -> List[Dict[str, Any]]:
+    def _discover_direct_clos(self, sheet: Worksheet) -> list[tuple[int, str]]:
         """
-        Extracts the CLO-PLO correlation mapping table from the COVERPAGE.
+        Discovers CLO blocks from the Direct CLO sheet dynamically.
+        Scans row CLO_LABEL_ROW starting at FIRST_BLOCK_START_COL stepping by BLOCK_WIDTH
+        until a blank cell is encountered.
         """
-        try:
-            self._validate_template(sheet, etl_const.CloPlo.TABLE_HEADER_CELL, expected=etl_const.CloPlo.TABLE_HEADER_VALUE)
-        except InvalidTemplate:
-            logger.warning("clo_plo_mapping_not_found", sheet=sheet.title, reason=f"Header '{etl_const.CloPlo.TABLE_HEADER_VALUE}' not found at {etl_const.CloPlo.TABLE_HEADER_CELL}.")
-            return []
-        
-        mapping = []
-        plo_headers = {}
-        for col_idx in range(etl_const.CloPlo.PLO_START_COL, sheet.max_column + 1):
-            plo_code = self._as_optional_string(sheet.cell(row=etl_const.CloPlo.PLO_HEADER_ROW, column=col_idx).value)
-            if not plo_code: break
-            plo_headers[col_idx] = plo_code
-        
-        for row_idx in range(etl_const.CloPlo.FIRST_CLO_ROW, sheet.max_row + 1):
-            clo_code = self._as_optional_string(sheet.cell(row=row_idx, column=etl_const.CloPlo.CLO_CODE_COL).value)
-            if not clo_code or clo_code.strip().upper() == etl_const.CloPlo.END_OF_TABLE_SENTINEL: break
-            for col_idx, plo_code in plo_headers.items():
-                correlation = sheet.cell(row=row_idx, column=col_idx).value
-                if correlation is not None and str(correlation).strip() != "":
-                    mapping.append({"clo_code": clo_code, "plo_code": plo_code, "correlation_strength": self._as_int(correlation)})
-        
-        logger.info("clo_plo_mapping_extracted", count=len(mapping))
-        return mapping
+        col = etl_const.DirectCloSheet.FIRST_BLOCK_START_COL
+        clos: list[tuple[int, str]] = []
+        while col <= sheet.max_column:
+            val = sheet.cell(row=etl_const.DirectCloSheet.CLO_LABEL_ROW, column=col).value
+            if val is None or str(val).strip() == "":
+                break
+            clo_name = str(val).strip()
+            clos.append((col, clo_name))
+            col += etl_const.DirectCloSheet.BLOCK_WIDTH
+        return clos
+
+    def _discover_indirect_clos(self, sheet: Worksheet) -> list[tuple[int, str]]:
+        """
+        Discovers CLO blocks from the Indirect CLO sheet dynamically.
+        Scans row HEADER_ROW starting at FIRST_BLOCK_START_COL stepping by BLOCK_WIDTH
+        until a blank cell is encountered. Extracts CLO code from header (e.g. 'CLO1 Rating (1-5)' -> 'CLO1').
+        """
+        col = etl_const.IndirectCloSheet.FIRST_BLOCK_START_COL
+        clos: list[tuple[int, str]] = []
+        while col <= sheet.max_column:
+            val = sheet.cell(row=etl_const.IndirectCloSheet.HEADER_ROW, column=col).value
+            if val is None or str(val).strip() == "":
+                break
+            raw_text = str(val).strip()
+            clo_code = raw_text.split()[0].strip() if raw_text else f"CLO{len(clos) + 1}"
+            clos.append((col, clo_code))
+            col += etl_const.IndirectCloSheet.BLOCK_WIDTH
+        return clos
+
+    def _read_direct_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, Any]]:
+        """
+        Reads student roster from Direct CLO sheet until a blank row or summary row label.
+        """
+        students: list[dict[str, Any]] = []
+        id_col_idx = column_index_from_string(etl_const.DirectCloSheet.STUDENT_ID_COL)
+        name_col_idx = column_index_from_string(etl_const.DirectCloSheet.STUDENT_NAME_COL)
+        summary_col_idx = column_index_from_string(etl_const.DirectCloSheet.SUMMARY_ROW_LABEL_COL)
+        prefix = etl_const.DirectCloSheet.SUMMARY_ROW_LABEL_PREFIX.upper()
+
+        row = start_row
+        while row <= sheet.max_row:
+            id_val = sheet.cell(row=row, column=id_col_idx).value
+            name_val = sheet.cell(row=row, column=name_col_idx).value
+            summary_val = sheet.cell(row=row, column=summary_col_idx).value
+
+            id_str = self._as_optional_string(id_val)
+            name_str = self._as_optional_string(name_val)
+            summary_str = self._as_optional_string(summary_val)
+
+            # Check stop condition: blank row
+            if not id_str and not name_str:
+                break
+
+            # Check stop condition: summary label
+            if (summary_str and summary_str.upper().startswith(prefix)) or \
+               (name_str and name_str.upper().startswith(prefix)) or \
+               (id_str and id_str.upper().startswith(prefix)):
+                break
+
+            students.append({
+                "student_id": id_str,
+                "student_name": name_str or "",
+                "row": row,
+            })
+            row += 1
+
+        return students
+
+    def _read_indirect_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, Any]]:
+        """
+        Reads student roster from Indirect CLO sheet until a blank row or summary row label.
+        """
+        students: list[dict[str, Any]] = []
+        id_col_idx = column_index_from_string(etl_const.IndirectCloSheet.STUDENT_ID_COL)
+        name_col_idx = column_index_from_string(etl_const.IndirectCloSheet.STUDENT_NAME_COL)
+        summary_col_idx = column_index_from_string(etl_const.IndirectCloSheet.SUMMARY_ROW_LABEL_COL)
+        summary_labels = [s.upper() for s in etl_const.IndirectCloSheet.SUMMARY_ROW_LABELS]
+
+        row = start_row
+        while row <= sheet.max_row:
+            id_val = sheet.cell(row=row, column=id_col_idx).value
+            name_val = sheet.cell(row=row, column=name_col_idx).value
+            summary_val = sheet.cell(row=row, column=summary_col_idx).value
+
+            id_str = self._as_optional_string(id_val)
+            name_str = self._as_optional_string(name_val)
+            summary_str = self._as_optional_string(summary_val)
+
+            # Check stop condition: blank row
+            if not id_str and not name_str:
+                break
+
+            # Check stop condition: summary label
+            if any(lbl in (summary_str or "").upper() for lbl in summary_labels) or \
+               any(lbl in (id_str or "").upper() for lbl in summary_labels):
+                break
+
+            students.append({
+                "student_id": id_str,
+                "student_name": name_str or "",
+                "row": row,
+            })
+            row += 1
+
+        return students
+
+    def _validate_sheet_marker(self, sheet: Worksheet, cell: str, expected: str) -> None:
+        """Validates that a sheet contains the expected marker value at cell."""
+        raw_val = sheet[cell].value
+        norm_val = self._normalize_text(raw_val)
+        norm_exp = self._normalize_text(expected)
+        if norm_val != norm_exp:
+            raise InvalidTemplate(
+                sheet_name=sheet.title,
+                cell=cell,
+                expected=expected,
+                found=str(raw_val),
+            )
+
+    def _build_header(self, workbook: Any, num_students: int) -> ClassRecordHeader:
+        """
+        Builds ClassRecordHeader from SETUP sheet if present, or defaults gracefully.
+        Enforces course_type='LECTURE'.
+        """
+        course_code = None
+        course_title = None
+        course_type = "LECTURE"
+        section = None
+        semester_year = "Unknown"
+        instructor_name = None
+        threshold = etl_const.Transformation.INSTITUTIONAL_THRESHOLD
+        grading_system = None
+
+        if etl_const.SheetNames.SETUP in workbook.sheetnames:
+            ws_setup = workbook[etl_const.SheetNames.SETUP]
+            course_title = self._as_optional_string(ws_setup["B3"].value)
+            course_code = self._as_optional_string(ws_setup["D3"].value)
+            section = self._as_optional_string(ws_setup["B4"].value)
+            sem = self._as_optional_string(ws_setup["D4"].value)
+            if sem:
+                semester_year = sem
+            instructor_name = self._as_optional_string(ws_setup["B5"].value)
+            
+            # Check course type if specified in SETUP (e.g. B6)
+            c_type = self._as_optional_string(ws_setup["B6"].value)
+            if c_type:
+                course_type = c_type.strip().upper()
+                if course_type != "LECTURE":
+                    raise UnsupportedCourseType(course_type=c_type, supported_types=["LECTURE"])
+
+            thresh_val = self._as_optional_float(ws_setup["H9"].value) or self._as_optional_float(ws_setup["E9"].value)
+            if thresh_val is not None:
+                threshold = thresh_val / 100.0 if thresh_val > 1.0 else thresh_val
+
+        return ClassRecordHeader(
+            course_code=course_code,
+            course_title=course_title,
+            course_type=course_type,
+            section=section,
+            semester_year=semester_year,
+            instructor_name=instructor_name,
+            no_of_students=num_students,
+            threshold=threshold,
+            grading_system=grading_system,
+            workbook_configured_weights_unused=None,
+        )
 
     @staticmethod
     def _resolve_file_path(source: Any) -> str:
         """Finds a valid file path from various possible source types."""
         if isinstance(source, dict):
             path = source.get("file_path") or source.get("path")
-            if path: return str(path)
+            if path:
+                return str(path)
         if hasattr(source, "file_path"):
             path = getattr(source, "file_path")
-            if path: return str(path)
+            if path:
+                return str(path)
         if isinstance(source, (str, Path)):
             return str(source)
         raise InvalidWorkbook(file_path=str(source), underlying_error="Invalid source type")
 
-    def _require_sheet(self, workbook: Any, sheet_name: str) -> Worksheet:
-        """Finds a sheet by name in the workbook, raising a detailed error if not found."""
-        if sheet_name not in workbook.sheetnames:
-            raise MissingWorksheet(expected_sheet_name=sheet_name, available_sheets=list(workbook.sheetnames))
-        return workbook[sheet_name]
-
-    def _validate_template(self, sheet: Worksheet, header_cell: str, expected: str = etl_const.TemplateValidation.DEFAULT_EXPECTED_VALUE) -> None:
-        """Checks for a specific header value in a cell to validate the template version."""
-        header_value = self._normalize_text(sheet[header_cell].value)
-        if header_value != expected:
-            raise InvalidTemplate(sheet_name=sheet.title, cell=header_cell, expected=expected, found=str(header_value))
-
-    def _build_header(self, db_sheet: Worksheet, cover_sheet: Worksheet) -> ClassRecordHeader:
-        semester_year = self._as_string(db_sheet[etl_const.HeaderData.SEMESTER_YEAR].value)
-        course_type = self._as_string(db_sheet[etl_const.HeaderData.COURSE_TYPE].value)
-        if course_type.strip().upper() != "LECTURE":
-            raise UnsupportedCourseType(course_type=course_type, supported_types=["LECTURE"])
-        no_of_students = self._as_int(db_sheet[etl_const.HeaderData.NO_OF_STUDENTS].value)
-        threshold = self._as_float(db_sheet[etl_const.HeaderData.THRESHOLD].value)
-        
-        weights: dict[str, float] = {}
-        d5 = self._as_string(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_1_NAME].value)
-        if d5: weights[d5] = self._as_float(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_1_VALUE].value)
-        e5 = self._as_string(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_2_NAME].value)
-        if e5: weights[e5] = self._as_float(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_2_VALUE].value)
-        f5 = self._as_string(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_3_NAME].value)
-        if f5: weights[f5] = self._as_float(db_sheet[etl_const.HeaderData.WEIGHT_COMPONENT_3_VALUE].value)
-        
-        return ClassRecordHeader(
-            course_code=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_CODE].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.COURSE_CODE)),
-            course_title=self._coalesce_optional(db_sheet[etl_const.HeaderData.COURSE_TITLE].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.COURSE_TITLE)),
-            course_type=course_type,
-            section=self._coalesce_optional(db_sheet[etl_const.HeaderData.SECTION].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.SECTION)),
-            semester_year=semester_year,
-            instructor_name=self._coalesce_optional(db_sheet[etl_const.HeaderData.INSTRUCTOR_NAME].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.INSTRUCTOR_NAME)),
-            no_of_students=no_of_students,
-            threshold=threshold,
-            grading_system=self._coalesce_optional(db_sheet[etl_const.HeaderData.GRADING_SYSTEM].value, self._find_cover_value(cover_sheet, etl_const.CoverPageLabels.GRADING_SYSTEM)),
-            workbook_configured_weights_unused=weights if weights else None,
-        )
-
-    def _read_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, str | int | None]]:
-        students: list[dict[str, str | int | None]] = []
-        row = start_row
-        while True:
-            student_id = self._as_optional_string(sheet[f"{etl_const.Roster.STUDENT_ID_COL}{row}"].value)
-            student_name = self._as_optional_string(sheet[f"{etl_const.Roster.STUDENT_NAME_COL}{row}"].value)
-            if not student_id and not student_name:
-                break
-            if student_name:
-                students.append({"student_id": student_id, "student_name": student_name, "row": row})
-            row += 1
-        return students
-
-    def _extract_database_block(self, sheet: Worksheet, students: list[dict[str, str | int | None]], grading_period: str, columns: list[str]) -> list[RawScoreRecord]:
-        records: list[RawScoreRecord] = []
-        for col in columns:
-            max_score = self._as_optional_float(sheet[f"{col}{etl_const.DatabaseSheet.MAX_SCORE_ROW}"].value)
-            clo_code = self._as_optional_string(sheet[f"{col}{etl_const.DatabaseSheet.CLO_CODE_ROW}"].value)
-            if max_score is None or clo_code is None: continue
-            
-            assessment_category = self._as_string(sheet[f"{col}{etl_const.DatabaseSheet.ASSESSMENT_CATEGORY_ROW}"].value)
-            assessment_no = self._as_int(sheet[f"{col}{etl_const.DatabaseSheet.ASSESSMENT_NO_ROW}"].value)
-            activity_name = self._as_optional_string(sheet[f"{col}{etl_const.DatabaseSheet.ACTIVITY_NAME_ROW}"].value)
-            col_idx = column_index_from_string(col)
-            
-            for student in students:
-                raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
-                records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=grading_period, assessment_category=assessment_category, assessment_no=assessment_no, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
-        return records
-
-    def _extract_exam_sheet(self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | int | None]]) -> list[RawScoreRecord]:
-        exam_students = self._read_roster(sheet, start_row=etl_const.Roster.EXAM_AND_OUTPUT_START_ROW)
-        student_lookup = self._merge_roster_by_name(exam_students, db_students_by_name)
-        records: list[RawScoreRecord] = []
-        
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.PRELIM, columns=etl_const.ExamSheet.PRELIM_COLS, activity_name=etl_const.AssessmentNames.PRELIM_EXAM))
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.MIDTERM, columns=etl_const.ExamSheet.MIDTERM_COLS, activity_name=etl_const.AssessmentNames.MIDTERM_EXAM))
-        records.extend(self._extract_exam_columns(sheet=sheet, students=student_lookup, grading_period=etl_const.GradingPeriod.FINAL, columns=etl_const.ExamSheet.FINAL_COLS, activity_name=etl_const.AssessmentNames.FINAL_EXAM))
-        
-        return records
-
-    def _extract_exam_columns(self, sheet: Worksheet, students: list[dict[str, str | int | None]], grading_period: str, columns: list[str], activity_name: str) -> list[RawScoreRecord]:
-        records: list[RawScoreRecord] = []
-        for idx, col in enumerate(columns, start=1):
-            max_score = self._as_optional_float(sheet[f"{col}{etl_const.ExamSheet.MAX_SCORE_ROW}"].value)
-            if max_score is None: continue
-            
-            clo_code = self._as_optional_string(sheet[f"{col}{etl_const.ExamSheet.CLO_CODE_ROW}"].value)
-            if clo_code is None: continue
-            
-            col_idx = column_index_from_string(col)
-            for student in students:
-                raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
-                records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=grading_period, assessment_category=etl_const.AssessmentCategory.EXAM, assessment_no=idx, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
-        return records
-
-    def _extract_output_sheet(self, sheet: Worksheet, db_students_by_name: dict[str, dict[str, str | int | None]]) -> list[RawScoreRecord]:
-        output_students = self._read_roster(sheet, start_row=etl_const.Roster.EXAM_AND_OUTPUT_START_ROW)
-        students = self._merge_roster_by_name(output_students, db_students_by_name)
-        records: list[RawScoreRecord] = []
-        
-        period_columns = {
-            etl_const.GradingPeriod.PRELIM: etl_const.OutputSheet.PRELIM_COLS,
-            etl_const.GradingPeriod.MIDTERM: etl_const.OutputSheet.MIDTERM_COLS,
-            etl_const.GradingPeriod.FINAL: etl_const.OutputSheet.FINAL_COLS
-        }
-        
-        for period, columns in period_columns.items():
-            assessment_no = 0
-            for col in columns:
-                max_score = self._as_optional_float(sheet[f"{col}{etl_const.OutputSheet.MAX_SCORE_ROW}"].value)
-                if max_score is None: continue
-                
-                clo_code = self._as_optional_string(sheet[f"{col}{etl_const.OutputSheet.CLO_CODE_ROW}"].value)
-                if clo_code is None: continue
-                
-                assessment_no += 1
-                activity_name = self._as_optional_string(sheet[f"{col}{etl_const.OutputSheet.ACTIVITY_NAME_ROW}"].value)
-                col_idx = column_index_from_string(col)
-                
-                for student in students:
-                    raw_score = self._as_optional_float(sheet.cell(row=student["row"], column=col_idx).value)
-                    records.append(RawScoreRecord(student_id=student["student_id"], student_name=student["student_name"] or "", grading_period=period, assessment_category=etl_const.AssessmentCategory.OUTPUT, assessment_no=assessment_no, clo_code=clo_code, activity_name=activity_name, max_score=max_score, raw_score=raw_score))
-        return records
-
-    def _merge_roster_by_name(self, sheet_students: list[dict[str, str | int | None]], db_students_by_name: dict[str, dict[str, str | int | None]]) -> list[dict[str, str | int | None]]:
-        merged: list[dict[str, str | int | None]] = []
-        for student in sheet_students:
-            student_name = student.get("student_name")
-            if not student_name: continue
-            
-            key = self._normalize_name(student_name)
-            db_student = db_students_by_name.get(key)
-            student_id = student.get("student_id") or (db_student.get("student_id") if db_student else None)
-            
-            merged.append({"student_id": student_id, "student_name": student_name, "row": student.get("row")})
-        return merged
-
-    def _find_cover_value(self, sheet: Worksheet, label: str) -> str | None:
-        needle = self._normalize_label(label)
-        for row in range(1, sheet.max_row + 1):
-            for col in range(1, sheet.max_column + 1):
-                value = sheet.cell(row=row, column=col).value
-                if self._normalize_label(value) != needle: continue
-                
-                next_value = self._as_optional_string(sheet.cell(row=row, column=col + 1).value)
-                return next_value
-        return None
-
     @staticmethod
-    def _normalize_label(value: Any) -> str:
-        if value is None: return ""
-        normalized = str(value).strip().upper()
-        if normalized.endswith(":"): normalized = normalized[:-1]
-        return " ".join(normalized.split())
-
-    @staticmethod
-    def _normalize_name(name: str) -> str: return " ".join(name.strip().lower().split())
+    def _normalize_name(name: str) -> str:
+        return " ".join(name.strip().lower().split())
 
     @staticmethod
     def _normalize_text(value: Any) -> str:
-        if value is None: return ""
+        if value is None:
+            return ""
         return " ".join(str(value).strip().upper().split())
 
     @staticmethod
     def _as_optional_string(value: Any) -> str | None:
-        if value is None: return None
+        if value is None:
+            return None
         text = str(value).strip()
         return text if text else None
 
-    def _as_string(self, value: Any) -> str:
-        text = self._as_optional_string(value)
-        return text or ""
-
     @staticmethod
     def _as_optional_float(value: Any) -> float | None:
-        if value is None: return None
+        if value is None:
+            return None
         if isinstance(value, str):
             stripped = value.strip()
-            if not stripped: return None
+            if not stripped:
+                return None
             value = stripped
-        try: return float(value)
-        except (TypeError, ValueError): return None
-
-    def _as_float(self, value: Any) -> float:
-        parsed = self._as_optional_float(value)
-        return parsed if parsed is not None else 0.0
-
-    @staticmethod
-    def _as_int(value: Any) -> int:
-        if value is None: return 0
-        if isinstance(value, str):
-            stripped = value.strip()
-            if not stripped: return 0
-            value = stripped
-        try: return int(float(value))
-        except (TypeError, ValueError): return 0
-
-    def _coalesce_optional(self, primary: Any, fallback: Any) -> str | None:
-        return self._as_optional_string(primary) or self._as_optional_string(fallback)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None

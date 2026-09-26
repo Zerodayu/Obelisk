@@ -1,25 +1,34 @@
 # OBELISK ETL Service - Formula Reference
 
-This document provides a canonical reference for every official Outcomes-Based Education (OBE) calculation formula implemented in this service. Each formula is sourced from the official JMCFI WIN-OBE Assessment Plan manual or from direct client clarification.
+This document provides a canonical reference for every official Outcomes-Based Education (OBE) calculation formula implemented in this service. Each formula is sourced from the official JMCFI WIN-OBE Assessment Plan manual, the AUN-OBE Template specification, or direct client clarification.
 
 ---
 
 ## Part 1: Per-Course Transformation (`transformer.py`)
 
-These formulas are applied to a single class record during the ETL process initiated by a `POST /upload` request.
+These formulas are applied to extracted class records during the ETL process initiated by a `POST /upload` request.
 
-### Formula 1A: Direct CLO Attainment
+### Formula 1A: Direct CLO Attainment (Independent Recomputation)
 
 -   **Purpose**: To calculate the direct attainment of a single Course Learning Outcome (CLO) for an individual student.
--   **Function**: `_compute_direct_clo_attainment()`
--   **Source**: WIN-OBE Assessment Plan, §3.5.1
+-   **Source**: WIN-OBE Assessment Plan, §3.5.1 / AUN-OBE Template
 -   **Formula**:
-    ```
-    (Sum of raw scores on all assessments mapped to this CLO)
-    ---------------------------------------------------------
-    (Sum of max possible scores for those same assessments)
-    ```
--   **Implementation Notes**: This is a simple pooling of all scores. It does not use any weighting by assessment category (TLA, AT, EXAM, etc.).
+    $$\text{direct\_clo\_attainment\_pct} = \frac{\text{Prelim Score} + \text{Midterm Score} + \text{Final Score}}{\text{Prelim Max} + \text{Midterm Max} + \text{Final Max}}$$
+-   **Implementation Notes**:
+    - Recomputed independently from the six raw score/max cells in each CLO block of the "Direct CLO" sheet.
+    - OBELISK **never** reads or trusts the Excel workbook's own "Attainment %" formula column.
+    - If total maximum possible score is zero, attainment is returned as `null`.
+
+### Formula 1B: Indirect CLO Attainment (Per-Student, Independent Recomputation)
+
+-   **Purpose**: To calculate per-student indirect attainment for a CLO from the exit survey Likert rating.
+-   **Source**: AUN-OBE Template Specification
+-   **Formula**:
+    $$\text{indirect\_clo\_attainment\_pct} = \left(\frac{\text{Rating}}{5.0}\right) \times 100$$
+-   **Implementation Notes**:
+    - Recomputed directly from the raw 1–5 Likert `Rating` column in the "Indirect CLO" sheet.
+    - OBELISK **never** reads the Excel sheet's formula column.
+    - Emitted in `StudentCLOAttainment` as a percentage (e.g., `80.0` for a rating of 4). If no rating is recorded, emitted as `null`.
 
 ### Institutional Threshold for `met_threshold`
 
@@ -29,82 +38,66 @@ These formulas are applied to a single class record during the ETL process initi
     ```
     direct_clo_attainment_pct >= 0.70
     ```
--   **Implementation Notes**: The `met_threshold` boolean field is **always** calculated against the fixed institutional benchmark of 70%. It does **not** use the per-course threshold value that may be present in the source workbook.
+-   **Implementation Notes**: The `met_threshold` boolean field is **always** calculated against the fixed institutional benchmark of 70% (ratio `0.70`).
 
 ### 4-Tier Performance Levels for `clo_level`
 
--   **Purpose**: To classify a student's attainment into a descriptive performance level.
+-   **Purpose**: To classify a student's direct attainment into a descriptive performance level.
 -   **Function**: `_compute_clo_level()`
 -   **Source**: WIN-OBE Assessment Plan, §3.1.1 ("CLO Attainment Levels")
 -   **Formula**:
-    -   `>= 85%` → `"Exceptional"`
-    -   `70% – 84%` → `"Proficient"`
-    -   `60% – 69%` → `"Basic"`
-    -   `< 60%` → `"Below Basic"`
+    -   `>= 85%` (0.85) $\rightarrow$ `"Exceptional"`
+    -   `70% – 84%` (0.70–0.84) $\rightarrow$ `"Proficient"`
+    -   `60% – 69%` (0.60–0.69) $\rightarrow$ `"Basic"`
+    -   `< 60%` (< 0.60) $\rightarrow$ `"Below Basic"`
 
 ### Rule 1: Data Completeness Standard (Per-Student, Per-CLO)
 
--   **Purpose**: To check if a student's record for a given CLO is complete enough for reliable analysis.
--   **Function**: `_check_record_completeness()`
+-   **Purpose**: To verify that a student's record for a given CLO is complete across grading periods.
 -   **Source**: WIN-OBE Assessment Plan, §3.6
 -   **Formula**:
     ```
-    A student's record for a CLO is "complete" if they have at least one non-null score in EACH of the three grading periods: PRELIM, MIDTERM, and FINAL.
+    A student's record for a CLO is complete if they have non-null scores in:
+    Prelim, Midterm, AND Final periods.
     ```
--   **Implementation Notes**: This check produces the `is_record_complete` boolean field on each `StudentCLOAttainment` record. This is then rolled up into a section-wide `section_completeness_pct` and `rule1_met` boolean.
+-   **Implementation Notes**:
+    - Produces `is_record_complete` boolean on each `StudentCLOAttainment` record.
+    - Rolled up into section-wide completeness percentage (`section_completeness_pct`).
+    - `rule1_met` is `True` when `section_completeness_pct >= 0.60`.
+
+### CLO-PLO Mapping Retirement & `excluded_reason`
+
+-   **Status**: PERMANENTLY RETIRED from python-server.
+-   **Details**: CLO-PLO correlation is now configured and managed entirely within the webapp backend (Prisma / `curriculum_map`). Python server does not read, validate, or filter by CLO-PLO mappings.
+-   **Output Contract**: `excluded_reason` is retained in `StudentCLOAttainment` schema for shape stability with existing consumers, but is **always `null`**.
 
 ---
 
 ## Part 2: Institutional Analytics (`institutional_summary.py`)
 
-These formulas are applied when the `POST /analytics/institutional-summary` endpoint is called with a consolidated payload of multiple course results.
+These formulas are applied when the `POST /analytics/institutional-summary` or `POST /analytics/summary` endpoint is called with a consolidated payload of multiple course results.
 
 ### Formula 2A: Section CLO Attainment (Mean)
 
--   **Purpose**: To calculate the average attainment for a single CLO across all students in a given group (e.g., a department, a program).
--   **Function**: `_calculate_mean_attainment_pct()`
--   **Source**: WIN-OBE Assessment Plan, §3.5.2
+-   **Purpose**: To calculate average direct attainment for a single CLO across all students in a group.
 -   **Formula**:
-    ```
-    (Sum of all individual direct_clo_attainment_pct values for this CLO)
-    --------------------------------------------------------------------
-    (Total number of student records for this CLO)
-    ```
--   **Implementation Notes**: This is a true average of the attainment percentages, not a "pass rate" based on who met the threshold.
+    $$\text{Mean CLO Attainment} = \frac{\sum \text{direct\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
 
 ### Formula 7A: Per-PLO Attainment (Unweighted Average)
 
--   **Purpose**: To compute the attainment of a single Program Learning Outcome (PLO) by rolling up the attainment of all CLOs mapped to it within a specific scope (e.g., a program).
--   **Function**: `compute_plo_attainment()`
--   **Source**: WIN-OBE Assessment Plan, §3.5.7
+-   **Purpose**: To compute the attainment of a Program Learning Outcome (PLO) by rolling up the attainment of all CLOs mapped to it in the payload.
 -   **Formula**:
-    ```
-    (Sum of mean_attainment_pct for all CLOs mapped to this PLO)
-    -----------------------------------------------------------
-    (Total number of CLOs mapped to this PLO)
-    ```
--   **Implementation Notes**: This is an unweighted average. It does not currently use `correlation_strength` or course credit units as a weight.
+    $$\text{PLO Attainment} = \frac{\sum \text{Mean Attainment of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
 
 ### Formula 7C: Program-Level Average PLO Attainment
 
--   **Purpose**: To compute a single, summary average of all PLO attainment values for an entire academic program.
--   **Function**: `_generic_aggregator()` (within the `is_program_level` block)
--   **Source**: WIN-OBE Assessment Plan, §3.5.7
+-   **Purpose**: To compute a summary average of all PLO attainment values across an entire degree program.
 -   **Formula**:
-    ```
-    (Sum of all individual plo_attainment_direct_only values in the program)
-    -----------------------------------------------------------------------
-    (Total number of PLOs in the program)
-    ```
--   **Implementation Notes**: This calculation is performed **only** at the program level, never at the department or AVP-group level, as PLOs are specific to their parent program.
+    $$\text{Program PLO Average} = \frac{\sum \text{PLO attainments in program}}{\text{Total number of PLOs in program}}$$
 
 ### Rule 3: Data Completeness Standard (Per-PLO)
 
--   **Purpose**: To check if a PLO has sufficient underlying data from its mapped CLOs to be considered reliably computed.
--   **Function**: `compute_plo_attainment()`
--   **Source**: WIN-OBE Assessment Plan, §3.6
+-   **Purpose**: To verify that a PLO has sufficient underlying data from its mapped CLOs.
 -   **Formula**:
-    ```
-    A PLO meets the completeness standard if at least 60% of the CLOs mapped to it have met Rule 1.
-    ```
--   **Implementation Notes**: This check produces the `plo_completeness_pct` and `plo_rule3_met` boolean fields for each PLO in the institutional summary.
+    $$\text{plo\_completeness\_pct} = \frac{\text{Count of mapped CLOs meeting Rule 1}}{\text{Total mapped CLOs}}$$
+    $$\text{plo\_rule3\_met} = (\text{plo\_completeness\_pct} \ge 0.60)$$

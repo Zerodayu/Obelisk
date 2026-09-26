@@ -15,7 +15,7 @@ that will not change without a real conversation first:
 
 2. **No authentication or authorization.** This service trusts every
    request it receives. The webapp backend is responsible for verifying
-   the requester is and what they're allowed to see BEFORE calling this
+   who the requester is and what they're allowed to see BEFORE calling this
    service.
 
 ### Optional: Webapp Shared-Secret Auth
@@ -23,7 +23,7 @@ that will not change without a real conversation first:
 This service can optionally enforce a simple shared-secret caller check
 using the `X-Webapp-Secret` header. It is **disabled by default** — if
 `OBELISK_WEBAPP_SHARED_SECRET` is unset or empty, the service behaves
-exactly as it does today and trusts every request.
+and trusts every request.
 
 **To enable it:**
 1. Set `OBELISK_WEBAPP_SHARED_SECRET` on the python-server to a long, random
@@ -36,21 +36,16 @@ exactly as it does today and trusts every request.
 service returns `401 Unauthorized` with a structured error payload
 (`error_type: "UnauthorizedCaller"`).
 
-**This does not replace real end-user authentication or
-authorization.** That responsibility still belongs entirely to the
-webapp backend, per the boundary above. The shared secret only
-verifies that the *caller* is the webapp backend itself — not which
-end user initiated the request.
+---
 
-**Example:**
-```env
-# python-server .env
-OBELISK_WEBAPP_SHARED_SECRET=your-long-random-secret
-```
-```http
-# webapp backend — header on every outgoing request
-X-Webapp-Secret: your-long-random-secret
-```
+## Template Format & CLO Discovery (v2 AUN-OBE Template)
+
+1. **Worksheets**: The upload must be in the AUN-OBE template format containing at least `"Direct CLO"` and `"Indirect CLO"` sheets, with their respective marker titles in `A1`. Older templates (e.g. `Database`, `Exam`, `COVERPAGE`) fail immediately with structured `MissingWorksheet` or `InvalidTemplate` errors.
+2. **Dynamic CLOs**: CLO blocks are discovered dynamically (scanning until a blank cell). The number of CLOs is not fixed.
+3. **CLO-PLO Mapping Retired**: python-server no longer reads or enforces CLO-PLO mappings from Excel. Mapping is managed solely in the webapp backend (`curriculum_map` / Prisma). `result.loaded.clo_plo_mapping` is always `[]`.
+4. **Independent Recomputation**: Direct attainment is computed from the 6 raw score/max cells ($\frac{\text{Prelim}+\text{Midterm}+\text{Final}}{\text{Prelim Max}+\text{Midterm Max}+\text{Final Max}}$). Indirect attainment is recomputed from raw Likert rating as $(\frac{\text{Rating}}{5.0}) \times 100$. Excel's formula columns are ignored.
+
+---
 
 ## Endpoint 1: Per-course upload & attainment
 
@@ -76,14 +71,25 @@ A single job object with the following structure:
   "type": "etl",
   "status": "completed",
   "payload": { "file_path": "...", "original_filename": "..." },
-  "created_at": "2023-10-27T10:00:00.000Z",
-  "updated_at": "2023-10-27T10:00:05.000Z",
+  "created_at": "2026-09-26T10:00:00.000Z",
+  "updated_at": "2026-09-26T10:00:05.000Z",
   "error": null,
   "result": {
     "loaded": {
-      "header": { ... },
+      "header": {
+        "course_code": "GE 1",
+        "course_title": "Understanding the Self",
+        "course_type": "LECTURE",
+        "section": "A",
+        "semester_year": "SY 2025-2026, 1st Sem",
+        "instructor_name": "Instructor Name",
+        "no_of_students": 15,
+        "threshold": 0.70,
+        "grading_system": null,
+        "workbook_configured_weights_unused": null
+      },
       "attainments": [ ... ],
-      "clo_plo_mapping": [ ... ]
+      "clo_plo_mapping": []
     }
   }
 }
@@ -91,23 +97,22 @@ A single job object with the following structure:
 
 ### `result.loaded.attainments[]` row shape
 
-Each item inside `result.loaded.attainments` is a `StudentCLOAttainment` row. The overall JSON envelope is unchanged; this is an additive row-level extension only.
-
-The new field exists so the caller can understand why a CLO row was intentionally skipped during computation:
-
-- `excluded_reason = null` → the CLO was computed normally
-- `excluded_reason = "no_plo_mapping"` → the CLO had no valid non-zero PLO mapping in the workbook's CLO-PLO table, so the service did not compute attainment for it
-
-When a row is excluded for this reason, the attainment fields are returned as `null` so consumers can safely ignore them without treating the row as a failure.
+Each item inside `result.loaded.attainments` is a `StudentCLOAttainment` row:
 
 ```json
 {
-  "student_id": "...",
-  "student_name": "...",
+  "student_id": "2024-00123",
+  "student_name": "Doe, Jane",
   "clo_code": "CLO1",
-  "direct_clo_attainment_pct": 0.7059,
+  "tla_pct": null,
+  "at_pct": null,
+  "exam_pct": null,
+  "output_pct": null,
+  "direct_clo_attainment_pct": 0.8667,
+  "indirect_clo_attainment_pct": 80.0,
   "met_threshold": true,
-  "clo_level": "Proficient",
+  "clo_level": "Exceptional",
+  "formula_version": "0338c8b0a31d",
   "is_record_complete": true,
   "section_completeness_pct": 1.0,
   "rule1_met": true,
@@ -115,36 +120,25 @@ When a row is excluded for this reason, the attainment fields are returned as `n
 }
 ```
 
-If a CLO has no valid PLO mapping in the workbook's CLO-PLO table, the same row shape is returned with:
-
-```json
-{
-  "excluded_reason": "no_plo_mapping",
-  "direct_clo_attainment_pct": null,
-  "met_threshold": null,
-  "clo_level": null,
-  "is_record_complete": null,
-  "section_completeness_pct": null,
-  "rule1_met": null
-}
-```
+#### Field Notes for the Webapp Consumer:
+- **`direct_clo_attainment_pct`**: Ratio `[0.0, 1.0+]` recomputed from raw Prelim/Midterm/Final score and max sums.
+- **`indirect_clo_attainment_pct`**: Percentage `[0.0, 100.0]` recomputed from raw Likert Rating: `(rating / 5.0) * 100.0`. `null` if survey rating was omitted.
+- **`excluded_reason`**: Always `null`. Maintained for JSON schema stability.
+- **`tla_pct`, `at_pct`, `exam_pct`, `output_pct`**: Always `null` in the v2 template, as assessment tasks arrive pre-summed into grading period subtotals per CLO.
 
 **If `status` is `"failed"`:**
-The `error` field will contain a structured JSON object with details about the failure. The webapp should parse this object to display a user-friendly error message.
-
-`excluded_reason == "no_plo_mapping"` is not an error. It means the row was excluded by design because the workbook's CLO-PLO table did not contain any valid non-zero mapping for that CLO.
+The `error` field will contain a structured JSON object with details about the failure:
 
 **Example Structured Error (`MissingWorksheet`):**
 ```json
 {
   "error_type": "MissingWorksheet",
-  "message": "Missing required worksheet: 'Database (LECTURE-RES-PRAC)'.",
+  "message": "Missing required worksheet: 'Direct CLO'.",
   "details": {
-    "expected_sheet_name": "Database (LECTURE-RES-PRAC)",
+    "expected_sheet_name": "Direct CLO",
     "available_sheets": [
-      "COVERPAGE",
-      "Exam (LECTURE ONLY)",
-      "OUTPUT"
+      "Sheet1",
+      "Summary"
     ]
   }
 }
@@ -163,7 +157,7 @@ The `error` field will contain a structured JSON object with details about the f
 ```
 
 ### `GET /analytics/jobs/{job_id}/recommendation`
-Per-course AI gap analysis. Triggers an LLM call (or mock placeholder if `IS_DEBUG_MODE` is enabled). Returns `409 Conflict` if the job is not yet completed.
+Per-course AI gap analysis. Uses `google-genai` client. Returns `409 Conflict` if the job is not yet completed.
 
 ---
 
@@ -178,7 +172,7 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 **Request body:**
 ```json
 {
-  "period": { "type": "semester", "label": "SY 2024-2025, 2nd Sem" },
+  "period": { "type": "semester", "label": "SY 2025-2026, 1st Sem" },
   "submissions": [
     {
       "department": "CITE",
@@ -191,27 +185,9 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 }
 ```
 
-The `attainments` arrays forwarded in each submission may contain rows with `excluded_reason = "no_plo_mapping"`. Aggregators should ignore those rows when computing CLO/PLO summaries.
-
-**Response:**
-```json
-{
-  "period": { ... },
-  "department_summary": { ... },
-  "program_summary": { ... },
-  "avp_group_summary": { ... },
-  "worst_performing_clos": [ ... ]
-}
-```
-
 ### `POST /analytics/institutional-summary` (VPAA ONLY)
 
-> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It triggers an AI/LLM call (or mock placeholder if `IS_DEBUG_MODE` is enabled).
-
-**Request body:**
-Same as `/analytics/summary`, but the webapp should always send the full set of institutional data.
-
-The same `attainments[]` row extension applies here as well; it does not change the top-level payload contract.
+> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It triggers an AI/LLM call.
 
 **Response:**
 ```json
@@ -222,9 +198,3 @@ The same `attainments[]` row extension applies here as well; it does not change 
   "recommendation": "The AI-generated text response..."
 }
 ```
----
-## Known open items
-- **Form F18 Naming Conflict**: Form F18 is labeled "Portfolio Assessment Record" in the OBE Assessment Plan, but is used for CQI steps (Root Cause Analysis, Action Plan, Implementation) in workflow documents. A newer formula reference uses F23 for the CQI Action Plan specifically. This is pending client clarification.
-- **AQAU Access Level**: It is still undefined whether the AQAU role should have the same access to the AI-generated institutional summary as the VPAA, or a different view.
-- **Rule 1 Interpretive Gap**: The data completeness check (Rule 1) will flag a CLO as incomplete if it is not assessed in all three grading periods, even if this is by design. This can affect the display of completeness percentages and is pending client clarification.
-- **Portfolio Assessment Track**: It has not yet been confirmed if any current programs use a portfolio-based assessment track instead of an exam-based one, which would require different handling per §3.4 of the OBE Assessment Plan.

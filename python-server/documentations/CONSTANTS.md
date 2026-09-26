@@ -1,126 +1,134 @@
 # OBELISK ETL Service - Constants Reference
 
-This document provides a reference for the constants defined in `app/etl/etl_const.py`. These constants are critical for the correct parsing of the JMCFI class record Excel workbooks and for the internal logic of the transformation process.
+This document provides a reference for the constants defined in `app/etl/etl_const.py` (v2, AUN-OBE Template). These constants are critical for the correct parsing of the JMCFI class record Excel workbooks and for the internal logic of the transformation process.
 
 ---
 
 ## 1. File Structure
 
-All constants are centralized in `app/etl/etl_const.py`. They are organized into classes that group them by function.
+All constants are centralized in `app/etl/etl_const.py`. They are organized into classes that group them by function:
 
--   **Core Identifiers**: `SheetNames`, `GradingPeriod`, `AssessmentCategory`
--   **Extraction Constants**: `CoverPageLabels`, `AssessmentNames`, `HeaderData`, `Roster`, `DatabaseSheet`, `ExamSheet`, `OutputSheet`, `CloPlo`, `TemplateValidation`
+-   **Sheet Names**: `SheetNames`
+-   **Template Validation**: `TemplateValidation`
+-   **Direct CLO Sheet**: `DirectCloSheet` (and `BlockOffsets`)
+-   **Indirect CLO Sheet**: `IndirectCloSheet` (and `BlockOffsets`)
+-   **Dynamic Detection**: `CloDetection`, `StudentRosterDetection`
 -   **Transformation Constants**: `Transformation` (and its inner classes)
 
 ---
 
-## 2. Core Identifiers
+## 2. Sheet Names
 
 ### `SheetNames`
-Contains the exact string names of the worksheets the ETL process expects to find.
+Contains the standardized worksheet names for the AUN-OBE template:
+-   `DIRECT_CLO`: `"Direct CLO"`
+-   `INDIRECT_CLO`: `"Indirect CLO"`
+-   `SETUP`: `"SETUP"`
 
--   `DATABASE`: "Database (LECTURE-RES-PRAC)"
--   `EXAM`: "Exam (LECTURE ONLY)"
--   `COVERPAGE`: "COVERPAGE"
--   `OUTPUT`: "OUTPUT"
-
-### `GradingPeriod`
-Standardized strings for the three grading periods.
-
--   `PRELIM`, `MIDTERM`, `FINAL`
-
-### `AssessmentCategory`
-Standardized strings for the main assessment categories.
-
--   `TLA`, `AT`, `EXAM`, `OUTPUT`
+> **Important**: The old sheets (`Database (LECTURE-RES-PRAC)`, `Exam (LECTURE ONLY)`, `COVERPAGE`, `OUTPUT`) and any `Dashboard` live-formula tab are completely ignored and retired from extraction.
 
 ---
 
-## 3. Extraction Constants
-
-These constants map directly to specific cells, rows, columns, and string values within the Excel template files.
-
-### `CoverPageLabels`
-Standardized labels for values sought on the `COVERPAGE` sheet. The ETL searches for these labels and takes the value from the adjacent cell.
-
--   `COURSE_CODE`, `COURSE_TITLE`, `SECTION`, `INSTRUCTOR_NAME`, `GRADING_SYSTEM`
-
-### `AssessmentNames`
-Standardized names for specific, recurring assessments.
-
--   `PRELIM_EXAM`, `MIDTERM_EXAM`, `FINAL_EXAM`
-
-### `HeaderData` (in `Database` sheet)
-Maps cell addresses in the `Database` sheet to the core metadata of the class record.
-
-| Constant | Cell | Description |
-| :--- | :--- | :--- |
-| `SEMESTER_YEAR` | `B3` | The semester and school year. |
-| `COURSE_CODE` | `B4` | The course code. |
-| `COURSE_TITLE`| `B5` | The full title of the course. |
-| ... | ... | ... |
-
-### `Roster`
-Defines the starting rows and column letters for student lists.
-
-| Constant | Value | Sheet(s) | Description |
-| :--- | :--- | :--- | :--- |
-| `DATABASE_START_ROW` | `17` | `Database` | The first student's data begins on row 17. |
-| `EXAM_AND_OUTPUT_START_ROW` | `22` | `Exam`, `Output` | The first student's data begins on row 22. |
-| `STUDENT_ID_COL` | `"A"` | All | The column containing the student's ID number. |
-| `STUDENT_NAME_COL` | `"B"` | All | The column containing the student's full name. |
-
-### `DatabaseSheet`, `ExamSheet`, `OutputSheet`
-These classes define the row numbers for key metadata and the column letters for assessment blocks in their respective sheets.
-
--   **`CLO_CODE_ROW`**: The row containing the CLO code mapped to an assessment.
--   **`MAX_SCORE_ROW`**: The row containing the maximum possible score.
--   **`*_COLS`**: Lists of column letters for each grading period.
-
-### `CloPlo` (in `COVERPAGE` sheet)
-Constants for locating and parsing the CLO-PLO mapping table.
-
-| Constant | Value | Description |
-| :--- | :--- | :--- |
-| `TABLE_HEADER_CELL` | `A26` | The cell that must contain the text "CLO-PLO". |
-| `PLO_HEADER_ROW` | `26` | The row containing the PLO code headers (e.g., "PLO1"). |
-| `FIRST_CLO_ROW` | `27` | The first row containing a CLO and its correlation values. |
-| `CLO_CODE_COL` | `1` | The column number containing the CLO codes. |
-| `PLO_START_COL` | `2` | The first column number containing PLO data. |
-| `END_OF_TABLE_SENTINEL` | `"AVERAGE"` | The string in the CLO column that marks the end of the table. |
+## 3. Template Validation
 
 ### `TemplateValidation`
-Constants used to validate that the correct template version is being used.
+Constants used to validate the template version and required worksheets before any data extraction occurs. Uploading an old-format file immediately raises a structured `MissingWorksheet` or `InvalidTemplate` error.
 
 | Constant | Value | Description |
 | :--- | :--- | :--- |
-| `DEFAULT_EXPECTED_VALUE` | `"STUDENT NAME"` | The default header text to check for. |
-| `DATABASE_STUDENT_NAME_CELL` | `B12` | The cell in the `Database` sheet that must contain the student name header. |
-| `EXAM_OUTPUT_STUDENT_NAME_CELL` | `B18` | The cell in the `Exam` and `Output` sheets for the student name header. |
+| `REQUIRED_SHEETS` | `("Direct CLO", "Indirect CLO")` | Mandatory worksheets that must exist in the workbook. |
+| `DIRECT_CLO_MARKER_CELL` | `A1` | Cell in `Direct CLO` sheet containing the title marker. |
+| `DIRECT_CLO_MARKER_VALUE`| `"DIRECT CLO — PER-STUDENT RAW SCORES"` | Expected text in cell `A1` of `Direct CLO`. |
+| `INDIRECT_CLO_MARKER_CELL`| `A1` | Cell in `Indirect CLO` sheet containing the title marker. |
+| `INDIRECT_CLO_MARKER_VALUE`| `"INDIRECT CLO — COURSE EXIT SURVEY RESPONSES"` | Expected text in cell `A1` of `Indirect CLO`. |
 
 ---
 
-## 4. Transformation Constants
+## 4. Extraction Layout Constants
+
+### `DirectCloSheet`
+Defines the layout of the repeating 7-column blocks for Direct CLO scores:
+
+-   `CLO_LABEL_ROW`: `3` (e.g. C3 = `"CLO1"`, J3 = `"CLO2"`)
+-   `SUBFIELD_HEADER_ROW`: `4` (`"Prelim Score"`, `"Prelim Max"`, etc.)
+-   `DATA_START_ROW`: `5` (First row of student data)
+-   `FIRST_BLOCK_START_COL`: `3` (Column C, 1-indexed)
+-   `BLOCK_WIDTH`: `7` (Columns per CLO block)
+-   `STUDENT_ID_COL`: `"A"`
+-   `STUDENT_NAME_COL`: `"B"`
+-   `SUMMARY_ROW_LABEL_COL`: `"B"`
+-   `SUMMARY_ROW_LABEL_PREFIX`: `"CLASS AVERAGE"` (Roster extraction halts when this label is encountered)
+
+#### `DirectCloSheet.BlockOffsets` (0-indexed within each block)
+-   `PRELIM_SCORE`: `0`
+-   `PRELIM_MAX`: `1`
+-   `MIDTERM_SCORE`: `2`
+-   `MIDTERM_MAX`: `3`
+-   `FINAL_SCORE`: `4`
+-   `FINAL_MAX`: `5`
+-   `ATTAINMENT_PCT`: `6` *(Excel formula column; ignored and recomputed independently by OBELISK)*
+
+### `IndirectCloSheet`
+Defines the layout of the repeating 2-column blocks for Indirect CLO ratings:
+
+-   `HEADER_ROW`: `4`
+-   `DATA_START_ROW`: `5`
+-   `FIRST_BLOCK_START_COL`: `3` (Column C, 1-indexed)
+-   `BLOCK_WIDTH`: `2` (Columns per CLO block)
+-   `STUDENT_ID_COL`: `"A"`
+-   `STUDENT_NAME_COL`: `"B"`
+-   `SUMMARY_ROW_LABEL_COL`: `"A"`
+-   `SUMMARY_ROW_LABELS`: `("MEAN RATING (of 5)", "%age CO ATTAINMENT (Indirect)")`
+
+#### `IndirectCloSheet.BlockOffsets` (0-indexed within each block)
+-   `RATING`: `0` (Raw 1–5 Likert rating)
+-   `ATTAINMENT_PCT`: `1` *(Excel formula column; ignored and recomputed independently as `(rating / 5) * 100`)*
+
+---
+
+## 5. Dynamic Detection Constants
+
+### `CloDetection`
+CLO count is dynamic, not fixed. Extractor scans starting at `FIRST_BLOCK_START_COL` stepping by `BLOCK_WIDTH` until a blank cell is encountered.
+-   `CLO_LABEL_PREFIX`: `"CLO"`
+
+### `StudentRosterDetection`
+Student count is dynamic. Roster discovery ends at the first row where:
+-   `STUDENT_ID_COL` and `STUDENT_NAME_COL` are blank, OR
+-   The row contains a known summary row prefix/label.
+
+---
+
+## 6. Transformation Constants
 
 ### `Transformation`
-This class holds constants that govern the internal logic of the transformation and analytics steps.
+Governs attainment calculations, thresholds, completeness, and hash versioning:
 
-| Constant | Value | Source | Description |
-| :--- | :--- | :--- | :--- |
-| `INSTITUTIONAL_THRESHOLD` | `0.70` | FR-03 | The fixed 70% benchmark for `met_threshold`. |
-| `COMPLETENESS_THRESHOLD` | `0.60` | Plan §3.6 | The 60% benchmark for `rule1_met` and `plo_rule3_met`. |
-| `CLO_LEVEL_*_MIN` | `0.85`, `0.70`, `0.60` | Plan §3.1.1 | Minimum attainment for "Exceptional", "Proficient", and "Basic" levels. |
-| `FORMULA_VERSION_ID` | `"direct_..._v1"` | Internal | A string identifier for the calculation logic version. |
-| `FORMULA_VERSION_HASH_LENGTH` | `12` | Internal | The desired length of the final formula hash. |
+| Constant | Value | Description |
+| :--- | :--- | :--- |
+| `INSTITUTIONAL_THRESHOLD` | `0.70` | Fixed 70% benchmark for `met_threshold`. |
+| `COMPLETENESS_THRESHOLD` | `0.60` | 60% benchmark for `rule1_met`. |
+| `CLO_LEVEL_*_MIN` | `0.85`, `0.70`, `0.60` | Minimum attainment for "Exceptional", "Proficient", and "Basic" levels. |
+| `FORMULA_VERSION_ID` | `"direct_attainment_v2_aunobe"` | String identifier for calculation logic version. |
+| `FORMULA_VERSION_HASH_LENGTH` | `12` | Length of formula hash. |
 
 #### `Transformation.CloLevels`
-Contains the standardized descriptive labels for the four CLO attainment levels.
-- `EXCEPTIONAL`, `PROFICIENT`, `BASIC`, `BELOW_BASIC`
-
-#### `Transformation.FormulaKeys`
-Contains the standardized dictionary keys used to build the JSON payload for the formula version hash.
-- `ID`, `INSTITUTIONAL_THRESHOLD`, `COMPLETENESS_THRESHOLD`
+Standardized descriptive labels:
+-   `EXCEPTIONAL`: `"Exceptional"`
+-   `PROFICIENT`: `"Proficient"`
+-   `BASIC`: `"Basic"`
+-   `BELOW_BASIC`: `"Below Basic"`
 
 #### `Transformation.IntermediateKeys`
-Contains the standardized dictionary keys used for the intermediate data structures passed between transformation steps. This ensures consistency within the `SimpleTransformer` class.
-- `STUDENT_ID`, `STUDENT_NAME`, `CLO_CODE`, `DIRECT_CLO_ATTAINMENT_PCT`, etc.
+Standardized dictionary keys used internally:
+-   `STUDENT_ID`, `STUDENT_NAME`, `CLO_CODE`, `DIRECT_CLO_ATTAINMENT_PCT`, `INDIRECT_CLO_ATTAINMENT_PCT`, `EXCLUDED_REASON`, `IS_RECORD_COMPLETE`, `MET_THRESHOLD`, `CLO_LEVEL`, `SECTION_COMPLETENESS_PCT`, `RULE1_MET`.
+
+---
+
+## 7. Retired Constants (from v1)
+
+The following constants from v1 are permanently retired:
+-   `SheetNames.DATABASE`, `SheetNames.EXAM`, `SheetNames.COVERPAGE`, `SheetNames.OUTPUT`
+-   `GradingPeriod`, `AssessmentCategory`, `AssessmentNames` (scores now arrive as Prelim/Midterm/Final subtotals per CLO; no category split)
+-   `CoverPageLabels`, `HeaderData`, `DatabaseSheet`, `ExamSheet`, `OutputSheet`, `Roster`
+-   `CloPlo`: CLO-PLO mapping is permanently retired from python-server (managed in webapp via Prisma/curriculum_map).
