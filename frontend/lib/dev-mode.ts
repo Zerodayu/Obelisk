@@ -12,10 +12,10 @@ const raw = env.DEVELOPMENT?.trim().toLowerCase();
 export const isDevMode = raw === "true" || raw === "1" || raw === "yes";
 
 /**
- * When true (default), the simulated dev role (`DEV_ROLE` in
+ * When `true`, the simulated dev role (`DEV_ROLE` in
  * `server/api-client.ts`) enforces route access exactly like production —
  * e.g. a `faculty` dev user gets redirected from `/archives` to `/dashboard`.
- * Set to `false` to keep the old behavior: every route reachable while nav and
+ * The default is `false`: every route stays reachable while nav and
  * dashboards still reflect the simulated role.
  *
  * Must stay edge-safe (plain boolean) — `proxy.ts` imports this module.

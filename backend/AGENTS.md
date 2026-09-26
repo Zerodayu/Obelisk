@@ -14,6 +14,7 @@ src/
 ├── index.ts              # Elysia app entry point
 ├── routes.ts             # Aggregates all feature route plugins (api/v1 prefix)
 └── v1/
+    ├── academic/         # Academic reference data (programs, terms, class sections)
     ├── auth/             # Auth (better-auth config, session guard macro, role requests)
     ├── car/              # Course Assessment Report (F13)
     ├── cqi/              # CQI/ACT loop (F22, F23, F25, F24 APAR)
@@ -31,7 +32,9 @@ src/
 - **service.ts**: Class-based business logic. One class per feature. Throws on errors; controller handles status codes.
 - **model.ts**: Validation schemas using Elysia's `t` from `elysia`. Export both schema objects and `Static<typeof ...>` types.
 - **routes.ts**: Import and chain feature plugins: `.use(featureRoutes)`. The `api/v1/` prefix is set here, so feature routes use relative paths.
-- **env vars**: Always import `env` from `@env` instead of accessing `process.env` directly. The `env.ts` file uses Zod validation, so missing vars fail at startup with a clear error.
+- **env vars**: Always `import { env } from "@utils/env"` (`utils/env.ts`) instead of accessing `process.env` directly. That file uses Zod validation, so missing vars fail at startup with a clear error.
+- **caching & limits**: wrap read-only GET handlers with `cached(ttlSeconds, handler)` from `@lib/cache` (Redis-backed, falls through on miss); rate limiting applies globally (100 requests / 15 min).
+- **shared libs** (`lib/`): `lib/forms/approval-routes.ts` (per-form-code approval chains + RBAC — see Domain Rules), `lib/forms/state-machine.ts` (submission status transitions), `lib/forms/submit-gates.ts` (pre-submit validation gates), `lib/validators` (domain floors/enums), `lib/ingest` (python-server client), `lib/prisma.ts`, `lib/cache.ts`.
 
 ## Domain Rules (canonical — do not violate)
 
@@ -42,7 +45,8 @@ These are institutional rules from the OBE manual and the forms implementation r
 - **At-risk auto-flag** — a student is at-risk if *any* CLO score `< 70%`. Computed, never manually entered (see `CloAttainment.isBelowThreshold`, `AtRiskFlag`).
 - **Loop Status is computed, not a free field** — the Closing-the-Loop (CTL) report may only mark a CQI loop `CLOSED` when all five documented conditions are met; otherwise it is `OPEN - Re-assess` or `OPEN - Not Implemented`. Do not accept a manually-forced CLOSED value.
 - **APAR validation gate** — the Annual Program Report is blocked from submission if the Cohort Tracking Sheet is not attached.
-- **Approval chains** descend by role: `faculty → program_chair → dean → aqau → vpaa` (exact chain varies by form; see `FormSubmission.currentApproverRole` + `ApprovalStep`).
+- **Approval chains** descend by role: `faculty → program_chair → dean → aqau → vpaa`, but the **exact chain per form is server-derived** — `lib/forms/approval-routes.ts` registers each stable form code with its preparer roles and ordered approver chain, and the forms service enforces ownership + per-step role match on submit/approve/return/archive (`system_admin` override included). Never accept client-supplied steps or RBAC decisions; `FormSubmission.currentApproverRole` + `ApprovalStep` mirror the registry's state.
+- **PLO entity mutations are dean-only** — create/update/delete on `/plan/plos*` throws a 403 `PloForbiddenError` for any other role (faculty map the resulting PLOs to CLOs via the curriculum map); delete is further blocked when the PLO is mapped or carries attainment/gap/CQI history.
 - **Retention classes** — forms are either `5 years` or `Permanent` retention. Permanent-retention records (longitudinal/audit: cohort tracking, APAR, CTL, system gap, CAPA, institutional review) also carry a strict audit-trail requirement.
 - **Repeated 6-category root cause** (used by gap/CQI/systemic analysis): `1-Curriculum Design | 2-Instruction & Pedagogy | 3-Assessment Design | 4-Student Factors | 5-Resources & Tools | 6-Industry & Field Alignment`. Model as a type/enum constant, not free text.
 

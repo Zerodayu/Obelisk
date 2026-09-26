@@ -4,7 +4,7 @@ import { requireUser } from "@/server/auth";
 
 /**
  * `/forms` index — lists the form groups the current role may access, derived
- * from the navigation registry (`lib/navigation.tsx`).
+ * from the navigation registry (`config/navigation.ts`).
  */
 export default async function FormsIndexPage() {
   const user = await requireUser();

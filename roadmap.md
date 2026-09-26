@@ -195,11 +195,11 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] App shell, theme, sidebar, login
 - [x] File-upload preview (`faculty` page)
 - [x] **Role-scoped routing foundation** — `proxy.ts` coarse auth gate; `(app)` layout (server `requireUser`); single adaptive `/dashboard` with per-role dashboards (registry in `role-dashboard.tsx`); form route groups keyed by stable codes; archives viewer gated to aqau/vpaa/dean/system_admin; `/faculty` redirects → `/forms/clo-raw-data`.
-- [x] **API client layer** — `lib/api.ts` (browser), `lib/api/server.ts` (server-only), `lib/auth.ts` (guards).
-- [x] **Role & nav registry** — `lib/roles.ts` + `lib/navigation.tsx` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
+- [x] **API client layer** — `lib/api-client.ts` (browser), `server/api-client.ts` (Server Components + `actionApi` for Server Actions), `server/auth.ts` (guards).
+- [x] **Role & nav registry** — `lib/roles.ts` + `config/navigation.ts` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
 - [x] **Sign-up + role request** — `/register` with role selection; new accounts default to `user` until a `system_admin` approves (`requestedRole` + `roleRequestStatus` on the user; `GET/POST /auth/role-requests*`; approval UI on the system-admin dashboard).
 - [x] **Google-only account creation** — `/register` shows only the org-restricted Google provider (email/password sign-up disabled; login kept for existing accounts); role selection moved to a post-login `/onboarding` route (`POST /auth/role-request`); the `(app)` shell redirects role-less users to `/onboarding`.
-- [x] **DEVELOPMENT auth bypass** — when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev `system_admin` user so every route is viewable without an account (frontend-only; backend still requires a session).
+- [x] **DEVELOPMENT auth bypass** — when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev user (role set by `DEV_ROLE` in `server/api-client.ts`, currently `dean`) so every route is viewable without an account (frontend-only; backend still requires a session). Route gates match prod only when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true` (default `false` = open navigation).
 - [x] **6 role-specific dashboards** — faculty, program_chair, dean, aqau, vpaa, system_admin (chart panels with sample data; `formStatusCountsAtom` + `uploadsHistoryDataAtom` wired to real API).
 
 ### Shared infrastructure
@@ -209,7 +209,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] Chart system — `evilcharts/` (ECharts wrappers) + `components/charts/` (attainment, CQI, governance, plan, ingest chart sets)
 - [x] Data grid — `reui/data-grid/` (TanStack Table-based, virtual scrolling, column visibility, pagination)
 - [x] Form frame — `reui/frame.tsx`, `reui/badge.tsx`, `reui/filters.tsx`
-- [ ] `components/obe/` primitives — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table
+- [ ] `components/obe/` primitives — status badge, I-P-D selector, cohort selector, root-cause selector, Bloom's selector, rubric scale, Likert scale, loop-status badge, header/footer blocks, row-editor table (**not built as a package — screens inline these today**; shared pieces that do exist: `reui/frame|badge`, `ui/status`, `ui/form-select` + academic selects, `lib/constants/obe.ts`)
 
 ### Form screens — Phases 0–5 (13 forms, all fully built)
 
@@ -227,19 +227,21 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] `target_setting_matrix` (`/forms/plan/target-setting-matrix`) — PLO + CLO target tables
 - [x] `assessment_budget` (`/forms/plan/assessment-budget`) — budget line-item table
 
-### Form screens — Phase 6 (14 forms, all pending)
+### Form screens — Phase 6 (14 forms; CHECK built, Periodic pending)
 
-#### CHECK module (`/forms/check/`)
+#### CHECK module (`/forms/check/`) — built, wired to `server/actions/check.ts` (`initCheckForm`/`getCheckForm`/`saveCheckForm` → `/api/v1/check/*`)
 
-- [ ] `mid_cycle_attainment` — 4 cohort blocks, per-CLO attainment table, at-risk watchlist
-- [ ] `peer_observation` — 7 criteria rows, each with own rating scale + evidence text
-- [ ] `exhibition_feedback` — dynamic guest rows, per-PLO 0-10 ratings, computed means
-- [ ] `clo_perception_survey` — Likert tabulation per CLO, divergence flag
-- [ ] `student_exit_survey` — PLO × cohort matrix, divergence flag
-- [ ] `portfolio_assessment` — rubric scoring per criterion, 3 assessor scores, consensus
-- [ ] `capstone_panel` — dynamic panelist rows, per-PLO 0-10 ratings, panel composition
+- [x] `mid_cycle_attainment` — 4 cohort blocks, per-CLO attainment table, at-risk watchlist
+- [x] `peer_observation` — 7 criteria rows, each with own rating scale + evidence text
+- [x] `exhibition_feedback` — dynamic guest rows, per-PLO 0-10 ratings, computed means
+- [x] `clo_perception_survey` — Likert tabulation per CLO, divergence flag
+- [x] `student_exit_survey` — PLO × cohort matrix, divergence flag
+- [x] `portfolio_assessment` — rubric scoring per criterion, 3 assessor scores, consensus
+- [x] `capstone_panel` — dynamic panelist rows, per-PLO 0-10 ratings, panel composition
 
-#### Periodic module (`/forms/periodic/`)
+> Built but **not yet carrying the `FormWorkflow` approval bar** (their payloads use `payload.id`, not `payload.formSubmissionId`) — see Bug/Investigation below.
+
+#### Periodic module (`/forms/periodic/`) — not started (backend `/api/v1/periodic` is live)
 
 - [ ] `resource_monitoring` — resource items + CQI implementation rows
 - [ ] `alumni_tracer` — employment indicators + PLO sufficiency table
@@ -257,8 +259,8 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### Archives
 
-- [ ] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin)
-- [ ] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down
+- [~] `archives/` cluster list (role-gated aqau/vpaa/dean/system_admin) — **route + role gate exist**, content still placeholder until the backend `archival-service` compiles clusters (Phase 7)
+- [~] `archives/[clusterId]` read-only per-student snapshot + artifact drill-down — **route exists**, placeholder content
 
 ### Dashboard data wiring (partially done)
 

@@ -172,6 +172,9 @@ Prisma schema is split into files under `prisma/schema/`. Names below are exact 
 | GET | `/api/v1/auth/role-requests` | `auth: true` + system_admin | list role requests (filter by `status`, default `pending`) |
 | POST | `/api/v1/auth/role-requests/:userId/approve` | `auth: true` + system_admin | grant the user's requested role |
 | POST | `/api/v1/auth/role-requests/:userId/deny` | `auth: true` + system_admin | reject the role request (keeps `user` role) |
+| GET | `/api/v1/academic/programs` | `auth: true` | list all programs (reference data for the frontend selects; cached 300s) |
+| GET | `/api/v1/academic/terms` | `auth: true` | list all academic terms (cached 300s) |
+| GET | `/api/v1/academic/class-sections` | `auth: true` | list class sections, optional `programId`/`termId` filters (cached 120s) |
 | GET | `/api/v1/forms` | `auth: true` | list form submissions (filter by formTypeId/classSectionId/status, or session-derived `scope=mine\|pending` for the inboxes; joins formType + submitter) |
 | POST | `/api/v1/forms` | `auth: true` | create a draft `FormSubmission` |
 | GET | `/api/v1/forms/:id` | `auth: true` | get a submission with its ordered `ApprovalStep` chain, form type, and submitter (uncached) |
@@ -440,9 +443,10 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
   - `PloService` — standalone PLO entity CRUD (`/plan/plos`), mutations **dean-only** (guarded in the controller via `assertCanManagePlos`): `list` (program's PLOs by code), `create` (program + per-program code uniqueness + ≥70% floor via `TargetBelowFloorError`, defaults to `DEFAULT_TARGET` 70), `update` (uniqueness/floor re-checked on patched values), `delete` (**guarded** — `PloInUseError` while the PLO has `CloToPloMap`/`PloAttainment`/`GapRow`/`CqiEntry` references, since they cascade); audits `plo.created`/`plo.updated`/`plo.deleted`. Errors: `PloNotFoundError` (404), `PloForbiddenError` (403), `PloDuplicateError`/`PloSourceNotFoundError`/`PloInUseError` (409).
   - `CloToPloMapService` — CRUD for the many-to-many CLO↔PLO mapping (`/plan/clo-plo-map/*`): `list` (optional `courseId` filter), `listEntities` (program CLOs grouped by course + PLOs, populates mapping dropdowns), `create` (existence-checked CLO/PLO, duplicate pair rejected), `update` (weight/stage), `delete`; errors map to 404/409.
   - Shared: `ensurePlanFormType` (race-safe `curriculum_map` seq 1, `assessment_calendar` seq 3, `target_setting_matrix` seq 4, `assessment_budget` seq 6, `pdcaStage` PLAN) / `ensureDraft` (find-or-create per formType+program+term, reusing editable/submitted/approved submissions) / `listPlanSubmissions` / `mergeFormData` / `assertEditable` / module-level `planAudit` (moduleAffected `plan`).
+- **`academic-service`** *(src/v1/academic/{service,controller}.ts)* — role-agnostic reference data behind `GET /api/v1/academic/*`: `listPrograms`, `listTerms`, `listClassSections(programId?, termId?)`. Feeds the frontend's Program/Term/Class-Section selects (`server/actions/academic.ts`); all three GETs are Redis-`cached`.
 
 ### Planned
-- **`at-risk-service`** — derives `AtRiskFlag` from `CloAttainment.isBelowThreshold`; no manual writes.
+- **`at-risk-service`** — ✅ **done** inside `attainment-service`: derives `AtRiskFlag` from `CloAttainment.isBelowThreshold` at persist time; no manual writes.
 - **`dashboard/rollup-service`** — institutional completion-rate and cross-program analytics (the per-program APAR KPIs ship with `cqi-service`).
 - **`survey-service`** — survey/feedback tabulation (indirect evidence) — now partially covered by `check-service` (F12 CLO perception survey, F17 student exit survey).
 - **`monitoring-service`** — audit-trail queries, systemic-gap trigger, CAPA lifecycle — now partially covered by `periodic-service` (F26 systemic gap report, F27 CAPA plan).

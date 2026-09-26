@@ -108,7 +108,7 @@ function ChevronIcon({ className }: { className?: string }) {
 
 /**
  * Registry-driven sidebar navigation. Renders the workspace destinations plus
- * the role-filtered forms catalog from `lib/navigation.tsx`.
+ * the role-filtered forms catalog from `config/navigation.ts`.
  */
 export function SidebarNav({ role }: { role: ApiUser["role"] }) {
   const workspace = workspaceNav(role);

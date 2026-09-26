@@ -22,7 +22,7 @@ import { app } from "@/utils/app-info";
 /**
  * Role-aware application sidebar. Nav content (workspace + form catalog +
  * secondary) is derived from the authenticated user's role via
- * `lib/navigation.tsx` — see that registry to add or gate routes.
+ * `config/navigation.ts` — see that registry to add or gate routes.
  */
 export function AppSidebar({
   user,
