@@ -14,7 +14,7 @@ try:
     if dotenv_path.exists():
         load_dotenv(dotenv_path=dotenv_path)
 except ImportError:
-    pass # python-dotenv is not a hard requirement
+    pass
 
 from app.etl.extract.extractor import ExcelExtractor
 from app.etl.transform.transformer import SimpleTransformer
@@ -22,7 +22,7 @@ from app.analytics.cqi_recommender import generate_cqi_recommendation
 
 # --- Configuration ---
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
-FILE_PATH = TEMPLATES_DIR / "E-classrecord(LECTURE ONLY).xlsx"
+FILE_PATH = TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE.xlsx"
 
 
 def print_step(message: str):
@@ -38,34 +38,28 @@ def print_json(data: dict, title: str = "JSON Response"):
 
 async def main():
     """
-    Tests the CQI recommendation module by running a real file through the
-    initial ETL stages and then passing the result to the analytics function.
+    Tests the standalone CQI recommendation module (prompt building, gap detection,
+    and Google GenAI integration) using the AUN-OBE template.
     """
-    print_step("1. Running Extractor and Transformer")
+    print_step("1. Running Extractor and Transformer on AUN-OBE Template")
 
     if not FILE_PATH.exists():
         print(f"ERROR: Test file not found at '{FILE_PATH}'")
         return
 
-    # Reuse existing ETL components to get the necessary inputs
     extractor = ExcelExtractor()
     transformer = SimpleTransformer()
 
-    # Unpack the new 3-tuple return value
     header, records, clo_plo_mapping = await extractor.extract(FILE_PATH)
-    # Pass the full 3-tuple to the transformer
     attainments = await transformer.transform((header, records, clo_plo_mapping))
 
     print(f"Successfully extracted header for course: {header.course_code}")
     print(f"Successfully transformed {len(attainments)} attainment records.")
 
-    print_step("2. Calling generate_cqi_recommendation")
-    
+    print_step("2. Calling generate_cqi_recommendation (Google GenAI / Mock)")
     cqi_result = await generate_cqi_recommendation(header, attainments)
 
     print_step("3. Full CQI Recommendation Result")
-
-    # Print the structured metadata as JSON
     metadata = {
         "course_code": cqi_result.get("course_code"),
         "status": cqi_result.get("status"),
@@ -73,7 +67,6 @@ async def main():
     }
     print_json(metadata, title="Metadata & Gaps")
 
-    # Print the LLM recommendation as raw text to render Markdown formatting cleanly
     print("\n" + "=" * 50)
     print("AI RECOMMENDATION REPORT (RENDERED MARKDOWN):")
     print("=" * 50 + "\n")
@@ -83,16 +76,14 @@ async def main():
         print("[No recommendation text generated]")
     print("\n" + "=" * 50)
 
-    print_step("4. Verification")
-    
-    # Verify that student names are not present in the final output
+    print_step("4. Privacy & Integrity Verification")
     result_str = json.dumps(cqi_result)
-    if any(name in result_str for name in ["DELA CRUZ, JUAN", "DOE, JOHN"]):
+    # Check that real student names are never leaked into the AI output
+    if any(name in result_str for name in ["DELA CRUZ", "DOE", "SANTOS"]):
         print("VERIFICATION FAILED: Real student names were found in the output.")
     else:
-        print("VERIFICATION PASSED: No real student names found in the output.")
+        print("VERIFICATION PASSED: No real student names found in the output (anonymization verified).")
 
-    # Verify that a real recommendation was received
     recommendation_text = cqi_result.get("recommendation", "")
     if cqi_result and cqi_result.get("status") == "no_gaps_found":
         print("VERIFICATION PASSED: No gaps found, so LLM was not called (correct).")
@@ -100,7 +91,7 @@ async def main():
         print("VERIFICATION PASSED: A real, non-error recommendation was received.")
     else:
         print("VERIFICATION FAILED: Recommendation was empty or contained an error.")
-        
+
     print("\nTest script finished.")
 
 

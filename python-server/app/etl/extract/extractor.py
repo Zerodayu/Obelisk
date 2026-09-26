@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 from pathlib import Path
 from typing import Any, List, Dict, Tuple
 from openpyxl import load_workbook
@@ -31,7 +32,10 @@ class ExcelExtractor(Extractor):
     def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[StudentRawCloData], list[dict[str, Any]]]:
         """Synchronous wrapper for all extraction operations."""
         try:
-            workbook = load_workbook(file_path, data_only=True)
+            with warnings.catch_warnings():
+                # Suppress openpyxl's UserWarning regarding unsupported Data Validation extension
+                warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+                workbook = load_workbook(file_path, data_only=True)
         except Exception as exc:
             raise InvalidWorkbook(file_path=file_path, underlying_error=str(exc))
 

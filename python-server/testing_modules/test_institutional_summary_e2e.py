@@ -1,187 +1,121 @@
-import json
-import time
-from pathlib import Path
-import sys
-import requests
-from typing import List, Dict, Any
+import unittest
+from fastapi.testclient import TestClient
 
-# Add project root to path to allow imports from `app`
-PROJECT_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+from app.main import app
 
-# --- Configuration ---
-BASE_URL = "http://localhost:8000"
-TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
-POLL_INTERVAL_SECONDS = 1
-JOB_TIMEOUT_SECONDS = 60
-
-# --- Test Fixture ---
-CLASS_RECORDS = [
-    {
-        "file": TEMPLATES_DIR / "E-classrecord_CITE_BSEMC.xlsx",
-        "department": "CITE",
-        "program": "BS Entertainment and Multimedia Computing",
-        "avp_group": "AVP for Prof. & Technical Educ.",
-    },
-    {
-        "file": TEMPLATES_DIR / "E-classrecord_COL_ConstiLaw.xlsx",
-        "department": "COL",
-        "program": "Juris Doctor",
-        "avp_group": "AVP for Legal Education",
-    },
-    {
-        "file": TEMPLATES_DIR / "E-classrecord_COM_Anatomy.xlsx",
-        "department": "COM",
-        "program": "Doctor of Medicine",
-        "avp_group": "AVP for Health Sciences Educ.",
-    },
-]
+client = TestClient(app)
 
 
-def print_step(message: str):
-    """Prints a formatted step message."""
-    print(f"\n--- {message} ---")
+class TestInstitutionalSummaryE2E(unittest.TestCase):
+    """
+    Unit/Integration test for institutional analytics rollups (Formulas 2A, 7A, 7C, Rule 3)
+    and executive AI generation using TestClient (fast, reliable, and decoupled from raw file uploads).
+    """
 
+    def setUp(self):
+        # Sample consolidated multi-course submission payload matching ClassRecordHeader & StudentCLOAttainment
+        self.payload = {
+            "period": {"type": "semester", "label": "SY 2025-2026, 1st Sem"},
+            "submissions": [
+                {
+                    "department": "CITE",
+                    "program": "BSIT",
+                    "avp_group": "AVP for Prof. & Technical Educ.",
+                    "course_code": "IT 101",
+                    "section": "BSIT-1A",
+                    "header": {
+                        "course_code": "IT 101",
+                        "course_title": "Intro to Computing",
+                        "course_type": "LECTURE",
+                        "section": "BSIT-1A",
+                        "semester_year": "SY 2025-2026, 1st Sem",
+                        "instructor_name": "Prof. Smith",
+                        "no_of_students": 2,
+                        "threshold": 0.70,
+                        "grading_system": None,
+                        "workbook_configured_weights_unused": None,
+                    },
+                    "attainments": [
+                        {
+                            "student_id": "2024-001",
+                            "student_name": "Student One",
+                            "clo_code": "CLO1",
+                            "tla_pct": None,
+                            "at_pct": None,
+                            "exam_pct": None,
+                            "output_pct": None,
+                            "direct_clo_attainment_pct": 0.80,
+                            "indirect_clo_attainment_pct": 80.0,
+                            "met_threshold": True,
+                            "clo_level": "Proficient",
+                            "formula_version": "test_version_1",
+                            "is_record_complete": True,
+                            "section_completeness_pct": 1.0,
+                            "rule1_met": True,
+                            "excluded_reason": None,
+                        },
+                        {
+                            "student_id": "2024-002",
+                            "student_name": "Student Two",
+                            "clo_code": "CLO1",
+                            "tla_pct": None,
+                            "at_pct": None,
+                            "exam_pct": None,
+                            "output_pct": None,
+                            "direct_clo_attainment_pct": 0.60,
+                            "indirect_clo_attainment_pct": 60.0,
+                            "met_threshold": False,
+                            "clo_level": "Basic",
+                            "formula_version": "test_version_1",
+                            "is_record_complete": True,
+                            "section_completeness_pct": 1.0,
+                            "rule1_met": True,
+                            "excluded_reason": None,
+                        },
+                    ],
+                    "clo_plo_mapping": [
+                        {
+                            "clo_code": "CLO1",
+                            "plo_code": "PLO1",
+                            "correlation_strength": 3,
+                        }
+                    ],
+                }
+            ],
+        }
 
-def print_json(data: dict, title: str = "JSON Response"):
-    """Prints a dictionary as formatted JSON."""
-    print(f"{title}:")
-    print(json.dumps(data, indent=2))
+    def test_analytics_summary_rollup_calculations(self):
+        """Verify POST /analytics/summary computes correct department/program rollups."""
+        response = client.post("/analytics/summary", json=self.payload)
+        self.assertEqual(response.status_code, 200)
 
+        data = response.json()
+        self.assertIn("department_summary", data)
+        self.assertIn("program_summary", data)
+        self.assertIn("avp_group_summary", data)
 
-def upload_file(file_path: Path) -> str | None:
-    """Uploads a single file and returns the job ID."""
-    try:
-        with open(file_path, "rb") as f:
-            files = {"file": (file_path.name, f, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
-            response = requests.post(f"{BASE_URL}/upload", files=files, timeout=10)
-        
-        if response.status_code == 202:
-            job_id = response.json().get("job_id")
-            print(f"✓ Uploaded {file_path.name}, job_id: {job_id}")
-            return job_id
-        else:
-            print(f"✗ FAILED to upload {file_path.name}, status: {response.status_code}")
-            return None
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAILED to upload {file_path.name}: {e}")
-        return None
+        # CITE Department CLO1 mean should be exactly (0.80 + 0.60) / 2 = 0.70
+        cite_dept = data["department_summary"]["CITE"]
+        clo1_stats = cite_dept["clos"]["CLO1"]
+        self.assertAlmostEqual(clo1_stats["mean_attainment_pct"], 0.70, places=4)
 
+        # BSIT Program PLO1 rollup should be 0.70 and Rule 3 met
+        bsit_prog = data["program_summary"]["BSIT"]
+        plo1_stats = bsit_prog["plos"]["PLO1"]
+        self.assertAlmostEqual(plo1_stats["plo_attainment_direct_only"], 0.70, places=4)
+        self.assertTrue(plo1_stats["plo_rule3_met"])
 
-def poll_job(job_id: str) -> Dict[str, Any] | None:
-    """Polls a single job until completion and returns the final job object."""
-    start_time = time.time()
-    while time.time() - start_time < JOB_TIMEOUT_SECONDS:
-        try:
-            response = requests.get(f"{BASE_URL}/jobs/{job_id}", timeout=5)
-            if response.status_code == 200:
-                job = response.json()
-                if job.get("status") in ["completed", "failed"]:
-                    return job
-            else:
-                print(f"WARN: Polling job {job_id} returned status {response.status_code}")
-        except requests.exceptions.RequestException as e:
-            print(f"WARN: Polling job {job_id} failed: {e}")
-        
-        time.sleep(POLL_INTERVAL_SECONDS)
-    
-    print(f"✗ FAILED: Job {job_id} timed out after {JOB_TIMEOUT_SECONDS}s.")
-    return None
+    def test_institutional_summary_ai_endpoint(self):
+        """Verify POST /analytics/institutional-summary returns summary and AI recommendation."""
+        response = client.post("/analytics/institutional-summary", json=self.payload)
+        self.assertEqual(response.status_code, 200)
 
-
-def main():
-    """Runs the full end-to-end test for the institutional summary."""
-    print_step(f"1. Uploading {len(CLASS_RECORDS)} Class Records")
-    
-    jobs_to_process = []
-    for record_meta in CLASS_RECORDS:
-        file_path = record_meta["file"]
-        if not file_path.exists():
-            print(f"✗ ERROR: Test file not found at '{file_path}'. Aborting.")
-            return
-
-        job_id = upload_file(file_path)
-        if job_id:
-            jobs_to_process.append({"job_id": job_id, "meta": record_meta})
-
-    if len(jobs_to_process) != len(CLASS_RECORDS):
-        print("✗ Not all files were uploaded successfully. Aborting.")
-        return
-
-    print_step(f"2. Polling {len(jobs_to_process)} Jobs for Completion")
-    
-    completed_jobs = []
-    for job_info in jobs_to_process:
-        print(f"Polling job {job_info['job_id']}...")
-        final_job = poll_job(job_info['job_id'])
-        if final_job and final_job.get("status") == "completed":
-            print(f"✓ Job {job_info['job_id']} completed.")
-            completed_jobs.append({"result": final_job, "meta": job_info["meta"]})
-        else:
-            status = final_job.get('status', 'unknown') if final_job else 'unknown'
-            error = final_job.get('error', 'N/A') if final_job else 'N/A'
-            print(f"✗ FAILED: Job {job_info['job_id']} did not complete successfully. Status: {status}, Error: {error}")
-            return
-
-    print_step("3. Assembling Institutional Summary Payload")
-    
-    submissions = []
-    for job in completed_jobs:
-        loaded_result = job["result"].get("result", {}).get("loaded", {})
-        if not loaded_result:
-            print(f"✗ ERROR: Job {job['result']['job_id']} is missing 'loaded' result. Aborting.")
-            return
-        
-        submissions.append({
-            "department": job["meta"]["department"],
-            "program": job["meta"]["program"],
-            "avp_group": job["meta"]["avp_group"],
-            "course_code": loaded_result["header"]["course_code"],
-            "section": loaded_result["header"]["section"],
-            "header": loaded_result["header"],
-            "attainments": loaded_result["attainments"],
-            "clo_plo_mapping": loaded_result.get("clo_plo_mapping", []),
-        })
-
-    payload = {
-        "period": {"type": "semester", "label": "SY 2024-2025, 2nd Semester (Test)"},
-        "submissions": submissions,
-    }
-    
-    print(f"Payload assembled with {len(submissions)} submissions.")
-
-    print_step("4. POSTing to /analytics/institutional-summary")
-    
-    try:
-        response = requests.post(f"{BASE_URL}/analytics/institutional-summary", json=payload, timeout=45) # Increased timeout
-        print(f"POST /analytics/institutional-summary status code: {response.status_code}")
-
-        if response.status_code != 200:
-            print("✗ ERROR: Institutional summary endpoint returned a non-200 status.")
-            try:
-                print_json(response.json(), title="Error Response")
-            except json.JSONDecodeError:
-                print(response.text)
-            return
-            
-        summary_data = response.json()
-
-        print_step("5. Verifying and Displaying Aggregated Results")
-
-        recommendation_text = summary_data.get("recommendation", "")
-        if recommendation_text and "LLM API ERROR" not in recommendation_text:
-            print("✓ VERIFICATION PASSED: A real, non-error recommendation was received.")
-        else:
-            print("✗ VERIFICATION FAILED: Recommendation was empty or contained an API error.")
-        
-        print_json(summary_data.get("summary", {}), title="Data Summary")
-        print_json({"recommendation": recommendation_text}, title="AI Recommendation")
-
-        print("\n✓ Institutional summary test completed successfully.")
-
-    except requests.exceptions.RequestException as e:
-        print(f"✗ FAILED to get institutional summary: {e}")
+        data = response.json()
+        self.assertIn("summary", data)
+        self.assertIn("recommendation", data)
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(len(data["recommendation"]) > 0)
 
 
 if __name__ == "__main__":
-    main()
+    unittest.main()

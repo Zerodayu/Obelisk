@@ -6,7 +6,7 @@ This repository contains the OBELISK ETL & Analytics Service, a pure-compute Pyt
 
 This service has two primary responsibilities:
 
-1.  **Per-Course ETL**: It receives a single, instructor-filled class-record Excel workbook, validates it, and runs an Extract, Transform, Load (ETL) pipeline. This process computes the Direct CLO (Course Learning Outcome) Attainment for every student based on institutional formulas.
+1.  **Per-Course ETL**: It receives an instructor-filled AUN-OBE class-record Excel workbook, validates it, and runs an Extract, Transform, Load (ETL) pipeline. This process computes Direct CLO Attainment and Indirect CLO Attainment for every student based on institutional formulas.
 2.  **Institutional Analytics**: It accepts a consolidated payload containing the results of multiple course submissions from the main web application. It then performs higher-level aggregations, rolling up CLO attainment to the PLO (Program Learning Outcome) level for different organizational units (Program, Department, AVP Group) and generates AI-powered summaries for institutional quality improvement.
 
 ---
@@ -88,7 +88,7 @@ This method allows for faster iteration on the Python code but requires Redis to
 
 ## 4. Testing the Service
 
-The project includes test modules in the `testing_modules/` directory covering unit logic, standalone component validation, and end-to-end HTTP flows.
+The project includes test modules in the `testing_modules/` directory covering unit logic, standalone component validation, and end-to-end HTTP flows for the **v2 AUN-OBE Template**.
 
 ### Running All Automated Tests (Batch)
 
@@ -100,26 +100,18 @@ python testing_modules/run_all.py
 uv run python testing_modules/run_all.py
 ```
 
-### Individual Test Modules
+### Active Test Modules
 
-#### Unit & Standalone Tests (No running server required)
-
-| Script | Purpose | How to Run (from project root) |
-| :--- | :--- | :--- |
-| `run_all.py` | **Test Runner**: Discovers and runs all `unittest` test suites in `testing_modules/`. | `python testing_modules/run_all.py` |
-| `test_validate.py` | **ETL Logic Validation**: Tests `ExcelExtractor` and `SimpleTransformer` directly against sample workbooks (Formula 1A, Rule 1, roster extraction). | `python testing_modules/test_validate.py` |
-| `test_ai_module.py` | **Standalone AI/CQI Module**: Exercises `generate_cqi_recommendation()` with sample data, verifying student anonymization, gap extraction, and prompt formatting. | `python testing_modules/test_ai_module.py` |
-| `test_shared_secret_auth.py` | **Shared-Secret Auth Suite**: Validates `X-Webapp-Secret` enforcement and rejection (`401 UnauthorizedCaller`) via FastAPI's `TestClient`. | `python testing_modules/test_shared_secret_auth.py` |
-| `test_unsupported_course_type.py` | **Course Type Enforcement**: Verifies that unsupported course types (e.g. `RESEARCH`) fail gracefully with a structured `UnsupportedCourseType` error. | `python testing_modules/test_unsupported_course_type.py` |
-| `test_indirect_attainment.py` | **Indirect Attainment Formulas**: Unit tests for the `compute_indirect_clo_attainment` scaling and boundary validation. | `python testing_modules/test_indirect_attainment.py` |
-
-#### End-to-End Tests (Require running server + Redis at `http://localhost:8000`)
-
-| Script | Purpose | How to Run (from project root) |
-| :--- | :--- | :--- |
-| `test_upload_e2e.py` | **Single-Course E2E Test**: Uploads a real workbook to `POST /upload`, polls `GET /jobs/{job_id}`, and verifies attainment results and recommendations. | `python testing_modules/test_upload_e2e.py` |
-| `test_institutional_summary_e2e.py` | **Institutional Summary E2E Test**: Posts a multi-course payload to `/analytics/summary` and `/analytics/institutional-summary`, verifying rollups and executive recommendations. | `python testing_modules/test_institutional_summary_e2e.py` |
-| `test_error_handling_e2e.py` | **Error Handling E2E Test**: Uploads a malformed workbook (e.g., missing sheets) to confirm the worker fails gracefully and stores a structured `MissingWorksheet` error. | `python testing_modules/test_error_handling_e2e.py` |
+| Script | Type | Tested Aspect | How to Run |
+| :--- | :---: | :--- | :--- |
+| `run_all.py` | Runner | **Test Runner**: Discovers and runs all `unittest` suites in `testing_modules/`. | `uv run python testing_modules/run_all.py` |
+| `test_etl_v2.py` | Unit | **AUN-OBE ETL Core & Edge Cases**: Tests dynamic CLO count discovery (synthetic 3-CLO and 7-CLO workbooks), formula tampering resilience (ignoring sheet formula columns and recalculating directly from raw cells), structured old-template rejection (`MissingWorksheet`), and indirect attainment math. | `uv run python -m unittest testing_modules/test_etl_v2.py` |
+| `test_institutional_summary_e2e.py` | Integration | **Multi-Course Analytics & Rollups**: Validates departmental, program, and AVP group rollups (Formulas 2A, 7A, 7C, Rule 3) and executive AI summary generation using FastAPI's `TestClient`. | `uv run python -m unittest testing_modules/test_institutional_summary_e2e.py` |
+| `test_shared_secret_auth.py` | Unit | **Caller Security / Auth**: Validates `X-Webapp-Secret` enforcement and rejection (`401 UnauthorizedCaller`) across endpoints. | `uv run python -m unittest testing_modules/test_shared_secret_auth.py` |
+| `test_unsupported_course_type.py` | Unit | **Course Type Gating**: Verifies that non-`LECTURE` courses (e.g., `RESEARCH`) fail gracefully with a structured `UnsupportedCourseType` error. | `uv run python -m unittest testing_modules/test_unsupported_course_type.py` |
+| `test_ai_module.py` | Standalone | **AI Recommendation & Privacy**: Exercises `generate_cqi_recommendation()` using `google-genai`, verifying student anonymization, gap extraction, and Markdown formatting. | `uv run python testing_modules/test_ai_module.py` |
+| `test_validate.py` | Standalone | **Extraction Smoke Test**: Runs direct CLI extraction and transformation sanity checks against `JMCFI_Class_Record_Template_AUN-OBE.xlsx`. | `uv run python testing_modules/test_validate.py` |
+| `test_upload_e2e.py` | Live E2E | **Full Single-Course Flow**: Uploads `JMCFI_Class_Record_Template_AUN-OBE.xlsx` to `POST /upload`, polls Redis job state until `completed`, verifies 75 attainments with `indirect_clo_attainment_pct`, and fetches per-course AI recommendation. *(Requires server running on port 8000)* | `uv run python testing_modules/test_upload_e2e.py` |
 
 ---
 
@@ -127,21 +119,21 @@ uv run python testing_modules/run_all.py
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
-| `POST` | `/upload` | Upload a class-record `.xlsx` file to start a new ETL job. |
+| `POST` | `/upload` | Upload an AUN-OBE class-record `.xlsx` file to start a new ETL job. |
 | `GET` | `/jobs` | Get a list of all jobs currently tracked in Redis. |
 | `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
 | `GET` | `/analytics/jobs/{job_id}/recommendation` | Get a per-course AI-generated CQI recommendation for a completed job (409 if pending). |
-| `POST` | `/analytics/summary` | Get pure data rollups for a given set of course submissions. |
-| `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and AI recommendation. |
+| `POST` | `/analytics/summary` | Get pure data rollups for a given set of course submissions (safe for any role; no AI call). |
+| `POST` | `/analytics/institutional-summary` | Get a high-level, institution-wide CQI summary and AI recommendation (VPAA only). |
 | `GET` | `/health` | A simple health check endpoint. |
 
-### Output compatibility note
+### Output Data Shape Notes for Webapp Consumers
 
-ETL results remain backward-compatible, but `attainments[]` may now include an additive `excluded_reason` field. When `excluded_reason == "no_plo_mapping"`, the CLO was intentionally skipped because the workbook's CLO-PLO mapping table did not contain a valid non-zero mapping for that CLO. In that case, the attainment-related fields are returned as `null` for that row.
-
-### Extraction validation note
-
-The ETL extractor currently supports `LECTURE` class records only. If a workbook declares any other course type, extraction stops with a structured `UnsupportedCourseType` error so the job is marked failed instead of producing partial output.
+- **`indirect_clo_attainment_pct`**: Newly added to each student attainment row (`0.0`–`100.0%`), independently recomputed from the Indirect CLO rating: `(rating / 5.0) * 100.0`.
+- **`direct_clo_attainment_pct`**: Independently recomputed from the 6 raw score/max cells ($\frac{\text{Prelim}+\text{Midterm}+\text{Final}}{\text{Prelim Max}+\text{Midterm Max}+\text{Final Max}}$). Excel formula columns in the workbook are completely bypassed and ignored.
+- **`excluded_reason`**: Always `null`. CLO-PLO mapping in Excel is permanently retired; correlation matrices are managed entirely within the webapp backend. `clo_plo_mapping` is returned as `[]`.
+- **Category breakdowns (`tla_pct`, `at_pct`, `exam_pct`, `output_pct`)**: Always `null` in the AUN-OBE format, as scores arrive pre-summed into grading period subtotals per CLO.
+- **Extraction Validation**: The ETL extractor currently supports `LECTURE` class records only. If a workbook declares any other course type in `SETUP`, extraction stops immediately with a structured `UnsupportedCourseType` error. Older non-AUN-OBE templates raise structured `MissingWorksheet` errors.
 
 ---
 
