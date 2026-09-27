@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Badge } from "@/components/reui/badge";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import {
   Frame,
   FrameHeader,
@@ -165,6 +165,18 @@ export default function PeerObservationForm() {
     }
   }, [payload]);
 
+  const submissionId = payload?.id;
+  // NOTE: merge only `status` after a workflow action so unsaved edits survive.
+  const syncStatus = useCallback(async () => {
+    if (!submissionId) return;
+    const result = await getCheckForm<Payload>(FORM_CODE, submissionId);
+    if (result.ok) {
+      setPayload((prev) =>
+        prev ? { ...prev, status: result.data.status } : prev,
+      );
+    }
+  }, [submissionId]);
+
   function updateHeader(field: string, value: string | number | undefined) {
     setPayload((prev) =>
       prev ? { ...prev, header: { ...prev.header, [field]: value } } : prev,
@@ -203,8 +215,12 @@ export default function PeerObservationForm() {
     );
   }
 
+  // NOTE: mirrors backend EDITABLE_STATUSES — saves are rejected outside draft/returned anyway.
+  const editable = payload.status === "draft" || payload.status === "returned";
+
   return (
     <div className="space-y-6">
+      <FormWorkflow submissionId={payload.id} onChanged={syncStatus} />
       <Frame>
         <FrameHeader>
           <FrameTitle>Observation Details</FrameTitle>
@@ -366,10 +382,15 @@ export default function PeerObservationForm() {
       </Frame>
 
       <div className="flex items-center gap-4">
-        <Badge>{payload.status}</Badge>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || !editable}>
           {saving ? "Saving..." : "Save Changes"}
         </Button>
+        {!editable ? (
+          <p className="text-xs text-muted-foreground">
+            Locked — editing is only allowed while the form is draft or
+            returned.
+          </p>
+        ) : null}
       </div>
     </div>
   );

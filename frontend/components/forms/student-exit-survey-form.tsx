@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Badge } from "@/components/reui/badge";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import {
   Frame,
   FrameDescription,
@@ -124,6 +124,18 @@ export function StudentExitSurveyForm() {
     }
   }, [payload]);
 
+  const submissionId = payload?.id;
+  // NOTE: merge only `status` after a workflow action so unsaved edits survive.
+  const syncStatus = useCallback(async () => {
+    if (!submissionId) return;
+    const result = await getCheckForm<Payload>(FORM_CODE, submissionId);
+    if (result.ok) {
+      setPayload((prev) =>
+        prev ? { ...prev, status: result.data.status } : prev,
+      );
+    }
+  }, [submissionId]);
+
   const updateHeader = useCallback(
     (field: string, value: string | number | undefined) => {
       setPayload((prev) =>
@@ -193,8 +205,12 @@ export function StudentExitSurveyForm() {
     );
   }
 
+  // NOTE: mirrors backend EDITABLE_STATUSES — saves are rejected outside draft/returned anyway.
+  const editable = payload.status === "draft" || payload.status === "returned";
+
   return (
     <div className="space-y-4">
+      <FormWorkflow submissionId={payload.id} onChanged={syncStatus} />
       <Frame>
         <FrameHeader>
           <FrameTitle>Student Exit Survey</FrameTitle>
@@ -540,17 +556,18 @@ export function StudentExitSurveyForm() {
         </Frame>
       </div>
 
-      <div className="flex items-center justify-between">
-        <Badge
-          variant={payload.status === "submitted" ? "success" : "secondary"}
-        >
-          {payload.status}
-        </Badge>
-        <div className="flex gap-2">
+      <div className="flex items-center gap-3">
+        {!editable ? (
+          <p className="text-xs text-muted-foreground">
+            Locked — editing is only allowed while the form is draft or
+            returned.
+          </p>
+        ) : null}
+        <div className="ml-auto flex gap-2">
           <Button variant="outline" onClick={() => setPayload(null)}>
             Re-initialize
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving || !editable}>
             {saving ? "Saving..." : "Save"}
           </Button>
         </div>

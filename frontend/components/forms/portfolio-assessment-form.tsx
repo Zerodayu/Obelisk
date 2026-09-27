@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Badge } from "@/components/reui/badge";
+import { FormWorkflow } from "@/components/forms/form-workflow";
 import {
   Frame,
   FrameDescription,
@@ -122,6 +122,18 @@ export default function PortfolioAssessmentForm() {
     }
   }, [payload]);
 
+  const submissionId = payload?.id;
+  // NOTE: merge only `status` after a workflow action so unsaved edits survive.
+  const syncStatus = useCallback(async () => {
+    if (!submissionId) return;
+    const result = await getCheckForm<Payload>(FORM_CODE, submissionId);
+    if (result.ok) {
+      setPayload((prev) =>
+        prev ? { ...prev, status: result.data.status } : prev,
+      );
+    }
+  }, [submissionId]);
+
   function updateHeader<K extends keyof Payload["header"]>(
     key: K,
     value: Payload["header"][K],
@@ -201,8 +213,12 @@ export default function PortfolioAssessmentForm() {
     );
   }
 
+  // NOTE: mirrors backend EDITABLE_STATUSES — saves are rejected outside draft/returned anyway.
+  const editable = payload.status === "draft" || payload.status === "returned";
+
   return (
     <div className="space-y-6">
+      <FormWorkflow submissionId={payload.id} onChanged={syncStatus} />
       <Frame>
         <FrameHeader>
           <FrameTitle>Portfolio Assessment Record</FrameTitle>
@@ -479,14 +495,15 @@ export default function PortfolioAssessmentForm() {
       </Frame>
 
       <div className="flex items-center gap-3">
-        <Badge
-          variant={payload.status === "submitted" ? "default" : "secondary"}
-        >
-          {payload.status}
-        </Badge>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || !editable}>
           {saving ? "Saving…" : "Save"}
         </Button>
+        {!editable ? (
+          <p className="text-xs text-muted-foreground">
+            Locked — editing is only allowed while the form is draft or
+            returned.
+          </p>
+        ) : null}
       </div>
     </div>
   );
