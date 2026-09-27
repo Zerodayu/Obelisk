@@ -2,6 +2,7 @@
 
 import { useAtomValue } from "jotai";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
   AssessmentTypeDatum,
   BudgetLineDatum,
@@ -106,8 +107,11 @@ export function BudgetVsActualBars({
   const rows = data.map((b) => ({
     lineItem: b.lineItem.split(" ")[0],
     planned: Math.round(b.planned / 1000),
-    spent: Math.round(b.spent / 1000),
+    // No actual-spend field on the backend yet — see `BudgetLineDatum.spent`.
+    spent: b.spent == null ? 0 : Math.round(b.spent / 1000),
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
+  const hasSpent = data.some((b) => b.spent != null);
   return (
     <EChartsBarChart
       data={rows}
@@ -122,7 +126,7 @@ export function BudgetVsActualBars({
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
       <EChartsBarChart.Bar dataKey="planned" />
-      <EChartsBarChart.Bar dataKey="spent" />
+      {hasSpent ? <EChartsBarChart.Bar dataKey="spent" /> : null}
     </EChartsBarChart>
   );
 }
@@ -165,8 +169,12 @@ export function TargetSettingBars({
   const rows = data.map((t) => ({
     yearLevel: t.yearLevel,
     target: t.targetAttainmentPct,
-    current: t.currentAttainmentPct,
+    current: t.currentAttainmentPct ?? 0,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
+  // Current attainment is not joined by the atom yet — omit that series rather
+  // than drawing zero-height bars (see `TargetSettingDatum`).
+  const hasCurrent = data.some((t) => t.currentAttainmentPct != null);
   return (
     <EChartsBarChart
       data={rows}
@@ -183,7 +191,7 @@ export function TargetSettingBars({
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
       <EChartsBarChart.Bar dataKey="target" />
-      <EChartsBarChart.Bar dataKey="current" />
+      {hasCurrent ? <EChartsBarChart.Bar dataKey="current" /> : null}
     </EChartsBarChart>
   );
 }
@@ -204,6 +212,7 @@ export function CurriculumCoverageBars({
     ploCode,
     mapped,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -233,6 +242,7 @@ export function ScheduleLoadBars({
     direct: s.directAssessments,
     indirect: s.indirectAssessments,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -268,6 +278,7 @@ export function PloToPeoCoverageBars({
     ploCode,
     mapped,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -316,6 +327,7 @@ export function StudentYearLevelBars({
     yearLevel: `Y${s.yearLevel}`,
     count: s.studentCount,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}

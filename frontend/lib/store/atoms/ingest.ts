@@ -9,11 +9,9 @@
 
 import { atom } from "jotai";
 
-import {
-  type ComputationRunDatum,
-  MOCK_COMPUTATION_RUNS,
-  MOCK_UPLOAD_STATUSES,
-  type UploadStatusDatum,
+import type {
+  ComputationRunDatum,
+  UploadStatusDatum,
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
@@ -117,14 +115,31 @@ export const {
   api.get<UploadHistoryRecord[]>("/ingest/history"),
 );
 
-/** Class-record upload status distribution (`UploadRecord.status`). */
-export const {
-  dataAtom: uploadStatusesDataAtom,
-  refreshAtom: refreshUploadStatusesAtom,
-} = atomWithMockData<UploadStatusDatum[]>(MOCK_UPLOAD_STATUSES);
+/**
+ * Class-record upload status distribution, aggregated from the same
+ * `GET /ingest/history` fetch as the history table. The route is role-gated to
+ * capture roles (faculty / program_chair / system_admin) — other roles get a
+ * 403, which leaves this atom on its empty seed and the donut on its empty
+ * state.
+ */
+export const uploadStatusesDataAtom = atom<UploadStatusDatum[]>((get) => {
+  const history = get(uploadsHistoryDataAtom);
+  const counts = new Map<UploadStatusDatum["status"], number>();
+  for (const record of history) {
+    counts.set(record.status, (counts.get(record.status) ?? 0) + 1);
+  }
+  return [...counts]
+    .filter(([, count]) => count > 0)
+    .map(([status, count]) => ({ status, count }));
+});
 
+/** Refreshes the underlying `GET /ingest/history` fetch. */
+export const refreshUploadStatusesAtom = refreshUploadHistoryAtom;
+
+// TODO(computation-runs): `ComputationRun` is only read by internal services —
+// no route lists runs per term yet.
 /** 70/30 computation-run volume per term (`ComputationRun`). */
 export const {
   dataAtom: computationRunsDataAtom,
   refreshAtom: refreshComputationRunsAtom,
-} = atomWithMockData<ComputationRunDatum[]>(MOCK_COMPUTATION_RUNS);
+} = atomWithMockData<ComputationRunDatum[]>([]);

@@ -28,8 +28,8 @@ export default async function ArchivesIndexPage() {
           <FrameHeader>
             <FrameTitle>Cluster composition</FrameTitle>
             <FrameDescription>
-              Archived student statuses across compiled clusters. Sample data
-              until the archival pipeline lands.
+              Archived student statuses across compiled clusters. Empty until
+              the archival pipeline compiles a cluster.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

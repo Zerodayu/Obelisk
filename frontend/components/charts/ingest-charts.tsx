@@ -2,6 +2,7 @@
 
 import { useAtomValue } from "jotai";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
   ComputationRunDatum,
   UploadStatusDatum,
@@ -67,6 +68,7 @@ export function ComputationRunBars({
   const atomData = useAtomValue(computationRunsDataAtom);
   const data = override ?? atomData;
   const rows = data.map((r) => ({ term: r.term, runCount: r.runCount }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}

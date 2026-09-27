@@ -1,5 +1,6 @@
 "use client";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import {
   type ChartConfig,
   EChartsPieChart,
@@ -10,6 +11,8 @@ import {
  * right-hand legend list (label + value per category). Mirrors
  * `components/examples/pie-chart-ex.tsx`. Swatches read the sector color from
  * `config`, so the legend always matches the pie fill.
+ *
+ * An empty `data` list renders `ChartEmptyState` instead of a zeroed donut.
  */
 export function PieDonutLayout<TData extends Record<string, unknown>>({
   data,
@@ -29,6 +32,10 @@ export function PieDonutLayout<TData extends Record<string, unknown>>({
   formatValue?: (value: number) => string;
 }) {
   const total = data.reduce((sum, row) => sum + (Number(row[dataKey]) || 0), 0);
+
+  // No rows, or every row zeroed — an all-zero donut would render as a broken
+  // empty ring, so show the empty state instead.
+  if (data.length === 0 || total === 0) return <ChartEmptyState />;
 
   return (
     <div className="flex h-full w-full items-center gap-3 p-4 sm:gap-6">

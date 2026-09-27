@@ -2,6 +2,7 @@
 
 import { useAtomValue } from "jotai";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
   ApprovalFlowDatum,
   AtRiskDatum,
@@ -175,6 +176,7 @@ export function ApprovalFlowBars({
     pending: a.pending,
     returned: a.returned,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -204,6 +206,7 @@ export function AuditActivityBars({
   const atomData = useAtomValue(auditActivityDataAtom);
   const data = override ?? atomData;
   const rows = data.map((a) => ({ module: a.module, count: a.count }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -286,6 +289,7 @@ export function ExportFormatBars({
   const atomData = useAtomValue(exportFormatsDataAtom);
   const data = override ?? atomData;
   const rows = data.map((e) => ({ format: e.format, count: e.count }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -311,6 +315,7 @@ export function FormTypeStageBars({
   const atomData = useAtomValue(formTypeStagesDataAtom);
   const data = override ?? atomData;
   const rows = data.map((f) => ({ stage: f.stage, count: f.formTypeCount }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
@@ -336,6 +341,7 @@ export function UserRoleBars({ data: override }: { data?: UserRoleDatum[] }) {
     role: r.role.replace("_", " "),
     count: r.userCount,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}

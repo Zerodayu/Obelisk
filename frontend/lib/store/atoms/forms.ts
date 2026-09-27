@@ -4,16 +4,14 @@
  * `formSubmissionsDataAtom` fetches `GET /forms` from the browser on first
  * subscription and refetches when a filter atom changes or `refreshAtom` runs.
  * `formStatusCountsAtom` derives the submission-status distribution for the
- * status donut: it falls back to the sample `MOCK_FORM_STATUSES` only while
- * loading/error, and reports real counts (including empty) once loaded.
+ * status donut: it holds an empty list while the fetch is pending or failed
+ * (the donut renders its empty state) and reports real counts — including
+ * zeros — once loaded.
  */
 
 import { atom } from "jotai";
 
-import {
-  type FormStatusDatum,
-  MOCK_FORM_STATUSES,
-} from "@/components/charts/obe-sample-data";
+import type { FormStatusDatum } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData } from "@/lib/store/async-atom";
 
@@ -119,7 +117,9 @@ export const {
 /** Submission-status distribution for the status donut. */
 export const formStatusCountsAtom = atom<FormStatusDatum[]>((get) => {
   const state = get(formSubmissionsStateAtom);
-  if (state.status !== "ready") return MOCK_FORM_STATUSES;
+  // No submissions resolved yet (loading or error) — render the empty state
+  // rather than a fabricated distribution.
+  if (state.status !== "ready") return [];
 
   const counts = new Map<FormSubmissionStatus, number>();
   for (const submission of state.data) {

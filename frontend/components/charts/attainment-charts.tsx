@@ -2,6 +2,7 @@
 
 import { useAtomValue } from "jotai";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
   CloAttainmentDatum,
   CohortTrendDatum,
@@ -97,10 +98,15 @@ export function CloAttainmentBars({
   const data = override ?? atomData;
   const rows = data.map((c) => ({
     cloCode: c.cloCode,
-    direct: c.directScorePct,
-    indirect: c.indirectScorePct,
+    direct: c.directScorePct ?? 0,
+    indirect: c.indirectScorePct ?? 0,
     composite: c.compositeScorePct,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
+  // The summary payload carries no per-CLO direct/indirect averages yet —
+  // omit those series rather than drawing zero-height bars (see the atom).
+  const hasDirect = data.some((c) => c.directScorePct != null);
+  const hasIndirect = data.some((c) => c.indirectScorePct != null);
 
   return (
     <EChartsBarChart
@@ -118,8 +124,8 @@ export function CloAttainmentBars({
       />
       <EChartsBarChart.Tooltip />
       <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="direct" />
-      <EChartsBarChart.Bar dataKey="indirect" />
+      {hasDirect ? <EChartsBarChart.Bar dataKey="direct" /> : null}
+      {hasIndirect ? <EChartsBarChart.Bar dataKey="indirect" /> : null}
       <EChartsBarChart.Bar dataKey="composite" />
     </EChartsBarChart>
   );
@@ -138,6 +144,7 @@ export function PloAttainmentBars({
     attained: p.attainedPct,
     target: p.targetAttainmentPct,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
 
   return (
     <EChartsBarChart
@@ -174,6 +181,7 @@ export function PeoAttainmentBars({
     attained: p.attainedPct,
     target: p.targetAttainmentPct,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
 
   return (
     <EChartsBarChart
@@ -209,6 +217,7 @@ export function AttainmentFloorBars() {
     met: c.isBelowThreshold ? null : c.compositeScorePct,
     notMet: c.isBelowThreshold ? c.compositeScorePct : null,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
 
   return (
     <EChartsBarChart
@@ -249,6 +258,7 @@ export function CohortTrendLines({
     }
     return row;
   });
+  if (rows.length === 0) return <ChartEmptyState />;
 
   return (
     <EChartsLineChart
@@ -279,6 +289,7 @@ export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
   const atomData = useAtomValue(scoreBandsDataAtom);
   const data = override ?? atomData;
   const rows = data.map((b) => ({ band: b.band, count: b.studentCount }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}

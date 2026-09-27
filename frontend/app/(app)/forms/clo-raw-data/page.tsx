@@ -40,8 +40,8 @@ export default async function CloRawDataPage() {
           <FrameHeader>
             <FrameTitle>Class score bands</FrameTitle>
             <FrameDescription>
-              Distribution across the 4-tier rubric. Sample data until ingest
-              lands.
+              Distribution across the 4-tier rubric. Empty until an endpoint
+              aggregates student scores into bands.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

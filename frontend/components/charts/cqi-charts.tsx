@@ -2,6 +2,7 @@
 
 import { useAtomValue } from "jotai";
 
+import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
   CqiActionDatum,
   LoopStatusDatum,
@@ -93,6 +94,7 @@ export function GapAnalysisBars({ data: override }: { data?: PloGapDatum[] }) {
     attained: g.attainedPct,
     target: g.targetAttainmentPct,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
 
   return (
     <EChartsBarChart
@@ -151,6 +153,7 @@ export function CqiActionsBars({
     planned: a.planned,
     completed: a.completed,
   }));
+  if (rows.length === 0) return <ChartEmptyState />;
   return (
     <EChartsBarChart
       data={rows}
