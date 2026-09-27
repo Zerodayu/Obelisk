@@ -13,6 +13,7 @@
 		"start": "bun run src/index.ts",
 		"db:push": "dotenvx run -f .env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f .env.local -- bunx prisma generate",
+		"db:seed": "dotenvx run -f .env.local -- bun prisma/seed.ts",
 		"db:studio": "dotenvx run -f .env.local -- bunx prisma studio",
 		"db:migrate": "dotenvx run -f .env.local -- bunx prisma migrate"
 	},

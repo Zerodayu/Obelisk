@@ -35,6 +35,23 @@ install-etl: redis
 redis:
     cd python-server && docker compose up -d redis
 
+# --- database ---
+
+# apply pending Prisma migrations (DATABASE_URL read from backend/.env.local)
+[group('setup')]
+db-migrate:
+    @just _bun backend db:migrate
+
+# regenerate the Prisma client after a schema change
+[group('setup')]
+db-generate:
+    @just _bun backend db:generate
+
+# seed dev data: one account per role (`<role>@jmcfi.edu.ph` / `password123`), department, program, active term, course, section A, CLO1-7. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
+[group('setup')]
+db-seed:
+    @just _bun backend db:seed
+
 # --- dev ---
 
 # run backend + frontend + etl in parallel with colored log prefixes (Ctrl+C stops all)

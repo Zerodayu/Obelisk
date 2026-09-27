@@ -110,6 +110,8 @@ institutional_review      -> Institutional Management Review Records
 
 Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on Neon reachability), with lint and typecheck green.
 
+> ⚠️ `bun run test` runs `test/helpers/run-tests.ts`, which **wipes the target database before and after every run** — on this setup that is the dev DB (Neon). Re-run `bun run db:seed` (or `just db-seed`) afterwards or every seeded account and all reference data is gone.
+
 ## Phase 6 Modules
 
 Phases 6 forms are split across two feature plugins:
