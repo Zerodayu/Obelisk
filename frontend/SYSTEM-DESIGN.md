@@ -112,7 +112,7 @@ The intended `components/obe/` package was never built; the shared primitives th
 - **`components/ui/form-select.tsx`**, **`ui/program-select.tsx`**, **`ui/term-select.tsx`**, **`ui/class-section-select.tsx`** — shared selects; the academic ones are populated by `server/actions/academic.ts` (`/academic/programs|terms|class-sections`).
 - **`components/ui/field.tsx`**, **`ui/attachment.tsx`**, **`ui/toast.tsx`**, **`ui/drawer.tsx`**, **`ui/spinner.tsx`** — field wrappers, upload display, notifications, drawers, loading.
 - **`lib/constants/obe.ts`** — the shared `ROOT_CAUSES` (6-category) constant; add new cross-form OBE constants here.
-- **`components/forms/form-workflow.tsx`** — the shared approval bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive), embedded on all 13 Phase 0–5 screens (including `/forms/clo-raw-data`). Not yet on the 7 CHECK screens (their payloads use `payload.id`, not `payload.formSubmissionId` — see `../roadmap.md`).
+- **`components/forms/form-workflow.tsx`** — the shared approval bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive), embedded on **all 20 wired screens** (the 13 Phase 0–5 screens incl. `/forms/clo-raw-data`, plus the 7 CHECK screens — which pass `payload.id`, the `FormSubmission` id returned by CHECK `init`, and re-sync only `status` through `onChanged` so unsaved edits survive; their Save button locks outside `draft`/`returned`).
 - **`components/forms/form-placeholder.tsx`** — titled scaffold wrapper (title + stable code + PDCA stage) that renders `children`, falling back to a "pending" panel when a screen has no content yet.
 
 Still missing (tracked in `../roadmap.md`): dedicated `status-badge`/`ipd-selector`/`cohort-selector`/`root-cause-selector`/`blooms-selector`/`rubric-scale`/`likert-scale`/`loop-status-badge`/`row-editor-table`/`form-header`/`computed-cell` primitives — screens currently inline these.
@@ -214,17 +214,16 @@ Removed: old demo `nav-main`, `nav-documents`, `section-cards`, `chart-area-inte
 
 ## 7. Current State & Next Work
 
-Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), approval workflow bar + inboxes, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling.
+Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), approval workflow bar on all 20 screens + inboxes, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling.
 
 Remaining, in rough priority:
 
-1. Embed `FormWorkflow` on the 7 CHECK screens (payloads use `payload.id` rather than `payload.formSubmissionId`).
-2. The 7 Periodic/ACT screens (`/forms/periodic/*`) against the live backend plugin.
-3. Wire the remaining dashboard atoms to real endpoints; populate stat cards on the 6 role dashboards.
-4. Archives content — pages exist but render placeholder data until the backend `archival-service` compiles clusters (after PEO attainment capture).
-5. Export / print (PDF / Excel / Word) on form screens.
-6. Adopt shared client-side Zod schemas (or a monorepo package) so client validation mirrors `backend/*/model.ts`.
-7. Async upload UX for large class-record files (progress, retry, error states); archive detail-artifact streaming.
+1. The 7 Periodic/ACT screens (`/forms/periodic/*`) against the live backend plugin.
+2. Wire the remaining dashboard atoms to real endpoints; populate stat cards on the 6 role dashboards.
+3. Archives content — pages exist but render placeholder data until the backend `archival-service` compiles clusters (after PEO attainment capture).
+4. Export / print (PDF / Excel / Word) on form screens.
+5. Adopt shared client-side Zod schemas (or a monorepo package) so client validation mirrors `backend/*/model.ts`.
+6. Async upload UX for large class-record files (progress, retry, error states); archive detail-artifact streaming.
 
 ## 8. Open Questions
 

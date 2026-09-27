@@ -239,7 +239,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] `portfolio_assessment` — rubric scoring per criterion, 3 assessor scores, consensus
 - [x] `capstone_panel` — dynamic panelist rows, per-PLO 0-10 ratings, panel composition
 
-> Built but **not yet carrying the `FormWorkflow` approval bar** (their payloads use `payload.id`, not `payload.formSubmissionId`) — see Bug/Investigation below.
+> **Done:** all 7 now carry the shared `FormWorkflow` approval bar — their `payload.id` *is* the `FormSubmission` id (created by the CHECK `init`), so it is passed straight to the bar; each screen re-syncs only `status` via `onChanged` and locks Save outside `draft`/`returned`.
 
 #### Periodic module (`/forms/periodic/`) — not started (backend `/api/v1/periodic` is live)
 
@@ -334,6 +334,6 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 ### Bug / Investigation
 
 - [ ] **Phantom GET calls on server** — investigate and fix unidentified/phantom GET requests hitting the backend; root-cause whether these are client-side misfires, stale polling, or external probes
-- [ ] **Workflow bar on Phase 6 screens** — embed `FormWorkflow` on the 7 CHECK-phase form screens (`peer_observation`, `clo_perception_survey`, `student_exit_survey`, `exhibition_feedback`, `portfolio_assessment_record`, `capstone_panel_evaluation`, `mid_cycle_attainment`) — their payloads use `payload.id` instead of `payload.formSubmissionId`
+- [x] **Workflow bar on Phase 6 screens** — embed `FormWorkflow` on the 7 CHECK-phase form screens (`peer_observation`, `clo_perception_survey`, `student_exit_survey`, `exhibition_feedback`, `portfolio_assessment_record`, `capstone_panel_evaluation`, `mid_cycle_attainment`) — **Done:** bar rendered with `submissionId={payload.id}` (the CHECK `init` creates a real `FormSubmission`); `onChanged` re-syncs `status` without clobbering unsaved edits, Save is locked outside `draft`/`returned`, and the redundant footer status badges are gone
 - [ ] **Sanity-check ambiguous approval chains** — confirm registry mappings: `curriculum_map` → `[aqau]`, `systemic_gap_report` → `[vpaa]`, `institutional_review` → `[vpaa]` (President mapped to vpaa); `peer_observation` keeps a same-role `[program_chair]` chain (no self-approval rule)
 - [ ] **Feature-plugin draft save ownership** — decide whether shared-draft editing stays allowed or plugin save endpoints (`assertCanEdit`) become strictly owner-only like `PUT /forms/:id`
