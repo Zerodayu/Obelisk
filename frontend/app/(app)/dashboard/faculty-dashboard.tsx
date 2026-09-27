@@ -20,8 +20,9 @@ import {
 
 /**
  * Faculty dashboard — scoped to the faculty member's own class sections and
- * courses for the active term (backend `faculty` role). Sample data only; the
- * chart inputs mirror the backend schema and will swap to rollup endpoints.
+ * courses for the active term (backend `faculty` role). Charts read the shared
+ * store atoms (`lib/store/atoms/*`) and render an empty state until the
+ * backend has submissions to show.
  */
 export function FacultyDashboard() {
   return (

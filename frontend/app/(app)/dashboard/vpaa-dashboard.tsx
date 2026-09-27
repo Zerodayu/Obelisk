@@ -16,8 +16,9 @@ import {
 
 /**
  * VPAA dashboard — institution-wide academic decisions: CAPA/budget
- * approvals and institutional management reviews. Chart inputs mirror the
- * backend schema; sample data until rollup endpoints land.
+ * approvals and institutional management reviews. Charts read the shared store
+ * atoms (`lib/store/atoms/*`) and render an empty state until the backend has
+ * data to show.
  */
 export function VpaaDashboard() {
   return (

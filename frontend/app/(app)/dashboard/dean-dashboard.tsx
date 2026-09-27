@@ -18,8 +18,9 @@ import {
 
 /**
  * Dean dashboard — scoped to the dean's department (`user.departmentId`).
- * Endorsements and program-level schedules route through here. Chart inputs
- * mirror the backend schema; sample data until rollup endpoints land.
+ * Endorsements and program-level schedules route through here. Charts read the
+ * shared store atoms (`lib/store/atoms/*`) and render an empty state until the
+ * backend has submissions to show.
  */
 export function DeanDashboard() {
   return (

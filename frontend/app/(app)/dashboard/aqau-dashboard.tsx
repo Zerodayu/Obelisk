@@ -18,8 +18,9 @@ import {
 
 /**
  * AQAU dashboard — institution-wide QA oversight. Receives filings, tracks
- * cohorts, and confirms graduation-cluster compilation. Chart inputs mirror
- * the backend schema; sample data until rollup endpoints land.
+ * cohorts, and confirms graduation-cluster compilation. Charts read the shared
+ * store atoms (`lib/store/atoms/*`) and render an empty state until the
+ * backend has submissions to show.
  */
 export function AqauDashboard() {
   return (

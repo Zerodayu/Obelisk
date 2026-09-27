@@ -22,8 +22,9 @@ import {
 
 /**
  * Program Chair dashboard — scoped to the chair's single program
- * (`user.programId`). Targets, approvals, and CQI live here. Chart inputs
- * mirror the backend schema; sample data until the rollup endpoints land.
+ * (`user.programId`). Targets, approvals, and CQI live here. Charts read the
+ * shared store atoms (`lib/store/atoms/*`) and render an empty state until the
+ * backend has submissions to show.
  */
 export function ProgramChairDashboard() {
   return (

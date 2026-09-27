@@ -19,8 +19,9 @@ import {
 
 /**
  * System Admin dashboard — full platform visibility plus admin operations
- * (role assignment, user provisioning, archival confirmation). Chart inputs
- * mirror the backend schema; sample data until rollup endpoints land.
+ * (role assignment, user provisioning, archival confirmation). Charts read the
+ * shared store atoms (`lib/store/atoms/*`) and render an empty state until the
+ * backend has data to show.
  */
 export function SystemAdminDashboard() {
   return (

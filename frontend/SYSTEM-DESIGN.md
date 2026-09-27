@@ -82,7 +82,7 @@ Single source of truth (a plain `.ts` module — icons are referenced as compone
 - **`server/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireGuest`, `requireRole`, `requireRoleOrNotFound`).
 - **`server/actions/`** — all `"use server"` Server Actions, one file per domain: `auth.ts`, `car.ts`, `rollup.ts`, `cqi.ts`, `plan.ts`, `check.ts`, `academic.ts`, `forms.ts`, `ai.ts` (AI CQI recommendation: `getLatestAiRecommendationAction` / `generateAiRecommendationAction` → `/ai/recommendation/*`, generation role-gated to `generateAiInsights`). They are the frontend's mutation/read layer: each action authenticates/authorizes, calls `actionApi`, and returns a serializable `ActionResult` (`{ ok: true, data } | { ok: false, error }`); success navigations use `redirect()`. Client components import these actions — mutations never call `api.post` directly.
 
-**Dev-mode role simulation:** when `DEVELOPMENT=true` the guards short-circuit to the dev user in `server/api-client.ts`. `DEV_ROLE` there currently simulates **`dean`** (nav, dashboards, and — when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true`, currently **`false`** — route gates) without an account. The backend still enforces auth.
+**Dev-mode role simulation:** when `DEVELOPMENT=true` the guards short-circuit to the dev user in `server/api-client.ts`. **The app currently ships with `DEVELOPMENT=false`**, so login, session and role gates are real (seeded accounts — `bun run db:seed` in `../backend`). With the flag on, `DEV_ROLE` there simulates **`dean`** (nav, dashboards, and — when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true`, currently `false` — route gates) without an account. The backend always enforces auth.
 
 ## 3. Role & Scope Matrix
 
@@ -136,15 +136,23 @@ mounted by `StoreProvider` in the root layout; atoms live in
   `useAtom` is only used when a component genuinely needs both.
 - **`lib/store/async-atom.ts`** provides `atomWithAsyncData(initial, fetcher)`
   (auto-fetch on first subscription, `unwrap`-based sync fallback, write-only
-  `refreshAtom`) and `atomWithMockData(seed)` for datasets whose rollup
-  endpoint does not exist yet — swapping to real data is a one-line change.
-- **Mock data** lives in `components/charts/obe-sample-data.ts`. It is read by
-  atoms *and* directly by some consumers (chart components, the inbox's
-  dev-preview rows, `curriculum-coverage-grid`) — treat it as the single
-  sample-data module, not a per-component fixture.
-- **DB-backed now:** `formSubmissionsDataAtom` fetches `GET /forms`
-  (cookie auth, browser-only — never during SSR) and `formStatusCountsAtom`
-  derives the status donut from it (mock fallback only while loading/error);
+  `refreshAtom`) and `atomWithMockData(seed)` for a dataset whose endpoint does
+  not exist yet. Every such atom today is seeded with `[]`, so its chart
+  renders an empty state — swapping to real data is a one-line change.
+- **Chart payload types** live in `components/charts/obe-sample-data.ts`: the
+  `*Datum` interfaces that mirror `backend/src/v1/*/model.ts`, plus the inbox's
+  dev-preview rows (`SAMPLE_*`, rendered only when `DEVELOPMENT=true`). The
+  `MOCK_*` datasets were removed — no chart renders fabricated numbers.
+- **Submission-scoped chart data:** `GET /rollup/*`, `GET /cqi/*` and
+  `GET /plan/assessment-budget|target-setting-matrix` return a submission list,
+  so a chart atom resolves the newest submission with `fetchLatestPayload`
+  (`lib/store/latest-payload.ts`) and maps that payload into the datum rows
+  beside the atom. Empty list → `[]` → empty chart state.
+- **DB-backed:** `formSubmissionsDataAtom` fetches `GET /forms`
+  (cookie auth, browser-only — never during SSR); `formStatusCountsAtom`,
+  `approvalFlowDataAtom` and `uploadStatusesDataAtom` derive their
+  distributions from the `GET /forms` / `GET /ingest/history` fetches and hold
+  `[]` while loading or when the role-gated route 403s;
   `mySubmissionsDataAtom` / `pendingApprovalsDataAtom` fetch
   `GET /forms?scope=mine|pending` for the inboxes. `userAtom` is seeded from
   the server-resolved session via `SessionInitializer` in `app/(app)/layout.tsx`.
@@ -214,16 +222,17 @@ Removed: old demo `nav-main`, `nav-documents`, `section-cards`, `chart-area-inte
 
 ## 7. Current State & Next Work
 
-Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), approval workflow bar on all 20 screens + inboxes, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling.
+Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), approval workflow bar on all 20 screens + inboxes, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling, dashboard chart atoms wired to the endpoints that exist (`/rollup/*`, `/cqi/*`, `/plan/*`, `/forms`, `/ingest/history`) with empty states where nothing is submitted.
 
 Remaining, in rough priority:
 
 1. The 7 Periodic/ACT screens (`/forms/periodic/*`) against the live backend plugin.
-2. Wire the remaining dashboard atoms to real endpoints; populate stat cards on the 6 role dashboards.
-3. Archives content — pages exist but render placeholder data until the backend `archival-service` compiles clusters (after PEO attainment capture).
-4. Export / print (PDF / Excel / Word) on form screens.
-5. Adopt shared client-side Zod schemas (or a monorepo package) so client validation mirrors `backend/*/model.ts`.
-6. Async upload UX for large class-record files (progress, retry, error states); archive detail-artifact streaming.
+2. Populate stat cards on the 6 role dashboards (they still read no data source).
+3. Chart datasets blocked on missing backend routes — each atom carries a `TODO(...)` naming it: per-CLO direct/indirect averages and score bands (rollup), `AtRiskFlag.reason`, `AuditLog`, `AiRecommendation` list, graduation clusters (`/archives` content), `ReportExport`, `FormType` catalog, platform user/role counts, `ComputationRun` per term, `PloToPeoMap`, `AssessmentItem.type`, `Student.yearLevel`, assessment-calendar month load, and actual spend / current attainment on the budget & target charts.
+4. Archives content — pages exist but render placeholder data until the backend `archival-service` compiles clusters (after PEO attainment capture).
+5. Export / print (PDF / Excel / Word) on form screens.
+6. Adopt shared client-side Zod schemas (or a monorepo package) so client validation mirrors `backend/*/model.ts`.
+7. Async upload UX for large class-record files (progress, retry, error states); archive detail-artifact streaming.
 
 ## 8. Open Questions
 
