@@ -107,7 +107,7 @@ async function serverFetch<T>(
   return (await res.json()) as T;
 }
 
-interface RelayCookie {
+export interface RelayCookie {
   name: string;
   value: string;
   options: {
@@ -135,7 +135,7 @@ function safeDecode(value: string): string {
 }
 
 /** Parse a raw `Set-Cookie` header into name/value + the options `cookies()` accepts. */
-function parseSetCookie(header: string): RelayCookie | null {
+export function parseSetCookie(header: string): RelayCookie | null {
   const parts = header.split(";");
   const [nameValue = "", ...rest] = parts;
   const eq = nameValue.indexOf("=");
