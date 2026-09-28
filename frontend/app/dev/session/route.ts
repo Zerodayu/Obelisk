@@ -6,23 +6,62 @@
  * `just dev-as <role>` opens the app already logged in as that role with a
  * real better-auth session (the backend still enforces everything).
  *
- * 404s in production builds, and answers 409 when `DEVELOPMENT=true` (dev
- * mode ignores session cookies, so setting one would change nothing).
+ * WARN: it signs in without a password, so it sits behind three hard gates
+ * that all answer an empty 404 (`unavailable()` below) and a build-time
+ * refusal in `next.config.ts`. Soft gates come after them: 409 when
+ * `DEVELOPMENT=true` (dev mode ignores session cookies, so setting one would
+ * change nothing) and 400 for an unknown role.
  */
 import { type NextRequest, NextResponse } from "next/server";
 import {
   DEV_ACCOUNT_ROLES,
+  devAccountEmail,
   isDevAccountRole,
+  isLoopbackHostname,
   signInDevRole,
 } from "@/lib/dev-accounts";
 import { isDevMode } from "@/lib/dev-mode";
 import { parseSetCookie } from "@/server/api-client";
+import { env } from "@/utils/env";
+
+/** Empty 404 — indistinguishable from a route that does not exist. */
+function notFound(reason: string): Response {
+  // NOTE: the reason goes to the log only; the body says nothing at all.
+  console.warn(`[dev-session] refused: ${reason}`);
+  return new Response(null, { status: 404 });
+}
+
+/**
+ * The hard gates, checked before any work happens. Route handlers never see
+ * the client IP, so "local" is the request host plus `x-forwarded-for` when a
+ * proxy supplies one — an SSH tunnel forwards to localhost too, which is why
+ * the forwarded client must also be loopback.
+ */
+function unavailable(request: NextRequest): Response | null {
+  if (process.env.NODE_ENV === "production") {
+    return notFound("production build");
+  }
+  // WARN: opt-in — the justfile dev recipes export it, nothing else does.
+  if (env.DEV_SESSION_ENABLED !== "true") {
+    return notFound("DEV_SESSION_ENABLED is not set");
+  }
+  const host = request.nextUrl.hostname;
+  if (!isLoopbackHostname(host)) {
+    return notFound(`host ${host} is not loopback`);
+  }
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded !== null) {
+    const client = forwarded.split(",")[0]?.trim() ?? "";
+    if (!isLoopbackHostname(client)) {
+      return notFound(`x-forwarded-for ${forwarded} is not loopback`);
+    }
+  }
+  return null;
+}
 
 export async function GET(request: NextRequest) {
-  // WARN: this route signs in without a password — never ship it in a build.
-  if (process.env.NODE_ENV === "production") {
-    return new Response(null, { status: 404 });
-  }
+  const blocked = unavailable(request);
+  if (blocked) return blocked;
 
   // NOTE: dev mode answers getMe() with DEV_USER, so a session cookie would be
   // silently ignored — say so instead of setting a cookie that changes nothing.
@@ -63,6 +102,7 @@ export async function GET(request: NextRequest) {
       const cookie = parseSetCookie(header);
       if (cookie) res.cookies.set(cookie.name, cookie.value, cookie.options);
     }
+    console.log(`[dev-session] signed in as ${devAccountEmail(role)}`);
     return res;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

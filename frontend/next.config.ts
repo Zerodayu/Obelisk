@@ -1,5 +1,20 @@
 import type { NextConfig } from "next";
 
+// WARN: /dev/session mints sessions without a password — refuse to build or
+// start a production bundle while its opt-in flag is on. `next dev` also loads
+// this file (the justfile exports the flag legitimately), so the command name
+// is checked too and a plain `next dev` never throws.
+const isProductionRun =
+  process.argv.includes("build") ||
+  process.argv.includes("start") ||
+  process.env.NODE_ENV === "production";
+if (isProductionRun && process.env.DEV_SESSION_ENABLED === "true") {
+  throw new Error(
+    "DEV_SESSION_ENABLED must not be set for `next build`/`next start` " +
+      "— app/dev/session would ship.",
+  );
+}
+
 /**
  * Proxy better-auth browser routes to the backend so the OAuth state cookie and
  * session cookie both live on the frontend origin. `BETTER_AUTH_URL` must point

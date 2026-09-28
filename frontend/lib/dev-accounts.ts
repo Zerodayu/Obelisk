@@ -39,6 +39,24 @@ export function isDevAccountRole(value: unknown): value is UserRole {
   );
 }
 
+/** `127.0.0.0/8` in dotted-quad form (rejects look-alikes such as `127.evil.com`). */
+const LOOPBACK_IPV4 = /^127(?:\.\d{1,3}){3}$/;
+
+/**
+ * Does `hostname` point at this machine? Route handlers never see the client
+ * IP, so this is what stands between a dev-only shortcut and the network.
+ * Normalises what real clients send: brackets (`[::1]`), an IPv4-mapped prefix
+ * (`::ffff:127.0.0.1` from a local proxy) and mixed case.
+ */
+export function isLoopbackHostname(hostname: string): boolean {
+  const host = hostname
+    .toLowerCase()
+    .trim()
+    .replace(/^\[|\]$/g, "")
+    .replace(/^::ffff:/, "");
+  return host === "localhost" || host === "::1" || LOOPBACK_IPV4.test(host);
+}
+
 /** Backend trustedOrigins only allows the frontend origin — see backend `src/index.ts`. */
 const DEFAULT_ORIGIN = "http://localhost:3000";
 
