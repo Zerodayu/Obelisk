@@ -14,9 +14,12 @@ import {
 } from "./model";
 import {
 	attainmentService,
+	ClassSectionNotFoundError,
 	ComputationRunNotFoundError,
 	ingestService,
 	MalformedRosterCsvError,
+	SectionBindingMismatchError,
+	SectionMismatchError,
 } from "./service";
 
 /** The authenticated caller's role (better-auth additional field). */
@@ -46,6 +49,12 @@ export const ingestPlugin = new Elysia({
 		if (error instanceof RoleAccessForbiddenError) {
 			return status(403, { error: error.message });
 		}
+		if (error instanceof ClassSectionNotFoundError) {
+			return status(404, { error: error.message });
+		}
+		if (error instanceof SectionBindingMismatchError) {
+			return status(400, { error: error.message });
+		}
 	})
 	.post(
 		"/upload",
@@ -71,6 +80,7 @@ export const ingestPlugin = new Elysia({
 					200: { description: "ETL job started successfully." },
 					401: { description: "Unauthorized" },
 					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
 					500: { description: "Python server failure on job creation." },
 				},
 			},
@@ -229,8 +239,10 @@ export const ingestPlugin = new Elysia({
 						description:
 							"Returns current job status ('queued', 'running') or the final result ('completed', 'failed').",
 					},
+					400: { description: "Section binding mismatch" },
 					401: { description: "Unauthorized" },
 					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
 				},
 			},
 		},

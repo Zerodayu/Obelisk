@@ -14,11 +14,37 @@ interface PydanticIssue {
 	msg?: string;
 }
 
+export interface EtlSectionInfo {
+	code: string | null;
+	program: string | null;
+	year_level: number | null;
+	section_letter: string | null;
+	raw: string | null;
+}
+
+export type EtlSectionExtractionStatus =
+	| "ok"
+	| "missing_sheet"
+	| "missing_field"
+	| "unparseable"
+	| (string & {});
+
+export interface EtlSetupInfo {
+	course_code?: string | null;
+	course_title?: string | null;
+	term?: string | null;
+	faculty_name?: string | null;
+	program?: string | null;
+}
+
 // This is the actual shape of the data loaded by the python-server
 export interface EtlLoadedData {
 	header: unknown;
 	attainments: unknown[];
 	clo_plo_mapping: unknown;
+	section?: EtlSectionInfo;
+	section_extraction?: EtlSectionExtractionStatus;
+	setup?: EtlSetupInfo;
 }
 
 // This is the shape of the 'result' field in a completed job
@@ -136,6 +162,9 @@ export interface EtlSnapshot {
 	header: Record<string, unknown>;
 	attainments: Record<string, unknown>[];
 	clo_plo_mapping: Record<string, unknown>[];
+	section?: EtlSectionInfo;
+	section_extraction?: EtlSectionExtractionStatus;
+	setup?: EtlSetupInfo;
 }
 
 export class PythonServerError extends Error {
@@ -307,7 +336,7 @@ class IngestClient {
 	 * Requests Python-Formula 2A/7A/7C rollups from the python-server's
 	 * synchronous `/analytics/summary` endpoint. The payload's per-student CLO
 	 * records are the raw ETL `StudentCLOAttainment` rows (0–1 fraction scale);
-	 * the webapp assembles them from its persisted `etlSnapshotJson`.
+	 * the webapp assembles them from its persisted `etlSnapshotJson``.
 	 */
 	async analyticsSummary(
 		payload: AnalyticsSubmissionsPayload,

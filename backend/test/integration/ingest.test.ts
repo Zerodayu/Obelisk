@@ -2,7 +2,13 @@ import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import type { TypedEtlLoadedData } from "@v1/ingest/service";
-import { attainmentService, ingestService } from "@v1/ingest/service";
+import {
+	attainmentService,
+	ClassSectionNotFoundError,
+	ingestService,
+	SectionBindingMismatchError,
+	SectionMismatchError,
+} from "@v1/ingest/service";
 
 const db = await isDbReachable();
 
@@ -200,6 +206,161 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			await prisma.academicTerm.delete({ where: { id: IDS.term } });
 			await prisma.program.delete({ where: { id: IDS.program } });
 			await prisma.department.delete({ where: { id: IDS.department } });
+		}
+	});
+
+	it("throws ClassSectionNotFoundError if classSectionId does not exist during persistence", async () => {
+		const nonExistentId = "non-existent-section-id-12345";
+		const etlLoadedData: TypedEtlLoadedData = {
+			header: {},
+			clo_plo_mapping: {},
+			attainments: [],
+		};
+
+		await expect(
+			attainmentService.persistAttainment(etlLoadedData, nonExistentId),
+		).rejects.toThrow(ClassSectionNotFoundError);
+	});
+
+	it("throws SectionMismatchError when section extraction is ok and section does not match", async () => {
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "1A",
+			},
+		});
+
+		const etlLoadedData: TypedEtlLoadedData = {
+			header: {},
+			clo_plo_mapping: {},
+			attainments: [],
+			section_extraction: "ok",
+			section: {
+				code: "2B", // Different from 1A!
+				program: "IT-INGEST-PROG",
+				year_level: 2,
+				section_letter: "B",
+				raw: "IT-INGEST-PROG 2B",
+			},
+		};
+
+		try {
+			await expect(
+				attainmentService.persistAttainment(etlLoadedData, IDS.classSection),
+			).rejects.toThrow(SectionMismatchError);
+		} finally {
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+		}
+	});
+
+	it("rejects polling when query classSectionId does not match bound uploadRecord classSectionId", async () => {
+		await prisma.user.create({
+			data: { id: IDS.userA, name: "User A", email: "a@ingest.test" },
+		});
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "1A",
+			},
+		});
+
+		const uploadRecord = await prisma.uploadRecord.create({
+			data: {
+				id: "it-binding-test-upload",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				etlJobId: "it-binding-job-1234",
+				filename: "test.xlsx",
+				status: "queued",
+			},
+		});
+
+		try {
+			await expect(
+				ingestService.getJobStatus(
+					"it-binding-job-1234",
+					"different-section-id-9999",
+					IDS.userA,
+				),
+			).rejects.toThrow(SectionBindingMismatchError);
+		} finally {
+			await prisma.uploadRecord.delete({ where: { id: uploadRecord.id } });
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+			await prisma.user.delete({ where: { id: IDS.userA } });
 		}
 	});
 
@@ -510,7 +671,9 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			await prisma.auditLog.deleteMany({
 				where: { moduleAffected: "ingest" },
 			});
-			await prisma.atRiskFlag.deleteMany({ where: { studentId: ids.student } });
+			await prisma.atRiskFlag.deleteMany({
+				where: { studentId: ids.student },
+			});
 			await prisma.cloAttainment.deleteMany({
 				where: { computationRunId: ids.run },
 			});

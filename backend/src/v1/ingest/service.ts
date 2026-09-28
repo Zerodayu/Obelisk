@@ -1,5 +1,11 @@
 import { csvPercent, parseCsv } from "@lib/ingest/csv";
-import type { ETLJob, EtlLoadedData } from "@lib/ingest/ingest-client";
+import type {
+	ETLJob,
+	EtlLoadedData,
+	EtlSectionExtractionStatus,
+	EtlSectionInfo,
+	EtlSetupInfo,
+} from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
 import {
@@ -8,13 +14,22 @@ import {
 } from "@lib/ingest/score-edit";
 import { prisma } from "@lib/prisma";
 import type { Prisma } from "@prisma/generated/prisma/client";
+import {
+	compareSectionToWorkbook,
+	type SectionComparisonResult,
+} from "./section-verifier";
 
 // --- In-memory Cache for Idempotency ---
 // NOTE: clients poll completed jobs repeatedly — the cache runs the persistence
 // logic once and replays the stored result on every later poll.
 const jobCompletionCache = new Map<
 	string,
-	| { status: "completed"; persistence: PersistenceSummary; etl: unknown }
+	| {
+			status: "completed";
+			persistence: PersistenceSummary;
+			etl?: unknown;
+			verification?: SectionComparisonResult;
+	  }
 	| { status: "failed"; error: unknown }
 >();
 
@@ -37,6 +52,9 @@ export interface AttainmentRecord {
 
 export interface TypedEtlLoadedData extends EtlLoadedData {
 	attainments: AttainmentRecord[];
+	section?: EtlSectionInfo;
+	section_extraction?: EtlSectionExtractionStatus;
+	setup?: EtlSetupInfo;
 }
 
 /** Subset of the class-record header the persistence bootstrap can rely on. */
@@ -65,6 +83,7 @@ export type PersistenceSummary = {
 	cloAttainmentsCreated: number;
 	atRiskFlagsCreated: number;
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
+	verification?: SectionComparisonResult;
 };
 
 export type AttainmentRosterRow = {
@@ -96,7 +115,36 @@ export type ReimportSummary = {
 	skipped: { row: number; reason: string }[];
 };
 
-// --- Custom Error ---
+// --- Custom Errors ---
+
+export class ClassSectionNotFoundError extends Error {
+	constructor(classSectionId: string) {
+	super(
+		`ClassSection with ID '${classSectionId}' not found. Sections must exist before uploading class records.`,
+	);
+	this.name = "ClassSectionNotFoundError";
+	}
+}
+
+export class SectionBindingMismatchError extends Error {
+	constructor(queryId: string, boundId: string) {
+	super(
+		`Requested class section '${queryId}' does not match the class section '${boundId}' bound to this upload job.`,
+	);
+	this.name = "SectionBindingMismatchError";
+	}
+}
+
+export class SectionMismatchError extends Error {
+	public readonly verification: SectionComparisonResult;
+
+	constructor(message: string, verification: SectionComparisonResult) {
+	super(message);
+	this.name = "SectionMismatchError";
+	this.verification = verification;
+	}
+}
+
 
 export class MalformedEtlResultError extends Error {
 	public readonly etlJobId: string;
@@ -136,6 +184,27 @@ export class AttainmentService {
 		classSectionId: string,
 		triggeredByUserId?: string,
 	): Promise<PersistenceSummary> {
+		const { programId, courseId, academicContext } =
+			await this.resolveAcademicChain(classSectionId);
+
+		// Run workbook verification before writing anything to the DB
+		const verification = compareSectionToWorkbook(academicContext, {
+			section: etlLoadedData.section,
+			section_extraction: etlLoadedData.section_extraction,
+			setup: etlLoadedData.setup,
+		});
+
+		if (
+			etlLoadedData.section_extraction === "ok" &&
+			verification.status === "mismatch"
+		) {
+			const detail = verification.mismatches.join("; ");
+			throw new SectionMismatchError(
+				`Workbook verification failed: ${detail}`,
+				verification,
+			);
+		}
+
 		const summary: PersistenceSummary = {
 			computationRunId: "",
 			studentsProcessed: 0,
@@ -143,12 +212,13 @@ export class AttainmentService {
 			cloAttainmentsCreated: 0,
 			atRiskFlagsCreated: 0,
 			cloMatchFailures: [],
+			verification,
 		};
 
-		const { programId, courseId } = await this.ensureAcademicChain(
-			classSectionId,
-			etlLoadedData,
-		);
+		const snapshotWithVerification = {
+			...etlLoadedData,
+			verification,
+		};
 
 		const computationRun = await prisma.computationRun.create({
 			data: {
@@ -157,7 +227,7 @@ export class AttainmentService {
 				formulaVersion: "70_30_v1",
 				directWeight: 0.7,
 				indirectWeight: 0.3,
-				etlSnapshotJson: etlLoadedData as unknown as Prisma.InputJsonValue,
+				etlSnapshotJson: snapshotWithVerification as unknown as Prisma.InputJsonValue,
 				...(triggeredByUserId ? { triggeredByUserId } : {}),
 			},
 		});
@@ -717,227 +787,74 @@ export class AttainmentService {
 	}
 
 	/**
-	 * Ensures the academic records required for persistence exist for the given
-	 * class section, creating (and reusing) them when they are missing — e.g. on
-	 * a fresh database where the seed has not been run. All records are derived
-	 * deterministically from the uploaded workbook so repeat uploads are
-	 * idempotent.
+	 * Strictly resolves the academic chain from the selected ClassSection.
+	 * Fails with ClassSectionNotFoundError if the section or its relationships do not exist.
+	 * Never auto-creates missing sections.
 	 */
-	private async ensureAcademicChain(
-		classSectionId: string,
-		etlLoadedData: TypedEtlLoadedData,
-	): Promise<{ programId: string; courseId: string; termId: string }> {
+	private async resolveAcademicChain(classSectionId: string): Promise<{
+		programId: string;
+		courseId: string;
+		termId: string;
+		academicContext: {
+			sectionCode: string;
+			course: {
+				code: string;
+				program: {
+					code: string;
+				};
+			};
+			term: {
+				schoolYear: string;
+				semester: string;
+			};
+		};
+	}> {
 		const existing = await prisma.classSection.findUnique({
 			where: { id: classSectionId },
 			select: {
+				id: true,
+				sectionCode: true,
 				termId: true,
+				courseId: true,
 				course: {
-					select: { id: true, programId: true },
+					select: {
+						id: true,
+						code: true,
+						programId: true,
+						program: { select: { code: true } },
+					},
+				},
+				term: {
+					select: {
+						schoolYear: true,
+						semester: true,
+					},
 				},
 			},
 		});
 
-		if (existing?.course?.programId) {
-			return {
-				programId: existing.course.programId,
-				courseId: existing.course.id,
-				termId: existing.termId,
-			};
+		if (!existing || !existing.course?.programId) {
+			throw new ClassSectionNotFoundError(classSectionId);
 		}
-
-		const header = (etlLoadedData.header ?? {}) as ImportedHeader;
-		const courseCode = asOptionalString(header.course_code) ?? "IMPORTED";
-		const courseTitle =
-			asOptionalString(header.course_title) ?? "Imported Course";
-		const sectionCode = asOptionalString(header.section) ?? "A";
-
-		const programCode = `AUTO-${asSlug(courseCode)}`;
-		const departmentCode = `DEPT-${asSlug(courseCode)}`;
-
-		const semesterYearRaw = asOptionalString(header.semester_year);
-		let schoolYear: string;
-		let semester: string;
-		if (semesterYearRaw) {
-			const syMatch = semesterYearRaw.match(/(\d{4})\s*[-–&]?\s*(\d{4})/);
-			if (syMatch) {
-				schoolYear = `${syMatch[1]}-${syMatch[2]}`;
-				semester = semesterYearRaw.replace(syMatch[0], "").trim() || "Term 1";
-			} else {
-				const year = new Date().getFullYear();
-				schoolYear = `${year}-${year + 1}`;
-				semester = semesterYearRaw;
-			}
-		} else {
-			const year = new Date().getFullYear();
-			schoolYear = `${year}-${year + 1}`;
-			semester = "Term 1";
-		}
-
-		const department = await this.ensureRow(
-			() => prisma.department.findUnique({ where: { code: departmentCode } }),
-			() =>
-				prisma.department.create({
-					data: {
-						id: crypto.randomUUID(),
-						name: `Auto-imported (${departmentCode})`,
-						code: departmentCode,
-					},
-				}),
-		);
-
-		const program = await this.ensureRow(
-			() => prisma.program.findUnique({ where: { code: programCode } }),
-			() =>
-				prisma.program.create({
-					data: {
-						id: crypto.randomUUID(),
-						name: `Auto-imported program for ${courseCode}`,
-						code: programCode,
-						departmentId: department.id,
-					},
-				}),
-		);
-
-		const term = await this.ensureRow(
-			() =>
-				prisma.academicTerm.findUnique({
-					where: { schoolYear_semester: { schoolYear, semester } },
-				}),
-			() =>
-				prisma.academicTerm.create({
-					data: {
-						id: crypto.randomUUID(),
-						schoolYear,
-						semester,
-						isActive: true,
-					},
-				}),
-		);
-
-		const course = await this.ensureRow(
-			() =>
-				prisma.course.findFirst({
-					where: { programId: program.id, code: courseCode },
-				}),
-			() =>
-				prisma.course.create({
-					data: {
-						id: crypto.randomUUID(),
-						programId: program.id,
-						code: courseCode,
-						title: courseTitle,
-					},
-				}),
-		);
-
-		const classSection = await this.ensureRow(
-			() => prisma.classSection.findUnique({ where: { id: classSectionId } }),
-			() =>
-				prisma.classSection.create({
-					data: {
-						id: classSectionId,
-						courseId: course.id,
-						termId: term.id,
-						sectionCode,
-					},
-				}),
-		);
-
-		await this.ensureClosAndPlos(course.id, program.id, etlLoadedData);
-
-		console.log(
-			`[Bootstrap] Auto-created academic chain for class section ${classSectionId}: department=${department.code}, program=${program.code}, term=${term.schoolYear} ${term.semester}, course=${course.code}, section=${classSection.sectionCode}`,
-		);
 
 		return {
-			programId: program.id,
-			courseId: course.id,
-			termId: term.id,
+			programId: existing.course.programId,
+			courseId: existing.course.id,
+			termId: existing.termId,
+			academicContext: {
+				sectionCode: existing.sectionCode,
+				course: {
+					code: existing.course.code,
+					program: {
+						code: existing.course.program.code,
+					},
+				},
+				term: {
+					schoolYear: existing.term.schoolYear,
+					semester: existing.term.semester,
+				},
+			},
 		};
-	}
-
-	/** Creates any CLOs/PLOs referenced by the workbook (plus the CLO-PLO map). */
-	private async ensureClosAndPlos(
-		courseId: string,
-		programId: string,
-		etlLoadedData: TypedEtlLoadedData,
-	): Promise<void> {
-		const cloCodes = new Set<string>();
-		for (const record of etlLoadedData.attainments) {
-			if (record.clo_code) cloCodes.add(record.clo_code);
-		}
-
-		const mapping = Array.isArray(etlLoadedData.clo_plo_mapping)
-			? (etlLoadedData.clo_plo_mapping as CloPloMappingEntry[])
-			: [];
-		for (const entry of mapping) {
-			if (entry.clo_code) cloCodes.add(entry.clo_code);
-		}
-
-		const cloByCode = new Map<string, string>();
-		for (const code of cloCodes) {
-			const clo = await this.ensureRow(
-				() => prisma.clo.findFirst({ where: { courseId, code } }),
-				() =>
-					prisma.clo.create({
-						data: {
-							id: crypto.randomUUID(),
-							courseId,
-							code,
-							description: `CLO ${code} (auto-imported)`,
-						},
-					}),
-			);
-			cloByCode.set(code, clo.id);
-		}
-
-		const ploByCode = new Map<string, string>();
-		for (const entry of mapping) {
-			const ploCode = entry.plo_code;
-			if (!ploCode) continue;
-
-			if (!ploByCode.has(ploCode)) {
-				const plo = await this.ensureRow(
-					() =>
-						prisma.plo.findFirst({
-							where: { programId, code: ploCode },
-						}),
-					() =>
-						prisma.plo.create({
-							data: {
-								id: crypto.randomUUID(),
-								programId,
-								code: ploCode,
-								description: `PLO ${ploCode} (auto-imported)`,
-							},
-						}),
-				);
-				ploByCode.set(ploCode, plo.id);
-			}
-
-			const cloCode = entry.clo_code;
-			if (!cloCode) continue;
-
-			const cloId = cloByCode.get(cloCode);
-			const ploId = ploByCode.get(ploCode);
-			if (!cloId || !ploId) continue;
-
-			await this.ensureRow(
-				() =>
-					prisma.cloToPloMap.findFirst({
-						where: { cloId, ploId },
-					}),
-				() =>
-					prisma.cloToPloMap.create({
-						data: {
-							id: crypto.randomUUID(),
-							cloId,
-							ploId,
-							weight: (entry.correlation_strength ?? 1) / 100,
-						},
-					}),
-			);
-		}
 	}
 
 	/** Find-first-then-create with a duplicate-safe re-find on a create race. */
@@ -991,6 +908,14 @@ export class IngestService {
 		classSectionId: string,
 		userId: string,
 	): Promise<{ jobId: string }> {
+		const section = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			select: { id: true },
+		});
+		if (!section) {
+			throw new ClassSectionNotFoundError(classSectionId);
+		}
+
 		const record = await prisma.uploadRecord.create({
 			data: {
 				userId,
@@ -1077,6 +1002,7 @@ export class IngestService {
 			status: "completed" as const,
 			etl: job.result,
 			persistence: persistenceSummary,
+			verification: persistenceSummary.verification,
 		};
 	}
 
@@ -1087,11 +1013,56 @@ export class IngestService {
 	 */
 	async getJobStatus(
 		jobId: string,
-		classSectionId: string,
+		queryClassSectionId?: string,
 		triggeredByUserId?: string,
 	) {
 		const cached = jobCompletionCache.get(jobId);
 		if (cached) return cached;
+
+		// 1. Look up the authoritative upload record to verify section binding
+		const record = await this.findRecordByJob(jobId);
+		const boundClassSectionId = record?.classSectionId;
+
+		// If query specifies a classSectionId and it doesn't match the bound section, reject immediately
+		if (
+			boundClassSectionId &&
+			queryClassSectionId &&
+			queryClassSectionId !== boundClassSectionId
+		) {
+			throw new SectionBindingMismatchError(
+				queryClassSectionId,
+				boundClassSectionId,
+			);
+		}
+
+		const targetClassSectionId = boundClassSectionId ?? queryClassSectionId;
+		if (!targetClassSectionId) {
+			throw new Error("No classSectionId bound to job or provided in query");
+		}
+
+		// If already completed or failed in UploadRecord, return the recorded result idempotently
+		if (record?.status === "completed" && record.summary) {
+			const persistedSummary = record.summary as unknown as PersistenceSummary;
+			const result = {
+				status: "completed" as const,
+				persistence: persistedSummary,
+				verification: persistedSummary.verification,
+			};
+			jobCompletionCache.set(jobId, result);
+			return result;
+		}
+
+		if (record?.status === "failed") {
+			const result = {
+				status: "failed" as const,
+				error: {
+					error_type: "UploadFailed",
+					message: record.error ?? "Upload job previously marked as failed",
+				},
+			};
+			jobCompletionCache.set(jobId, result);
+			return result;
+		}
 
 		// Return running if persistence is currently in-flight to prevent duplicate execution from polling
 		if (inFlightJobs.has(jobId)) {
@@ -1106,9 +1077,8 @@ export class IngestService {
 
 		if (job.status === "failed") {
 			const result = { status: "failed" as const, error: job.error };
-			jobCompletionCache.set(jobId, result); // Cache the failure
+			jobCompletionCache.set(jobId, result);
 
-			const record = await this.findRecordByJob(jobId);
 			if (record) {
 				await this.markUploadFailed(record.id, job.error ?? job.status);
 			}
@@ -1120,24 +1090,23 @@ export class IngestService {
 			if (inFlightJobs.has(jobId)) {
 				return { status: "running" as const };
 			}
-			inFlightJobs.add(jobId);
+		inFlightJobs.add(jobId);
 
 			try {
 				const result = await this.processAndPersistJob(
 					job,
-					classSectionId,
+					targetClassSectionId,
 					triggeredByUserId,
 				);
-				jobCompletionCache.set(jobId, result); // Cache the success
+				jobCompletionCache.set(jobId, result);
 
-				const record = await this.findRecordByJob(jobId);
 				if (record && result.status === "completed") {
 					await prisma.uploadRecord.update({
 						where: { id: record.id },
 						data: {
 							status: "completed",
 							computationRunId: result.persistence.computationRunId,
-							summary: result.persistence,
+							summary: result.persistence as unknown as Prisma.InputJsonValue,
 						},
 					});
 				}
@@ -1145,21 +1114,39 @@ export class IngestService {
 				return result;
 			} catch (error) {
 				console.error(`[Ingest] Persistence failed for job ${jobId}:`, error);
+
+				let errorObj: {
+					error_type: string;
+					message: string;
+					verification?: SectionComparisonResult;
+				};
+
+				if (error instanceof SectionMismatchError) {
+					errorObj = {
+						error_type: "SectionMismatchError",
+						message: error.message,
+						verification: error.verification,
+					};
+				} else if (error instanceof MalformedEtlResultError) {
+					errorObj = {
+						error_type: error.name,
+						message: error.message,
+					};
+				} else {
+					errorObj = {
+						error_type: "PersistenceFailed",
+						message: (error as Error).message,
+					};
+				}
+
 				const result = {
 					status: "failed" as const,
-					error:
-						error instanceof MalformedEtlResultError
-							? { error_type: error.name, message: error.message }
-							: {
-									error_type: "PersistenceFailed",
-									message: (error as Error).message,
-								},
+					error: errorObj,
 				};
-				jobCompletionCache.set(jobId, result); // Cache the failure
+				jobCompletionCache.set(jobId, result);
 
-				const record = await this.findRecordByJob(jobId);
 				if (record) {
-					await this.markUploadFailed(record.id, error);
+					await this.markUploadFailed(record.id, errorObj.message);
 				}
 
 				return result;

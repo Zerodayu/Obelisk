@@ -415,13 +415,13 @@ async function main() {
 	const classSection = await prisma.classSection.upsert({
 		where: { id: TARGET_CLASS_SECTION_ID },
 		update: {
-			sectionCode: "A",
+			sectionCode: "1A",
 			courseId: firstCourse!.id,
 			termId: academicTerm.id,
 		},
 		create: {
 			id: TARGET_CLASS_SECTION_ID,
-			sectionCode: "A",
+			sectionCode: "1A",
 			courseId: firstCourse!.id,
 			termId: academicTerm.id,
 		},

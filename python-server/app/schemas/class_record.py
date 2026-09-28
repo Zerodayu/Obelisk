@@ -1,6 +1,28 @@
 from typing import Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr
+
+SectionExtractionStatus = Literal["ok", "missing_sheet", "missing_field", "unparseable"]
+
+
+class ExtractedSection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str | None = None
+    program: str | None = None
+    year_level: int | None = None
+    section_letter: str | None = None
+    raw: str | None = None
+
+
+class SetupMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    course_code: str | None = None
+    course_title: str | None = None
+    term: str | None = None
+    faculty_name: str | None = None
+    program: str | None = None
 
 
 class ClassRecordHeader(BaseModel):
@@ -18,6 +40,11 @@ class ClassRecordHeader(BaseModel):
     # This field is no longer used in calculations but is kept for diagnostic purposes
     # to show what was in the original file.
     workbook_configured_weights_unused: Optional[dict[str, float]] = None
+
+    # Internal metadata attached during extraction
+    _section_data: Optional[ExtractedSection] = PrivateAttr(default=None)
+    _section_extraction: SectionExtractionStatus = PrivateAttr(default="missing_sheet")
+    _setup_data: Optional[SetupMetadata] = PrivateAttr(default=None)
 
 
 class RawScoreRecord(BaseModel):
