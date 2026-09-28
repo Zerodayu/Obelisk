@@ -1,0 +1,31 @@
+{
+  "name": "obelisk",
+  "private": true,
+  "packageManager": "bun@1.4.2",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "typecheck": "turbo run typecheck",
+    "build": "turbo run build",
+    "build:prod": "dotenvx run -f .env.prod -- turbo run build",
+    "start": "dotenvx run -f .env.local -- turbo run start",
+    "start:prod": "dotenvx run -f .env.prod -- turbo run start:prod",
+    "env:encrypt": "dotenvx encrypt -f .env.local && dotenvx encrypt -f .env.prod",
+    "env:decrypt": "dotenvx decrypt -f .env.local && dotenvx decrypt -f .env.prod",
+    "postinstall": "bun apps/backend/scripts/gen-runtime-env.ts --stub"
+  },
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "2.5.5",
+    "@dotenvx/dotenvx": "^2.20.1",
+    "turbo": "latest",
+    "typescript": "^5",
+    "vercel": "latest"
+  }
+}

@@ -3,7 +3,7 @@
 > Live progress tracker for the OBELISK platform (JMCFI OBE system).
 > Services: `backend` (Elysia/Prisma), `frontend` (Next.js 16), `python-server` (FastAPI ETL/analytics).
 > Domain reference: `JMCFI-WIN-OBE-Forms-Digitization-Reference.md`.
-> Architecture & ownership: `backend/SYSTEM-DESIGN.md`, `frontend/SYSTEM-DESIGN.md`, `python-server/SYSTEM-DESIGN.md`.
+> Architecture & ownership: `apps/backend/SYSTEM-DESIGN.md`, `apps/frontend/SYSTEM-DESIGN.md`, `apps/python-server/SYSTEM-DESIGN.md`.
 
 Legend: `[ ]` pending · `[~]` in progress · `[x]` done. Update the box when a task is truly done (including verification).
 
@@ -199,7 +199,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] **Role & nav registry** — `lib/roles.ts` + `config/navigation.ts` drive the sidebar, forms index, and route gating (config-driven; add role/route = add one entry).
 - [x] **Sign-up + role request** — `/register` with role selection; new accounts default to `user` until a `system_admin` approves (`requestedRole` + `roleRequestStatus` on the user; `GET/POST /auth/role-requests*`; approval UI on the system-admin dashboard).
 - [x] **Google-only account creation** — `/register` shows only the org-restricted Google provider (email/password sign-up disabled; login kept for existing accounts); role selection moved to a post-login `/onboarding` route (`POST /auth/role-request`); the `(app)` shell redirects role-less users to `/onboarding`.
-- [x] **DEVELOPMENT auth bypass** — frontend-only dev mode: when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev user (role set by `DEV_ROLE` in `server/api-client.ts`, currently `dean`) so every route is viewable without an account; route gates match prod only when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true` (default `false` = open navigation). Backend always requires a session. **Currently `DEVELOPMENT=false`** — the app runs with real login/role gates against seeded accounts (`bun run db:seed` in `backend`, adds the missing `db:seed` script); flip back with `bunx dotenvx set DEVELOPMENT true -f .env.local` + restart the dev server.
+- [x] **DEVELOPMENT auth bypass** — frontend-only dev mode: when `DEVELOPMENT=true`, `proxy.ts` + server auth guards short-circuit to a dev user (role set by `DEV_ROLE` in `server/api-client.ts`, currently `dean`) so every route is viewable without an account; route gates match prod only when `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` is `true` (default `false` = open navigation). Backend always requires a session. **Currently `DEVELOPMENT=false`** — the app runs with real login/role gates against seeded accounts (`bun run db:seed` in `apps/backend`, adds the missing `db:seed` script); flip back with `bunx dotenvx set DEVELOPMENT true -f ../../.env.local` (from `apps/frontend/`, against the root env file) + restart the dev server.
 - [x] **6 role-specific dashboards** — faculty, program_chair, dean, aqau, vpaa, system_admin (chart panels). **Chart atoms wired to live endpoints:** rollup (`clo-attainment-summary` / `plo-attainment-summary` / `cohort-tracking`), CQI (`plo-gap-analysis` + `/plan/plos` targets, `cqi-action-plan`, `closing-the-loop`), PLAN (`assessment-budget`, `clo-plo-map`, `target-setting-matrix`), plus `formStatusCountsAtom` / `approvalFlowDataAtom` (`GET /forms`) and `uploadStatusesDataAtom` (`GET /ingest/history`). Rollup/CQI/PLAN payloads resolve the newest submission (`lib/store/latest-payload.ts`: list → `/:id`). **All `MOCK_*` datasets removed** — datasets with no backend route are seeded `[]` and render `ChartEmptyState` (each atom carries a `TODO(...)` naming the missing route). No rollup/CQI/plan submissions are seeded, so charts stay empty until real submissions exist. Stat cards on the 6 dashboards are still unwired.
 
 ### Shared infrastructure
@@ -253,7 +253,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### Workflow UI (partially done)
 
-- [x] Approval workflow — submit / review / approve / return buttons on form screens — **Done:** shared `FormWorkflow` bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive) embedded on all 13 Phase 0–5 form screens; chain + RBAC enforced server-side (`backend/lib/forms/approval-routes.ts`)
+- [x] Approval workflow — submit / review / approve / return buttons on form screens — **Done:** shared `FormWorkflow` bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive) embedded on all 13 Phase 0–5 form screens; chain + RBAC enforced server-side (`apps/backend/lib/forms/approval-routes.ts`)
 - [x] Submission inbox — "My Submissions" + "Pending Approvals" pages — **Done:** `/submissions` + `/approvals` backed by `GET /forms?scope=mine|pending` (session-derived)
 - [ ] Export / print — PDF / Excel / Word on form screens
 
@@ -329,7 +329,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### Forms & Workflow
 
-- [x] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs — **Done:** server registry (`backend/lib/forms/approval-routes.ts`) derives each form's approval chain from its stable code (client `steps` deprecated); submit/decide/archive/update are role- and ownership-gated with proper 401/403/404/409; `FormWorkflow` bar on all 13 Phase 0–5 screens; `/submissions` + `/approvals` inboxes with nav entries and per-form-code deep links; seeded one demo user per role (`<role>@jmcfi.edu.ph`)
+- [x] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs — **Done:** server registry (`apps/backend/lib/forms/approval-routes.ts`) derives each form's approval chain from its stable code (client `steps` deprecated); submit/decide/archive/update are role- and ownership-gated with proper 401/403/404/409; `FormWorkflow` bar on all 13 Phase 0–5 screens; `/submissions` + `/approvals` inboxes with nav entries and per-form-code deep links; seeded one demo user per role (`<role>@jmcfi.edu.ph`)
 
 ### Bug / Investigation
 

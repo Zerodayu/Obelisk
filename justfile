@@ -11,7 +11,7 @@ _bun pkg cmd:
     cd {{pkg}} && bun run {{cmd}}
 
 _uv cmd:
-    cd python-server && uv run {{cmd}}
+    cd apps/python-server && uv run {{cmd}}
 
 # --- install ---
 
@@ -19,38 +19,47 @@ _uv cmd:
 [group('setup')]
 install: install-bun install-etl
 
-# install bun packages (backend + frontend)
+# install bun packages (single root workspace install; postinstall writes the backend runtime-env stub)
 [group('setup')]
 install-bun:
-    cd backend && bun install
-    cd frontend && bun install
+    bun install
+
+# decrypt the root .env.local + .env.prod for editing (re-encrypt with `just env-encrypt`)
+[group('setup')]
+env-decrypt:
+    bun run env:decrypt
+
+# encrypt the root env files (private keys stay in the gitignored .env.keys)
+[group('setup')]
+env-encrypt:
+    bun run env:encrypt
 
 # sync python-server deps + start redis
 [group('setup')]
 install-etl: redis
-    cd python-server && uv sync
+    cd apps/python-server && uv sync
 
 # start redis via docker compose (needed by the ETL service)
 [group('setup')]
 redis:
-    cd python-server && docker compose up -d redis
+    cd apps/python-server && docker compose up -d redis
 
 # --- database ---
 
-# apply pending Prisma migrations (DATABASE_URL read from backend/.env.local)
+# apply pending Prisma migrations (DATABASE_URL read from the root .env.local)
 [group('setup')]
 db-migrate:
-    @just _bun backend db:migrate
+    @just _bun apps/backend db:migrate
 
 # regenerate the Prisma client after a schema change
 [group('setup')]
 db-generate:
-    @just _bun backend db:generate
+    @just _bun apps/backend db:generate
 
 # seed dev data: one account per role (`<role>@jmcfi.edu.ph` / `password123`), department, program, active term, course, section A, CLO1-7. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
 [group('setup')]
 db-seed:
-    @just _bun backend db:seed
+    @just _bun apps/backend db:seed
 
 # --- dev ---
 
@@ -73,10 +82,10 @@ dev-as role:
     fi
     exec just _dev "$role"
 
-# sign in as a seeded role account and print its session cookie for direct backend calls — also writes frontend/.dev-session/<role>.cookie
+# sign in as a seeded role account and print its session cookie for direct backend calls — also writes apps/frontend/.dev-session/<role>.cookie
 [group('dev')]
 session role:
-    @just _bun frontend "dev-session {{role}}"
+    @just _bun apps/frontend "dev-session {{role}}"
 
 # internal: full dev stack. Empty role = plain dev, otherwise probe the seeded
 # account and open /dev/session?role=ROLE so the browser starts signed in.
@@ -149,7 +158,7 @@ _dev role="":
                 (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && { exec 3>&-; break; }
                 sleep 1
             done
-            if ! (cd frontend && bun run dev-session "$role"); then
+            if ! (cd apps/frontend && bun run dev-session "$role"); then
                 echo "[dev] sign-in probe failed (see above) — missing account? run: just db-seed" >&2
             fi
         fi
@@ -159,11 +168,11 @@ _dev role="":
 
     # each service runs in its own session (setsid); its PGID == PID recorded in .pid,
     # so cleanup can kill the entire tree (uvicorn workers, next children, etc.)
-    setsid bash -c "echo \$\$ > $tmp/backend.pid; cd backend && exec bun run dev" 2>&1 \
+    setsid bash -c "echo \$\$ > $tmp/backend.pid; cd apps/backend && exec bun run dev" 2>&1 \
         | sed -u "s/^/${C_BACKEND}[backend]${R} /" &
-    setsid bash -c "echo \$\$ > $tmp/frontend.pid; cd frontend && exec bun run dev" 2>&1 \
+    setsid bash -c "echo \$\$ > $tmp/frontend.pid; cd apps/frontend && exec bun run dev" 2>&1 \
         | sed -u "s/^/${C_FRONTEND}[frontend]${R} /" &
-    setsid bash -c "echo \$\$ > $tmp/etl.pid; cd python-server && exec uv run dev" 2>&1 \
+    setsid bash -c "echo \$\$ > $tmp/etl.pid; cd apps/python-server && exec uv run dev" 2>&1 \
         | sed -u "s/^/${C_ETL}[etl]${R} /" &
     wait
 
@@ -175,7 +184,7 @@ stop:
 # run only the backend (bun watch)
 [group('dev')]
 dev-backend:
-    @just _bun backend dev
+    @just _bun apps/backend dev
 
 # run only the frontend (next dev) — exports DEV_SESSION_ENABLED so the dev-only /dev/session route exists
 [group('dev')]
@@ -184,7 +193,7 @@ dev-frontend:
     set -euo pipefail
     # NOTE: same flag as `_dev` — only justfile-launched dev runs expose the route.
     export DEV_SESSION_ENABLED=true
-    exec just _bun frontend dev
+    exec just _bun apps/frontend dev
 
 # run only the python ETL service (uvicorn reload on :8000)
 [group('dev')]
@@ -193,38 +202,73 @@ dev-etl:
 
 # --- quality ---
 
-# lint backend + frontend (biome)
+# lint backend + frontend (biome, orchestrated by turbo)
 [group('quality')]
 lint:
-    cd backend && bunx biome check .
-    cd frontend && bun run lint
+    bun run lint
 
-# typecheck the backend
+# typecheck via turbo (backend only — frontend has no typecheck script, see apps/frontend/next.config.ts)
 [group('quality')]
 typecheck:
-    @just _bun backend typecheck
+    bun run typecheck
 
-# format backend + frontend (biome)
+# format backend + frontend (biome, orchestrated by turbo)
 [group('quality')]
 format:
-    cd backend && bunx biome format --write .
-    cd frontend && bun run format
+    bun run format
 
 # run backend tests (all)
 [group('quality')]
 test:
-    @just _bun backend test
+    @just _bun apps/backend test
 
 # run backend unit tests
 [group('quality')]
 test-unit:
-    @just _bun backend test:unit
+    @just _bun apps/backend test:unit
 
 # run backend integration tests
 [group('quality')]
 test-integration:
-    @just _bun backend test:integration
+    @just _bun apps/backend test:integration
 
 # run all quality checks
 [group('quality')]
 check: lint typecheck test
+
+# --- build & run (production servers) ---
+
+# turbo-cached build + serve backend (:8080) and frontend (:3000) with the root .env.local — Ctrl+C stops both
+[group('build')]
+start:
+    bun run start
+
+# same, but built and served with the root .env.prod — stop the other stack first (same ports)
+[group('build')]
+start-prod:
+    bun run start:prod
+
+# --- deploy (vercel) ---
+
+# link this repo's backend/ + frontend/ to Vercel projects (run once; needs `bunx vercel login`)
+[group('deploy')]
+vercel-link:
+    bunx vercel link --repo --yes
+
+# deploy the backend — preview by default, `just deploy-backend prod` for production
+[group('deploy')]
+deploy-backend target="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--yes)
+    if [ "{{target}}" = "prod" ]; then args+=(--prod); fi
+    cd apps/backend && exec bunx vercel deploy "${args[@]}"
+
+# deploy the frontend — preview by default, `just deploy-frontend prod` for production
+[group('deploy')]
+deploy-frontend target="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    args=(--yes)
+    if [ "{{target}}" = "prod" ]; then args+=(--prod); fi
+    cd apps/frontend && exec bunx vercel deploy "${args[@]}"
