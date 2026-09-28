@@ -144,6 +144,8 @@ The root [`justfile`](justfile) wraps the common workflows — install, dev, and
 | Recipe | What it does |
 | :--- | :--- |
 | `just dev` | Run backend + frontend + ETL in parallel with colored log prefixes; auto-opens the browser when the frontend is up; Ctrl+C stops all |
+| `just dev-as <role>` | Same as `just dev`, but opens the browser already signed in as a seeded role account (real session + cookie) |
+| `just session <role>` | Sign in as a seeded role account and print its session cookie for direct backend calls |
 | `just stop` | Kill any leftover dev processes |
 | `just dev-backend` | Run only the backend (bun watch, `:8080`) |
 | `just dev-frontend` | Run only the frontend (`next dev`, `:3000`) |
@@ -197,6 +199,15 @@ DEVELOPMENT=true
 ```
 
 To simulate a role, edit `DEV_ROLE` in `frontend/server/api-client.ts` (default `system_admin`).
+
+### Testing with a real account (per role)
+
+`just db-seed` creates one account per role — `<role>@jmcfi.edu.ph` / `password123`, for `user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, and `system_admin`. Two ways to use them:
+
+- **Browser** — `just dev-as <role>` starts the full stack and opens `http://localhost:3000/dev/session?role=<role>`, which signs in server-side and relays the real session cookie to the browser. Switch roles any time by opening that URL with a different role — no restart. (`user` accounts land on `/onboarding`.)
+- **Terminal** — `just session <role>` signs in and prints a `Cookie:` header (also written to `frontend/.dev-session/<role>.cookie`, gitignored) for `curl`/Bun calls straight against the backend.
+
+Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `getMe()` short-circuits to `DEV_USER` and the session cookie is ignored. `just dev-as` therefore exports `DEVELOPMENT=false` for that run only (`.env.local` stays as you left it), and `/dev/session` answers `409` if dev mode is on. The route returns 404 in production builds.
 
 ---
 

@@ -28,6 +28,20 @@ Secrets: `.env.local` is encrypted with dotenvx (`DOTENV_PUBLIC_KEY_LOCAL`); the
 
 With `DEVELOPMENT=true` the frontend disables auth: `proxy.ts` and the server guards short-circuit to a dev user so every route is viewable without an account. Simulate a role by editing `DEV_ROLE` in `server/api-client.ts` (currently `dean`). Set `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` to `true` to enforce route gates like production (default `false` = open navigation). The backend still enforces auth.
 
+### Testing as a role (seeded accounts)
+
+`just db-seed` creates `<role>@jmcfi.edu.ph` / `password123` for every role (`user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, `system_admin`) — see `lib/dev-accounts.ts` and `backend/prisma/seed.ts`, which must stay in sync.
+
+```bash
+just dev-as dean     # full stack, browser opens already signed in as dean (real session + cookie)
+just session dean    # sign in and print a Cookie: header for direct backend calls
+bun run dev-session dean   # the same, from inside frontend/
+```
+
+`/dev/session?role=<role>` is a dev-only route (`app/dev/session/route.ts`) that signs in server-side, relays the backend's `Set-Cookie`, and redirects — switch roles by opening it with another value, no restart. It 404s in production builds.
+
+Dev mode and real sessions are mutually exclusive (`getMe()` returns `DEV_USER` whenever `DEVELOPMENT=true`), so `just dev-as` exports `DEVELOPMENT=false` for that run only — `.env.local` is left as-is, and a plain `just dev` keeps your dev-mode setting. Hitting `/dev/session` while dev mode is on returns a `409` explaining that.
+
 ## Structure
 
 ```
