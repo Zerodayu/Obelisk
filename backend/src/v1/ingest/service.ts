@@ -18,6 +18,9 @@ const jobCompletionCache = new Map<
 	| { status: "failed"; error: unknown }
 >();
 
+// In-flight persistence mutex to avoid concurrent execution during client polling
+const inFlightJobs = new Set<string>();
+
 // --- Interfaces ---
 
 export interface AttainmentRecord {
@@ -161,28 +164,35 @@ export class AttainmentService {
 		summary.computationRunId = computationRun.id;
 
 		const cloCache = new Map<string, { id: string } | null>();
+		const studentCache = new Map<string, { id: string }>();
 
 		for (const record of etlLoadedData.attainments) {
 			summary.studentsProcessed++;
 
-			const resolved = await this.resolveOrCreateStudent(
-				record.student_name,
-				record.student_id,
-				programId,
-			);
-			if (!resolved) {
-				console.warn(
-					`[Critical] Failed to find or create a student for record: ${record.student_name}. This record will be skipped.`,
+			const cacheKey = `${record.student_name}|${record.student_id ?? ""}`;
+			let student = studentCache.get(cacheKey);
+
+			if (!student) {
+				const resolved = await this.resolveOrCreateStudent(
+					record.student_name,
+					record.student_id,
+					programId,
 				);
-				continue;
+				if (!resolved) {
+					console.warn(
+						`[Critical] Failed to find or create a student for record: ${record.student_name}. This record will be skipped.`,
+					);
+					continue;
+				}
+				if (resolved.created) {
+					summary.studentsCreated++;
+					console.log(
+						`Created new student: ${resolved.firstName} ${resolved.lastName} from record name "${record.student_name}"`,
+					);
+				}
+				student = { id: resolved.id };
+				studentCache.set(cacheKey, student);
 			}
-			if (resolved.created) {
-				summary.studentsCreated++;
-				console.log(
-					`Created new student: ${resolved.firstName} ${resolved.lastName} from record name "${record.student_name}"`,
-				);
-			}
-			const student = { id: resolved.id };
 
 			let clo: { id: string } | null;
 			const cachedClo = cloCache.get(record.clo_code);
@@ -620,9 +630,10 @@ export class AttainmentService {
 		lastName: string;
 		created: boolean;
 	} | null> {
-		if (studentId) {
+		const cleanStudentId = studentId?.trim() || null;
+		if (cleanStudentId) {
 			const existing = await prisma.student.findUnique({
-				where: { studentNumber: studentId },
+				where: { studentNumber: cleanStudentId },
 				select: { id: true, firstName: true, lastName: true },
 			});
 			if (existing) {
@@ -655,26 +666,40 @@ export class AttainmentService {
 			);
 		}
 
-		const created = await prisma.student.create({
-			data: {
-				id: crypto.randomUUID(),
-				firstName,
-				lastName,
-				studentNumber:
-					studentId ||
-					`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-				anonymizedId: crypto.randomUUID(),
-				program: { connect: { id: programId } },
+		const studentNumber =
+			cleanStudentId ||
+			`TBA-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+
+		let wasCreated = false;
+		const student = await this.ensureRow(
+			() =>
+				prisma.student.findUnique({
+					where: { studentNumber },
+					select: { id: true, firstName: true, lastName: true },
+				}),
+			async () => {
+				const res = await prisma.student.create({
+					data: {
+						id: crypto.randomUUID(),
+						firstName,
+						lastName,
+						studentNumber,
+						anonymizedId: crypto.randomUUID(),
+						program: { connect: { id: programId } },
+					},
+					select: { id: true, firstName: true, lastName: true },
+				});
+				wasCreated = true;
+				return res;
 			},
-			select: { id: true, firstName: true, lastName: true },
-		});
-		return { ...created, created: true };
+		);
+		return { ...student, created: wasCreated };
 	}
 
 	private async audit(
 		userId: string,
 		action: string,
-		details: Record<string, unknown>,
+		details: Record<string, unknown> | Prisma.InputJsonValue,
 	): Promise<void> {
 		await prisma.auditLog.create({
 			data: {
@@ -683,8 +708,8 @@ export class AttainmentService {
 				action,
 				moduleAffected: "ingest",
 				targetRecordId:
-					typeof details.classSectionId === "string"
-						? details.classSectionId
+					typeof (details as Record<string, unknown>).classSectionId === "string"
+						? ((details as Record<string, unknown>).classSectionId as string)
 						: null,
 				details: details as Prisma.InputJsonValue,
 			},
@@ -1068,6 +1093,11 @@ export class IngestService {
 		const cached = jobCompletionCache.get(jobId);
 		if (cached) return cached;
 
+		// Return running if persistence is currently in-flight to prevent duplicate execution from polling
+		if (inFlightJobs.has(jobId)) {
+			return { status: "running" as const };
+		}
+
 		const job = await ingestClient.getJob(jobId);
 
 		if (job.status === "running" || job.status === "queued") {
@@ -1087,6 +1117,11 @@ export class IngestService {
 		}
 
 		if (job.status === "completed") {
+			if (inFlightJobs.has(jobId)) {
+				return { status: "running" as const };
+			}
+			inFlightJobs.add(jobId);
+
 			try {
 				const result = await this.processAndPersistJob(
 					job,
@@ -1128,6 +1163,8 @@ export class IngestService {
 				}
 
 				return result;
+			} finally {
+				inFlightJobs.delete(jobId);
 			}
 		}
 
