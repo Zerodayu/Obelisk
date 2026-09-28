@@ -279,14 +279,20 @@ async function main() {
 	console.log(`Created development user: ${devEmail} (ID: ${devUser.id})`);
 	console.log(`Working dev credentials: ${devEmail} / ${devPassword}`);
 
-	// One demo user per approval-workflow role so the approval chain
-	// (lib/forms/approval-routes.ts) can be exercised end-to-end; same password.
+	// One demo account per role — `<role>@jmcfi.edu.ph` / devPassword — so the
+	// approval chain (lib/forms/approval-routes.ts) and every role gate can be
+	// exercised end-to-end. The frontend mirrors this list in
+	// `frontend/lib/dev-accounts.ts` (`just dev-as <role>` signs the browser in
+	// through `/dev/session`); keep both sides in sync.
 	const ROLE_ACCOUNTS = [
+		// NOTE: "user" is the onboarding role — these accounts land on /onboarding.
+		{ role: "user", name: "User Role Demo" },
 		{ role: "faculty", name: "Faculty User" },
 		{ role: "program_chair", name: "Program Chair User" },
 		{ role: "dean", name: "Dean User" },
 		{ role: "aqau", name: "AQAU User" },
 		{ role: "vpaa", name: "VPAA User" },
+		{ role: "system_admin", name: "System Admin User" },
 	] as const;
 
 	for (const account of ROLE_ACCOUNTS) {
