@@ -56,9 +56,41 @@ db-seed:
 
 # run backend + frontend + etl in parallel with colored log prefixes (Ctrl+C stops all)
 [group('dev')]
-dev:
+dev: _dev
+
+# start the full stack and open the browser already signed in as a seeded role account — real session + cookie, so the backend still enforces everything (accounts from `just db-seed`, DEVELOPMENT=false)
+[group('dev')]
+dev-as role:
     #!/usr/bin/env bash
     set -euo pipefail
+    role='{{role}}'
+    roles="user faculty program_chair dean aqau vpaa system_admin"
+    if [[ " $roles " != *" $role "* ]]; then
+        echo "unknown role: $role" >&2
+        echo "usage: just dev-as <role>" >&2
+        printf '  - %s\n' $roles >&2
+        exit 1
+    fi
+    exec just _dev "$role"
+
+# sign in as a seeded role account and print its session cookie for direct backend calls — also writes frontend/.dev-session/<role>.cookie
+[group('dev')]
+session role:
+    @just _bun frontend "dev-session {{role}}"
+
+# internal: full dev stack. Empty role = plain dev, otherwise probe the seeded
+# account and open /dev/session?role=ROLE so the browser starts signed in.
+_dev role="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    role='{{role}}'
+    # NOTE: a per-role session is a real login, so the frontend has to run with
+    # dev mode off or getMe() returns DEV_USER and ignores the cookie. Exported
+    # here (dotenvx/Next never override an existing var) — .env.local untouched.
+    if [ -n "$role" ]; then
+        export DEVELOPMENT=false
+        echo "[dev] DEVELOPMENT=false (real session) — .env.local left unchanged"
+    fi
     tmp=$(mktemp -d)
     cleanup() {
         for f in "$tmp"/*.pid; do
@@ -91,13 +123,33 @@ dev:
         fi
     }
 
-    # wait until the frontend answers, then open it in the browser (linux/windows/wsl)
+    base_url="http://localhost:3000"
+    session_url="$base_url"
+    if [ -n "$role" ]; then
+        session_url="$base_url/dev/session?role=$role"
+    fi
+
+    # wait until the stack answers, then open it in the browser
+    # (linux/windows/wsl); with a role, probe the seeded account first so a
+    # missing one is reported here instead of failing in the browser
     (
         for _ in $(seq 1 30); do
             (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && { exec 3>&-; break; }
             sleep 1
         done
-        open_browser "http://localhost:3000"
+
+        if [ -n "$role" ]; then
+            # backend has to be up too — the probe signs in against it
+            for _ in $(seq 1 30); do
+                (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && { exec 3>&-; break; }
+                sleep 1
+            done
+            if ! (cd frontend && bun run dev-session "$role"); then
+                echo "[dev] sign-in probe failed (see above) — missing account? run: just db-seed" >&2
+            fi
+        fi
+
+        open_browser "$session_url"
     ) &
 
     # each service runs in its own session (setsid); its PGID == PID recorded in .pid,
