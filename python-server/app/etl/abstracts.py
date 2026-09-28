@@ -45,14 +45,16 @@ async def run_full_pipeline(extractor: Extractor, transformer: Transformer, load
     extracted = await extractor.pipeline(source)
     transformed = await transformer.pipeline(extracted)
     
-    # The extractor now returns (header, records, clo_plo_mapping).
+    # The extractor returns (header, records, clo_plo_mapping) with optional section & setup metadata.
     # The transformer only returns the attainment records.
-    # We need to pass all three parts to the loader.
     header, _, clo_plo_mapping = extracted
+    section = getattr(extracted, "section", getattr(header, "_section_data", None))
+    section_extraction = getattr(extracted, "section_extraction", getattr(header, "_section_extraction", "missing_sheet"))
+    setup = getattr(extracted, "setup", getattr(header, "_setup_data", None))
     
     # The 'loader' is responsible for creating the final dictionary with serializable data.
     # Its output is already a dictionary with .model_dump() called.
-    loaded_data = await loader.pipeline((header, transformed, clo_plo_mapping))
+    loaded_data = await loader.pipeline((header, transformed, clo_plo_mapping, section, section_extraction, setup))
 
     # --- CORRECT FIX ---
     # The API contract specifies the final result must be a dictionary

@@ -1,4 +1,5 @@
 import asyncio
+import re
 import warnings
 from pathlib import Path
 from typing import Any, List, Dict, Tuple
@@ -9,10 +10,51 @@ from openpyxl.utils.cell import column_index_from_string
 from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType
 from app.core.logging import logger
 from app.etl.abstracts import Extractor
-from app.schemas.class_record import ClassRecordHeader, RawScoreRecord
+from app.schemas.class_record import (
+    ClassRecordHeader,
+    RawScoreRecord,
+    ExtractedSection,
+    SetupMetadata,
+    SectionExtractionStatus,
+)
 from app.schemas.extracted import StudentRawCloData
 
 from .. import etl_const
+
+SECTION_REGEX = re.compile(r"^\s*([A-Za-z]+)\s*-\s*(\d+)\s*([A-Za-z])\s*$")
+
+
+class ExtractionResult(tuple):
+    """
+    Backwards-compatible 3-tuple (header, records, clo_plo_mapping) with
+    attached section, section_extraction, and setup properties.
+    """
+    def __new__(
+        cls,
+        header: ClassRecordHeader,
+        records: list[Any],
+        clo_plo_mapping: list[dict[str, Any]],
+        section: ExtractedSection | None = None,
+        section_extraction: SectionExtractionStatus = "missing_sheet",
+        setup: SetupMetadata | None = None,
+    ):
+        return super().__new__(cls, (header, records, clo_plo_mapping))
+
+    def __init__(
+        self,
+        header: ClassRecordHeader,
+        records: list[Any],
+        clo_plo_mapping: list[dict[str, Any]],
+        section: ExtractedSection | None = None,
+        section_extraction: SectionExtractionStatus = "missing_sheet",
+        setup: SetupMetadata | None = None,
+    ):
+        self.header = header
+        self.records = records
+        self.clo_plo_mapping = clo_plo_mapping
+        self.section = section
+        self.section_extraction = section_extraction
+        self.setup = setup
 
 
 class ExcelExtractor(Extractor):
@@ -22,14 +64,14 @@ class ExcelExtractor(Extractor):
     CLO-PLO mapping is permanently retired and returns an empty list.
     """
 
-    async def extract(self, source: Any) -> tuple[ClassRecordHeader, list[StudentRawCloData | RawScoreRecord], list[dict[str, Any]]]:
+    async def extract(self, source: Any) -> ExtractionResult:
         """
         Main entrypoint to extract all data from a given workbook source.
         """
         file_path = self._resolve_file_path(source)
         return await asyncio.to_thread(self._extract_sync, file_path)
 
-    def _extract_sync(self, file_path: str) -> tuple[ClassRecordHeader, list[StudentRawCloData], list[dict[str, Any]]]:
+    def _extract_sync(self, file_path: str) -> ExtractionResult:
         """Synchronous wrapper for all extraction operations."""
         try:
             with warnings.catch_warnings():
@@ -132,13 +174,31 @@ class ExcelExtractor(Extractor):
 
         records = list(extracted_map.values())
 
-        # 6. Extract Header metadata
-        header = self._build_header(workbook, num_students=len(students))
+        # 6. Extract SETUP metadata and Section
+        ws_setup = self._find_setup_sheet(workbook)
+        section_info, section_extraction = self._extract_section(ws_setup)
+        setup_metadata = self._extract_setup_metadata(ws_setup)
+
+        header = self._build_header(
+            workbook=workbook,
+            num_students=len(students),
+            ws_setup=ws_setup,
+            section_info=section_info,
+            section_extraction=section_extraction,
+            setup_metadata=setup_metadata,
+        )
 
         # CLO-PLO mapping is permanently retired
         clo_plo_mapping: list[dict[str, Any]] = []
 
-        return header, records, clo_plo_mapping
+        return ExtractionResult(
+            header=header,
+            records=records,
+            clo_plo_mapping=clo_plo_mapping,
+            section=section_info,
+            section_extraction=section_extraction,
+            setup=setup_metadata,
+        )
 
     def _discover_direct_clos(self, sheet: Worksheet) -> list[tuple[int, str]]:
         """
@@ -265,11 +325,179 @@ class ExcelExtractor(Extractor):
                 found=str(raw_val),
             )
 
-    def _build_header(self, workbook: Any, num_students: int) -> ClassRecordHeader:
+    @staticmethod
+    def _find_setup_sheet(workbook: Any) -> Worksheet | None:
+        """Locates the SETUP worksheet by trimmed, case-insensitive name."""
+        for name in workbook.sheetnames:
+            if str(name).strip().upper() == "SETUP":
+                return workbook[name]
+        return None
+
+    def _extract_section(self, ws_setup: Worksheet | None) -> tuple[ExtractedSection, SectionExtractionStatus]:
+        """
+        Locates the section label on SETUP sheet and parses the program & section code.
+        - Check A4 first; if not 'Section' (case-insensitive, trimmed, ignoring a trailing colon),
+          scan column A for that label.
+        - Read value from the cell immediately to its right (column B, same row).
+        - Format: <PROGRAM>-<YEAR><LETTER> with optional whitespace around the dash.
+        - If missing sheet: section_extraction="missing_sheet", section fields null.
+        - If missing label or value: section_extraction="missing_field", section fields null.
+        - If value present but doesn't match format: section_extraction="unparseable", keep raw, section fields null.
+        - If valid: section_extraction="ok", extract code, program, year_level, section_letter, raw.
+        """
+        if ws_setup is None:
+            return (
+                ExtractedSection(
+                    code=None,
+                    program=None,
+                    year_level=None,
+                    section_letter=None,
+                    raw=None,
+                ),
+                "missing_sheet",
+            )
+
+        def _is_section_label(val: Any) -> bool:
+            if val is None:
+                return False
+            cleaned = str(val).strip()
+            if cleaned.endswith(":"):
+                cleaned = cleaned[:-1].rstrip()
+            return cleaned.upper() == "SECTION"
+
+        section_row: int | None = None
+        # Check A4 first
+        if _is_section_label(ws_setup["A4"].value):
+            section_row = 4
+        else:
+            # Scan column A
+            for r in range(1, ws_setup.max_row + 1):
+                if _is_section_label(ws_setup.cell(row=r, column=1).value):
+                    section_row = r
+                    break
+
+        if section_row is None:
+            return (
+                ExtractedSection(
+                    code=None,
+                    program=None,
+                    year_level=None,
+                    section_letter=None,
+                    raw=None,
+                ),
+                "missing_field",
+            )
+
+        raw_val = ws_setup.cell(row=section_row, column=2).value
+        if raw_val is None or str(raw_val).strip() == "":
+            return (
+                ExtractedSection(
+                    code=None,
+                    program=None,
+                    year_level=None,
+                    section_letter=None,
+                    raw=None,
+                ),
+                "missing_field",
+            )
+
+        raw_str = str(raw_val).strip()
+        match = SECTION_REGEX.match(raw_str)
+        if not match:
+            return (
+                ExtractedSection(
+                    code=None,
+                    program=None,
+                    year_level=None,
+                    section_letter=None,
+                    raw=raw_str,
+                ),
+                "unparseable",
+            )
+
+        program_part = match.group(1).upper()
+        year_part = int(match.group(2))
+        letter_part = match.group(3).upper()
+        code_part = f"{year_part}{letter_part}"
+
+        return (
+            ExtractedSection(
+                code=code_part,
+                program=program_part,
+                year_level=year_part,
+                section_letter=letter_part,
+                raw=raw_str,
+            ),
+            "ok",
+        )
+
+    def _extract_setup_metadata(self, ws_setup: Worksheet | None) -> SetupMetadata:
+        """
+        Best-effort extraction of SETUP sheet fields: course_code, course_title, term, faculty_name, program.
+        Returns null for anything missing and never lets a missing extra field fail the ETL.
+        """
+        if ws_setup is None:
+            return SetupMetadata()
+
+        def _clean_label(val: Any) -> str:
+            if val is None:
+                return ""
+            text = str(val).strip()
+            if text.endswith(":"):
+                text = text[:-1].rstrip()
+            return text.upper()
+
+        def _find_field_value(default_label_coord: str, default_val_coord: str, target_labels: list[str]) -> str | None:
+            try:
+                # 1. Check default coordinate first
+                if _clean_label(ws_setup[default_label_coord].value) in target_labels:
+                    v = ws_setup[default_val_coord].value
+                    if v is not None and str(v).strip():
+                        return str(v).strip()
+
+                # 2. Fallback scan across common header area
+                max_r = min(30, ws_setup.max_row)
+                max_c = min(10, ws_setup.max_column)
+                for r in range(1, max_r + 1):
+                    for c in range(1, max_c + 1):
+                        if _clean_label(ws_setup.cell(row=r, column=c).value) in target_labels:
+                            v = ws_setup.cell(row=r, column=c + 1).value
+                            if v is not None and str(v).strip():
+                                return str(v).strip()
+            except Exception:
+                pass
+            return None
+
+        course_title = _find_field_value("A3", "B3", ["COURSE TITLE", "SUBJECT TITLE", "TITLE"])
+        course_code = _find_field_value("C3", "D3", ["COURSE CODE", "SUBJECT CODE", "CODE"])
+        term = _find_field_value("C4", "D4", ["TERM / AY", "TERM/AY", "TERM", "SEMESTER / AY", "SEMESTER/AY", "SEMESTER", "TERM / ACADEMIC YEAR"])
+        faculty_name = _find_field_value("A5", "B5", ["FACULTY NAME", "FACULTY", "INSTRUCTOR NAME", "INSTRUCTOR", "PROFESSOR", "TEACHER"])
+        program = _find_field_value("C5", "D5", ["PROGRAM", "DEGREE PROGRAM", "DEGREE", "COURSE/PROGRAM"])
+
+        return SetupMetadata(
+            course_code=course_code,
+            course_title=course_title,
+            term=term,
+            faculty_name=faculty_name,
+            program=program,
+        )
+
+    def _build_header(
+        self,
+        workbook: Any,
+        num_students: int,
+        ws_setup: Worksheet | None = None,
+        section_info: ExtractedSection | None = None,
+        section_extraction: SectionExtractionStatus = "missing_sheet",
+        setup_metadata: SetupMetadata | None = None,
+    ) -> ClassRecordHeader:
         """
         Builds ClassRecordHeader from SETUP sheet if present, or defaults gracefully.
         Enforces course_type='LECTURE'.
         """
+        if ws_setup is None:
+            ws_setup = self._find_setup_sheet(workbook)
+
         course_code = None
         course_title = None
         course_type = "LECTURE"
@@ -279,16 +507,15 @@ class ExcelExtractor(Extractor):
         threshold = etl_const.Transformation.INSTITUTIONAL_THRESHOLD
         grading_system = None
 
-        if etl_const.SheetNames.SETUP in workbook.sheetnames:
-            ws_setup = workbook[etl_const.SheetNames.SETUP]
-            course_title = self._as_optional_string(ws_setup["B3"].value)
-            course_code = self._as_optional_string(ws_setup["D3"].value)
-            section = self._as_optional_string(ws_setup["B4"].value)
-            sem = self._as_optional_string(ws_setup["D4"].value)
+        if ws_setup is not None:
+            course_title = (setup_metadata.course_title if setup_metadata else None) or self._as_optional_string(ws_setup["B3"].value)
+            course_code = (setup_metadata.course_code if setup_metadata else None) or self._as_optional_string(ws_setup["D3"].value)
+            section = (section_info.raw if section_info else None) or self._as_optional_string(ws_setup["B4"].value)
+            sem = (setup_metadata.term if setup_metadata else None) or self._as_optional_string(ws_setup["D4"].value)
             if sem:
                 semester_year = sem
-            instructor_name = self._as_optional_string(ws_setup["B5"].value)
-            
+            instructor_name = (setup_metadata.faculty_name if setup_metadata else None) or self._as_optional_string(ws_setup["B5"].value)
+
             # Check course type if specified in SETUP (e.g. B6)
             c_type = self._as_optional_string(ws_setup["B6"].value)
             if c_type:
@@ -300,7 +527,7 @@ class ExcelExtractor(Extractor):
             if thresh_val is not None:
                 threshold = thresh_val / 100.0 if thresh_val > 1.0 else thresh_val
 
-        return ClassRecordHeader(
+        header = ClassRecordHeader(
             course_code=course_code,
             course_title=course_title,
             course_type=course_type,
@@ -312,6 +539,10 @@ class ExcelExtractor(Extractor):
             grading_system=grading_system,
             workbook_configured_weights_unused=None,
         )
+        header._section_data = section_info
+        header._section_extraction = section_extraction
+        header._setup_data = setup_metadata
+        return header
 
     @staticmethod
     def _resolve_file_path(source: Any) -> str:

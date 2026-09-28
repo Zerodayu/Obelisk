@@ -1,20 +1,12 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, ConfigDict
 
-
-class ClassRecordHeader(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    course_code: str | None
-    course_title: str | None
-    course_type: str
-    section: str | None
-    semester_year: str
-    instructor_name: str | None
-    no_of_students: int
-    threshold: float  # The course-specific threshold from the workbook
-    grading_system: str | None
-    workbook_configured_weights_unused: Optional[dict[str, float]] = None
+from app.schemas.class_record import (
+    ClassRecordHeader,
+    ExtractedSection,
+    SetupMetadata,
+    SectionExtractionStatus,
+)
 
 
 class StudentRawCloData(BaseModel):
@@ -25,7 +17,7 @@ class StudentRawCloData(BaseModel):
     """
     model_config = ConfigDict(extra="forbid")
 
-    student_id: str | None
+    student_id: str | None = None
     student_name: str
     clo_code: str
 
