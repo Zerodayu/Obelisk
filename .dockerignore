@@ -1,0 +1,28 @@
+# Build-context hygiene for the root Dockerfile (all targets).
+
+# VCS, tooling output, per-language caches, runtime upload artifacts (the ETL
+# volume starts empty instead of being seeded with dev leftovers)
+.git
+**/node_modules
+**/.next
+**/.turbo
+**/.venv
+**/__pycache__
+**/*.pyc
+.ruff_cache
+**/.ruff_cache
+**/.dev-session
+**/uploads
+
+# Secrets: .env.keys only ever enters a build as a BuildKit secret (never a
+# layer) and plaintext `**/.env` files are read off the host by compose
+# `env_file:` — neither belongs inside an image. The encrypted `.env.local` /
+# `.env.prod` deliberately STAY in the context: the build scripts decrypt them.
+.env.keys
+**/.env.keys
+**/.env
+
+# The canonical bake of the host's decrypted local env must never ship — the
+# backend stage re-bakes it under dotenvx during its own build step, and the
+# postinstall stub covers everything else.
+**/src/generated/runtime-env.ts
