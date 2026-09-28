@@ -23,6 +23,12 @@ export type IngestStatus =
   | "completed"
   | "failed";
 
+export interface SectionComparisonResult {
+  status: "match" | "mismatch" | "unverified";
+  mismatches: string[];
+  warnings: string[];
+}
+
 /** Mirrors the backend persistence summary returned on job completion. */
 export interface PersistenceSummary {
   computationRunId: string;
@@ -35,6 +41,7 @@ export interface PersistenceSummary {
     studentName: string;
     reason: string;
   }[];
+  verification?: SectionComparisonResult;
 }
 
 /** Mirrors the backend `UploadRecord` JSON contract from `GET /ingest/history`. */

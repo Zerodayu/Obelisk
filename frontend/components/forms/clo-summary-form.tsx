@@ -95,6 +95,7 @@ export function CloSummaryForm() {
             <Field className="flex-1">
               <FieldLabel>Class Section</FieldLabel>
               <ClassSectionSelect
+                loadAll={true}
                 value={classSectionId}
                 onValueChange={setClassSectionId}
               />

@@ -21,6 +21,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { ROOT_CAUSES } from "@/lib/constants/obe";
 import {
+  type AssessmentTypeRow,
+  type CarPart1,
+  type CarPart2,
+  type CarPart3,
+  type CarPart4,
+  type CarPart5,
+  type CarPart6,
+  type CarPart7,
   type CarPayload,
   carDirtyAtom,
   carPayloadAtom,
@@ -31,7 +39,7 @@ import { generateCar, saveCar } from "@/server/actions/car";
 // 4-tier level helpers
 // ---------------------------------------------------------------------------
 
-function levelBadge(level: string | null, status: string) {
+function levelBadge(level: string | null | undefined, status: string) {
   if (!level) return <Badge variant="secondary">N/A</Badge>;
   const v =
     level === "Exceptional"
@@ -62,31 +70,50 @@ function levelBadge(level: string | null, status: string) {
 // Part components
 // ---------------------------------------------------------------------------
 
-function Part1({ part1 }: { part1: CarPayload["part1"] }) {
+function Part1({ part1 }: { part1?: CarPart1 }) {
+  if (!part1) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Course and section information could not be loaded.
+      </p>
+    );
+  }
+
+  const courseDisplay =
+    part1.courseCode && part1.courseTitle
+      ? `${part1.courseCode} — ${part1.courseTitle}`
+      : part1.courseCode || part1.courseTitle || "—";
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
         <div>
           <span className="text-xs text-muted-foreground">Course</span>
-          <p className="font-medium">
-            {part1.course.code} — {part1.course.title}
-          </p>
+          <p className="font-medium">{courseDisplay}</p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Section</span>
-          <p className="font-medium">{part1.sectionCode}</p>
+          <p className="font-medium">{part1.sectionCode || "—"}</p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Program</span>
-          <p className="font-medium">{part1.program.name}</p>
+          <p className="font-medium">
+            {part1.programName || part1.programCode || "—"}
+          </p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Term</span>
-          <p className="font-medium">{part1.term}</p>
+          <p className="font-medium">
+            {part1.schoolYear && part1.semester
+              ? `${part1.schoolYear} ${part1.semester}${part1.term ? ` (${part1.term})` : ""}`
+              : part1.term || "—"}
+          </p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Year Level</span>
-          <p className="font-medium">Year {part1.yearLevel}</p>
+          <p className="font-medium">
+            {part1.yearLevel ? `Year ${part1.yearLevel}` : "—"}
+          </p>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Faculty</span>
@@ -94,7 +121,7 @@ function Part1({ part1 }: { part1: CarPayload["part1"] }) {
         </div>
       </div>
 
-      {part1.cloPloMapping.length > 0 && (
+      {(part1.cloPloMapping ?? []).length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -120,7 +147,9 @@ function Part1({ part1 }: { part1: CarPayload["part1"] }) {
                     {row.assessmentTypes?.join(", ") || "—"}
                   </td>
                   <td className="py-2 pr-4 text-right">
-                    {row.weightInGradePct}%
+                    {row.weightInGradePct !== null && row.weightInGradePct !== undefined
+                      ? `${row.weightInGradePct}%`
+                      : "—"}
                   </td>
                 </tr>
               ))}
@@ -132,44 +161,145 @@ function Part1({ part1 }: { part1: CarPayload["part1"] }) {
   );
 }
 
-function Part2({ part2 }: { part2: CarPayload["part2"] }) {
-  if (!part2 || part2.length === 0) {
+function Part2({ part2 }: { part2?: CarPart2 }) {
+  if (!part2) {
     return (
       <p className="text-sm text-muted-foreground">
         No assessment-type data available.
       </p>
     );
   }
+
+  const sections: { title: string; rows: AssessmentTypeRow[] }[] = [
+    { title: "Exams / Major Assessments", rows: part2.exams ?? [] },
+    { title: "Rubric-Based Assessments", rows: part2.rubric ?? [] },
+    { title: "Performance Tasks", rows: part2.perfTasks ?? [] },
+    { title: "Portfolio", rows: part2.portfolio ?? [] },
+  ].filter((s) => s.rows.length > 0);
+
+  if (sections.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No assessment-type data available.
+      </p>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      {part2.map((group) => (
-        <div key={group.assessmentType}>
-          <h4 className="text-sm font-medium mb-2">{group.assessmentType}</h4>
+    <div className="space-y-4">
+      {sections.map((section) => (
+        <div key={section.title} className="space-y-2">
+          <h4 className="text-sm font-semibold">{section.title}</h4>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-4">CLO</th>
-                  <th className="py-2 pr-4 text-right">Score %</th>
+                  <th className="py-2 pr-4">Description</th>
+                  <th className="py-2 pr-4 text-right">Attainment %</th>
+                  <th className="py-2 pr-4">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {section.rows.map((row) => {
+                  const status =
+                    row.belowBenchmark === false
+                      ? "MET"
+                      : row.belowBenchmark === true
+                        ? "NOT MET"
+                        : "N/A";
+                  return (
+                    <tr key={row.cloCode} className="border-b last:border-0">
+                      <td className="py-2 pr-4 font-medium">{row.cloCode}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">
+                        {row.cloDescription || "—"}
+                      </td>
+                      <td className="py-2 pr-4 text-right">
+                        {row.attainmentPct !== null && row.attainmentPct !== undefined
+                          ? `${row.attainmentPct.toFixed(1)}%`
+                          : "—"}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {row.belowBenchmark !== null && row.belowBenchmark !== undefined ? (
+                          <Badge
+                            variant={!row.belowBenchmark ? "success" : "destructive"}
+                          >
+                            {status}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">—</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Part3({ part3 }: { part3?: CarPart3 }) {
+  if (!part3 || part3.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No cohort data available.</p>
+    );
+  }
+  return (
+    <div className="space-y-6">
+      {part3.map((cohort, idx) => (
+        <div key={cohort.yearLevel ?? idx} className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold">
+              {cohort.yearLevel !== null && cohort.yearLevel !== undefined
+                ? `Year ${cohort.yearLevel}`
+                : "All Students"}
+            </h4>
+            {cohort.cohortAvg && (
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground">Cohort Average:</span>
+                <span className="font-semibold">
+                  {cohort.cohortAvg.weightedAvgPct !== null &&
+                  cohort.cohortAvg.weightedAvgPct !== undefined
+                    ? `${cohort.cohortAvg.weightedAvgPct.toFixed(1)}%`
+                    : "—"}
+                </span>
+                {cohort.cohortAvg.level &&
+                  levelBadge(cohort.cohortAvg.level, "MET")}
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="py-2 pr-4">CLO</th>
+                  <th className="py-2 pr-4">Description</th>
+                  <th className="py-2 pr-4 text-right">Weighted Avg %</th>
                   <th className="py-2 pr-4">Level</th>
                   <th className="py-2 pr-4">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {group.cloAttainments.map((row) => (
+                {cohort.rows.map((row) => (
                   <tr key={row.cloCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.cloCode}</td>
+                    <td className="py-2 pr-4 text-muted-foreground">
+                      {row.cloDescription || "—"}
+                    </td>
                     <td className="py-2 pr-4 text-right">
-                      {row.scorePct.toFixed(1)}%
+                      {row.weightedAvgPct !== null &&
+                      row.weightedAvgPct !== undefined
+                        ? `${row.weightedAvgPct.toFixed(1)}%`
+                        : "—"}
                     </td>
-                    <td className="py-2 pr-4">
-                      {levelBadge(row.level, row.status)}
-                    </td>
+                    <td className="py-2 pr-4">{levelBadge(row.level, row.status)}</td>
                     <td className="py-2 pr-4">
                       <Badge
-                        variant={
-                          row.status === "MET" ? "success" : "destructive"
-                        }
+                        variant={row.status === "MET" ? "success" : "destructive"}
                       >
                         {row.status}
                       </Badge>
@@ -185,87 +315,51 @@ function Part2({ part2 }: { part2: CarPayload["part2"] }) {
   );
 }
 
-function Part3({ part3 }: { part3: CarPayload["part3"] }) {
-  if (!part3 || part3.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground">No cohort data available.</p>
-    );
-  }
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="py-2 pr-4">Year Level</th>
-            <th className="py-2 pr-4 text-right">Cohort Size</th>
-            <th className="py-2 pr-4 text-right">Weighted Avg %</th>
-            <th className="py-2 pr-4">Level</th>
-            <th className="py-2 pr-4">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {part3.map((row) => (
-            <tr key={row.yearLevel} className="border-b last:border-0">
-              <td className="py-2 pr-4 font-medium">Year {row.yearLevel}</td>
-              <td className="py-2 pr-4 text-right">{row.cohortSize}</td>
-              <td className="py-2 pr-4 text-right">
-                {row.weightedAvgPct !== null
-                  ? `${row.weightedAvgPct.toFixed(1)}%`
-                  : "—"}
-              </td>
-              <td className="py-2 pr-4">{levelBadge(row.level, row.status)}</td>
-              <td className="py-2 pr-4">
-                <Badge
-                  variant={row.status === "MET" ? "success" : "destructive"}
-                >
-                  {row.status}
-                </Badge>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Part4({ part4 }: { part4: CarPayload["part4"] }) {
-  if (!part4 || part4.length === 0) {
+function Part4({ part4 }: { part4?: CarPart4 }) {
+  if (!part4 || !part4.rows || part4.rows.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">No at-risk students.</p>
     );
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="py-2 pr-4">Student</th>
-            <th className="py-2 pr-4">ID</th>
-            <th className="py-2 pr-4">CLO</th>
-            <th className="py-2 pr-4 text-right">Score %</th>
-            <th className="py-2 pr-4">Reason</th>
-          </tr>
-        </thead>
-        <tbody>
-          {part4.map((row) => (
-            <tr
-              key={`${row.studentId}-${row.cloCode}`}
-              className="border-b last:border-0"
-            >
-              <td className="py-2 pr-4 font-medium">{row.studentName}</td>
-              <td className="py-2 pr-4 text-muted-foreground">
-                {row.studentNumber}
-              </td>
-              <td className="py-2 pr-4">{row.cloCode}</td>
-              <td className="py-2 pr-4 text-right text-destructive font-medium">
-                {row.scorePct.toFixed(1)}%
-              </td>
-              <td className="py-2 pr-4">{row.reason}</td>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>At-Risk Students Identified: {part4.count ?? part4.rows.length}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th className="py-2 pr-4">Student</th>
+              <th className="py-2 pr-4">Student #</th>
+              <th className="py-2 pr-4">At-Risk CLOs</th>
+              <th className="py-2 pr-4">Intervention</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {part4.rows.map((row) => (
+              <tr key={row.studentId} className="border-b last:border-0">
+                <td className="py-2 pr-4 font-medium">{row.studentName}</td>
+                <td className="py-2 pr-4 text-muted-foreground">
+                  {row.studentNumber || "—"}
+                </td>
+                <td className="py-2 pr-4">
+                  <div className="flex flex-wrap gap-1.5">
+                    {row.atRiskClos.map((c) => (
+                      <Badge key={c.cloCode} variant="destructive">
+                        {c.cloCode}: {c.attainmentPct.toFixed(1)}%
+                      </Badge>
+                    ))}
+                  </div>
+                </td>
+                <td className="py-2 pr-4 text-xs text-muted-foreground">
+                  {row.intervention || "—"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -274,20 +368,24 @@ function Part5({
   part5,
   onChange,
 }: {
-  part5: CarPayload["part5"];
-  onChange: (rows: CarPayload["part5"]) => void;
+  part5?: CarPart5;
+  onChange: (rows: CarPart5) => void;
 }) {
+  const rows = part5 ?? [];
+
   const updateRow = (idx: number, field: string, value: string) => {
-    const next = [...part5];
+    const next = [...rows];
     next[idx] = { ...next[idx], [field]: value };
     onChange(next);
   };
 
   const addRow = () => {
     onChange([
-      ...part5,
+      ...rows,
       {
         cloCode: "",
+        cloDescription: "",
+        attainmentPct: 0,
         rootCauseCategory: ROOT_CAUSES[0],
         intervention: "",
         owner: "",
@@ -297,12 +395,12 @@ function Part5({
   };
 
   const removeRow = (idx: number) => {
-    onChange(part5.filter((_, i) => i !== idx));
+    onChange(rows.filter((_, i) => i !== idx));
   };
 
   return (
     <div className="space-y-3">
-      {part5.length === 0 ? (
+      {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           No CQI entries. Click "Add Entry" to add one for a NOT-MET CLO.
         </p>
@@ -320,7 +418,7 @@ function Part5({
               </tr>
             </thead>
             <tbody>
-              {part5.map((row, idx) => (
+              {rows.map((row, idx) => (
                 <tr key={idx} className="border-b last:border-0">
                   <td className="py-1 pr-2">
                     <Input
@@ -395,19 +493,25 @@ function Part6({
   part6,
   onChange,
 }: {
-  part6: CarPayload["part6"];
-  onChange: (value: CarPayload["part6"]) => void;
+  part6?: CarPart6;
+  onChange: (value: CarPart6) => void;
 }) {
+  const currentPart6: CarPart6 = part6 ?? {
+    studentExitCrossReferences: [],
+    teachingStrategies: [],
+    facultyReflection: null,
+  };
+
   return (
     <div className="space-y-4">
       <div>
         <Field>
           <FieldLabel>Teaching Strategies</FieldLabel>
           <Textarea
-            value={part6.teachingStrategies?.join("\n") || ""}
+            value={currentPart6.teachingStrategies?.join("\n") || ""}
             onChange={(e) =>
               onChange({
-                ...part6,
+                ...currentPart6,
                 teachingStrategies: e.target.value.split("\n").filter(Boolean),
               })
             }
@@ -420,16 +524,16 @@ function Part6({
         <Field>
           <FieldLabel>Faculty Reflection</FieldLabel>
           <Textarea
-            value={part6.facultyReflection || ""}
+            value={currentPart6.facultyReflection || ""}
             onChange={(e) =>
-              onChange({ ...part6, facultyReflection: e.target.value })
+              onChange({ ...currentPart6, facultyReflection: e.target.value })
             }
             placeholder="Reflect on the term's delivery and outcomes..."
             rows={4}
           />
         </Field>
       </div>
-      {part6.studentExitCrossReferences?.length > 0 && (
+      {(currentPart6.studentExitCrossReferences ?? []).length > 0 && (
         <div>
           <h4 className="text-sm font-medium mb-2">
             Student Exit Cross-References
@@ -444,11 +548,14 @@ function Part6({
                 </tr>
               </thead>
               <tbody>
-                {part6.studentExitCrossReferences.map((row, idx) => (
+                {currentPart6.studentExitCrossReferences.map((row, idx) => (
                   <tr key={idx} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.cloPloCode}</td>
                     <td className="py-2 pr-4 text-right">
-                      {row.studentAvgPerceived}
+                      {row.studentAvgPerceived !== null &&
+                      row.studentAvgPerceived !== undefined
+                        ? row.studentAvgPerceived
+                        : "—"}
                     </td>
                     <td className="py-2 pr-4">{row.facultyNote || "—"}</td>
                   </tr>
@@ -466,13 +573,28 @@ function Part7({
   part7,
   onChange,
 }: {
-  part7: CarPayload["part7"];
-  onChange: (value: CarPayload["part7"]) => void;
+  part7?: CarPart7;
+  onChange: (value: CarPart7) => void;
 }) {
-  const d = part7.programChairDisposition;
+  const currentPart7: CarPart7 = part7 ?? {
+    facultyCertification: false,
+    submittedBy: null,
+    receivedBy: null,
+    programChairDisposition: null,
+  };
+
+  const d = currentPart7.programChairDisposition ?? {
+    accepted: false,
+    returnReason: null,
+    returnByDate: null,
+    cqiEntriesReviewed: false,
+    escalationRequired: false,
+    atRiskListReceived: false,
+  };
+
   const update = (field: string, value: unknown) => {
     onChange({
-      ...part7,
+      ...currentPart7,
       programChairDisposition: { ...d, [field]: value },
     });
   };
@@ -481,15 +603,15 @@ function Part7({
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <span className="text-xs text-muted-foreground">Faculty</span>
+          <span className="text-xs text-muted-foreground">Faculty Submitter</span>
           <p className="font-medium">
-            {part7.certification.facultyName || "—"}
+            {currentPart7.submittedBy || "—"}
           </p>
         </div>
         <div>
-          <span className="text-xs text-muted-foreground">Date Submitted</span>
+          <span className="text-xs text-muted-foreground">Chair Receiver</span>
           <p className="font-medium">
-            {part7.certification.dateSubmitted || "—"}
+            {currentPart7.receivedBy || "—"}
           </p>
         </div>
       </div>
@@ -608,10 +730,10 @@ export function CarForm() {
     setSaving(true);
     try {
       const result = await saveCar(payload.formSubmissionId, {
-        part1: payload.part1,
-        part5: payload.part5,
-        part6: payload.part6,
-        part7: payload.part7,
+        part1: payload.part1 as unknown as Record<string, unknown>,
+        part5: payload.part5 as unknown as Record<string, unknown>[],
+        part6: payload.part6 as unknown as Record<string, unknown>,
+        part7: payload.part7 as unknown as Record<string, unknown>,
       });
       if (result.ok) {
         setDirty(false);
@@ -628,33 +750,39 @@ export function CarForm() {
     }
   }, [payload, setDirty]);
 
-  const updatePart5 = (rows: CarPayload["part5"]) => {
+  const updatePart5 = (rows: CarPart5) => {
     if (!payload) return;
     setPayload({ ...payload, part5: rows });
     setDirty(true);
   };
 
-  const updatePart6 = (value: CarPayload["part6"]) => {
+  const updatePart6 = (value: CarPart6) => {
     if (!payload) return;
     setPayload({ ...payload, part6: value });
     setDirty(true);
   };
 
-  const updatePart7 = (value: CarPayload["part7"]) => {
+  const updatePart7 = (value: CarPart7) => {
     if (!payload) return;
     setPayload({ ...payload, part7: value });
     setDirty(true);
   };
 
-  // No payload yet — show generate form
-  if (!payload) {
-    return (
+  const courseTitleDisplay =
+    payload?.part1?.courseCode && payload?.part1?.courseTitle
+      ? `${payload.part1.courseCode} — ${payload.part1.courseTitle}`
+      : payload?.part1?.courseCode ||
+        payload?.part1?.courseTitle ||
+        "Course Assessment Report";
+
+  return (
+    <div className="space-y-4">
+      {/* Top Generator / Section Selector Bar */}
       <Frame>
         <FrameHeader>
           <FrameTitle>Generate Course Assessment Report</FrameTitle>
           <FrameDescription>
-            Enter a class section ID to generate the 7-part CAR from ingest
-            data.
+            Select a class section to generate or view the 7-part CAR from ingest data.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -662,8 +790,15 @@ export function CarForm() {
             <Field className="flex-1">
               <FieldLabel>Class Section</FieldLabel>
               <ClassSectionSelect
+                loadAll={true}
                 value={classSectionId}
-                onValueChange={setClassSectionId}
+                onValueChange={(val) => {
+                  setClassSectionId(val);
+                  if (payload && val !== payload.classSectionId) {
+                    setPayload(null);
+                    setDirty(false);
+                  }
+                }}
               />
             </Field>
             <Button
@@ -675,86 +810,94 @@ export function CarForm() {
           </div>
         </FramePanel>
       </Frame>
-    );
-  }
 
-  // Payload loaded — show 7-part tabbed view
-  return (
-    <div className="space-y-4">
-      <FormWorkflow submissionId={payload.formSubmissionId} />
-      {/* Header bar */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold">
-              {payload.part1.course.code} — {payload.part1.course.title}
-            </h3>
-            <Badge variant="outline">{payload.part1.sectionCode}</Badge>
-            <Badge variant="outline">{payload.part1.term}</Badge>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Generated {new Date(payload.generatedAt).toLocaleString()}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {dirty && <Badge variant="warning">Unsaved</Badge>}
-          <Button
-            variant="outline"
-            onClick={handleSave}
-            disabled={!dirty || saving}
-          >
-            {saving ? "Saving..." : "Save"}
-          </Button>
-        </div>
-      </div>
+      {/* Payload Loaded View */}
+      {payload && (
+        <div className="space-y-4">
+          <FormWorkflow submissionId={payload.formSubmissionId} />
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 overflow-x-auto border-b">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
-              activeTab === tab.key
-                ? "border-primary text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      <Frame>
-        <FramePanel>
-          {activeTab === "p1" && <Part1 part1={payload.part1} />}
-          {activeTab === "p2" && <Part2 part2={payload.part2} />}
-          {activeTab === "p3" && <Part3 part3={payload.part3} />}
-          {activeTab === "p4" && <Part4 part4={payload.part4} />}
-          {activeTab === "p5" && (
-            <Part5 part5={payload.part5} onChange={updatePart5} />
-          )}
-          {activeTab === "p6" && (
-            <Part6 part6={payload.part6} onChange={updatePart6} />
-          )}
-          {activeTab === "p7" && (
-            <Part7 part7={payload.part7} onChange={updatePart7} />
-          )}
-        </FramePanel>
-        {dirty && (
-          <FrameFooter>
-            <div className="flex items-center justify-end gap-2">
-              <Button variant="outline" onClick={() => setDirty(false)}>
-                Discard
-              </Button>
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? "Saving..." : "Save Changes"}
+          {/* Header bar */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-sm font-semibold">{courseTitleDisplay}</h3>
+                {payload.part1?.sectionCode && (
+                  <Badge variant="outline">{payload.part1.sectionCode}</Badge>
+                )}
+                {(payload.part1?.schoolYear || payload.part1?.semester) && (
+                  <Badge variant="outline">
+                    {payload.part1.schoolYear} {payload.part1.semester}
+                  </Badge>
+                )}
+                {payload.part1?.term && (
+                  <Badge variant="outline">{payload.part1.term}</Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Generated {new Date(payload.generatedAt).toLocaleString()}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {dirty && <Badge variant="warning">Unsaved</Badge>}
+              <Button
+                variant="outline"
+                onClick={handleSave}
+                disabled={!dirty || saving}
+              >
+                {saving ? "Saving..." : "Save"}
               </Button>
             </div>
-          </FrameFooter>
-        )}
-      </Frame>
+          </div>
+
+          {/* Tab navigation */}
+          <div className="flex gap-1 overflow-x-auto border-b">
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
+                  activeTab === tab.key
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content */}
+          <Frame>
+            <FramePanel>
+              {activeTab === "p1" && <Part1 part1={payload.part1} />}
+              {activeTab === "p2" && <Part2 part2={payload.part2} />}
+              {activeTab === "p3" && <Part3 part3={payload.part3} />}
+              {activeTab === "p4" && <Part4 part4={payload.part4} />}
+              {activeTab === "p5" && (
+                <Part5 part5={payload.part5} onChange={updatePart5} />
+              )}
+              {activeTab === "p6" && (
+                <Part6 part6={payload.part6} onChange={updatePart6} />
+              )}
+              {activeTab === "p7" && (
+                <Part7 part7={payload.part7} onChange={updatePart7} />
+              )}
+            </FramePanel>
+            {dirty && (
+              <FrameFooter>
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" onClick={() => setDirty(false)}>
+                    Discard
+                  </Button>
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </FrameFooter>
+            )}
+          </Frame>
+        </div>
+      )}
     </div>
   );
 }
