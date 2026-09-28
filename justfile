@@ -84,6 +84,11 @@ _dev role="":
     #!/usr/bin/env bash
     set -euo pipefail
     role='{{role}}'
+    # NOTE: the dev-only /dev/session route answers 404 unless this is set, and
+    # next.config.ts refuses a production build while it is on — exporting it
+    # here (dotenvx/Next never override an existing var) keeps hand-run dev
+    # servers without the route. .env.local untouched.
+    export DEV_SESSION_ENABLED=true
     # NOTE: a per-role session is a real login, so the frontend has to run with
     # dev mode off or getMe() returns DEV_USER and ignores the cookie. Exported
     # here (dotenvx/Next never override an existing var) — .env.local untouched.
@@ -172,10 +177,14 @@ stop:
 dev-backend:
     @just _bun backend dev
 
-# run only the frontend (next dev)
+# run only the frontend (next dev) — exports DEV_SESSION_ENABLED so the dev-only /dev/session route exists
 [group('dev')]
 dev-frontend:
-    @just _bun frontend dev
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # NOTE: same flag as `_dev` — only justfile-launched dev runs expose the route.
+    export DEV_SESSION_ENABLED=true
+    exec just _bun frontend dev
 
 # run only the python ETL service (uvicorn reload on :8000)
 [group('dev')]

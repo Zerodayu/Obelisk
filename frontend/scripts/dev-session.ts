@@ -21,10 +21,26 @@ import {
   DEV_ACCOUNT_ROLES,
   devAccountEmail,
   isDevAccountRole,
+  isLoopbackHostname,
   signInDevRole,
 } from "@/lib/dev-accounts";
 import type { UserRole } from "@/lib/roles";
 import { env } from "@/utils/env";
+
+// WARN: this helper mints a real session with a shared password — never point
+// it at a remote backend. Fail closed, including when the URL won't parse.
+let apiHost: string | null = null;
+try {
+  apiHost = new URL(API_ROOT).hostname;
+} catch {
+  apiHost = null;
+}
+if (!apiHost || !isLoopbackHostname(apiHost)) {
+  console.error(
+    `refusing: API_ROOT is ${API_ROOT} — only a loopback backend is allowed.`,
+  );
+  process.exit(1);
+}
 
 const roleArg = process.argv[2];
 if (!roleArg || !isDevAccountRole(roleArg)) {
