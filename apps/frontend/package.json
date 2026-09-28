@@ -6,7 +6,7 @@
     "dev": "bunx dotenvx run -f ../../.env.local -- next dev",
     "dev-session": "bunx dotenvx run -f ../../.env.local -- bun scripts/dev-session.ts",
     "build": "bunx dotenvx run -f ../../.env.local -- next build",
-    "build:vercel": "bunx dotenvx run -f ../../.env.prod -- next build",
+    "build:prod": "bunx dotenvx run -f ../../.env.prod -- next build",
     "start": "bunx dotenvx run -f ../../.env.local -- next start",
     "start:prod": "bunx dotenvx run -f ../../.env.prod -- next start",
     "lint": "biome check",

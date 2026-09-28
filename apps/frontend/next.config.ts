@@ -19,9 +19,16 @@ if (isProductionRun && process.env.DEV_SESSION_ENABLED === "true") {
  * Proxy better-auth browser routes to the backend so the OAuth state cookie and
  * session cookie both live on the frontend origin. `BETTER_AUTH_URL` must point
  * at the frontend origin for the Google `redirect_uri` to land here.
+ *
+ * NOTE: the destination is inlined into routes-manifest.json at build time, so
+ * it must be reachable FROM the Next server process. Docker builds therefore
+ * bake API_INTERNAL_URL (http://backend:8080, see root Dockerfile); Vercel and
+ * local builds leave it unset and keep the public origin as before.
  */
 const authBackend = (
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"
+  process.env.API_INTERNAL_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  "http://localhost:8080"
 ).replace(/\/$/, "");
 
 // TODO: remove once the pre-existing type errors in components/ui (ark

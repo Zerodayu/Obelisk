@@ -12,7 +12,7 @@
 		"start": "dotenvx run -f ../../.env.local -- bun run src/index.ts",
 		"start:prod": "dotenvx run -f ../../.env.prod -- bun run src/index.ts",
 		"build": "dotenvx run -f ../../.env.local -- bunx prisma generate && dotenvx run -f ../../.env.local -- bun scripts/gen-runtime-env.ts",
-		"build:vercel": "dotenvx run -f ../../.env.prod -- bunx prisma generate && dotenvx run -f ../../.env.prod -- bun scripts/gen-runtime-env.ts",
+		"build:prod": "dotenvx run -f ../../.env.prod -- bunx prisma generate && dotenvx run -f ../../.env.prod -- bun scripts/gen-runtime-env.ts",
 		"db:push": "dotenvx run -f ../../.env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f ../../.env.local -- bunx prisma generate",
 		"db:seed": "dotenvx run -f ../../.env.local -- bun prisma/seed.ts",

@@ -8,7 +8,7 @@ Development setup and workflow documentation. For a project overview, see the [R
 
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
 - [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
-- [Docker](https://www.docker.com) — optional, alternative way to run `python-server` via Docker Compose
+- [Docker](https://www.docker.com) — optional; runs the whole self-hosted stack (backend, frontend, ETL, Redis) via the root `docker-compose.yml`, and Redis for local ETL development
 - [just](https://github.com/casey/just) — optional, to use the root [`justfile`](justfile) recipes (§4)
 - A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
 
@@ -28,7 +28,7 @@ cd Obelisk
 The repo is a **Bun-workspaces monorepo**: `apps/backend/` and `apps/frontend/` both read their configuration from a single pair of env files at the repository root:
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
-- **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod`, `bun run start:prod`, and `bun run build:vercel` inside each package on Vercel).
+- **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack and Vercel builds).
 
 Both are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
 
@@ -104,12 +104,14 @@ uv sync
 uv run dev
 ```
 
-**Docker Compose (production / easy setup):**
+**Docker (whole stack — from the repo root):**
 
 ```sh
-cd apps/python-server
-docker compose up --build -d
+docker compose up -d --build          # all four services (or: just docker-up)
+docker compose up -d etl              # this service only (Redis starts as its dependency)
 ```
+
+The compose file lives at the repo root and also owns Redis; the ETL reads optional `OBELISK_*` overrides from `apps/python-server/.env` (compose `env_file`, gitignored).
 
 Verify: <http://localhost:8000/health>
 
@@ -179,7 +181,27 @@ The root [`justfile`](justfile) wraps the common workflows — install, dev, qua
 
 Root equivalents are `bun run start` / `bun run start:prod`. Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks silently falls back to its `.env.local` value.
 
-The ETL service is not a turbo workspace; run it separately (`just dev-etl` or Docker Compose, §3a).
+The ETL service is not a turbo workspace; run it separately (`just dev-etl` or Docker, §3a).
+
+### Docker (self-hosted stack)
+
+| Recipe | What it does |
+| :--- | :--- |
+| `just docker-up` | `docker compose up -d --build` — all four services with the root `.env.prod` (fill it + `just env-encrypt` first; stop `just dev` first — same ports) |
+| `just docker-up-prod` | Alias of `just docker-up` — the stack is `.env.prod`-only |
+| `just docker-down` | Stop the stack (containers stay around for lazydocker) |
+| `just docker-logs` | Tail all service logs (Ctrl+C detaches) |
+
+`just` is optional — the recipes are thin wrappers around plain Compose; deploying without it (from the repo root; needs the committed encrypted `.env.local`/`.env.prod` plus the gitignored `.env.keys` in place — dotenvx decrypts **inside** the containers, nothing to install locally):
+
+```sh
+docker compose up -d --build          # all four services (.env.prod-only, what `just docker-up` runs)
+docker compose logs -f                # tail all service logs (Ctrl+C detaches)
+docker compose down                   # stop the stack (containers stay around for lazydocker)
+docker compose up -d etl              # single service + its dependency (redis)
+```
+
+The root `Dockerfile` is multi-stage (`--target backend \| frontend \| etl`) and the root `docker-compose.yml` wires the four services together. Design notes: the stack is `.env.prod`-only — the encrypted env files are bind-mounted read-only and decrypted by dotenvx **inside** the containers (the gitignored `.env.keys` is required — builds also receive it as a BuildKit secret, never a layer); in-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`) and a build arg (`API_INTERNAL_URL=http://backend:8080`, used by the auth rewrite and server-side fetches); everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`) is baked from `.env.prod` at build time — **rebuild** whenever `NEXT_PUBLIC_API_URL` changes, since it is inlined. The `etl` and `redis` ports bind `127.0.0.1` only (etl has no auth, redis has no password); only backend/frontend face the network.
 
 ### Quality
 
@@ -271,7 +293,7 @@ Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `get
 
 ## 8. Deploying to Vercel
 
-`apps/backend/` and `apps/frontend/` deploy as two separate Vercel projects from this repo; `python-server` stays on your own host (Docker Compose on the docker host). Both projects use zero-config framework detection plus a `vercel.json` override — `buildCommand: "bun run build:vercel"` (and `bunVersion: "1.x"` for the backend, which deploys as a Bun-runtime Elysia function: `apps/backend/src/index.ts` default-exports the app).
+`apps/backend/` and `apps/frontend/` deploy as two separate Vercel projects from this repo; `python-server` stays on your own host (the root `docker-compose.yml` on the docker host — `just docker-up`, or plain `docker compose up -d --build`, runs the whole stack there). Both projects use zero-config framework detection plus a `vercel.json` override — `buildCommand: "bun run build:prod"` (and `bunVersion: "1.x"` for the backend, which deploys as a Bun-runtime Elysia function: `apps/backend/src/index.ts` default-exports the app).
 
 ### One-time setup
 
@@ -289,4 +311,4 @@ just deploy-frontend prod
 
 ### What the build does
 
-- `bun run build:vercel` decrypts `../../.env.prod` (root file) and runs the normal build: the frontend builds Next.js with prod values inlined (`NEXT_PUBLIC_API_URL`), the backend runs `prisma generate` **and** `scripts/gen-runtime-env.ts`, which bakes the decrypted values into `apps/backend/src/generated/runtime-env.ts` (gitignored, generated only at build time) so the serverless function has env vars at runtime. `apps/backend/utils/env.ts` reads `process.env.X ?? runtimeEnv.X`, so platform-provided vars still override the baked-in file.
+- `bun run build:prod` decrypts `../../.env.prod` (root file) and runs the normal build: the frontend builds Next.js with prod values inlined (`NEXT_PUBLIC_API_URL`), the backend runs `prisma generate` **and** `scripts/gen-runtime-env.ts`, which bakes the decrypted values into `apps/backend/src/generated/runtime-env.ts` (gitignored, generated only at build time) so the serverless function has env vars at runtime. `apps/backend/utils/env.ts` reads `process.env.X ?? runtimeEnv.X`, so platform-provided vars still override the baked-in file.

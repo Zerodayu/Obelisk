@@ -54,7 +54,7 @@
 .vercel/
 .turbo/
 
-# build-time generated runtime env (rewritten by apps/backend build:vercel, stub by postinstall)
+# build-time generated runtime env (rewritten by apps/backend build:prod, stub by postinstall)
 **/src/generated/runtime-env.ts
 
 **/*.trace

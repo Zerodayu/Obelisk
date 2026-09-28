@@ -38,10 +38,10 @@ src/
 
 ## Environment & Vercel deployment (monorepo)
 
-- **Env files live at the repo root**: `.env.local` (dev) and `.env.prod` (production), both dotenvx-encrypted; private keys in the gitignored root `.env.keys`. Every package script wraps `dotenvx run -f ../../.env.local -- …` (dev/build/test) or `-f ../../.env.prod` (`build:vercel`). Edit via `just env-decrypt` / `just env-encrypt` (repo root) — there are no per-package `env:*` scripts.
-- **Runtime env fallback:** `utils/env.ts` reads `process.env.X ?? runtimeEnv.X`, where `runtimeEnv` is the build-time snapshot from `src/generated/runtime-env.ts` — gitignored, written by `scripts/gen-runtime-env.ts` from the decrypted `.env.prod` during `build:vercel` (canonical key list: `utils/env-keys.ts` — add new vars there **and** mirror the `process.env.X` reads in `utils/env.ts`). The root `postinstall` writes an empty stub so a fresh clone typechecks before any build.
+- **Env files live at the repo root**: `.env.local` (dev) and `.env.prod` (production), both dotenvx-encrypted; private keys in the gitignored root `.env.keys`. Every package script wraps `dotenvx run -f ../../.env.local -- …` (dev/build/test) or `-f ../../.env.prod` (`build:prod`). Edit via `just env-decrypt` / `just env-encrypt` (repo root) — there are no per-package `env:*` scripts.
+- **Runtime env fallback:** `utils/env.ts` reads `process.env.X ?? runtimeEnv.X`, where `runtimeEnv` is the build-time snapshot from `src/generated/runtime-env.ts` — gitignored, written by `scripts/gen-runtime-env.ts` from the decrypted `.env.prod` during `build:prod` (canonical key list: `utils/env-keys.ts` — add new vars there **and** mirror the `process.env.X` reads in `utils/env.ts`). The root `postinstall` writes an empty stub so a fresh clone typechecks before any build.
 - **Entry point:** `src/index.ts` **default-exports the Elysia app**; `app.listen(8080)` is guarded by `import.meta.main && !process.env.VERCEL`, so Vercel (zero-config Elysia detection + `bunVersion: "1.x"` in `apps/backend/vercel.json`) serves the exported app while `bun run dev` still listens locally.
-- **Deploy:** `just vercel-link` once, then `just deploy-backend [prod]` from the repo root — the build runs `bun run build:vercel` (prisma generate + runtime-env bake). Setup details: `../../.github/CONTRIBUTING.md` §8.
+- **Deploy:** `just vercel-link` once, then `just deploy-backend [prod]` from the repo root — the build runs `bun run build:prod` (prisma generate + runtime-env bake). Setup details: `../../.github/CONTRIBUTING.md` §8.
 
 ## Domain Rules (canonical — do not violate)
 

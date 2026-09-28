@@ -100,8 +100,8 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
 ## 9. Deployment
 
-- **Docker:** `docker compose up --build -d` starts the application container and a Redis container.
-- **Local:** `docker compose up -d redis` followed by `uv sync` and `uv run dev`.
+- **Docker:** the repo-root `docker-compose.yml` builds this service as `--target etl`; from the repository root, `docker compose up -d --build` starts the full stack (backend, frontend, etl, redis) and `docker compose up -d etl` just this container plus its Redis dependency.
+- **Local:** `just redis` from the repository root, followed by `uv sync` and `uv run dev`.
 - **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, `OBELISK_LLM_API_KEY`, `OBELISK_WEBAPP_SHARED_SECRET`.
 
 ## 10. Known limitations / deferred

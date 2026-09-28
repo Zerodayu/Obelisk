@@ -27,7 +27,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Environment & secrets (dotenvx)
 
 - Env files live at the **repo root**: `.env.local` (dev) and `.env.prod` (production), both **encrypted with dotenvx** (public-key encryption, `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD` headers). The private keys live in the gitignored root `.env.keys` — never commit them. The per-package `apps/frontend/.env.local` is legacy: no script reads it anymore.
-- Every script runs through `dotenvx run -f ../.env.local -- <cmd>` so decrypted vars are injected into the process: `bun dev`, `bun run build`, `bun run start`, etc. `bun run build:vercel` decrypts `../../.env.prod` instead — that is the script Vercel runs (see `vercel.json`). Next.js does not decrypt env files itself.
+- Every script runs through `dotenvx run -f ../.env.local -- <cmd>` so decrypted vars are injected into the process: `bun dev`, `bun run build`, `bun run start`, etc. `bun run build:prod` decrypts `../../.env.prod` instead — that is the script Vercel runs (see `vercel.json`). Next.js does not decrypt env files itself.
 - To edit secrets: `just env-decrypt` (repo root) → edit → `just env-encrypt`. There are no per-package `env:*` scripts anymore.
 - **Typecheck:** the frontend has no `typecheck` script, and `next build` skips type errors (`typescript.ignoreBuildErrors: true` — see the TODO in `next.config.ts` until the pre-existing `components/ui` ark `render`/`asChild` type errors are fixed). Run `bunx tsc --noEmit` manually to see them.
 - Env vars are validated by Zod in `utils/env.ts` (mirrors backend `utils/env.ts`). Prefer `import { env } from "@/utils/env"` over reading `process.env` directly in server code.

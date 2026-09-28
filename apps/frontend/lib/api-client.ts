@@ -12,7 +12,11 @@
 import type { UserRole } from "@/lib/roles";
 import { env } from "@/utils/env";
 
-export const API_BASE_URL = env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Server-side fetches prefer the in-network origin when the runtime provides
+// one (Docker Compose sets API_INTERNAL_URL on the container); the browser
+// compiles that key to undefined and falls back to the baked public URL.
+export const API_BASE_URL =
+  env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export const API_ROOT = `${API_BASE_URL}/api/v1`;
 

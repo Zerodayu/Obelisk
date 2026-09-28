@@ -39,10 +39,10 @@ env-encrypt:
 install-etl: redis
     cd apps/python-server && uv sync
 
-# start redis via docker compose (needed by the ETL service)
+# start redis via docker compose (needed by the ETL service; root compose file)
 [group('setup')]
 redis:
-    cd apps/python-server && docker compose up -d redis
+    docker compose up -d redis
 
 # --- database ---
 
@@ -247,6 +247,27 @@ start:
 [group('build')]
 start-prod:
     bun run start:prod
+
+# --- docker (self-hosted stack) ---
+
+# build + start all four services in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first (same ports)
+[group('docker')]
+docker-up:
+    docker compose up -d --build
+
+# alias kept for compatibility — the stack is .env.prod-only, identical to `docker-up`
+[group('docker')]
+docker-up-prod: docker-up
+
+# stop the Docker stack (containers stay around for lazydocker; `docker compose down -v` also drops the uploads volume)
+[group('docker')]
+docker-down:
+    docker compose down
+
+# follow logs of all services (Ctrl+C detaches, containers keep running)
+[group('docker')]
+docker-logs:
+    docker compose logs -f
 
 # --- deploy (vercel) ---
 

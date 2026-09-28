@@ -26,20 +26,20 @@ This service is intentionally designed with a strict architectural boundary that
 
 ## 3. Quickstart
 
-There are two ways to run the service: locally with `uv` for development, or with Docker Compose for production or easy deployment.
+There are two ways to run the service: locally with `uv` for development, or with Docker Compose for production or easy deployment. The compose file lives at the **repository root** (it builds this service as the `etl` target and also owns Redis), so Docker commands run from there.
 
 ### Option A: Running with Docker Compose (Recommended)
 
 This is the simplest and most reliable way to run the service and all its dependencies.
 
 **Prerequisites:**
--   Docker Desktop (with Compose) installed and running.
+-   Docker (with Compose v2) installed and running.
 -   An LLM API key (e.g., from Google AI Studio) if live LLM generation is desired.
 
 **Instructions:**
 
 1.  **Configure Environment:**
-    Create a `.env` file in the project root.
+    Create a `.env` file in this directory (`apps/python-server/`).
     ```env
     # .env
     OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
@@ -48,10 +48,10 @@ This is the simplest and most reliable way to run the service and all its depend
     # OBELISK_WEBAPP_SHARED_SECRET="your_shared_secret_here"
     ```
 
-2.  **Build and start the services:**
-    This command will build the Python application, download the official Redis image, and start both containers.
+2.  **Build and start the services** (from the **repository root**):
     ```sh
-    docker compose up --build -d
+    docker compose up -d --build        # whole stack: backend, frontend, etl, redis
+    docker compose up -d etl            # this service only (Redis starts as its dependency)
     ```
 
 The API will be available at `http://localhost:8000`.
@@ -62,15 +62,15 @@ This method allows for faster iteration on the Python code but requires Redis to
 
 **Prerequisites:**
 -   [uv](https://docs.astral.sh/uv/)
--   Docker Desktop installed and running.
--   A `.env` file in the project root (see above).
+-   Docker installed and running.
+-   A `.env` file in this directory (see above).
 
 **Instructions:**
 
 1.  **Start the Redis container:**
-    In a separate terminal, run this command to start the Redis service in the background. You only need to do this once.
+    In a separate terminal, run this command from the **repository root** to start the Redis service in the background. You only need to do this once.
     ```sh
-    docker compose up -d redis
+    just redis        # or: docker compose up -d redis
     ```
 
 2.  **Install dependencies:**

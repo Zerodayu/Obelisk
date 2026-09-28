@@ -19,7 +19,7 @@ bun install          # repo root (once) — one lockfile for backend + frontend
 cd apps/frontend
 bun dev              # = bunx dotenvx run -f ../../.env.local -- next dev  → http://localhost:3000
 bun run build        # production build (dotenvx over the root .env.local)
-bun run build:vercel # Vercel build (dotenvx over the root .env.prod)
+bun run build:prod # prod build — what Vercel runs (dotenvx over the root .env.prod)
 bun run lint         # biome check
 bun run format       # biome format --write
 ```

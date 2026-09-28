@@ -39,7 +39,21 @@ just start          # turbo-cached build + serve with .env.local
 just start-prod     # same, with .env.prod — fill the root .env.prod first (CONTRIBUTING §2)
 ```
 
-(`start` covers backend + frontend; the ETL service is separate — `just dev-etl` or Docker Compose.)
+Running everything in Docker (backend + frontend + ETL + Redis) — the stack is `.env.prod`-only (fill the root `.env.prod` first, CONTRIBUTING §2):
+
+```sh
+just docker-up            # build + start the whole stack (root Dockerfile + docker-compose.yml)
+```
+
+`just` is optional — the same thing with plain Docker Compose (repo root; the committed encrypted `.env.prod` + gitignored `.env.keys` must be present):
+
+```sh
+docker compose up -d --build       # build + start the stack
+docker compose logs -f             # tail all service logs
+docker compose down                # stop the stack
+```
+
+(`start` covers backend + frontend with the ETL separate (`just dev-etl`); the Docker stack covers all four services — manage containers with lazydocker or `just docker-logs`.)
 
 All development documentation — prerequisites, environment setup, running the services, quality checks, dev mode, and troubleshooting — lives in [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
