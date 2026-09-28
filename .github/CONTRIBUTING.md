@@ -207,7 +207,9 @@ To simulate a role, edit `DEV_ROLE` in `frontend/server/api-client.ts` (default 
 - **Browser** — `just dev-as <role>` starts the full stack and opens `http://localhost:3000/dev/session?role=<role>`, which signs in server-side and relays the real session cookie to the browser. Switch roles any time by opening that URL with a different role — no restart. (`user` accounts land on `/onboarding`.)
 - **Terminal** — `just session <role>` signs in and prints a `Cookie:` header (also written to `frontend/.dev-session/<role>.cookie`, gitignored) for `curl`/Bun calls straight against the backend.
 
-Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `getMe()` short-circuits to `DEV_USER` and the session cookie is ignored. `just dev-as` therefore exports `DEVELOPMENT=false` for that run only (`.env.local` stays as you left it), and `/dev/session` answers `409` if dev mode is on. The route returns 404 in production builds.
+Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `getMe()` short-circuits to `DEV_USER` and the session cookie is ignored. `just dev-as` therefore exports `DEVELOPMENT=false` for that run only (`.env.local` stays as you left it), and `/dev/session` answers `409` if dev mode is on.
+
+`/dev/session` signs in without a password, so it is gated three ways and answers an empty `404` on any miss: non-production `NODE_ENV`, `DEV_SESSION_ENABLED=true` (exported by `just dev` / `dev-as` / `dev-frontend`, **not** by a hand-run `bun dev`), and a loopback request host. `next.config.ts` refuses `next build`/`next start` while the flag is set, so the route cannot ship; `bun run dev-session <role>` refuses a non-loopback backend too. Refusals and successful sign-ins are logged as `[dev-session] …` in the frontend console.
 
 ---
 
