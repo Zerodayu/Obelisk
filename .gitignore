@@ -43,6 +43,9 @@
 */.env.test.local
 */.env.production.local
 
+# dev session cookies written by frontend/scripts/dev-session.ts
+*/.dev-session/
+
 # prisma
 */src/generated/prisma
 
