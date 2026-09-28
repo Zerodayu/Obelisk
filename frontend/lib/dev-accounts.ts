@@ -83,17 +83,30 @@ export interface DevSignInResult {
  * Flatten `Set-Cookie` headers into one `Cookie:` request header. Sign-out
  * deletions come first, so keep the **last** value per cookie name — an
  * ambiguous duplicate would make servers read the empty one.
+ *
+ * NOTE: parallel arrays rather than a `Map` — the old iterator spread only
+ * typechecked at `target >= ES2015`, which broke editors that check this file
+ * against a looser config.
  */
 export function cookieHeaderFrom(setCookies: readonly string[]): string {
-  const byName = new Map<string, string>();
+  const names: string[] = [];
+  const pairs: string[] = [];
   for (const header of setCookies) {
     const pair = header.split(";")[0]?.trim();
     if (!pair) continue;
     const eq = pair.indexOf("=");
     if (eq <= 0) continue;
-    byName.set(pair.slice(0, eq), pair);
+    const name = pair.slice(0, eq);
+    const at = names.indexOf(name);
+    // NOTE: keep the first position, take the last value — same as `Map.set`.
+    if (at === -1) {
+      names.push(name);
+      pairs.push(pair);
+    } else {
+      pairs[at] = pair;
+    }
   }
-  return [...byName.values()].join("; ");
+  return pairs.join("; ");
 }
 
 /**
