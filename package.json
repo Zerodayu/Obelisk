@@ -3,7 +3,8 @@
   "private": true,
   "packageManager": "bun@1.4.2",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "packages/*"
   ],
   "scripts": {
     "lint": "turbo run lint",
@@ -15,7 +16,7 @@
     "start:prod": "dotenvx run -f .env.prod -- turbo run start:prod",
     "env:encrypt": "dotenvx encrypt -f .env.local && dotenvx encrypt -f .env.prod",
     "env:decrypt": "dotenvx decrypt -f .env.local && dotenvx decrypt -f .env.prod",
-    "postinstall": "bun apps/backend/scripts/gen-runtime-env.ts --stub"
+    "postinstall": "bun packages/env/scripts/gen-runtime-env.ts --stub"
   },
   "trustedDependencies": [
     "sharp",

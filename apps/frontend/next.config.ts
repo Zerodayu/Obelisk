@@ -38,6 +38,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // NOTE: workspace packages ship raw .ts (no build step) — transpile them so
+  // the client bundle also inlines `process.env.NEXT_PUBLIC_*` read in
+  // @obelisk/env/client.
+  transpilePackages: ["@obelisk/env", "@obelisk/app-info"],
   rewrites: async () => [
     {
       source: "/api/v1/auth/:path*",

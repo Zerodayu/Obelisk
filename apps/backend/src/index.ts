@@ -1,5 +1,6 @@
 import cors from "@elysia/cors";
 import openapi from "@elysia/openapi";
+import { appINFO } from "@obelisk/app-info";
 import { env } from "@utils/env";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
@@ -14,8 +15,7 @@ const app = new Elysia()
 			documentation: {
 				info: {
 					version: "v0",
-					title:
-						"Obelisk(backend) — Outcomes-based Educational Learning and Intelligent System Kit for Jose Maria College Foundation Inc.",
+					title: `Obelisk(backend) — ${appINFO.description}`,
 				},
 				components: (await OpenAPI.components) as OpenAPIV3.ComponentsObject,
 				paths: (await OpenAPI.getPaths()) as OpenAPIV3.PathsObject,

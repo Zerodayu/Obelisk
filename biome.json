@@ -17,7 +17,8 @@
       "!**/*.svg",
       "!apps/backend/.agents",
       "!apps/backend/prisma/generated",
-      "!apps/backend/skills-lock.json"
+      "!apps/backend/skills-lock.json",
+      "!**/src/generated/runtime-env.ts"
     ]
   },
   "formatter": {

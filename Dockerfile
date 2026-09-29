@@ -16,13 +16,16 @@
 FROM oven/bun:1.4.2 AS base
 WORKDIR /app
 
-# The two files root `postinstall` (gen-runtime-env --stub) needs must exist
-# before install; node_modules then lands before the big COPY for layer reuse.
+# The package manifests plus the files root `postinstall` (gen-runtime-env
+# --stub, now in packages/env) needs must exist before install; node_modules
+# then lands before the big COPY for layer reuse.
 COPY package.json bun.lock ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json
-COPY apps/backend/scripts/gen-runtime-env.ts apps/backend/scripts/gen-runtime-env.ts
-COPY apps/backend/utils/env-keys.ts apps/backend/utils/env-keys.ts
+COPY packages/env/package.json packages/env/package.json
+COPY packages/app-info/package.json packages/app-info/package.json
+COPY packages/env/scripts/gen-runtime-env.ts packages/env/scripts/gen-runtime-env.ts
+COPY packages/env/env-keys.ts packages/env/env-keys.ts
 RUN bun install --frozen-lockfile
 
 # Full tree on top. .dockerignore keeps node_modules, .next, .env.keys,
