@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { afterAll, describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import {
@@ -135,6 +135,14 @@ async function fetchSubmissionForGate(submissionId: string) {
 }
 
 describe.skipIf(!db)("Periodic module (integration)", () => {
+	// NOTE: resetPeriodicData() runs at the *start* of each test, so without this
+	// the last test's academic chain (incl. the 2098-2099/2nd term) leaks into the
+	// rest of the suite — ingest.test's updateScores collided with it on the
+	// (school_year, semester) unique constraint. Clean up at file end too.
+	afterAll(async () => {
+		await resetPeriodicData();
+	});
+
 	it("F09 resource_monitoring: init → save resource + CQI implement rows → get", async () => {
 		await resetPeriodicData();
 		await seedAcademicChain();
