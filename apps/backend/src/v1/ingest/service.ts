@@ -1017,10 +1017,10 @@ export class IngestService {
 		queryClassSectionId?: string,
 		triggeredByUserId?: string,
 	) {
-		const cached = jobCompletionCache.get(jobId);
-		if (cached) return cached;
-
-		// 1. Look up the authoritative upload record to verify section binding
+		// 1. Look up the authoritative upload record to verify section binding.
+		// NOTE: this must run BEFORE the jobCompletionCache read below — otherwise
+		// a poll for a completed job with the wrong classSectionId would return the
+		// cached 200 instead of a SectionBindingMismatchError (400).
 		const record = await this.findRecordByJob(jobId);
 		const boundClassSectionId = record?.classSectionId;
 
@@ -1035,6 +1035,9 @@ export class IngestService {
 				boundClassSectionId,
 			);
 		}
+
+		const cached = jobCompletionCache.get(jobId);
+		if (cached) return cached;
 
 		const targetClassSectionId = boundClassSectionId ?? queryClassSectionId;
 		if (!targetClassSectionId) {
