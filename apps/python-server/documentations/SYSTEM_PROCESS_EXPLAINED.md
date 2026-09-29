@@ -12,21 +12,22 @@ The OBELISK Python server is an **authoritative, pure-compute engine** for Outco
 It does **not** store student records in a database, manage logins, or render user interfaces. Instead, it performs two distinct data processing jobs:
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                 THE DUAL RESPONSIBILITY                     │
-├───────────────────────────────────────────┬─────────────────────────────────┤
-│         PROCESS 1: PER-COURSE ETL         │      PROCESS 2: INSTITUTIONAL   │
-│            (Asynchronous / Jobs)          │             ANALYTICS           │
-├───────────────────────────────────────────┼─────────────────────────────────┤
-│ • Ingests AUN-OBE Excel workbooks         │ • Receives consolidated         │
-│ • Validates worksheets and markers        │   semester data from webapp     │
-│ • Discovers dynamic CLO blocks & rosters  │ • Aggregates CLO means by Dept  │
-│ • Recomputes Direct Attainment (from raw) │ • Rolls up CLOs into PLO        │
-│ • Recomputes Indirect Attainment (rating) │   Attainment (Formulas 7A/7C)   │
-│ • Evaluates data completeness (Rule 1)    │ • Evaluates program completeness│
-│ • Detects learning gaps & generates       │   (Rule 3)                      │
-│   AI CQI action recommendations           │ • Generates executive AI briefs │
-└───────────────────────────────────────────┴─────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│                                 THE DUAL RESPONSIBILITY                   │
+├───────────────────────────────────────────┬───────────────────────────────┤
+│         PROCESS 1: PER-COURSE ETL         │      PROCESS 2: INSTITUTIONAL │
+│            (Asynchronous / Jobs)          │             ANALYTICS         │
+├───────────────────────────────────────────┼───────────────────────────────┤
+│ • Ingests AUN-OBE Excel workbooks         │ • Receives consolidated       │
+│ • Validates worksheets and markers        │   semester data from webapp   │
+│ • Discovers dynamic CLO blocks & rosters  │ • Aggregates CLO means by Dept│
+│ • Recomputes Direct Attainment (from raw) │ • Rolls up CLOs into PLO      │
+│ • Recomputes Indirect Attainment (rating) │   Attainment (Formulas 7A/7C) │
+│ • Evaluates data completeness (Rule 1)    │ • Evaluates program complete  │
+│ • Detects learning gaps & generates       │   ness (Rule 3)               │
+│   AI CQI recommendations (with failover)  │ • Generates executive AI      │
+│                                           │   briefs (with failover)      │
+└───────────────────────────────────────────┴───────────────────────────────┘
 ```
 
 ---
@@ -44,15 +45,15 @@ If you search the codebase for user tables, database migrations, or login checks
 │ • Handles Course Submission & Approval Workflows        │
 │ • Persists Computed Attainment & Audit Logs             │
 └──────────────┬──────────────────────────▲───────────────┘
-               │ HTTP API Requests         │ JSON Attainment
-               │ (Workbooks & Payloads)    │ & Summaries
+               │ HTTP API Requests        │ JSON Attainment
+               │ (Workbooks & Payloads)   │ & Summaries
 ┌──────────────▼──────────────────────────┴───────────────┐
 │             OBELISK PYTHON SERVICE (Port 8000)          │
 │ • Pure Compute: No Application DB, No RBAC              │
 │ • Redis: Used strictly as a durable task queue          │
 │ • Excel Parsing: openpyxl extraction (v2 AUN-OBE)       │
 │ • OBE Math: Formulas 1A, 1B, 2A, 7A, 7C, Rules 1 & 3    │
-│ • AI/CQI: Gap detection & Google Gemini generation      │
+│ • AI/CQI: Multi-key Gemini API pool with failover       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -175,7 +176,10 @@ flowchart TD
 - Once the job is `completed`, the webapp can request an AI recommendation for that specific course.
 - Scans `attainments` for any CLO where students failed to meet the 70% threshold.
 - Replaces student names with anonymized placeholders (`Student A`, `Student B`) to protect privacy.
-- Calls Google Gemini using the `google-genai` SDK (`gemini-3.6-flash`).
+- Calls Google Gemini using the `google-genai` SDK (`gemini-3.6-flash`) with **automatic key pool failover**:
+  - Uses configured keys from `OBELISK_LLM_API_KEYS`.
+  - Sequentially retries across keys if a rate limit or quota exception occurs.
+  - If all keys fail, gracefully marks `"status": "error"` without raising unhandled exceptions.
 - Returns structured Markdown with **Summary**, **Findings**, **Recommendations**, and **Pattern Flagged**.
 
 ---
@@ -203,7 +207,7 @@ flowchart TD
     end
     
     I --> J["Return JSON Rollups (No AI)"]
-    I --> K["Build Executive Prompt & Call Gemini LLM"]
+    I --> K["Build Executive Prompt & Call Gemini LLM (Key Pool Failover)"]
     K --> L["Return JSON Rollups + Strategic CQI Recommendation"]
 ```
 
@@ -233,7 +237,7 @@ $$\text{plo\_rule3\_met} = (\text{plo\_completeness\_pct} \ge 0.60)$$
 
 #### 6. Formula 7C: Program-Wide PLO Average
 Calculated **only** at the Program level:
-$$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\text{Total number of PLOs in program}}$$
+$$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\\text{Total number of PLOs in program}}$$
 
 #### 7. Worst-Performing CLO Identification
 The engine identifies the 3 lowest-scoring CLOs in each department, program, and AVP group, sorted by lowest attainment percentage and highest student impact.
@@ -241,6 +245,7 @@ The engine identifies the 3 lowest-scoring CLOs in each department, program, and
 #### 8. Executive AI Summary (For VPAA Endpoint Only)
 - In `POST /analytics/institutional-summary`, the identified worst performers and institutional averages are compiled into an executive-level prompt.
 - Google Gemini generates 2–3 high-level strategic interventions for institutional quality improvement.
+- Runs with sequential multi-key pool failover; if all keys in `OBELISK_LLM_API_KEYS` are exhausted, returns `"status": "error"` alongside rollups so dashboard data is never lost.
 
 ---
 
@@ -267,10 +272,17 @@ The service avoids unhandled 500 crashes. All predictable parsing and business l
 | `InvalidWorkbook` | Uploaded file cannot be opened as an Excel workbook | `file_path`, `underlying_error` |
 | `MissingWorksheet` | Workbook is missing a required sheet (e.g. `Direct CLO`) | `expected_sheet_name`, `available_sheets` |
 | `InvalidTemplate` | Marker cell text does not match (e.g. `A1` marker mismatch) | `sheet_name`, `cell`, `expected`, `found` |
-| `UnsupportedCourseType` | Workbook cell `B6` in `SETUP` is not `"LECTURE"` | `course_type`, `supported_types` |
+| `UnsupportedCourseType` | Workbook cell `B6` in `SETUP` is not `\"LECTURE\"` | `course_type`, `supported_types` |
 | `TransformationError` | Invalid record format or computation impossibility | Contextual message |
 | `QueueOverloadedError` | Redis job queue has reached its maximum configured capacity | Current queue size, max capacity |
 | `UnauthorizedCaller` | Missing or invalid `X-Webapp-Secret` header | `header_name`, `reason` |
+
+### LLM API Key Failover & Exhaustion Handling
+When an external LLM call is required:
+1. The engine cycles through the keys in `settings.llm_api_keys_list` sequentially.
+2. If any individual key fails (e.g., quota exceeded / 429), it issues a structured warning log `llm_key_failed` with the key index and masked preview, then attempts the next key.
+3. If all keys fail, it logs `llm_all_keys_exhausted` and returns an error description beginning with `[LLM API ERROR: All N configured API key(s) were exhausted without success...]`.
+4. The caller receives a response with `"status": "error"` and the error description in `"error"`.
 
 ---
 
@@ -281,7 +293,8 @@ All configuration is managed in `app/core/config.py` via environment variables (
 * **`OBELISK_REDIS_HOST` & `OBELISK_REDIS_PORT`**: Points to the Redis instance (default `localhost:6379`).
 * **`OBELISK_JOB_WORKER_COUNT`**: Number of parallel ETL worker coroutines (default `4`).
 * **`OBELISK_WEBAPP_SHARED_SECRET`**: If set, activates `X-Webapp-Secret` verification on protected endpoints.
-* **`OBELISK_LLM_API_KEY`**: API key for Google Gemini.
+* **`OBELISK_LLM_API_KEYS`**: List of Google Gemini API keys for live recommendations with automatic failover (supports JSON array e.g. `["key1", "key2"]` or comma-separated `key1,key2`).
+* **`OBELISK_LLM_API_KEY`**: Backward-compatible single API key setting.
 * **`IS_DEBUG_MODE` in `cqi_recommender.py`**:
   - When `True` (default): Returns instant mock CQI responses so the system works completely offline without API keys.
   - When `False`: Makes real API calls to Google Gemini (`gemini-3.6-flash`).

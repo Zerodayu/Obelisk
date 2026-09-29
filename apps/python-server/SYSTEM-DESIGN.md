@@ -1,6 +1,6 @@
 # OBELISK ETL & Analytics Service — System Design
 
-> **Status:** Implemented — upload/ETL + analytics endpoints live; job queue is durable (Redis); AI recommendations are integrated via `google-genai`. This records the current design and the integration contract with the webapp for the **v2 AUN-OBE Template**.
+> **Status:** Implemented — upload/ETL + analytics endpoints live; job queue is durable (Redis); AI recommendations are integrated via `google-genai` with multi-key pool failover. This records the current design and the integration contract with the webapp for the **v2 AUN-OBE Template**.
 >
 > **Role in the platform:** the authoritative **pure-compute** engine for spreadsheet-derived attainment. It never persists application data and never authenticates — see §7 ownership boundary.
 
@@ -23,12 +23,12 @@ class-record .xlsx ──POST /upload──> app (FastAPI :8000)
 
 consolidated JSON payload ──POST /analytics/summary|institutional-summary──>
       └─ institutional_summary.py (Formulas 2A/7A/7C, Rule 3, aggregators)
-      └─ cqi_recommender.py (gap detection, prompt build, call_llm_api via google-genai)
+      └─ cqi_recommender.py (gap detection, prompt build, call_llm_api via google-genai multi-key pool)
 ```
 
 - **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts.
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
-- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEY`**, **`WEBAPP_SHARED_SECRET`**.
+- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**.
 - **CORS:** default allow `http://localhost:3000` + `http://127.0.0.1:3000`, credentials enabled.
 - **Logging:** structlog key=value events (`configure_logging` in `app/core/logging.py`).
 
@@ -79,12 +79,16 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 
 ## 6. Analytics engine (`app/analytics/`)
 
-- **`institutional_summary.py`** — `compute_summary_only` (no AI): anonymizes students, aggregates by department/program/AVP group (`_generic_aggregator`), computes CLO means (2A), PLO rollups (7A) + program-level average (7C), Rule-3 completeness, worst-performing CLOs. `generate_institutional_summary` adds prompt + LLM response.
-- **`cqi_recommender.py`** — `identify_gaps` (CLOs below threshold), `build_prompt`, `anonymize_students`, `call_llm_api` via `google-genai` client, `generate_cqi_recommendation`.
+- **`institutional_summary.py`** — `compute_summary_only` (no AI): anonymizes students, aggregates by department/program/AVP group (`_generic_aggregator`), computes CLO means (2A), PLO rollups (7A) + program-level average (7C), Rule-3 completeness, worst-performing CLOs. `generate_institutional_summary` adds prompt + LLM response. If all API keys are exhausted, flags `"status": "error"` and populates `"error"`.
+- **`cqi_recommender.py`** — `identify_gaps` (CLOs below threshold), `build_prompt`, `anonymize_students`, `call_llm_api` with prioritized multi-key rotation/failover across `settings.llm_api_keys_list`, `generate_cqi_recommendation`:
+  - Iterates sequentially through all configured API keys in `OBELISK_LLM_API_KEYS`.
+  - On per-key exception (e.g. 429 quota exhaustion or network fault), logs warning `llm_key_failed` and immediately attempts the next key.
+  - If all keys fail, logs `llm_all_keys_exhausted` and returns `[LLM API ERROR: All N configured API key(s) were exhausted without success...]`.
+  - Propagates `"status": "error"` and `"error"` to callers if LLM generation failed.
 
 ## 7. Ownership boundary (avoid overlap with the webapp)
 
-- **Owned here:** `.xlsx` parsing (AUN-OBE format); Formula 1A direct attainment and Formula 1B indirect attainment; 4-tier levels + completeness; Formulas 2A/7A/7C rollups; AI recommendation text via `google-genai`.
+- **Owned here:** `.xlsx` parsing (AUN-OBE format); Formula 1A direct attainment and Formula 1B indirect attainment; 4-tier levels + completeness; Formulas 2A/7A/7C rollups; AI recommendation text via `google-genai` multi-key pool.
 - **Owned by webapp backend:** persistence (`CloAttainment`, `PloAttainment`, `ComputationRun`), auth/RBAC, curriculum mapping (`curriculum_map` / CLO-PLO correlation), approval workflow, form CRUD/lifecycle, audit trail, report export.
 - **Rule:** the webapp calls this service as the authoritative spreadsheet-compute engine and stores the results; this service never re-implements persistence or auth, and the webapp never re-implements attainment math.
 
@@ -97,12 +101,13 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 - Attainment results now include `indirect_clo_attainment_pct` (`0.0 - 100.0%`), and `excluded_reason` is always `null`.
 - `clo_plo_mapping` returned by `/jobs/{job_id}` is empty (`[]`); the webapp uses its own DB-backed `curriculum_map` to link CLOs to PLOs.
 - `POST /analytics/summary` is safe for any dashboard role; it never triggers AI.
+- AI endpoints (`/recommendation`, `/institutional-summary`) return `"status": "error"` and detailed `error` if the API key pool is exhausted.
 
 ## 9. Deployment
 
 - **Docker:** the repo-root `docker-compose.yml` builds this service as `--target etl`; from the repository root, `docker compose up -d --build` starts the full stack (backend, frontend, etl, redis) and `docker compose up -d etl` just this container plus its Redis dependency.
 - **Local:** `just redis` from the repository root, followed by `uv sync` and `uv run dev`.
-- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, `OBELISK_LLM_API_KEY`, `OBELISK_WEBAPP_SHARED_SECRET`.
+- **Env:** `OBELISK_ALLOWED_ORIGINS`, `OBELISK_UPLOAD_FOLDER`, `OBELISK_MAX_UPLOAD_SIZE`, `OBELISK_JOB_WORKER_COUNT`, `OBELISK_REDIS_HOST`, `OBELISK_REDIS_PORT`, `OBELISK_LLM_API_KEYS` (or `OBELISK_LLM_API_KEY`), `OBELISK_WEBAPP_SHARED_SECRET`.
 
 ## 10. Known limitations / deferred
 

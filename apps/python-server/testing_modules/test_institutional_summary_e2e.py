@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch, AsyncMock
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -94,7 +95,7 @@ class TestInstitutionalSummaryE2E(unittest.TestCase):
         self.assertIn("program_summary", data)
         self.assertIn("avp_group_summary", data)
 
-        # CITE Department CLO1 mean should be exactly (0.80 + 0.60) / 2 = 0.70
+        # CITE Department CLO1 mean should be (0.80 + 0.60) / 2 = 0.70
         cite_dept = data["department_summary"]["CITE"]
         clo1_stats = cite_dept["clos"]["CLO1"]
         self.assertAlmostEqual(clo1_stats["mean_attainment_pct"], 0.70, places=4)
@@ -105,8 +106,10 @@ class TestInstitutionalSummaryE2E(unittest.TestCase):
         self.assertAlmostEqual(plo1_stats["plo_attainment_direct_only"], 0.70, places=4)
         self.assertTrue(plo1_stats["plo_rule3_met"])
 
-    def test_institutional_summary_ai_endpoint(self):
+    @patch("app.analytics.institutional_summary.call_llm_api", new_callable=AsyncMock)
+    def test_institutional_summary_ai_endpoint(self, mock_call_llm):
         """Verify POST /analytics/institutional-summary returns summary and AI recommendation."""
+        mock_call_llm.return_value = "## Strategic CQI Recommendations\n1. Strengthen direct assessment alignment."
         response = client.post("/analytics/institutional-summary", json=self.payload)
         self.assertEqual(response.status_code, 200)
 

@@ -41,7 +41,12 @@ def _print_server_banner():
     """Prints a clear, descriptive server status summary at startup."""
     auth_status = "ENABLED (X-Webapp-Secret required)" if settings.WEBAPP_SHARED_SECRET else "DISABLED (Trusting internal network)"
     redis_status = f"CONNECTED ({settings.REDIS_HOST}:{settings.REDIS_PORT})" if redis_client else "DISCONNECTED (Background jobs disabled)"
-    llm_status = "CONFIGURED (API key present)" if settings.LLM_API_KEY else "NO API KEY (Mock mode fallback)"
+    llm_keys = settings.llm_api_keys_list
+    if llm_keys:
+        key_count = len(llm_keys)
+        llm_status = f"CONFIGURED ({key_count} API key{'s' if key_count != 1 else ''} present)"
+    else:
+        llm_status = "NO API KEY (Mock mode fallback)"
     
     print("\n" + "=" * 65)
     print("  OBELISK ETL & ANALYTICS SERVICE — SYSTEM STATUS")

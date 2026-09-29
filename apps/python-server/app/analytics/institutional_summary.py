@@ -200,9 +200,14 @@ async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -
     prompt = build_institutional_prompt(payload, summary)
     llm_response = await call_llm_api(prompt)
 
-    return {
-        "status": "ok",
+    is_error = isinstance(llm_response, str) and llm_response.startswith("[LLM API ERROR")
+    result = {
+        "status": "error" if is_error else "ok",
         "summary": summary,
         "prompt_used": prompt,
         "recommendation": llm_response,
     }
+    if is_error:
+        result["error"] = llm_response
+
+    return result

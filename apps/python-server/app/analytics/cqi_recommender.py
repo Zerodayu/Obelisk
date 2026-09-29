@@ -11,7 +11,7 @@ from app.core.config import settings
 # Manual toggle — set to False only once a real LLM API integration is implemented below.
 # True  = use the placeholder response (no real API call, safe for testing/demo)
 # False = attempt a real API call.
-IS_DEBUG_MODE: bool = True
+IS_DEBUG_MODE: bool = False
 
 # --- LLM System Prompt ---
 # This defines the persona, constraints, and output format for the LLM.
@@ -125,31 +125,65 @@ async def call_llm_api(prompt: str) -> str:
             "API integration to get actual AI-generated suggestions here."
         )
 
-    # --- Real API Integration ---
-    if not settings.LLM_API_KEY or settings.LLM_API_KEY == "your_actual_api_key_here":
+    # --- Real API Integration with Multi-Key Failover ---
+    api_keys = settings.llm_api_keys_list
+    if not api_keys:
         raise NotImplementedError(
-            "LLM integration is enabled (IS_DEBUG_MODE=False), but the "
-            "OBELISK_LLM_API_KEY is not configured in the environment."
+            "LLM integration is enabled (IS_DEBUG_MODE=False), but no valid "
+            "API key is configured in OBELISK_LLM_API_KEYS or OBELISK_LLM_API_KEY."
         )
 
-    try:
-        logger.info("llm_real_call_attempt", provider="google_gemini", model=settings.LLM_MODEL)
-        client = genai.Client(api_key=settings.LLM_API_KEY)
-        config = types.GenerateContentConfig(
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
-        )
-        response = await client.aio.models.generate_content(
-            model=settings.LLM_MODEL,
-            contents=prompt,
-            config=config,
-        )
+    errors: list[str] = []
+    total_keys = len(api_keys)
 
-        logger.info("llm_real_call_success", provider="google_gemini")
-        return response.text
-    except Exception as e:
-        logger.error("llm_real_call_failed", provider="google_gemini", error=str(e))
-        # Fallback to a user-facing error message instead of crashing
-        return f"[LLM API ERROR: The call to the AI provider failed. Details: {str(e)}]"
+    for idx, key in enumerate(api_keys, start=1):
+        masked_key = f"{key[:4]}...{key[-4:]}" if len(key) > 8 else "***"
+        try:
+            logger.info(
+                "llm_real_call_attempt",
+                provider="google_gemini",
+                model=settings.LLM_MODEL,
+                key_index=idx,
+                total_keys=total_keys,
+                key_preview=masked_key,
+            )
+            client = genai.Client(api_key=key)
+            config = types.GenerateContentConfig(
+                automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True)
+            )
+            response = await client.aio.models.generate_content(
+                model=settings.LLM_MODEL,
+                contents=prompt,
+                config=config,
+            )
+
+            logger.info(
+                "llm_real_call_success",
+                provider="google_gemini",
+                key_index=idx,
+                total_keys=total_keys,
+            )
+            return response.text
+        except Exception as e:
+            error_msg = f"Key #{idx} ({masked_key}) failed: {str(e)}"
+            errors.append(error_msg)
+            logger.warning(
+                "llm_key_failed",
+                provider="google_gemini",
+                key_index=idx,
+                total_keys=total_keys,
+                error=str(e),
+            )
+
+    # All keys were tried and failed
+    logger.error(
+        "llm_all_keys_exhausted",
+        provider="google_gemini",
+        total_keys=total_keys,
+        errors=errors,
+    )
+    details = " | ".join(errors)
+    return f"[LLM API ERROR: All {total_keys} configured API key(s) were exhausted without success. Details: {details}]"
 
 
 async def generate_cqi_recommendation(header: ClassRecordHeader, attainments: List[StudentCLOAttainment]) -> dict:
@@ -169,10 +203,15 @@ async def generate_cqi_recommendation(header: ClassRecordHeader, attainments: Li
     prompt = build_prompt(header, gap_summary)
     llm_response = await call_llm_api(prompt)
 
-    return {
+    is_error = isinstance(llm_response, str) and llm_response.startswith("[LLM API ERROR")
+    result = {
         "course_code": header.course_code,
-        "status": "ok",
+        "status": "error" if is_error else "ok",
         "gaps": gap_summary["gaps"],
         "prompt_used": prompt,
         "recommendation": llm_response,
     }
+    if is_error:
+        result["error"] = llm_response
+
+    return result

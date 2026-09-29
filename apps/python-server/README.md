@@ -34,7 +34,7 @@ This is the simplest and most reliable way to run the service and all its depend
 
 **Prerequisites:**
 -   Docker (with Compose v2) installed and running.
--   An LLM API key (e.g., from Google AI Studio) if live LLM generation is desired.
+-   One or more LLM API keys (e.g., from Google AI Studio) if live LLM generation is desired.
 
 **Instructions:**
 
@@ -43,7 +43,15 @@ This is the simplest and most reliable way to run the service and all its depend
     ```env
     # .env
     OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
-    OBELISK_LLM_API_KEY="your_api_key_here"
+
+    # Multiple LLM API Keys with Automatic Failover:
+    # Supply as a JSON array or comma-separated string.
+    # If one key reaches rate limits, quota limits, or errors, the service automatically fails over to the next key.
+    OBELISK_LLM_API_KEYS=["AIzaSy...", "AIzaSy..."]
+
+    # Legacy single key (also supported for backward compatibility):
+    # OBELISK_LLM_API_KEY="your_api_key_here"
+
     # Optional shared secret to enforce caller authentication:
     # OBELISK_WEBAPP_SHARED_SECRET="your_shared_secret_here"
     ```
@@ -106,6 +114,7 @@ uv run python testing_modules/run_all.py
 | :--- | :---: | :--- | :--- |
 | `run_all.py` | Runner | **Test Runner**: Discovers and runs all `unittest` suites in `testing_modules/`. | `uv run python testing_modules/run_all.py` |
 | `test_etl_v2.py` | Unit | **AUN-OBE ETL Core & Edge Cases**: Tests dynamic CLO count discovery (synthetic 3-CLO and 7-CLO workbooks), formula tampering resilience (ignoring sheet formula columns and recalculating directly from raw cells), structured old-template rejection (`MissingWorksheet`), and indirect attainment math. | `uv run python -m unittest testing_modules/test_etl_v2.py` |
+| `test_llm_failover.py` | Unit | **LLM Multi-Key Pool & Failover**: Verifies flexible `.env` parsing (JSON arrays and comma-separated strings), sequential key failover on quota/API errors, key exhaustion signaling, and endpoint error statuses. | `uv run python -m unittest testing_modules/test_llm_failover.py` |
 | `test_institutional_summary_e2e.py` | Integration | **Multi-Course Analytics & Rollups**: Validates departmental, program, and AVP group rollups (Formulas 2A, 7A, 7C, Rule 3) and executive AI summary generation using FastAPI's `TestClient`. | `uv run python -m unittest testing_modules/test_institutional_summary_e2e.py` |
 | `test_shared_secret_auth.py` | Unit | **Caller Security / Auth**: Validates `X-Webapp-Secret` enforcement and rejection (`401 UnauthorizedCaller`) across endpoints. | `uv run python -m unittest testing_modules/test_shared_secret_auth.py` |
 | `test_unsupported_course_type.py` | Unit | **Course Type Gating**: Verifies that non-`LECTURE` courses (e.g., `RESEARCH`) fail gracefully with a structured `UnsupportedCourseType` error. | `uv run python -m unittest testing_modules/test_unsupported_course_type.py` |
@@ -134,6 +143,10 @@ uv run python testing_modules/run_all.py
 - **`excluded_reason`**: Always `null`. CLO-PLO mapping in Excel is permanently retired; correlation matrices are managed entirely within the webapp backend. `clo_plo_mapping` is returned as `[]`.
 - **Category breakdowns (`tla_pct`, `at_pct`, `exam_pct`, `output_pct`)**: Always `null` in the AUN-OBE format, as scores arrive pre-summed into grading period subtotals per CLO.
 - **Extraction Validation**: The ETL extractor currently supports `LECTURE` class records only. If a workbook declares any other course type in `SETUP`, extraction stops immediately with a structured `UnsupportedCourseType` error. Older non-AUN-OBE templates raise structured `MissingWorksheet` errors.
+- **AI Recommendation Failover & Error Reporting**:
+  - The service iterates through all API keys in `OBELISK_LLM_API_KEYS`.
+  - If a key fails (e.g., quota exceeded / 429), it immediately retries with the next available key.
+  - If all keys fail, the endpoint returns `"status": "error"`, includes a top-level `"error"` explanation, and provides an explanatory recommendation message beginning with `[LLM API ERROR: All N configured API key(s) were exhausted...]`.
 
 ---
 

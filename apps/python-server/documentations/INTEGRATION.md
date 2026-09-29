@@ -157,7 +157,42 @@ The `error` field will contain a structured JSON object with details about the f
 ```
 
 ### `GET /analytics/jobs/{job_id}/recommendation`
-Per-course AI gap analysis. Uses `google-genai` client. Returns `409 Conflict` if the job is not yet completed.
+Per-course AI gap analysis and CQI recommendation.
+- Uses `google-genai` client with multi-key failover (`OBELISK_LLM_API_KEYS`).
+- Returns `409 Conflict` if the job is not yet completed.
+
+**Normal Success Response (`status: "ok"`):**
+```json
+{
+  "course_code": "GE 1",
+  "status": "ok",
+  "gaps": [ ... ],
+  "prompt_used": "...",
+  "recommendation": "## Summary\n..."
+}
+```
+
+**No Gaps Identified Response (`status: "no_gaps_found"`):**
+```json
+{
+  "course_code": "GE 1",
+  "status": "no_gaps_found",
+  "recommendation": null
+}
+```
+
+**Key Pool Exhaustion Response (`status: "error"`):**
+If all configured API keys fail or exceed rate/quota limits:
+```json
+{
+  "course_code": "GE 1",
+  "status": "error",
+  "error": "[LLM API ERROR: All 2 configured API key(s) were exhausted without success. Details: Key #1 (...) failed: 429 Resource Exhausted | Key #2 (...) failed: ...]",
+  "gaps": [ ... ],
+  "prompt_used": "...",
+  "recommendation": "[LLM API ERROR: All 2 configured API key(s) were exhausted without success. Details: ...]"
+}
+```
 
 ---
 
@@ -172,14 +207,14 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 **Request body:**
 ```json
 {
-  "period": { "type": "semester", "label": "SY 2025-2026, 1st Sem" },
-  "submissions": [
+  \"period\": { \"type\": \"semester\", \"label\": \"SY 2025-2026, 1st Sem\" },
+  \"submissions\": [
     {
-      "department": "CITE",
-      "program": "BSIT",
-      "header": { ... },
-      "attainments": [ ... ],
-      "clo_plo_mapping": [ ... ]
+      \"department\": \"CITE\",
+      \"program\": \"BSIT\",
+      \"header\": { ... },
+      \"attainments\": [ ... ],
+      \"clo_plo_mapping\": [ ... ]
     }
   ]
 }
@@ -189,7 +224,7 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 
 > ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It triggers an AI/LLM call.
 
-**Response:**
+**Normal Response (`status: "ok"`):**
 ```json
 {
   "summary": { ... },
@@ -198,3 +233,32 @@ This group of endpoints accepts a consolidated payload of multiple course submis
   "recommendation": "The AI-generated text response..."
 }
 ```
+
+**Key Pool Exhaustion Response (`status: "error"`):**
+If all configured API keys fail or exceed quota:
+```json
+{
+  "summary": { ... },
+  "status": "error",
+  "error": "[LLM API ERROR: All 2 configured API key(s) were exhausted without success. Details: ...]",
+  "prompt_used": "The full text prompt sent to the LLM...",
+  "recommendation": "[LLM API ERROR: All 2 configured API key(s) were exhausted without success. Details: ...]"
+}
+```
+
+---
+
+## LLM API Key Multi-Pool & Failover Specification
+
+The service supports zero-downtime key rotation and failover via `OBELISK_LLM_API_KEYS`.
+
+1. **Configuration**:
+   - `OBELISK_LLM_API_KEYS='["AIzaSyKey1", "AIzaSyKey2"]'` (JSON array) or `"AIzaSyKey1,AIzaSyKey2"` (comma-separated string).
+   - If using `OBELISK_LLM_API_KEY`, it is automatically treated as a single-key pool.
+2. **Sequential Try / Failover**:
+   - The engine attempts keys in priority order (index 1 to $N$).
+   - If an error occurs (such as HTTP 429 quota exhaustion, invalid credential, or network timeout), the failure is logged (`llm_key_failed`) with a masked preview of the failed key.
+   - The engine immediately switches to key index 2 without interrupting the request.
+3. **Exhaustion Handling**:
+   - Only when **all** keys in the pool fail does the engine stop and log `llm_all_keys_exhausted`.
+   - Instead of crashing with a 500 error, it returns a structured payload with `"status": "error"` and the error details so the webapp UI can display a helpful message to the user.
