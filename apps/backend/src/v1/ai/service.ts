@@ -111,6 +111,7 @@ export class AiRecommendationService {
 						code: true,
 						program: {
 							select: {
+								id: true,
 								name: true,
 								department: { select: { name: true } },
 							},
@@ -120,6 +121,33 @@ export class AiRecommendationService {
 			},
 		});
 		if (!sections.length) return null;
+
+		// NOTE: snapshot clo_plo_mapping is permanently []; load CloToPloMap per program.
+		const programIds = [
+			...new Set(sections.map((section) => section.course.program.id)),
+		];
+		const maps = await prisma.cloToPloMap.findMany({
+			where: {
+				plo: { programId: { in: programIds } },
+				clo: { course: { programId: { in: programIds } } },
+			},
+			select: {
+				weight: true,
+				plo: { select: { programId: true, code: true } },
+				clo: { select: { code: true } },
+			},
+		});
+		const mappingByProgramId = new Map<string, Record<string, unknown>[]>();
+		for (const map of maps) {
+			const entry = {
+				clo_code: map.clo.code,
+				plo_code: map.plo.code,
+				correlation_strength: Number(map.weight),
+			};
+			const bucket = mappingByProgramId.get(map.plo.programId) ?? [];
+			bucket.push(entry);
+			mappingByProgramId.set(map.plo.programId, bucket);
+		}
 
 		// One query for every section's runs, newest first; first-wins per scope.
 		const runs = await prisma.computationRun.findMany({
@@ -145,6 +173,7 @@ export class AiRecommendationService {
 				courseCode: section.course.code,
 				programName: section.course.program.name,
 				departmentName: section.course.program.department.name,
+				cloPloMapping: mappingByProgramId.get(section.course.program.id),
 			};
 			submissions.push(buildSubmission(meta, snapshot));
 		}

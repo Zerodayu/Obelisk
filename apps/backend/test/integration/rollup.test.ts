@@ -338,6 +338,13 @@ describe.skipIf(!db)("roll-up chain generation (integration)", () => {
 			expect(seen[0].submissions[0].program).toBe(IDS.programName);
 			expect(seen[0].submissions[0].attainments).toHaveLength(4);
 
+			// NOTE: DB rows (CLO1/CLO2 -> PLO1, weight 1) must win over the
+			// snapshot copy (CLO1 -> PLO1, strength 3).
+			expect(seen[0].submissions[0].clo_plo_mapping).toEqual([
+				{ clo_code: "CLO1", plo_code: "PLO1", correlation_strength: 1 },
+				{ clo_code: "CLO2", plo_code: "PLO1", correlation_strength: 1 },
+			]);
+
 			expect(payload.plos).toHaveLength(1);
 			const plo = payload.plos[0];
 			expect(plo).toMatchObject({

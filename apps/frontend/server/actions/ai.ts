@@ -69,6 +69,9 @@ export async function generateAiRecommendationAction(): Promise<
   try {
     const data = await actionApi.post<{ recommendation: AiRecommendation }>(
       "/ai/recommendation/generate",
+      // NOTE: Elysia treats a t.Object body as required — no body at all is a
+      // 422 before the role assert runs. `{}` keeps termId optional.
+      {},
     );
     return { ok: true, data: data.recommendation };
   } catch (err) {

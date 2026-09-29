@@ -355,6 +355,9 @@ export class PloSummaryService {
 			},
 		});
 
+		// NOTE: snapshot clo_plo_mapping is permanently []; DB CloToPloMap feeds Formula 7A instead.
+		const dbCloPloMapping = await this.loadCloPloMapping(programId);
+
 		const submissions: AnalyticsCourseSubmission[] = [];
 		let fed = 0;
 		for (const section of sections) {
@@ -373,9 +376,12 @@ export class PloSummaryService {
 				section: (header.section as string) ?? section.sectionCode,
 				header,
 				attainments: snapshot.attainments,
-				clo_plo_mapping: Array.isArray(snapshot.clo_plo_mapping)
-					? snapshot.clo_plo_mapping
-					: [],
+				// NOTE: DB mappings win; the snapshot copy is a legacy fallback.
+				clo_plo_mapping: dbCloPloMapping.length
+					? dbCloPloMapping
+					: Array.isArray(snapshot.clo_plo_mapping)
+						? snapshot.clo_plo_mapping
+						: [],
 			});
 			fed++;
 		}
@@ -529,6 +535,30 @@ export class PloSummaryService {
 		}
 
 		return computationRunId;
+	}
+
+	/**
+	 * Curriculum Map CLO→PLO rows shaped for python-server's `clo_plo_mapping`.
+	 * Program-scoped on both sides so foreign PLO codes never reach
+	 * `persistPloAttainment`; `correlation_strength` carries the `weight`.
+	 */
+	private async loadCloPloMapping(
+		programId: string,
+	): Promise<Record<string, unknown>[]> {
+		const maps = await prisma.cloToPloMap.findMany({
+			where: { plo: { programId }, clo: { course: { programId } } },
+			select: {
+				weight: true,
+				clo: { select: { code: true } },
+				plo: { select: { code: true } },
+			},
+			orderBy: [{ plo: { code: "asc" } }, { clo: { code: "asc" } }],
+		});
+		return maps.map((map) => ({
+			clo_code: map.clo.code,
+			plo_code: map.plo.code,
+			correlation_strength: Number(map.weight),
+		}));
 	}
 
 	private async countStudentsBelowTarget(

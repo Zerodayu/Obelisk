@@ -47,6 +47,44 @@ describe("buildSubmission", () => {
 		);
 		expect(submission.clo_plo_mapping).toEqual([]);
 	});
+
+	// NOTE: the snapshot can never carry mappings (extractor.py returns []),
+	// so the DB rows passed in via meta must win.
+	it("prefers the DB mapping passed in the meta over the snapshot copy", () => {
+		const submission = buildSubmission(
+			{
+				...META,
+				cloPloMapping: [
+					{
+						clo_code: "CLO1",
+						plo_code: "PLO1",
+						correlation_strength: 1,
+					},
+					{
+						clo_code: "CLO2",
+						plo_code: "PLO1",
+						correlation_strength: 1,
+					},
+				],
+			},
+			snapshot(),
+		);
+		expect(submission.clo_plo_mapping).toHaveLength(2);
+		expect(submission.clo_plo_mapping).toEqual([
+			{ clo_code: "CLO1", plo_code: "PLO1", correlation_strength: 1 },
+			{ clo_code: "CLO2", plo_code: "PLO1", correlation_strength: 1 },
+		]);
+	});
+
+	it("falls back to the snapshot mapping when the meta carries none", () => {
+		const submission = buildSubmission(
+			{ ...META, cloPloMapping: [] },
+			snapshot(),
+		);
+		expect(submission.clo_plo_mapping).toEqual([
+			{ clo_code: "CLO1", plo_code: "PLO1" },
+		]);
+	});
 });
 
 describe("hasAnalyzableSnapshot", () => {

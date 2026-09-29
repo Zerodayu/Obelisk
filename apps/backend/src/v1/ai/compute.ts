@@ -12,6 +12,12 @@ export interface SectionMeta {
 	courseCode: string;
 	programName: string;
 	departmentName: string;
+	/**
+	 * CLO→PLO mappings shaped for python-server (`{ clo_code, plo_code,
+	 * correlation_strength }`); empty falls back to the snapshot copy, which
+	 * `extractor.py` permanently returns as `[]`.
+	 */
+	cloPloMapping?: Record<string, unknown>[];
 }
 
 /**
@@ -25,6 +31,9 @@ export function buildSubmission(
 	snapshot: EtlSnapshot,
 ): AnalyticsCourseSubmission {
 	const header = (snapshot.header ?? {}) as Record<string, unknown>;
+	const fromSnapshot = Array.isArray(snapshot.clo_plo_mapping)
+		? snapshot.clo_plo_mapping
+		: [];
 	return {
 		department: meta.departmentName,
 		program: meta.programName,
@@ -32,9 +41,9 @@ export function buildSubmission(
 		section: (header.section as string) ?? meta.sectionCode,
 		header,
 		attainments: snapshot.attainments,
-		clo_plo_mapping: Array.isArray(snapshot.clo_plo_mapping)
-			? snapshot.clo_plo_mapping
-			: [],
+		clo_plo_mapping: meta.cloPloMapping?.length
+			? meta.cloPloMapping
+			: fromSnapshot,
 	};
 }
 
