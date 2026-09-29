@@ -103,7 +103,7 @@ The term-level hub that consolidates a term's data.
 - [x] **Tests:** rollup correctness (CLO → PLO → cohort), audit-trail writes
 - [x] **Exit check:** program-level PLO attainment visible end-to-end from uploaded records
 
-**Done (Phase 3):** the roll-up chain ships as `src/v1/rollup/` exposed under `/api/v1/rollup` (`rollup-plugin`). `computation_run.etl_snapshot_json` now persists the raw `{header, attainments, clo_plo_mapping}` at ingest time so F15 can reproduce the exact source records when feeding python-server; `plo_attainment` indexes `[program_id, term_id]` and `clo_attainment` indexes `[class_section_id, computation_run_id]`. Migration `20260822000000_add_etl_snapshot_and_rollup_indexes` (apply with `bun run db:migrate`, then `bun run db:generate`). Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 84 tests).
+**Done (Phase 3):** the roll-up chain ships as `src/v1/rollup/` exposed under `/api/v1/rollup` (`rollup-plugin`). `computation_run.etl_snapshot_json` now persists the raw `{header, attainments, clo_plo_mapping}` at ingest time so F15 can reproduce the exact source records when feeding python-server; note the snapshot's `clo_plo_mapping` is **always empty** (the ETL retired it), so F15 loads mappings from the DB `CloToPloMap` instead (`PloSummaryService.loadCloPloMapping`). `plo_attainment` indexes `[program_id, term_id]` and `clo_attainment` indexes `[class_section_id, computation_run_id]`. Migration `20260822000000_add_etl_snapshot_and_rollup_indexes` (apply with `bun run db:migrate`, then `bun run db:generate`). Backend gates green (`bun run typecheck`, `bun run lint`, `bun test` — 84 tests).
 
 ---
 
@@ -267,7 +267,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 - [x] `formStatusCountsAtom` — wired to `GET /forms`
 - [x] `uploadsHistoryDataAtom` — wired to `GET /ingest/history`
 - [ ] Wire remaining ~18 atoms to real backend endpoints (attainment trends, cohort trends, PEO attainment, budget data, approval flows, audit activity, etc.)
-- [ ] Populate stat cards on all 6 role dashboards (currently empty `stats: []`)
+- [ ] Populate stat cards on all 6 role dashboards (currently empty `stats: []`) — browser-confirmed 2026-09-29: chart cards below render live numbers, the header row stays blank (`role-dashboard.tsx:87`)
 
 ---
 
@@ -320,8 +320,8 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 ### Data Pipeline & Integration
 
 - [ ] **Class record as required input** — class record upload is a hard prerequisite for the downstream pipeline (ingest → ETL → CAR → PLO → CQI); enforce at form level
-- [ ] **Input → Output pipeline (class record → CQI)** — end-to-end integration: upload class record → compute CLO attainment → generate CAR → roll up to PLO → feed CQI gap analysis + action plan; verify no manual re-entry
-- [ ] **CLO-to-PLO connection** — wire the attainment-side CLO→PLO mapping end-to-end (confirm `curriculum_map` linkage feeds correctly into rollup chain and CQI)
+- [x] **Input → Output pipeline (class record → CQI)** — end-to-end integration: upload class record → compute CLO attainment → generate CAR → roll up to PLO → feed CQI gap analysis + action plan; verify no manual re-entry — **Done (2026-09-29):** exercised end to end against the live stack with seeded role sessions (upload → 150 `CloAttainment` → CAR → 5 `PloAttainment` → 2 `GapRow`s → full approval chain), no manual re-entry anywhere (see `testing_results.md` §9). Two blockers fixed on the way: the roll-up ignored DB `CloToPloMap` rows, and the AI generate action posted no request body. The final `cqi_action_plan` hop still depends on 9.9's action-taken flow, which is not built.
+- [x] **CLO-to-PLO connection** — wire the attainment-side CLO→PLO mapping end-to-end (confirm `curriculum_map` linkage feeds correctly into rollup chain and CQI) — **Done (2026-09-29):** `PloSummaryService.loadCloPloMapping` now injects the program's `CloToPloMap` rows into the python payload (the ETL snapshot's `clo_plo_mapping` is permanently empty), with the same injection on the AI path (`ai/compute.ts` + `ai/service.ts`); the CQI gap analysis already read `CloToPloMap` directly. Verified live: 5 `PloAttainment` rows persisted, and dropping a mapping removes its PLO without a crash (`testing_results.md` 9.1/9.2)
 
 ### CLO/PLO Management
 
@@ -329,6 +329,7 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 ### Forms & Workflow
 
+- [ ] **Action-taken form for at-risk students** — client requirement: flag an at-risk student, submit an action-taken form, approve it, flag clears. Not built at all — no entry in `APPROVAL_ROUTES`, no page, no server action, and the approval path never touches `AtRiskFlag` (flags are created/pruned only on score edits). Confirmed live 2026-09-29: 82 flags still present after a fully-approved CAR (`testing_results.md` 9.9)
 - [x] **Forms connection, steps, approve/disapprove for users** — wire per-form approval step routing with user-facing approve/return buttons; submission inbox ("My Submissions" + "Pending Approvals"); extend existing Workflow UI stubs — **Done:** server registry (`apps/backend/lib/forms/approval-routes.ts`) derives each form's approval chain from its stable code (client `steps` deprecated); submit/decide/archive/update are role- and ownership-gated with proper 401/403/404/409; `FormWorkflow` bar on all 13 Phase 0–5 screens; `/submissions` + `/approvals` inboxes with nav entries and per-form-code deep links; seeded one demo user per role (`<role>@jmcfi.edu.ph`)
 
 ### Bug / Investigation
