@@ -24,7 +24,7 @@ bun run lint         # biome check
 bun run format       # biome format --write
 ```
 
-Secrets: the encrypted env files live at the **repo root** (`.env.local` for dev, `.env.prod` for production, header `DOTENV_PUBLIC_KEY_LOCAL`); the private keys live in the gitignored root `.env.keys`. Edit via `just env-decrypt` → edit → `just env-encrypt` (repo root). Env vars are validated by Zod in `utils/env.ts`.
+Secrets: the encrypted env files live at the **repo root** (`.env.local` for dev, `.env.prod` for production, header `DOTENV_PUBLIC_KEY_LOCAL`); the private keys live in the gitignored root `.env.keys`. Edit via `just env-decrypt` → edit → `just env-encrypt` (repo root). Env vars are validated by Zod in `@obelisk/env/client` (re-exported by `utils/env.ts`).
 
 Deploy from the repo root with `just deploy-frontend [prod]` (one-time `just vercel-link`; see `../../.github/CONTRIBUTING.md` §8). Note: `next build` skips type errors (`typescript.ignoreBuildErrors` in `next.config.ts`) until the pre-existing `components/ui` type errors are fixed — check manually with `bunx tsc --noEmit`.
 

@@ -29,7 +29,7 @@
 | `/archives/[clusterId]` | `app/(app)/archives/[clusterId]/page.tsx` | Read-only per-student snapshot (placeholder content) | inherits archives layout |
 | `/faculty` | `app/faculty/page.tsx` | **Legacy redirect** → `/forms/clo-raw-data` | — |
 
-Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/layout/app-shell.tsx` (auth gate + shell), `components/layout/app-sidebar.tsx` (registry-driven), `lib/role-access.ts`, `lib/roles.ts`, `config/navigation.ts`, `lib/api-client.ts`, `server/api-client.ts`, `server/auth.ts`, `server/actions/`, `utils/env.ts`.
+Supporting: `proxy.ts` (coarse auth gate), `app/(app)/layout.tsx` + `components/layout/app-shell.tsx` (auth gate + shell), `components/layout/app-sidebar.tsx` (registry-driven), `lib/role-access.ts`, `lib/roles.ts`, `config/navigation.ts`, `lib/api-client.ts`, `server/api-client.ts`, `server/auth.ts`, `server/actions/`, `utils/env.ts` (shim → `@obelisk/env/client`), `utils/app-info.ts` (shim → `@obelisk/app-info`).
 
 The 7 Periodic/ACT screens (`resource_monitoring`, `alumni_tracer`, `employer_satisfaction_survey`, `systemic_gap_report`, `capa_plan`, `institutional_review`, `portfolio_roadmap`) have **no routes yet** — the backend `/api/v1/periodic` plugin is live, the frontend screens are not.
 

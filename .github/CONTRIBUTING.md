@@ -52,7 +52,7 @@ dotenvx reads plaintext (unencrypted) env files fine. Create `.env.local` at the
 
 ### Required variables
 
-One root file covers both packages — backend vars are validated by `apps/backend/utils/env.ts`, frontend vars by `apps/frontend/utils/env.ts`:
+One root file covers both packages — server vars are validated by `@obelisk/env/server` (`packages/env/src/server.ts`, re-exported as `env` from `apps/backend/utils/env.ts`), frontend vars by `@obelisk/env/client` (`packages/env/src/client.ts`, re-exported from `apps/frontend/utils/env.ts`):
 
 ```env
 # backend
@@ -86,7 +86,7 @@ OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
 
 ## 3. Install & run the services
 
-Install once at the repo root — the workspace hoists both Bun packages in a single lockfile (`postinstall` also writes the backend's `src/generated/runtime-env.ts` stub):
+Install once at the repo root — the workspace hoists all Bun packages in a single lockfile (`postinstall` also writes the shared `packages/env/src/generated/runtime-env.ts` stub):
 
 ```sh
 bun install        # repo root — or: just install-bun / just install
@@ -283,7 +283,7 @@ Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `get
 ## 7. Troubleshooting
 
 - **`[dotenvx] This is a private key. Please use the public key...`, `[DECRYPTION_FAILED]`, or other decryption errors** — you don't have the root `.env.keys`. Ask a maintainer for it and place it at the repo root, or replace `.env.local` with a plaintext file (Option B in §2). On Vercel this means the project is missing the `DOTENV_PRIVATE_KEY_PROD` env var (§8).
-- **Backend fails to start with a missing-var error** — all required env vars are Zod-validated at startup in `apps/backend/utils/env.ts`; fill in the missing ones in the root `.env.local`.
+- **Backend fails to start with a missing-var error** — all required env vars are Zod-validated at startup in `packages/env/src/server.ts` (via `apps/backend/utils/env.ts`); fill in the missing ones in the root `.env.local`.
 - **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point to a reachable Postgres (Neon or local) and that the schema was applied (`bun run db:migrate dev`).
 - **Port already in use** — the services expect `8080`, `3000`, and `8000`. Stop anything occupying those ports.
 - **Frontend can't reach the API** — ensure the backend is running and `NEXT_PUBLIC_API_URL` matches its origin (`http://localhost:8080`).
@@ -311,4 +311,4 @@ just deploy-frontend prod
 
 ### What the build does
 
-- `bun run build:prod` decrypts `../../.env.prod` (root file) and runs the normal build: the frontend builds Next.js with prod values inlined (`NEXT_PUBLIC_API_URL`), the backend runs `prisma generate` **and** `scripts/gen-runtime-env.ts`, which bakes the decrypted values into `apps/backend/src/generated/runtime-env.ts` (gitignored, generated only at build time) so the serverless function has env vars at runtime. `apps/backend/utils/env.ts` reads `process.env.X ?? runtimeEnv.X`, so platform-provided vars still override the baked-in file.
+- `bun run build:prod` decrypts `../../.env.prod` (root file) and runs the normal build: the frontend builds Next.js with prod values inlined (`NEXT_PUBLIC_API_URL`), the backend runs `prisma generate` **and** `packages/env/scripts/gen-runtime-env.ts`, which bakes the decrypted values into `packages/env/src/generated/runtime-env.ts` (gitignored, generated only at build time) so the serverless function has env vars at runtime. `@obelisk/env/server` reads `process.env.X ?? runtimeEnv.X`, so platform-provided vars still override the baked-in file. The canonical key list is `packages/env/env-keys.ts`.
