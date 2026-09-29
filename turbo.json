@@ -15,7 +15,8 @@
     "REDIS_PASSWORD",
     "NEXT_PUBLIC_API_URL",
     "DEVELOPMENT",
-    "DEV_SESSION_ENABLED"
+    "DEV_SESSION_ENABLED",
+    "API_INTERNAL_URL"
   ],
   "globalDependencies": [".env.local", ".env.prod"],
   "tasks": {
