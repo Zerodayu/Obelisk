@@ -9,6 +9,7 @@ per-package env file anymore; `OBELISK_ENV` picks the profile
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import structlog
@@ -22,6 +23,10 @@ _DECRYPT_HINT = (
     "cannot decrypt the root env file — place the gitignored `.env.keys` at the "
     "repo root (ask a maintainer) or run `just env-decrypt`"
 )
+
+# NOTE: load_env() is called from config.py and directly by test scripts —
+# only the first call prints the dotenvx-style line (one per process)
+_LOADED: Path | None = None
 
 
 def _profile() -> str:
@@ -72,11 +77,23 @@ def resolve_env_file(profile: str | None = None) -> Path | None:
     return found
 
 
+def _display(path: Path) -> str:
+    """Path as the dotenvx CLI shows it — relative to the cwd when possible."""
+    try:
+        return os.path.relpath(path, Path.cwd())
+    except ValueError:  # NOTE: different drive — only reachable on Windows
+        return str(path)
+
+
 def load_env() -> Path | None:
     """Decrypt the root env file into os.environ and return its path.
 
     override=False keeps pre-set vars (compose `environment:`) authoritative.
     """
+    global _LOADED
+    if _LOADED is not None:
+        return _LOADED
+
     profile = _profile()
     path = resolve_env_file(profile)
     if path is None:
@@ -90,6 +107,7 @@ def load_env() -> Path | None:
         )
         return None
 
+    before = set(os.environ)
     try:
         load_dotenv(dotenv_path=path, override=False)
     except RuntimeError as exc:
@@ -103,5 +121,10 @@ def load_env() -> Path | None:
         )
         return None
 
-    logger.info("env_loaded", file=str(path), profile=profile)
+    # NOTE: same line the `dotenvx run` wrapper prints for backend/frontend
+    # (stderr, count = keys actually set) so `just dev` shows one per service
+    injected = len(set(os.environ) - before)
+    print(f"⟐ injected env ({injected}) from {_display(path)}", file=sys.stderr)
+
+    _LOADED = path
     return path
