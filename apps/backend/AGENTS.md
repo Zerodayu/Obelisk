@@ -15,6 +15,7 @@ src/
 ├── routes.ts             # Aggregates all feature route plugins (api/v1 prefix)
 └── v1/
     ├── academic/         # Academic reference data (programs, terms, class sections)
+    ├── atrisk/           # At-risk watchlist + Action-Taken Record (clears flags on final approval)
     ├── auth/             # Auth (better-auth config, session guard macro, role requests)
     ├── car/              # Course Assessment Report (F13)
     ├── cqi/              # CQI/ACT loop (F22, F23, F25, F24 APAR)
@@ -34,7 +35,7 @@ src/
 - **routes.ts**: Import and chain feature plugins: `.use(featureRoutes)`. The `api/v1/` prefix is set here, so feature routes use relative paths.
 - **env vars**: Always `import { env } from "@utils/env"` instead of accessing `process.env` directly — `utils/env.ts` is a thin shim over `@obelisk/env/server` (`packages/env/src/server.ts`), which Zod-validates at import, so missing vars fail at startup with a clear error.
 - **caching & limits**: wrap read-only GET handlers with `cached(ttlSeconds, handler)` from `@lib/cache` (Redis-backed, falls through on miss); rate limiting applies globally (100 requests / 15 min).
-- **shared libs** (`lib/`): `lib/role-access.ts` (**role → feature allow-lists + asserts** — class-record capture, archive, PLO management, role requests, cluster confirm, AI insight generation; mirrored by `apps/frontend/lib/role-access.ts` and drift-guarded by `test/unit/role-access-sync.test.ts`), `lib/forms/approval-routes.ts` (per-form-code approval chains + RBAC — see Domain Rules), `lib/forms/state-machine.ts` (submission status transitions), `lib/forms/submit-gates.ts` (pre-submit validation gates), `lib/validators` (domain floors/enums), `lib/ingest` (python-server client), `lib/prisma.ts`, `lib/cache.ts`.
+- **shared libs** (`lib/`): `lib/role-access.ts` (**role → feature allow-lists + asserts** — class-record capture, archive, PLO management, role requests, cluster confirm, AI insight generation; mirrored by `apps/frontend/lib/role-access.ts` and drift-guarded by `test/unit/role-access-sync.test.ts`), `lib/forms/approval-routes.ts` (per-form-code approval chains + RBAC — see Domain Rules), `lib/forms/state-machine.ts` (submission status transitions), `lib/forms/submit-gates.ts` (pre-submit validation gates), `lib/forms/approval-effects.ts` (per-form-code **final-approval side effects**, run inside the `decide` transaction — e.g. `action_taken` clearing `AtRiskFlag`s; same registration pattern as submit-gates), `lib/validators` (domain floors/enums), `lib/ingest` (python-server client), `lib/prisma.ts`, `lib/cache.ts`.
 
 ## Environment & Vercel deployment (monorepo)
 
@@ -97,6 +98,7 @@ closing_the_loop          -> Closing-the-Loop (CTL) Report
 systemic_gap_report       -> Systemic Gap Report
 capa_plan                 -> Corrective and Preventive Action (CAPA) Plan
 institutional_review      -> Institutional Management Review Records
+action_taken              -> Action-Taken Record (At-Risk Students)
 ```
 
 **Not-yet-developed forms** (portfolio/consolidation/specialty schedules; no field structure defined yet) have **no stable code** — represent them as titles/topics only, and do not fabricate values.
@@ -134,6 +136,7 @@ Phases 6 forms are split across two feature plugins:
 - F20 `alumni_tracer` / F21 `employer_satisfaction_survey`: no approved submission within 18 months (biennial).
 - F26 `systemic_gap_report`: `cohort_tracking` with 3+ consecutive NOT-MET cycles.
 - F27 `capa_plan`: referenced `systemic_gap_report` must be approved.
+- `action_taken`: non-empty `formData.studentIds` **and** a non-blank `formData.actionTaken` (see `src/v1/atrisk/service.ts`).
 
 **Tests:** `test/integration/check.test.ts` (9 tests) + `test/integration/periodic.test.ts` (10 tests).
 
