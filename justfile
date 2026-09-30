@@ -236,60 +236,36 @@ test-integration:
 [group('quality')]
 check: lint typecheck test
 
-# --- build & run (production servers) ---
+# --- deploy (docker self-hosted stack) ---
 
-# turbo-cached build + serve backend (:8080) and frontend (:3000) with the root .env.local — Ctrl+C stops both
-[group('build')]
-start:
-    bun run start
-
-# same, but built and served with the root .env.prod — stop the other stack first (same ports)
-[group('build')]
-start-prod:
-    bun run start:prod
-
-# --- docker (self-hosted stack) ---
-
-# build + start all four services in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first (same ports)
-[group('docker')]
-docker-up:
+# build + (re)start all four services in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first (same ports)
+[group('deploy')]
+docker-deploy:
     docker compose up -d --build
 
-# alias kept for compatibility — the stack is .env.prod-only, identical to `docker-up`
-[group('docker')]
-docker-up-prod: docker-up
+# restart the running containers in place — no rebuild, for config/resource tweaks
+[group('deploy')]
+docker-restart:
+    docker compose restart
+
+# update the app: pull latest code, rebuild images, recreate containers, drop the superseded untagged images (run `just docker-migrate` too if the schema changed)
+[group('deploy')]
+docker-update:
+    git pull --ff-only
+    just docker-deploy
+    docker image prune -f
+
+# apply pending Prisma migrations inside the running backend container (.env.prod — the dev `just db-migrate` reads .env.local)
+[group('deploy')]
+docker-migrate:
+    docker compose exec backend bun run db:migrate-prod
 
 # stop the Docker stack (containers stay around for lazydocker; `docker compose down -v` also drops the uploads volume)
-[group('docker')]
+[group('deploy')]
 docker-down:
     docker compose down
 
 # follow logs of all services (Ctrl+C detaches, containers keep running)
-[group('docker')]
+[group('deploy')]
 docker-logs:
     docker compose logs -f
-
-# --- deploy (vercel) ---
-
-# link this repo's backend/ + frontend/ to Vercel projects (run once; needs `bunx vercel login`)
-[group('deploy')]
-vercel-link:
-    bunx vercel link --repo --yes
-
-# deploy the backend — preview by default, `just deploy-backend prod` for production
-[group('deploy')]
-deploy-backend target="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--yes)
-    if [ "{{target}}" = "prod" ]; then args+=(--prod); fi
-    cd apps/backend && exec bunx vercel deploy "${args[@]}"
-
-# deploy the frontend — preview by default, `just deploy-frontend prod` for production
-[group('deploy')]
-deploy-frontend target="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    args=(--yes)
-    if [ "{{target}}" = "prod" ]; then args+=(--prod); fi
-    cd apps/frontend && exec bunx vercel deploy "${args[@]}"

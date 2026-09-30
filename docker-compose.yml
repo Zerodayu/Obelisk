@@ -1,5 +1,5 @@
 # NOTE: whole self-hosted stack in one compose file (4 services), .env.prod-only —
-# fill root .env.prod + `just env-encrypt` first; `just docker-up` builds and
+# fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Ports collide with `just dev`,
 # and only backend/frontend face the network (etl/redis are loopback-only).
 # TODO(prod): NEXT_PUBLIC_API_URL is baked from .env.prod at build — rebuild the
