@@ -1,20 +1,9 @@
-# Obelisk — the whole self-hosted stack in one compose file (4 services),
-# .env.prod-only: fill the root .env.prod + `just env-encrypt` first.
-#
-#   just docker-up        # `docker compose up -d --build` — build + start everything
-#   just docker-logs      # tail everything; manage containers via lazydocker if preferred
-#
-# All four ports collide with `just dev` / `just start` — only one stack at a
-# time. Only backend/frontend face the network; etl/redis bind loopback only
-# (etl has no auth, redis has no password). The root .env.prod and .env.keys
-# are bind-mounted read-only into all three app containers (backend/frontend:
-# the `start:prod` scripts decrypt with dotenvx; etl: app/core/env.py decrypts
-# in-process, OBELISK_ENV=prod selects the file);
-# `environment:` entries below are the in-network overrides dotenvx must not
-# fight (it never overrides a var that is already set).
-#
-# TODO(prod): the frontend bakes NEXT_PUBLIC_API_URL from .env.prod at build
-# time — rebuilding is mandatory whenever that value changes.
+# NOTE: whole self-hosted stack in one compose file (4 services), .env.prod-only —
+# fill root .env.prod + `just env-encrypt` first; `just docker-up` builds and
+# starts, `just docker-logs` tails (or lazydocker). Ports collide with `just dev`,
+# and only backend/frontend face the network (etl/redis are loopback-only).
+# TODO(prod): NEXT_PUBLIC_API_URL is baked from .env.prod at build — rebuild the
+# frontend whenever that value changes.
 
 # NOTE: json-file rotation so container logs can't fill the disk
 x-logging: &log-rotation
@@ -37,11 +26,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # in-network addresses — everything in .env.prod says "localhost", which
-      # inside a container is the container itself
+      # NOTE: in-network addresses — .env.prod says "localhost", which inside a
+      # container is the container itself; dotenvx won't touch these (it never
+      # overrides an already-set var)
       REDIS_HOST: redis
       PYTHON_SERVER_URL: http://etl:8000
-      # BETTER_AUTH_URL / FRONTEND_URL stay browser-facing (localhost:3000)
+      # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing (localhost:3000)
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
@@ -61,9 +51,8 @@ services:
     logging: *log-rotation
     ports:
       - "3000:3000"
-    # API_INTERNAL_URL (http://backend:8080) is baked as a build ARG and kept
-    # as an image ENV — no runtime override needed here. NEXT_PUBLIC_API_URL
-    # keeps its baked browser-facing value (localhost:8080 / your real origin).
+    # NOTE: API_INTERNAL_URL is baked as a build ARG and kept as an image ENV —
+    # no runtime override; NEXT_PUBLIC_API_URL keeps its baked browser-facing value
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
@@ -83,7 +72,7 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       OBELISK_ENV: prod
-      # in-network overrides — the root .env.prod says "localhost"
+      # NOTE: in-network overrides — the root .env.prod says "localhost"
       OBELISK_REDIS_HOST: redis
       OBELISK_REDIS_PORT: "6379"
     volumes:
@@ -107,7 +96,7 @@ services:
 volumes:
   uploads:
 
-# Build-time decryption only: mounted per RUN, never baked into a layer.
+# NOTE: build-time decryption only — mounted per RUN, never baked into a layer
 secrets:
   envkeys:
     file: .env.keys

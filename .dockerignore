@@ -1,7 +1,7 @@
-# Build-context hygiene for the root Dockerfile (all targets).
+# NOTE: build-context hygiene for the root Dockerfile (all targets)
 
-# VCS, tooling output, per-language caches, runtime upload artifacts (the ETL
-# volume starts empty instead of being seeded with dev leftovers)
+# NOTE: VCS, tooling output, caches and upload artifacts — the ETL volume must
+# start empty instead of seeded with dev leftovers
 .git
 **/node_modules
 **/.next
@@ -14,17 +14,14 @@
 **/.dev-session
 **/uploads
 
-# Secrets: .env.keys only ever enters a build as a BuildKit secret (never a
-# layer) and plaintext `**/.env` files don't belong inside an image — compose
-# bind-mounts the encrypted root `.env.prod` + `.env.keys` read-only at runtime
-# instead (the etl stage decrypts them in-process via app/core/env.py). The
-# encrypted `.env.local` / `.env.prod` deliberately STAY in the context: the
-# build scripts decrypt them.
+# NOTE: .env.keys only ever enters a build as a BuildKit secret (never a
+# layer) and plaintext `**/.env` stays out — compose bind-mounts the encrypted
+# root .env.prod + .env.keys read-only instead. The encrypted .env.local /
+# .env.prod deliberately STAY in context: the build scripts decrypt them.
 .env.keys
 **/.env.keys
 **/.env
 
-# The canonical bake of the host's decrypted local env must never ship — the
-# backend stage re-bakes it under dotenvx during its own build step, and the
-# postinstall stub covers everything else.
+# NOTE: the host's decrypted bake must never ship — the backend stage re-bakes
+# under dotenvx itself, the postinstall stub covers everything else
 **/src/generated/runtime-env.ts
