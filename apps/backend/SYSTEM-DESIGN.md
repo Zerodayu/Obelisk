@@ -1,7 +1,7 @@
 # Obelisk Backend — System Design
 
 > **Product:** Obelisk — Outcomes-Based Educational Learning and Intelligent System Kit for Jose Maria College Foundation, Inc. (JMCFI)
-> **Status:** Backend-first build in progress — **Phases 0–6 complete** (typecheck/lint/bun:test green; forms module, ingest, rollup, CQI/ACT loop, PLAN setup, and 14 supporting/periodic forms shipped behind `api/v1`; archival migration applied). Phase 7 (graduation-cluster archival pipeline) pending. **Frontend work is deferred until the backend is stable** (see `../../roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
+> **Status:** Backend-first build in progress — **Phases 0–6 complete** (typecheck/lint/bun:test green; forms module, ingest, rollup, CQI/ACT loop, PLAN setup, and 14 supporting/periodic forms shipped behind `api/v1`; archival migration applied). Phase 7 (graduation-cluster archival pipeline) pending. **Frontend work is deferred until the backend is stable** (see `../../system-docs/roadmap.md`). This doc records the **current state** and the **target design** mapped from the JMCFI OBE forms so future work lands on stable ground.
 
 ---
 
@@ -474,7 +474,7 @@ alumni_tracer + employer_satisfaction_survey ──> feed plo_attainment_summary
 
 ## 9. Deferred / Open Questions
 
-- **Build strategy: backend-first.** All backend feature phases (forms, ingest, rollups, CQI, archival) are built and stabilized (typecheck + lint + bun:test green) before any frontend work resumes; see `../../roadmap.md` for the tracking. **Phase 0 is complete**; the archival migration is applied, so DB integration tests now run against the live dev database.
+- **Build strategy: backend-first.** All backend feature phases (forms, ingest, rollups, CQI, archival) are built and stabilized (typecheck + lint + bun:test green) before any frontend work resumes; see `../../system-docs/roadmap.md` for the tracking. **Phase 0 is complete**; the archival migration is applied, so DB integration tests now run against the live dev database.
 - I-P-D stage representation for curriculum-map cells and cohort progression (new column on `CloToPloMap` vs. JSON). — **RESOLVED in Phase 5:** nullable `IpdStage` enum column on `CloToPloMap` (attainment side) plus `IpdStage?` on `CurriculumMapCell` (curriculum-map cells).
 - Stateful CQI/logical status fields beyond the clean single-table forms (may warrant dedicated CQI/CTL tables rather than `FormSubmission.formData` JSON). — **RESOLVED in Phase 4:** dedicated `gap_row` / `cqi_entry` / `ctl_row` tables adopted (see §2.11).
 - Survey long-guide vs. row-normalized tabulations (JSON now, consider normalized later).

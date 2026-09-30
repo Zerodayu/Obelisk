@@ -105,7 +105,7 @@ action_taken              -> Action-Taken Record (At-Risk Students)
 
 ## Build Priority
 
-**Backend-first strategy:** the whole backend is built and stabilized before any frontend work resumes (frontend work is consolidated in `../../roadmap.md` under a deferred section). When implementing forms incrementally, follow this order (rationale in `SYSTEM-DESIGN.md`):
+**Backend-first strategy:** the whole backend is built and stabilized before any frontend work resumes (frontend work is consolidated in `../../system-docs/roadmap.md` under a deferred section). When implementing forms incrementally, follow this order (rationale in `SYSTEM-DESIGN.md`):
 
 0. **Foundation/stabilization** — `tsconfig` fix (moduleResolution `bundler`), `typecheck`/`lint`/`test` scripts, bun:test harness, shared validators (≥70% floor, `direct×0.70 + indirect×0.30`, 6-category root-cause enum), `forms` module, python-server ingest client.
 1. `clo_raw_data` (per-student raw data entry — everything rolls up from here)

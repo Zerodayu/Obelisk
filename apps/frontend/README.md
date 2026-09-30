@@ -2,7 +2,7 @@
 
 Next.js 16 (App Router) client for **Obelisk**, the JMCFI outcome-based-education (OBE) assessment system. It renders the institutional OBE forms, uploads class-record spreadsheets, runs the approval workflow, and surfaces backend-computed attainment results as read-only dashboards/badges.
 
-Part of a monorepo: `apps/backend/` (Elysia + Prisma API at `api/v1`), `apps/python-server/` (FastAPI ETL/analytics), `apps/frontend/` (this app). Progress and roadmap live in `../../roadmap.md`.
+Part of a monorepo: `apps/backend/` (Elysia + Prisma API at `api/v1`), `apps/python-server/` (FastAPI ETL/analytics), `apps/frontend/` (this app). Progress and roadmap live in `../../system-docs/roadmap.md`.
 
 **Docs:** [`SYSTEM-DESIGN.md`](./SYSTEM-DESIGN.md) (architecture, routes, data flow) · [`AGENTS.md`](./AGENTS.md) (conventions for AI/human contributors).
 

@@ -1,6 +1,6 @@
 # Contributing to OBELISK
 
-Development setup and workflow documentation. For a project overview, see the [README](README.md); for live progress, see [`roadmap.md`](../roadmap.md).
+Development setup and workflow documentation. For a project overview, see the [README](README.md); for live progress, see [`roadmap.md`](../system-docs/roadmap.md).
 
 ---
 

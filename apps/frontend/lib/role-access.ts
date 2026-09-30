@@ -226,7 +226,7 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
     chain: ["vpaa"],
   },
 
-  // --- ACT / at-risk intervention (client requirement, see roadmap.md) ---
+  // --- ACT / at-risk intervention (client requirement, see system-docs/roadmap.md) ---
   action_taken: {
     preparers: ["faculty", "program_chair"],
     chain: ["program_chair"],

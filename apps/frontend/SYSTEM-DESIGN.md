@@ -115,7 +115,7 @@ The intended `components/obe/` package was never built; the shared primitives th
 - **`components/forms/form-workflow.tsx`** — the shared approval bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive), embedded on **all 20 wired screens** (the 13 Phase 0–5 screens incl. `/forms/clo-raw-data`, plus the 7 CHECK screens — which pass `payload.id`, the `FormSubmission` id returned by CHECK `init`, and re-sync only `status` through `onChanged` so unsaved edits survive; their Save button locks outside `draft`/`returned`).
 - **`components/forms/form-placeholder.tsx`** — titled scaffold wrapper (title + stable code + PDCA stage) that renders `children`, falling back to a "pending" panel when a screen has no content yet.
 
-Still missing (tracked in `../../roadmap.md`): dedicated `status-badge`/`ipd-selector`/`cohort-selector`/`root-cause-selector`/`blooms-selector`/`rubric-scale`/`likert-scale`/`loop-status-badge`/`row-editor-table`/`form-header`/`computed-cell` primitives — screens currently inline these.
+Still missing (tracked in `../../system-docs/roadmap.md`): dedicated `status-badge`/`ipd-selector`/`cohort-selector`/`root-cause-selector`/`blooms-selector`/`rubric-scale`/`likert-scale`/`loop-status-badge`/`row-editor-table`/`form-header`/`computed-cell` primitives — screens currently inline these.
 
 ### Form-render strategy
 

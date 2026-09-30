@@ -18,7 +18,7 @@ Each service has its own README and agent guide with deeper details:
 - [`apps/frontend/README.md`](../apps/frontend/README.md) — see also `apps/frontend/SYSTEM-DESIGN.md`
 - [`apps/python-server/README.md`](../apps/python-server/README.md) — see also `apps/python-server/SYSTEM-DESIGN.md`
 
-> **Note:** The project is under active development (backend-first). See [`roadmap.md`](../roadmap.md) for what is built and what is pending, and the [`JMCFI-WIN-OBE Forms Digitization Reference`](JMCFI-WIN-OBE-Forms-Digitization-Reference.md) for the domain model.
+> **Note:** The project is under active development (backend-first). See [`roadmap.md`](../system-docs/roadmap.md) for what is built and what is pending, and the [`JMCFI-WIN-OBE Forms Digitization Reference`](../system-docs/JMCFI-WIN-OBE-Forms-Digitization-Reference.md) for the domain model. All four system docs live in [`system-docs/`](../system-docs/README.md).
 
 ---
 
