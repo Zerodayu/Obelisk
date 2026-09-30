@@ -8,16 +8,24 @@
 		"typecheck": "bunx tsc --noEmit",
 		"lint": "bunx biome check",
 		"format": "bunx biome format --write",
+
 		"dev": "dotenvx run -f ../../.env.local -- bun --watch src/index.ts",
 		"start": "dotenvx run -f ../../.env.local -- bun run src/index.ts",
 		"start:prod": "dotenvx run -f ../../.env.prod -- bun run src/index.ts",
 		"build": "dotenvx run -f ../../.env.local -- bunx prisma generate && dotenvx run -f ../../.env.local -- bun ../../packages/env/scripts/gen-runtime-env.ts",
 		"build:prod": "dotenvx run -f ../../.env.prod -- bunx prisma generate && dotenvx run -f ../../.env.prod -- bun ../../packages/env/scripts/gen-runtime-env.ts",
+
 		"db:push": "dotenvx run -f ../../.env.local -- bunx prisma db push",
 		"db:generate": "dotenvx run -f ../../.env.local -- bunx prisma generate",
 		"db:seed": "dotenvx run -f ../../.env.local -- bun prisma/seed.ts",
 		"db:studio": "dotenvx run -f ../../.env.local -- bunx prisma studio",
-		"db:migrate": "dotenvx run -f ../../.env.local -- bunx prisma migrate"
+		"db:migrate": "dotenvx run -f ../../.env.local -- bunx prisma migrate dev",
+
+		"db:push-prod": "dotenvx run -f ../../.env.prod -- bunx prisma db push",
+		"db:generate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma generate",
+		"db:seed-prod": "dotenvx run -f ../../.env.prod -- bun prisma/seed.ts",
+		"db:studio-prod": "dotenvx run -f ../../.env.prod -- bunx prisma studio",
+		"db:migrate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma migrate deploy"
 	},
 	"dependencies": {
 		"@better-auth/prisma-adapter": "^1.6.23",
