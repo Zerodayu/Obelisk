@@ -9,6 +9,17 @@ import { wipeTestDatabase } from "./wipe-db";
  */
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 
+// NOTE: integration tests run against remote Neon — round-trips routinely
+// exceed bun's 5s default, which fails tests and (worse) aborts `finally`
+// cleanup blocks, cascading FK/unique errors into later tests in the same
+// file. Give every test 60s here; an explicit per-test timeout still wins.
+if (
+	!args.includes("--timeout") &&
+	!args.some((a) => a.startsWith("--timeout="))
+) {
+	args.push("--timeout=60000");
+}
+
 await wipeTestDatabase();
 
 let code = 1;
