@@ -1,3 +1,4 @@
+import { runApprovalEffects } from "@lib/forms/approval-effects";
 import {
 	approvalRouteFor,
 	assertCanArchive,
@@ -232,6 +233,11 @@ export class SubmissionService {
 			throw new NoPendingApprovalError(approverRole);
 		}
 
+		// Audit details contributed by a registered approval effect (e.g.
+		// `action_taken` → { flagsCleared }) — captured inside the transaction,
+		// written to the audit log after it commits.
+		let effectDetails: Record<string, unknown> = {};
+
 		await prisma.$transaction(async (tx) => {
 			await tx.approvalStep.update({
 				where: { id: pending.id },
@@ -268,6 +274,14 @@ export class SubmissionService {
 					where: { id },
 					data: { status: "approved", currentApproverRole: null },
 				});
+				// Final approval → run the form's registered effect in the same
+				// transaction (lib/forms/approval-effects.ts).
+				effectDetails = await runApprovalEffects(tx, {
+					id: existing.id,
+					formTypeCode: existing.formType.code,
+					classSectionId: existing.classSectionId,
+					formData: (existing.formData ?? {}) as Record<string, unknown>,
+				});
 			}
 		});
 
@@ -276,6 +290,7 @@ export class SubmissionService {
 			approverRole,
 			stepId: pending.id,
 			comment,
+			...effectDetails,
 		});
 
 		return submission;

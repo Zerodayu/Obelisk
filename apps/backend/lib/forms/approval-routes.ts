@@ -204,6 +204,16 @@ export const APPROVAL_ROUTES: Record<string, ApprovalRoute> = {
 		preparerRoles: ["aqau", "vpaa"],
 		chain: ["vpaa"],
 	},
+
+	// --- ACT / at-risk intervention ---------------------------------------------
+	// Not in the manual — client requirement (see roadmap.md): the faculty member
+	// who flagged an at-risk student records the intervention, the program chair
+	// approves it, and approval clears the student's AtRiskFlag rows.
+	action_taken: {
+		// "Faculty/Program Chair → Program Chair"
+		preparerRoles: ["faculty", "program_chair"],
+		chain: ["program_chair"],
+	},
 };
 
 /**

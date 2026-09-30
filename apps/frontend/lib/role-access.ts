@@ -225,6 +225,12 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
     preparers: ["aqau", "vpaa"],
     chain: ["vpaa"],
   },
+
+  // --- ACT / at-risk intervention (client requirement, see roadmap.md) ---
+  action_taken: {
+    preparers: ["faculty", "program_chair"],
+    chain: ["program_chair"],
+  },
 };
 
 /** Is `role` allowed on `feature`? */

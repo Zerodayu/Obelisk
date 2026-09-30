@@ -46,6 +46,7 @@ const ALL_FORM_CODES = [
 	"systemic_gap_report",
 	"capa_plan",
 	"institutional_review",
+	"action_taken",
 ];
 
 const VALID_USER_ROLES = [

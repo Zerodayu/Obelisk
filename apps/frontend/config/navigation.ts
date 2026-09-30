@@ -141,6 +141,12 @@ const FORM_SECTIONS: NavSection[] = [
         icon: FileTextIcon,
         code: "annual_program_report",
       },
+      {
+        title: "Action Taken (At-Risk)",
+        url: "/forms/cqi/action-taken",
+        icon: ClipboardCheckIcon,
+        code: "action_taken",
+      },
     ],
   },
   {

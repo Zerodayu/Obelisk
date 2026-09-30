@@ -1,6 +1,7 @@
 import Elysia from "elysia";
 import { academicPlugin } from "./v1/academic/controller";
 import { aiPlugin } from "./v1/ai/controller";
+import { atRiskPlugin } from "./v1/atrisk/controller";
 import { authPlugin } from "./v1/auth/controller";
 import { carPlugin } from "./v1/car/controller";
 import { checkPlugin } from "./v1/check/controller";
@@ -22,4 +23,5 @@ export const apiRoutesV1 = new Elysia({ prefix: "api/v1" })
 	.use(planPlugin)
 	.use(checkPlugin)
 	.use(periodicPlugin)
+	.use(atRiskPlugin)
 	.use(aiPlugin);
