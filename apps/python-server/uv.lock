@@ -600,6 +600,7 @@ dependencies = [
     { name = "pandas" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "python-dotenvx" },
     { name = "python-multipart" },
     { name = "redis" },
     { name = "sqlalchemy" },
@@ -619,6 +620,7 @@ requires-dist = [
     { name = "pandas", specifier = ">=2.2" },
     { name = "pydantic", specifier = ">=2.6" },
     { name = "pydantic-settings", specifier = ">=2.3" },
+    { name = "python-dotenvx", specifier = ">=2.0.1" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "redis", specifier = ">=5.0.0" },
     { name = "sqlalchemy", specifier = ">=2.0" },
@@ -847,6 +849,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/ed/0301aeeac3e5353ef3d94b6ec08bbcabd04a72018415dcb29e588514bba8/python_dotenv-1.2.2.tar.gz", hash = "sha256:2c371a91fbd7ba082c2c1dc1f8bf89ca22564a087c2c287cd9b662adde799cf3", size = 50135, upload-time = "2026-03-01T16:00:26.196Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0b/d7/1959b9648791274998a9c3526f6d0ec8fd2233e4d4acce81bbae76b44b2a/python_dotenv-1.2.2-py3-none-any.whl", hash = "sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a", size = 22101, upload-time = "2026-03-01T16:00:25.09Z" },
+]
+
+[[package]]
+name = "python-dotenvx"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/32/dd/f63159319831830c0150bc4b8f834ae6fa160adf52c753f0ce25d0231b53/python_dotenvx-2.0.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:93a2000d543be027d8e7f44a79bd80caac0a289cf750fa827c5852b3fb2ba567", size = 976404, upload-time = "2026-09-11T22:45:00.774Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/bd/05f330b331e3121fb2b7263204be14e2990aec1ab70cb7c7f78b3a04296d/python_dotenvx-2.0.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:6fe8adac49369bfd56040d1091c8caa58ab889af1646aef273902cdb46aad680", size = 932250, upload-time = "2026-09-11T22:45:03.11Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/e5/337744fa5004adff4a92ad267b5d28dfd02cbfb4ad5935800e3cf88b18d2/python_dotenvx-2.0.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c708307449e0023ca64d47a265231d8f243513ee00f087592cc3e7abc41b1251", size = 1067701, upload-time = "2026-09-11T22:45:04.185Z" },
+    { url = "https://files.pythonhosted.org/packages/08/28/6d0ec5fe0c42488019ce184f94fba71cebdf70f538c3d506ceac22dc0c68/python_dotenvx-2.0.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:fdbd2c559a351979492e0c1b06221003c9b380c39f5c210b1247781e6386606c", size = 1084542, upload-time = "2026-09-11T22:45:05.337Z" },
+    { url = "https://files.pythonhosted.org/packages/85/d7/6726e530930e0dde8971ab15b2ccb6335c66e116ba10833549039d3e597e/python_dotenvx-2.0.1-cp38-abi3-win_amd64.whl", hash = "sha256:3ab0d3e2a683315051c9a9d0b7f92d6979d41147cadf5a56424848f05049f7fe", size = 876758, upload-time = "2026-09-11T22:45:06.726Z" },
 ]
 
 [[package]]

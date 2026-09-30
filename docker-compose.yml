@@ -7,8 +7,9 @@
 # All four ports collide with `just dev` / `just start` — only one stack at a
 # time. Only backend/frontend face the network; etl/redis bind loopback only
 # (etl has no auth, redis has no password). The root .env.prod and .env.keys
-# are bind-mounted read-only (the
-# `start:prod` scripts decrypt them with dotenvx inside the container);
+# are bind-mounted read-only into all three app containers (backend/frontend:
+# the `start:prod` scripts decrypt with dotenvx; etl: app/core/env.py decrypts
+# in-process, OBELISK_ENV=prod selects the file);
 # `environment:` entries below are the in-network overrides dotenvx must not
 # fight (it never overrides a var that is already set).
 #
@@ -80,13 +81,16 @@ services:
     # NOTE: no auth by design — loopback only; the backend reaches http://etl:8000 over the compose network
     ports:
       - "127.0.0.1:8000:8000"
-    env_file:
-      - path: apps/python-server/.env
-        required: false
     environment:
+      OBELISK_ENV: prod
+      # in-network overrides — the root .env.prod says "localhost"
       OBELISK_REDIS_HOST: redis
       OBELISK_REDIS_PORT: "6379"
     volumes:
+      # NOTE: the service decrypts the root env file itself (app/core/env.py),
+      # so the encrypted file + keys are mounted read-only like backend/frontend
+      - ./.env.prod:/app/.env.prod:ro
+      - ./.env.keys:/app/.env.keys:ro
       - uploads:/app/uploads
     depends_on:
       - redis

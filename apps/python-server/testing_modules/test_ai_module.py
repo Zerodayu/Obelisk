@@ -7,14 +7,11 @@ import sys
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# Load environment variables from the .env file at the project root
-try:
-    from dotenv import load_dotenv
-    dotenv_path = PROJECT_ROOT / ".env"
-    if dotenv_path.exists():
-        load_dotenv(dotenv_path=dotenv_path)
-except ImportError:
-    pass
+# NOTE: env comes from the repo-root .env.local / .env.prod — the same
+# decrypting loader the server uses (there is no per-package .env anymore)
+from app.core.env import load_env
+
+load_env()
 
 from app.etl.extract.extractor import ExcelExtractor
 from app.etl.transform.transformer import SimpleTransformer
@@ -82,7 +79,9 @@ async def main():
     if any(name in result_str for name in ["DELA CRUZ", "DOE", "SANTOS"]):
         print("VERIFICATION FAILED: Real student names were found in the output.")
     else:
-        print("VERIFICATION PASSED: No real student names found in the output (anonymization verified).")
+        print(
+            "VERIFICATION PASSED: No real student names found in the output (anonymization verified)."
+        )
 
     recommendation_text = cqi_result.get("recommendation", "")
     if cqi_result and cqi_result.get("status") == "no_gaps_found":

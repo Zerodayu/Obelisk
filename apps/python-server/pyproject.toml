@@ -20,6 +20,7 @@ dependencies = [
   "google-genai>=2.0.0",
   "redis>=5.0.0",
   "httpx>=0.27.0",
+  "python-dotenvx>=2.0.1",
 ]
 
 [project.scripts]

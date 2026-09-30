@@ -59,6 +59,9 @@ EXPOSE 3000
 CMD ["bun", "run", "start:prod"]
 
 # --- etl (python-server / uv, :8000) ---------------------------------------
+# NOTE: runtime env is decrypted in-process by app/core/env.py from the
+# root .env.prod + .env.keys that compose bind-mounts read-only at /app
+# (OBELISK_ENV=prod); neither file is copied into this image.
 FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS etl
 
 WORKDIR /app

@@ -4,11 +4,17 @@ from typing import Annotated, Any, List
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
+from app.core.env import load_env
+
 
 class Settings(BaseSettings):
     """
     Application settings are managed by Pydantic's BaseSettings, which reads
-    from environment variables and/or a .env file.
+    from environment variables only.
+
+    NOTE: the root env file (`.env.local` / `.env.prod`, chosen by OBELISK_ENV)
+    is decrypted into os.environ by app.core.env before Settings() is built —
+    see that module; there is no per-package env file.
     """
 
     # --- Core Settings ---
@@ -105,7 +111,11 @@ class Settings(BaseSettings):
                         pass
                 for part in s.split(","):
                     cleaned = part.strip().strip("'\"")
-                    if cleaned and cleaned != "your_actual_api_key_here" and cleaned not in keys:
+                    if (
+                        cleaned
+                        and cleaned != "your_actual_api_key_here"
+                        and cleaned not in keys
+                    ):
                         keys.append(cleaned)
 
         _add_candidates(self.LLM_API_KEYS)
@@ -126,11 +136,12 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(
         env_prefix="OBELISK_",  # All env vars must start with OBELISK_
-        env_file=".env",
-        env_file_encoding="utf-8",
         case_sensitive=False,
     )
 
+
+# NOTE: decrypt the root env file first — pydantic only reads process env
+load_env()
 
 # Create a single, global instance of the settings
 settings = Settings()
