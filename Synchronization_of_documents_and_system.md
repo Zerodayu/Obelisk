@@ -1,10 +1,10 @@
-# OBELISK: Synchronization of Documents and System
+# OBELISK: System Synchronization, Architecture Audit & Development Roadmap
 
-> **Auditor Notice & System Ledger**  
-> **Evaluation Mode:** Read-Only Systems Cross-Examination  
+> **Auditor Notice, Architecture Audit & Development Ledger**  
+> **Evaluation Mode:** Read-Only Systems Cross-Examination & Unified Engineering Roadmap  
 > **Project Scope:** Jose Maria College Foundation, Inc. (JMCFI) — Outcomes-Based Educational Learning and Intelligent System Kit (OBELISK)  
 > **Target Pilot:** College of Information Technology Education (CITE) — BS Information Technology (BSIT) Program, Section 1A Pilot  
-> **Document Purpose:** Definitive, objective cross-examination between institutional OBE documentation (37 forms, 8-level hierarchy, assessment formulas) and actual system execution across Backend (Elysia/Prisma), Frontend (Next.js 16/Jotai), and Analytics Engine (FastAPI/Python).
+> **Document Purpose:** Single consolidated source of truth unifying the institutional OBE documentation cross-examination (37 forms, 8-level hierarchy, assessment formulas) with the codebase implementation status, phased roadmap (Phases 0–7), service readiness, and active backlog.
 
 ---
 
@@ -49,7 +49,7 @@
   5. Route institutional recommendations to unauthorized roles.
 - **Codebase Implementation:**
   - **Role Guard:** Endpoint `POST /api/v1/ai/recommendation/generate` is gated via `assertCanGenerateAiInsights` in [`apps/backend/lib/role-access.ts`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/lib/role-access.ts). Only `vpaa` and `system_admin` roles can trigger generation (returns 403 Forbidden for faculty, chairs, and deans).
-  - **PII Scrubbing:** Before generating prompts for Google Gemini (`gemini-3.6-flash`), [`apps/python-server/app/analytics/institutional_summary.py`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/python-server/app/analytics/institutional_summary.py#L166-L173) scrubs student identities, replacing student IDs and names with anonymized tokens (`Student A`, `Student B`).
+  - **PII Scrubbing:** Before generating prompts for Google Gemini (`gemini-2.5-flash`), [`apps/python-server/app/analytics/institutional_summary.py`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/python-server/app/analytics/institutional_summary.py#L166-L173) scrubs student identities, replacing student IDs and names with anonymized tokens (`Student A`, `Student B`).
   - **Database Isolation:** Recommendations write exclusively to table `AiRecommendation` ([`prisma/schema/08-monitoring.prisma`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/prisma/schema/08-monitoring.prisma)) with `status = "pending_review"`. No write pathways exist from the AI service to `StudentScore`, `CloAttainment`, or `PloAttainment`.
   - **Offline/Debug Mode:** In [`apps/python-server/app/analytics/cqi_recommender.py`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/python-server/app/analytics/cqi_recommender.py), `IS_DEBUG_MODE = True` remains enabled by default, ensuring deterministic, offline mock recommendations without external API reliance.
 - **Audit Verdict:** **Fully Synchronized & Guarded.** System boundaries and data privacy controls for AI integration comply strictly with policy.
@@ -161,164 +161,240 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
 
 ---
 
-## 4. Form Digitization Ledger (Phases 0 - 6)
+## 4. Phase-by-Phase Digitization & Development Ledger (Phases 0 – 7)
 
-The following ledger cross-references the 37 institutional forms recognized in JMCFI documentation against actual codebase assets:
+**Build Strategy:** Backend-First. All backend models, validators, service routes, and approval routing are completed before UI form screens.
 
-| Form ID | Official Form Title | PDCA Phase | Prisma Models / Storage | Backend Service & Route | Frontend Screen & Route | Approval Chain Wired | Actual Implementation Status |
-| :--- | :--- | :---: | :--- | :--- | :--- | :---: | :--- |
-| **F01** | CLO-PLO Curriculum Map | PLAN | `PloDirectoryRow`, `CurriculumCourseRow`, `CurriculumMapCell` | `CurriculumMapService`<br>`/api/v1/plan/curriculum-map` | `/forms/plan/curriculum-map` | `['aqau']` | **Partially Implemented** (Blocked by Save POST/PUT bug) |
-| **F02** | Portfolio Roadmap & Rubric | PLAN | `PortfolioRoadmapRow`, `PortfolioRubricRow` | `PortfolioRoadmapService`<br>`/api/v1/periodic/portfolio-roadmap` | **MISSING** (No UI route) | `['dean', 'aqau']` | **Backend-Only** (Phase 6 API live, screen unbuilt) |
-| **F03** | Assessment Calendar | PLAN | `CalendarEventRow`, `FormSubmission` | `AssessmentCalendarService`<br>`/api/v1/plan/assessment-calendar` | `/forms/plan/assessment-calendar` | `['dean', 'aqau']` | **Fully Implemented** (17 fixed templates protected) |
-| **F04** | Target-Setting Matrix | PLAN | `PloTargetRow`, `CourseCloTargetRow` | `TargetSettingMatrixService`<br>`/api/v1/plan/target-setting-matrix` | `/forms/plan/target-setting-matrix` | `['aqau']` | **Fully Implemented** ($\ge 70\%$ floor enforced) |
-| **F05** | Stakeholder Consultation | PLAN | `FormSubmission.formData` | Backend routes active in generic forms module | **MISSING** (No UI route) | `['program_chair']` | **Backend-Only** (JSON store only) |
-| **F06** | Approved Assessment Budget | PLAN | `BudgetLineItem`, `FormSubmission` | `AssessmentBudgetService`<br>`/api/v1/plan/assessment-budget` | `/forms/plan/assessment-budget` | `['vpaa']` | **Fully Implemented** (12 fixed items non-deletable) |
-| **F07** | Per-Student CLO Raw Data Sheet | DO | `ClassSection`, `CloAttainment`, `StudentScore`, `AtRiskFlag` | `IngestService`<br>`/api/v1/ingest/upload` | `/forms/clo-raw-data` | `['program_chair']` | **Fully Implemented** (AUN-OBE Excel ingestion) |
-| **F08** | Mid-Cycle CLO Attainment | DO | `MidCycleCohortRow`, `FormSubmission` | `MidCycleAttainmentService`<br>`/api/v1/check/mid-cycle-attainment` | `/forms/check/mid-cycle-attainment` | `['program_chair']` | **Fully Implemented** (Cohort rows + watchlist) |
-| **F09** | Resource Monitoring | DO | `ResourceItemRow`, `CqiImplementRow` | `ResourceMonitoringService`<br>`/api/v1/periodic/resource-monitoring` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** (Phase 6 API live, screen unbuilt) |
-| **F10** | Peer Observation Record | DO | `FormSubmission.formData` | `PeerObservationService`<br>`/api/v1/check/peer-observation` | `/forms/check/peer-observation` | `['program_chair']` | **Fully Implemented** (7 fixed criteria) |
-| **F11** | Exhibition Industry Feedback | DO | `ExhibitionGuestRow`, `FormSubmission` | `ExhibitionFeedbackService`<br>`/api/v1/check/exhibition-feedback` | `/forms/check/exhibition-feedback` | `['program_chair']` | **Fully Implemented** ($\ge 3$ guests submit gate) |
-| **F12** | CLO Perception Survey | DO | `FormSubmission.formData` | `CloPerceptionSurveyService`<br>`/api/v1/check/clo-perception-survey` | `/forms/check/clo-perception-survey` | `['program_chair']` | **Fully Implemented** (Likert tab + divergence flag) |
-| **F13** | Course Assessment Report (CAR) | CHECK | `FormSubmission`, `CloAttainment`, `AtRiskFlag` | `CarService`<br>`/api/v1/car` | `/forms/course-assessment-report` | `['chair', 'dean', 'aqau']` | **Partially Implemented** (Blocked by Save verb bug, Part 2 null, Enrolled=0) |
-| **F14** | CLO Attainment Summary | CHECK | `CloAttainment`, `FormSubmission` | `CloSummaryService`<br>`/api/v1/rollup/clo-attainment-summary` | `/forms/attainment/clo-attainment-summary` | `['program_chair']` | **Fully Implemented** (Term-level per-CLO rollup) |
-| **F15** | PLO Attainment Summary | CHECK | `PloAttainment`, `ComputationRun` | `PloSummaryService`<br>`/api/v1/rollup/plo-attainment-summary` | `/forms/attainment/plo-attainment-summary` | `['dean', 'aqau']` | **Broken Execution** (Blocked by empty mapping bridge) |
-| **F16** | Cohort Tracking Sheet | CHECK | `PloAttainment`, `CloAttainment`, `AuditLog` | `CohortTrackingService`<br>`/api/v1/rollup/cohort-tracking` | `/forms/attainment/cohort-tracking` | `['aqau']` | **Fully Implemented** (Longitudinal, audited writes) |
-| **F17** | Student Exit Survey Tabulation | CHECK | `FormSubmission.formData` | `StudentExitSurveyService`<br>`/api/v1/check/student-exit-survey` | `/forms/check/student-exit-survey` | `['program_chair']` | **Fully Implemented** (Response rate + divergence) |
-| **F18** | Portfolio Assessment Record | CHECK | `PortfolioCriterionRow` | `PortfolioAssessmentService`<br>`/api/v1/check/portfolio-assessment` | `/forms/check/portfolio-assessment` | `['aqau']` | **Fully Implemented** (Panel consensus rubric) |
-| **F19** | Capstone Panel Evaluation | CHECK | `CapstonePanelistRow` | `CapstonePanelEvaluationService`<br>`/api/v1/check/capstone-panel` | `/forms/check/capstone-panel` | `['chair', 'aqau']` | **Fully Implemented** ($\ge 2$ fac + 1 ind gate) |
-| **F20** | Alumni Tracer Study Report | CHECK | `FormSubmission.formData` | `AlumniTracerService`<br>`/api/v1/periodic/alumni-tracer` | **MISSING** (No UI route) | `['chair', 'dean']` | **Deferred per Scope Agreement** (Biennial gate live) |
-| **F21** | Employer Satisfaction Survey | CHECK | `FormSubmission.formData` | `EmployerSurveyService`<br>`/api/v1/periodic/employer-survey` | **MISSING** (No UI route) | `['chair', 'dean']` | **Deferred per Scope Agreement** (Biennial gate live) |
-| **F22** | PLO Gap Analysis Report | ACT | `GapRow`, `FormSubmission` | `PloGapAnalysisService`<br>`/api/v1/cqi/plo-gap-analysis` | `/forms/cqi/plo-gap-analysis` | `['dean']` | **Fully Implemented** (6 root causes validated) |
-| **F23** | CQI Action Plan | ACT | `CqiEntry`, `GapRow` | `CqiActionPlanService`<br>`/api/v1/cqi/cqi-action-plan` | `/forms/cqi/cqi-action-plan` | `['dean', 'aqau']` | **Fully Implemented** (2-phase planned $\to$ tracked) |
-| **F24** | Annual Program Report (APAR) | ACT | `FormSubmission.formData` | `AnnualProgramReportService`<br>`/api/v1/cqi/annual-program-report` | `/forms/cqi/annual-program-report` | `['dean', 'vpaa']` | **Fully Implemented** (11 KPIs; F16 attachment gate) |
-| **F25** | Closing-the-Loop (CTL) Report | ACT | `CtlRow`, `CqiEntry` | `ClosingTheLoopService`<br>`/api/v1/cqi/closing-the-loop` | `/forms/cqi/closing-the-loop` | `['aqau']` | **Fully Implemented** (5 condition flags hard-computed) |
-| **F26** | Systemic Gap Report | ACT | `FormSubmission.formData` | `SystemicGapReportService`<br>`/api/v1/periodic/systemic-gap-report` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** (Trigger gate: 3 NOT-MET cycles) |
-| **F27** | CAPA Plan | ACT | `FormSubmission.formData` | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | **MISSING** (No UI route) | `['aqau']` | **Backend-Only** ($\le 8$ actions; F26 approval gate) |
-| **F28** | Institutional Review | ACT | `FormSubmission.formData` | `InstitutionalReviewService`<br>`/api/v1/periodic/institutional-review` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** (Decisions D1–D5; Due July 15) |
-| **F29–F37, F41** | Specialty & Consolidation Schedules | VARIOUS | None (Undefined in manual) | None | None | None | **Unspecified / Future Placeholders** |
+### 4.1 Phase 0 — Backend Foundation & Stabilization `[COMPLETED]`
+- [x] Prisma Schema (Auth, Academic, Outcomes, Assessment, Forms, Attainment, Monitoring, Reports, Archive).
+- [x] Better-Auth (email/password, sessions), `/auth/me`, OpenAPI specs.
+- [x] TypeScript configuration (`tsconfig.json` set to `moduleResolution: "bundler"`).
+- [x] Code Quality Scripts: Biome linting, typechecking, `bun:test` test harness.
+- [x] Forms Module: `FormSubmission` / `ApprovalStep` CRUD + submit/approve lifecycle state machine.
+- [x] Python-Server Ingest Client: `POST /upload` with asynchronous polling on `GET /jobs/{job_id}`.
+- [x] Shared Validators: $\ge 70\%$ floor, $70/30$ composite constants, 6-category root-cause enums.
+
+### 4.2 Phase 1 — Per-Student CLO Raw Data (`clo_raw_data` / F07) `[COMPLETED]`
+- [x] Backend Ingest Endpoint: Accept uploaded AUN-OBE class record, forward to python-server, persist parsed results.
+- [x] Attainment Persistence: `AssessmentItem`, `StudentScore`, `CloAttainment`, `ComputationRun`.
+- [x] At-Risk Auto-Derivation: Computed flag inserted for any CLO $< 70\%$ (`AtRiskFlag`).
+- [x] Score Editing & Re-import: `PUT /attainments` (direct score edit + threshold recompute) and `POST /attainments/reimport` (wide-format CSV roster upsert).
+- [x] Frontend UI: `/forms/clo-raw-data` upload panel, polling bar, upload history table.
+
+### 4.3 Phase 2 — Course Assessment Report (`course_assessment_report` / F13) `[PARTIALLY BLOCKED]`
+- [x] Backend CAR Service: 7-part CAR assembly in `src/v1/car/` (`compute.ts`, `service.ts`, `controller.ts`).
+- [x] Attainment Aggregation: Auto-populates Part 3 (CLO summaries) and Part 4 (at-risk watchlist) directly from stored database rows.
+- [x] Frontend UI: Tabbed 7-part interface in `/forms/course-assessment-report`.
+- [ ] **Active Blockers:**
+  - HTTP method mismatch on save: Frontend POSTs to `/car/:id`, backend listens on PUT (Section 7.2).
+  - Part 1 Enrolled count is hardcoded to 0 because `Enrollment` table is never populated (Section 7.6).
+  - Part 2 Assessment Category breakdown yields null because template lacks TLA/AT categorization (Section 7.7).
+
+### 4.4 Phase 3 — Roll-up Chain (F14, F15, F16) `[PARTIALLY BLOCKED]`
+- [x] Backend `clo_attainment_summary` (F14): Term-level CLO attainment by cohort.
+- [x] Backend `cohort_tracking` (F16): Longitudinal tracking with permanent audit trails and CQI trigger flags.
+- [x] Frontend UI: Screens built for F14, F15, and F16 under `/forms/attainment/`.
+- [ ] **Critical Blocker on `plo_attainment_summary` (F15):** Backend `PloSummaryService` passes empty `clo_plo_mapping: []` snapshot to Python server, preventing all PLO rollups from computing (Section 7.4).
+
+### 4.5 Phase 4 — CQI / ACT Loop (F22, F23, F24, F25) `[COMPLETED]`
+- [x] `plo_gap_analysis` (F22): Generates gap rows for NOT-MET PLO-cohort combinations with 6-category root-cause validation.
+- [x] `cqi_action_plan` (F23): Two-phase stateful lifecycle (Planned $\to$ Tracked to Completion).
+- [x] `closing_the_loop` (F25): Hard-computed loop closure status (`closed` requires all 5 condition flags `true` and action executed).
+- [x] `annual_program_report` (F24): Blocks submission if F16 Cohort Tracking Sheet is absent.
+- [x] Frontend UI: Screens built for F22, F23, F24, F25 under `/forms/cqi/`.
+
+### 4.6 Phase 5 — PLAN-Phase Setup Forms (F01, F03, F04, F06) `[COMPLETED]`
+- [x] `curriculum_map` (F01): Dynamic CLO-PLO matrix, coverage check, and `CloToPloMapService` connection panel.
+  - *Note:* Save currently blocked by POST vs PUT method mismatch (Section 7.3).
+- [x] `assessment_calendar` (F03): 17 pre-seeded institutional template milestones (editable, non-deletable).
+- [x] `target_setting_matrix` (F04): Enforces $\ge 70\%$ hard floor with mandatory rationale above floor.
+- [x] `assessment_budget` (F06): 12 fixed line items by PDCA phase with auto-computed totals.
+- [x] Frontend UI: Screens built for all 4 setup forms under `/forms/plan/`.
+
+### 4.7 Phase 6 — Supporting & Periodic / Institutional Instruments `[MIXED STATE]`
+- **DO/CHECK Instruments (CHECK Module `/api/v1/check`):**
+  - [x] Backend services & endpoints live: F08 (Mid-Cycle), F10 (Peer Observation), F11 (Exhibition Feedback), F12 (CLO Perception), F17 (Student Exit Survey), F18 (Portfolio Assessment), F19 (Capstone Panel).
+  - [x] Frontend UI: All 7 screens built under `/forms/check/` and wired with the shared `FormWorkflow` approval bar.
+- **Periodic / Institutional Instruments (Periodic Module `/api/v1/periodic`):**
+  - [x] Backend services & submit gates live: F09 (Resource Monitoring), F20 (Alumni Tracer), F21 (Employer Survey), F26 (Systemic Gap), F27 (CAPA Plan), F28 (Institutional Review), F02 (Portfolio Roadmap).
+  - [ ] Frontend UI: **Screens unbuilt.** No Next.js routes exist under `/forms/periodic/`.
+
+### 4.8 Phase 7 — Graduation-Cluster Archival Pipeline `[DEFERRED / INCOMPLETE]`
+- **Architectural Scope:** Compiles finished cohorts into compact, read-only snapshots keyed by actual graduation term, purging granular hot rows (`StudentScore`, raw `CloAttainment`) while retaining permanent `PloAttainment`.
+- **Status:**
+  - [x] Database Schema Complete: Models `GraduationCluster`, `GraduationClusterEntry`, `PeoAttainment`, and enums `StudentStatus`, `GraduationClusterStatus` applied in DB (`20260805000000_add_graduation_cluster_archival`).
+  - [x] Frontend Archives Viewer Shell: Route `/archives` and `[clusterId]` exist behind role gate (`aqau`, `vpaa`, `dean`, `system_admin`).
+  - [ ] Backend Compilation Pipeline: Auto-clustering at AY end, purge execution, and detail artifact export (`detailArtifactUrl`) remain unbuilt.
+  - [ ] **PEO Prerequisite Gate:** Archival compilation cannot run until biennial PEO attainment evidence (F20/F21) is captured.
 
 ---
 
-## 5. Critical Code-to-Document Discrepancies (Blockers)
+### 4.9 Comprehensive 37-Form Digitization Ledger
 
-### 5.1 Blocker 1: Missing Production Safety Guard in Database Seeder
+| Form ID | Official Form Title | PDCA Phase | Backend Service & Route | Frontend Route & Status | Approval Chain | Actual Status |
+| :--- | :--- | :---: | :--- | :--- | :---: | :--- |
+| **F01** | CLO-PLO Curriculum Map | PLAN | `CurriculumMapService`<br>`/api/v1/plan/curriculum-map` | `/forms/plan/curriculum-map` | `['aqau']` | **Partially Blocked** (Save POST/PUT bug) |
+| **F02** | Portfolio Roadmap & Rubric | PLAN | `PortfolioRoadmapService`<br>`/api/v1/periodic/portfolio-roadmap` | **MISSING** (No UI route) | `['dean', 'aqau']` | **Backend-Only** |
+| **F03** | Assessment Calendar | PLAN | `AssessmentCalendarService`<br>`/api/v1/plan/assessment-calendar` | `/forms/plan/assessment-calendar` | `['dean', 'aqau']` | **Fully Implemented** |
+| **F04** | Target-Setting Matrix | PLAN | `TargetSettingMatrixService`<br>`/api/v1/plan/target-setting-matrix` | `/forms/plan/target-setting-matrix` | `['aqau']` | **Fully Implemented** |
+| **F05** | Stakeholder Consultation | PLAN | Generic form handler | **MISSING** (No UI route) | `['program_chair']` | **Backend-Only** (JSON store only) |
+| **F06** | Approved Assessment Budget | PLAN | `AssessmentBudgetService`<br>`/api/v1/plan/assessment-budget` | `/forms/plan/assessment-budget` | `['vpaa']` | **Fully Implemented** |
+| **F07** | Per-Student CLO Raw Data Sheet | DO | `IngestService`<br>`/api/v1/ingest/upload` | `/forms/clo-raw-data` | `['program_chair']` | **Fully Implemented** |
+| **F08** | Mid-Cycle CLO Attainment | DO | `MidCycleAttainmentService`<br>`/api/v1/check/mid-cycle-attainment` | `/forms/check/mid-cycle-attainment` | `['program_chair']` | **Fully Implemented** |
+| **F09** | Resource Monitoring | DO | `ResourceMonitoringService`<br>`/api/v1/periodic/resource-monitoring` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
+| **F10** | Peer Observation Record | DO | `PeerObservationService`<br>`/api/v1/check/peer-observation` | `/forms/check/peer-observation` | `['program_chair']` | **Fully Implemented** |
+| **F11** | Exhibition Industry Feedback | DO | `ExhibitionFeedbackService`<br>`/api/v1/check/exhibition-feedback` | `/forms/check/exhibition-feedback` | `['program_chair']` | **Fully Implemented** |
+| **F12** | CLO Perception Survey | DO | `CloPerceptionSurveyService`<br>`/api/v1/check/clo-perception-survey` | `/forms/check/clo-perception-survey` | `['program_chair']` | **Fully Implemented** |
+| **F13** | Course Assessment Report (CAR) | CHECK | `CarService`<br>`/api/v1/car` | `/forms/course-assessment-report` | `['chair', 'dean', 'aqau']` | **Partially Blocked** (Save verb, Part 2 null, Enrolled=0) |
+| **F14** | CLO Attainment Summary | CHECK | `CloSummaryService`<br>`/api/v1/rollup/clo-attainment-summary` | `/forms/attainment/clo-attainment-summary` | `['program_chair']` | **Fully Implemented** |
+| **F15** | PLO Attainment Summary | CHECK | `PloSummaryService`<br>`/api/v1/rollup/plo-attainment-summary` | `/forms/attainment/plo-attainment-summary` | `['dean', 'aqau']` | **Critical Break** (Empty mapping bridge) |
+| **F16** | Cohort Tracking Sheet | CHECK | `CohortTrackingService`<br>`/api/v1/rollup/cohort-tracking` | `/forms/attainment/cohort-tracking` | `['aqau']` | **Fully Implemented** |
+| **F17** | Student Exit Survey Tabulation | CHECK | `StudentExitSurveyService`<br>`/api/v1/check/student-exit-survey` | `/forms/check/student-exit-survey` | `['program_chair']` | **Fully Implemented** |
+| **F18** | Portfolio Assessment Record | CHECK | `PortfolioAssessmentService`<br>`/api/v1/check/portfolio-assessment` | `/forms/check/portfolio-assessment` | `['aqau']` | **Fully Implemented** |
+| **F19** | Capstone Panel Evaluation | CHECK | `CapstonePanelEvaluationService`<br>`/api/v1/check/capstone-panel` | `/forms/check/capstone-panel` | `['chair', 'aqau']` | **Fully Implemented** |
+| **F20** | Alumni Tracer Study Report | CHECK | `AlumniTracerService`<br>`/api/v1/periodic/alumni-tracer` | **MISSING** (No UI route) | `['chair', 'dean']` | **Deferred per Scope** |
+| **F21** | Employer Satisfaction Survey | CHECK | `EmployerSurveyService`<br>`/api/v1/periodic/employer-survey` | **MISSING** (No UI route) | `['chair', 'dean']` | **Deferred per Scope** |
+| **F22** | PLO Gap Analysis Report | ACT | `PloGapAnalysisService`<br>`/api/v1/cqi/plo-gap-analysis` | `/forms/cqi/plo-gap-analysis` | `['dean']` | **Fully Implemented** |
+| **F23** | CQI Action Plan | ACT | `CqiActionPlanService`<br>`/api/v1/cqi/cqi-action-plan` | `/forms/cqi/cqi-action-plan` | `['dean', 'aqau']` | **Fully Implemented** |
+| **F24** | Annual Program Report (APAR) | ACT | `AnnualProgramReportService`<br>`/api/v1/cqi/annual-program-report` | `/forms/cqi/annual-program-report` | `['dean', 'vpaa']` | **Fully Implemented** |
+| **F25** | Closing-the-Loop (CTL) Report | ACT | `ClosingTheLoopService`<br>`/api/v1/cqi/closing-the-loop` | `/forms/cqi/closing-the-loop` | `['aqau']` | **Fully Implemented** |
+| **F26** | Systemic Gap Report | ACT | `SystemicGapReportService`<br>`/api/v1/periodic/systemic-gap-report` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
+| **F27** | CAPA Plan | ACT | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | **MISSING** (No UI route) | `['aqau']` | **Backend-Only** |
+| **F28** | Institutional Review | ACT | `InstitutionalReviewService`<br>`/api/v1/periodic/institutional-review` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
+| **F29–F37, F41** | Specialty & Consolidation Schedules | VARIOUS | None (Undefined in manual) | None | None | **Unspecified / Future Scope** |
+
+---
+
+## 5. Frontend & UI Infrastructure Status
+
+### 5.1 Architecture & Role-Scoped Gating
+- **Shell & Navigation:** Layouts, theme, sidebar, and login are operational. Routing is config-driven via `lib/roles.ts` and `config/navigation.ts`.
+- **Adaptive Dashboards:** A single entry point at `/dashboard` loads adaptive views for each of the 6 system roles (`faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, `system_admin`).
+- **Workflow Stepper Bar (`FormWorkflow`):** Embedded on all 13 Phase 0–5 forms and all 7 Phase 6 CHECK forms. Provides real-time status badges, reviewer comments, and role-authorized buttons (`Submit`, `Approve`, `Return with Comment`, `Archive`).
+- **Submission Inboxes:** Dedicated user views at `/submissions` ("My Submissions") and `/approvals` ("Pending Approvals") backed by `GET /forms?scope=mine|pending`.
+
+### 5.2 State Management (Jotai Atoms) & Chart Rendering
+- **Data Hydration:** Client state uses Jotai atoms under `apps/frontend/lib/store/atoms/`. Atoms resolve live payloads from backend list endpoints via `atomWithAsyncData` and `fetchLatestPayload`.
+- **Zero-Fabrication Policy:** All static `MOCK_*` datasets were eradicated from client code. If an endpoint returns an unseeded or empty array, atoms resolve to empty arrays `[]` and render clean `ChartEmptyState` components.
+- **Defect — Hardcoded Empty Stat Banner:** In [`apps/frontend/app/(app)/dashboard/role-dashboard.tsx:87`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/app/(app)/dashboard/role-dashboard.tsx#L87), `stats: StatCard[] = []` is hardcoded across all 6 roles. Summary KPI cards (active at-risk students, pending approvals, program attainment rate) remain permanently unpopulated.
+
+### 5.3 Missing Components & Reporting Engine
+- **Dedicated OBE Primitives:** Components such as Bloom's selectors, Likert scales, and I-P-D selectors are currently inlined within individual screen files rather than packaged in a reusable `components/obe/` library.
+- **Physical Report Export Engine:** Although model `ReportExport` exists in [`prisma/schema/09-reports.prisma`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/prisma/schema/09-reports.prisma), no server-side document rendering microservice (PDF/Puppeteer/ExcelJS) exists. UI export buttons are non-functional placeholders.
+
+---
+
+## 6. Service Readiness & Operational Architecture
+
+### 6.1 Python Server (`apps/python-server`)
+- **Implemented Capabilities:**
+  - Dynamic CLO and roster discovery via `openpyxl`.
+  - Independent Formula 1A direct CLO attainment with Rule-1 completeness verification.
+  - Analytics rollups (Formulas 2A, 7A, 7C, Rule 3).
+  - PII scrubbing before LLM prompt compilation.
+- **Pending Capabilities:**
+  - Real loader delivery to backend (currently uses in-memory / dummy loader mechanism).
+  - Production job queue (currently uses an in-memory job dictionary).
+  - Live Gemini API enablement (currently defaults to `IS_DEBUG_MODE = True`).
+
+### 6.2 TypeScript Backend (`apps/backend`)
+- **Implemented Capabilities:**
+  - Elysia framework with Better-Auth session management and OpenAPI schemas.
+  - Full Prisma ORM schema across 13 modular schema files.
+  - Centralized server-side approval routes and RBAC assertions (`lib/forms/approval-routes.ts`).
+  - Score edit, CSV wide-format re-import, and automatic at-risk calculation.
+- **Pending Capabilities:**
+  - Archival pipeline execution (Phase 7).
+  - At-risk remediation / action-taken lifecycle routes.
+
+### 6.3 Database & Environment Separation
+- **Branch Topology:** Local dev environment and remote production use **separate Neon branches sharing identical schemas**.
+- **Test Database Wipe:** The integration test runner (`apps/backend/test/helpers/run-tests.ts`) executes a complete truncate of all 39 tables before and after each run. This isolates the dev branch safely without endangering production, but requires re-running `just db-seed` before browser testing.
+
+---
+
+## 7. Critical Code Discrepancies & Blocker Registry
+
+### 7.1 Blocker 1: Missing Production Guard in Database Seeder (CRITICAL)
 - **Source Location:** [`apps/backend/prisma/seed.ts:231-253`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/prisma/seed.ts#L231-L253)
-- **Code Behavior:**
+- **Defect:** `main()` executes destructive `deleteMany` calls across `atRiskFlag`, `cloAttainment`, `computationRun`, `student`, and institutional `user` rows without checking `NODE_ENV === "production"`.
+- **Impact:** Running `bun run db:seed` against production permanently wipes institutional academic records.
+- **Remedy:** Add an immediate guard:
   ```typescript
-  console.log("Cleaning up previous seed data...");
-  await prisma.atRiskFlag.deleteMany({});
-  await prisma.cloAttainment.deleteMany({});
-  await prisma.computationRun.deleteMany({});
-  await prisma.student.deleteMany({});
-  await prisma.user.deleteMany({ where: { email: { endsWith: "@jmcfi.edu.ph" } } });
+  if (process.env.NODE_ENV === "production" || process.env.DATABASE_URL?.includes("prod")) {
+    throw new Error("FATAL: Seeding is blocked on production instances.");
+  }
   ```
-- **Discrepancy / Impact:** Running `bun run db:seed` in an environment configured with a production database connection immediately wipes all student records, attainment computations, at-risk flags, and active institutional user accounts. No `process.env.NODE_ENV === "production"` assertion exists to abort the process.
 
-### 5.2 Blocker 2: HTTP Method Mismatch on CAR Save
+### 7.2 Blocker 2: HTTP Method Mismatch on CAR Save (HIGH)
 - **Source Locations:**
-  - Caller: [`apps/frontend/server/actions/car.ts:50`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/server/actions/car.ts#L50)
-  - Receiver: [`apps/backend/src/v1/car/controller.ts:96`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/car/controller.ts#L96)
-- **Code Behavior:** The frontend Server Action executes:
-  ```typescript
-  const data = await actionApi.post<{ id: string; formData: Record<string, unknown> }>(`/car/${id}`, parts);
-  ```
-  However, the backend Elysia controller registers:
-  ```typescript
-  .put("/:id", async ({ params, body, user, set }) => { ... })
-  ```
-- **Discrepancy / Impact:** When faculty click "Save Draft" on the Course Assessment Report (CAR) to store parts 1, 5, 6, and 7, the HTTP request fails with `404 Not Found` or `405 Method Not Allowed`, preventing CAR updates.
+  - Client: [`apps/frontend/server/actions/car.ts:50`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/server/actions/car.ts#L50)
+  - Server: [`apps/backend/src/v1/car/controller.ts:96`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/car/controller.ts#L96)
+- **Defect:** Frontend Server Action calls `actionApi.post('/car/${id}', parts)`, but backend controller listens on `.put("/:id")`.
+- **Impact:** Clicking "Save Draft" on CAR throws 404/405, preventing saving parts 1, 5, 6, and 7.
+- **Remedy:** Change `actionApi.post` to `actionApi.put` in `apps/frontend/server/actions/car.ts`.
 
-### 5.3 Blocker 3: HTTP Method Mismatch on Curriculum Map Save
+### 7.3 Blocker 3: HTTP Method Mismatch on Curriculum Map Save (HIGH)
 - **Source Locations:**
-  - Caller: [`apps/frontend/server/actions/plan.ts:69`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/server/actions/plan.ts#L69)
-  - Receiver: [`apps/backend/src/v1/plan/controller.ts:169`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/plan/controller.ts#L169)
-- **Code Behavior:** Frontend Server Action calls `actionApi.post('/plan/curriculum-map/${id}', body)`. Backend controller strictly listens on `.put("/curriculum-map/:id")`.
-- **Discrepancy / Impact:** Program chairs cannot persist updates to the CLO-PLO Curriculum Map (F01).
+  - Client: [`apps/frontend/server/actions/plan.ts:69`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/server/actions/plan.ts#L69)
+  - Server: [`apps/backend/src/v1/plan/controller.ts:169`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/plan/controller.ts#L169)
+- **Defect:** Frontend calls `actionApi.post('/plan/curriculum-map/${id}', body)`, but backend listens on `.put("/curriculum-map/:id")`.
+- **Impact:** Program chairs cannot persist matrix changes to the CLO-PLO Curriculum Map (F01).
+- **Remedy:** Change `actionApi.post` to `actionApi.put` in `apps/frontend/server/actions/plan.ts`.
 
-### 5.4 Blocker 4: Broken CLO-PLO Mapping Bridge in PLO Rollup
+### 7.4 Blocker 4: Broken Mapping Bridge in PLO Rollup (CRITICAL)
 - **Source Locations:**
   - Extractor: [`apps/python-server/app/etl/extract/extractor.py:191`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/python-server/app/etl/extract/extractor.py#L191)
   - Rollup Service: [`apps/backend/src/v1/rollup/service.ts:376`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/rollup/service.ts#L376)
-- **Code Behavior:** Python ETL yields `clo_plo_mapping: []`. Backend rollup service constructs python `/analytics/summary` payload directly from `snapshot.clo_plo_mapping` without querying database table `CloToPloMap`.
-- **Discrepancy / Impact:** Formula 7A PLO rollups return 0 mapped outcomes for all degree programs, completely halting the CHECK/ACT quality assurance pipeline.
+- **Defect:** Extractor returns `clo_plo_mapping: []`. Backend rollup service constructs python `/analytics/summary` payload directly from the snapshot without querying database table `CloToPloMap`.
+- **Impact:** PLO rollups find 0 mapped CLOs for all programs, breaking F15 and halting the CHECK/ACT compliance pipeline.
+- **Remedy:** In `rollup/service.ts`, query `prisma.cloToPloMap.findMany({ where: { courseId: ... } })` and inject active mappings into the payload.
 
-### 5.5 Blocker 5: Duplicate Computation Runs on Class Record Re-Upload
+### 7.5 Blocker 5: Duplicate Computation Runs on Class Record Re-Upload (MEDIUM)
 - **Source Location:** [`apps/backend/src/v1/ingest/service.ts:221-236`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/ingest/service.ts#L221-L236)
-- **Code Behavior:** When an instructor re-uploads a corrected Excel class record for the same section, `persistAttainment` executes `prisma.computationRun.create()` and appends a new set of `CloAttainment` rows without deleting, archiving, or superseding prior runs.
-- **Discrepancy / Impact:** Orphaned computation runs accumulate in the database. CAR submissions bound to previous run IDs become desynchronized from the section's latest attainment data.
+- **Defect:** Re-uploading a class record creates a new `ComputationRun` and appends duplicate `CloAttainment` rows without invalidating prior runs.
+- **Impact:** Database accumulates orphaned runs, and rollup queries without run IDs risk double-counting scores.
+- **Remedy:** Implement replace-or-supersede logic marking earlier runs as inactive prior to persisting new attainment records.
 
-### 5.6 Blocker 6: CAR Part 1 Enrolled Count Always Zero
-- **Source Locations:**
-  - Loader: [`apps/backend/src/v1/car/service.ts:150`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/car/service.ts#L150)
-  - Schema: [`apps/backend/prisma/schema/03-academic.prisma`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/prisma/schema/03-academic.prisma)
-- **Code Behavior:** CAR Part 1 counts enrollment using `prisma.enrollment.count({ where: { classSectionId } })`. Across the entire backend and ETL ingest service, **there are zero write operations to the `Enrollment` table**.
-- **Discrepancy / Impact:** CAR Part 1 displays:
-  $$\text{No. Enrolled: } 0 \quad\Big|\quad \text{No. Completed: } 35$$
-  This creates an obvious numerical contradiction on official accreditation documentation.
+### 7.6 Blocker 6: CAR Part 1 Enrolled Count Always Zero (HIGH)
+- **Source Location:** [`apps/backend/src/v1/car/service.ts:150`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/car/service.ts#L150)
+- **Defect:** CAR Part 1 calculates enrollment via `prisma.enrollment.count()`. However, zero routines in the ingest service write to `Enrollment`.
+- **Impact:** CAR displays "No. Enrolled: 0 | No. Completed: 35".
+- **Remedy:** During class record persistence, upsert `Enrollment` rows for each student in the section, or fall back to counting distinct students with scores in that section.
 
-### 5.7 Blocker 7: CAR Part 2 Assessment Category Breakdown Always Null
+### 7.7 Blocker 7: CAR Part 2 Category Breakdown Always Null (HIGH)
 - **Source Location:** [`apps/backend/src/v1/car/service.ts:467-488`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/src/v1/car/service.ts#L467-L488)
-- **Code Behavior:** Part 2 rolls up mean percentages for `examPct`, `atPct`, `tlaPct`, and `outputPct`. In the official v2 AUN-OBE Excel template, assessment scores are reported as period totals without granular TLA/AT categorization. Python server returns `null` for these fields.
-- **Discrepancy / Impact:** CAR Part 2 tables (Exams, Rubrics, Performance Tasks, Portfolio) render entirely as `null` / unpopulated values in both the API response and frontend UI.
+- **Defect:** Official AUN-OBE v2 template provides aggregate scores per term without category-level breakdown (exam, rubric, TLA).
+- **Impact:** CAR Part 2 renders tables of dashes/nulls.
+- **Remedy:** Update CAR UI empty state to gracefully handle un-categorized templates without displaying broken tables.
 
 ---
 
-## 6. Dashboard & Reporting Reality
+## 8. Development Backlog & Technical Inquiries
 
-### 6.1 Adaptive Role-Scoped Architecture
-- **Implementation State:** The frontend operates a single adaptive entry point at `/dashboard` ([`apps/frontend/app/(app)/dashboard/page.tsx`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/app/(app)/dashboard/page.tsx)).
-- **Role Routing:** Handled via registry `ROLE_DASHBOARDS` in [`apps/frontend/app/(app)/dashboard/role-dashboard.tsx`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/app/(app)/dashboard/role-dashboard.tsx):
-  - `faculty`: Scoped to assigned `ClassSection` instances, recent raw data uploads, and CAR drafts.
-  - `program_chair`: Scoped to program-wide attainment, curriculum target settings, and pending faculty submissions.
-  - `dean`: Scoped to departmental approvals, budget line items, and PLO entity management.
-  - `aqau`: Institution-wide QA audit view, cohort tracking overviews, and submission inboxes.
-  - `vpaa`: Executive institutional dashboard with CAPA/budget endorsements and AI insight generation.
-  - `system_admin`: Full administrative oversight, user role requests, and system-wide overrides.
+### 8.1 Data Pipeline & Integration
+- [ ] **Enforce Class Record as Mandatory Pipeline Prerequisite:** Ensure all downstream forms (CAR $\to$ PLO Rollup $\to$ Gap Analysis $\to$ CQI Action Plan) block generation with explicit validation if no verified class record ingestion exists for that section and term.
+- [ ] **End-to-End Pipeline Verification:** Verify full chain: Class record upload $\to$ CLO attainment $\to$ CAR $\to$ PLO rollup $\to$ Gap analysis $\to$ CQI loop closure without manual data re-entry.
+- [ ] **At-Risk Student Remediation Form:** Build dedicated remediation record form and database schema (`status`, `actionTaken`, `resolvedBy`) to enable resolving at-risk flags without tampering with historical grades.
 
-### 6.2 Hardcoded Empty KPI Stat Cards (`stats = []`)
-- **Code Reality:** In [`apps/frontend/app/(app)/dashboard/role-dashboard.tsx:87`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/frontend/app/(app)/dashboard/role-dashboard.tsx#L87):
-  ```typescript
-  export function RoleDashboard({ user }: { user: ApiUser }) {
-    const config = ROLE_DASHBOARDS[user.role] ?? ROLE_DASHBOARDS.user;
-    const Scope = config.component;
-    const stats: StatCard[] = []; // <-- Hardcoded empty array across all roles
-    
-    return (
-      <DashboardShell
-        title={`${config.title} — ${roleLabel(user.role)}`}
-        scopeLabel={config.scopeLabel ?? scopeLabelFor(user)}
-        description={config.description}
-        stats={stats}
-      >
-        <Scope />
-      </DashboardShell>
-    );
-  }
-  ```
-- **User Impact:** No role receives high-level summary metrics (e.g., *Total Enrolled Students*, *Active At-Risk Flags*, *Pending Approval Count*, *Overall Program Attainment Rate*). The top stat banner renders empty on every dashboard.
-
-### 6.3 Jotai Store & Empty Chart States
-- **State Architecture:** Client state is managed with Jotai atoms under `apps/frontend/lib/store/atoms/`. Atoms utilize `atomWithAsyncData` and `fetchLatestPayload` to resolve data from backend list endpoints (`GET /rollup/*`, `GET /cqi/*`).
-- **Data Rendering:** To avoid displaying fabricated numbers, sample mock constants were eradicated. Consequently, when an endpoint returns an unseeded or empty array, atoms resolve to `[]`.
-- **Visual Impact:** Charts in EvilCharts / ECharts display clean, unpopulated empty states (*"No data available"*), awaiting completed end-to-end ingest and rollup runs.
-
-### 6.4 Missing Report Export Engine
-- **Documentation Demand:** Accrediting agencies (CHED, PACUCOA, AUN-QA) demand printable, signed physical documentation with institutional headers, exact form borders, and official signatures.
-- **Codebase Reality:** Model `ReportExport` is defined in [`prisma/schema/09-reports.prisma`](file:///D:/Jetbrains_IDE_Projects/pycharm/Obelisk_FINAL/apps/backend/prisma/schema/09-reports.prisma) (`format` enum `pdf`, `excel`, `word`), but no PDF/Excel generation microservice (e.g., Puppeteer, WeasyPrint, or ExcelJS templating) has been developed. The export buttons in the UI are non-functional placeholders.
+### 8.2 Forms, Security & Workflow
+- [ ] **Draft Save Ownership & Authorization:** Resolve whether draft editing on form screens should allow collaborative role edits or enforce strict creator-only ownership as in `PUT /forms/:id`.
+- [ ] **Ambiguous Approval Chain Sanity Checks:** Confirm whether `curriculum_map` routes only to `['aqau']`, `systemic_gap_report` to `['vpaa']`, and whether `peer_observation` should permit same-role chair sign-off.
+- [ ] **Server Investigation — Phantom GET Requests:** Investigate and eliminate unprompted background GET requests observed hitting backend endpoints (verify if caused by stale client polling or prefetching).
 
 ---
 
-## 7. Executive Summary & Remediation Matrix
+## 9. Executive Remediation & Milestone Matrix
 
-| Category | Finding | Severity | Direct Code Remedy |
+| Category | Finding / Work Item | Severity | Target Remediation |
 | :--- | :--- | :---: | :--- |
-| **Pipeline Bridge** | Empty `clo_plo_mapping` sent to python-server in F15 rollup. | **CRITICAL** | In `apps/backend/src/v1/rollup/service.ts:376`, query `prisma.cloToPloMap` by course/program and inject real mappings into the python payload. |
-| **Database Safety** | `seed.ts` wipes database without checking environment. | **CRITICAL** | In `apps/backend/prisma/seed.ts`, wrap cleanup in `if (process.env.NODE_ENV === 'production') throw new Error(...)`. |
-| **Frontend/Backend Sync** | CAR Save calls `POST /car/:id` instead of `PUT`. | **HIGH** | In `apps/frontend/server/actions/car.ts:50`, change `actionApi.post` to `actionApi.put`. |
-| **Frontend/Backend Sync** | Curriculum Map calls `POST /plan/curriculum-map/:id` instead of `PUT`. | **HIGH** | In `apps/frontend/server/actions/plan.ts:69`, change `actionApi.post` to `actionApi.put`. |
-| **Academic Ledger** | CAR Part 1 `noEnrolled` counts empty `Enrollment` table. | **HIGH** | In `apps/backend/src/v1/ingest/service.ts`, upsert `Enrollment` rows during class record persistence, or count distinct students in `CloAttainment`. |
-| **Accreditation Workflow** | Missing At-Risk Student Action-Taken / Remediation workflow. | **HIGH** | Add `status`, `remediationNotes`, `actionTakenAt` to `AtRiskFlag` schema; create remediation form and API endpoint. |
-| **Ingest Stability** | Class record re-upload appends duplicate `ComputationRun` records. | **MEDIUM** | In `apps/backend/src/v1/ingest/service.ts`, mark prior runs superseded or delete prior unapproved run attainments. |
-| **Executive UI** | Dashboard KPI stats banner hardcoded empty (`stats = []`). | **MEDIUM** | Wire role dashboard shell to aggregate queries (count of pending approvals, active at-risk students, average attainment). |
-| **Institutional UI** | 7 Periodic/ACT form screens (F02, F09, F20, F21, F26, F27, F28) unbuilt. | **MEDIUM** | Build frontend route pages in Next.js connecting to the already-complete `/api/v1/periodic` backend routes. |
-| **Compliance Output** | Report Export (PDF/Excel) engine unbuilt. | **LOW** | Implement server-side document rendering service targeting JMCFI official form formats. |
+| **Pipeline Bridge** | Empty `clo_plo_mapping` sent to python-server in F15 rollup. | **CRITICAL** | In `rollup/service.ts:376`, query `prisma.cloToPloMap` and inject real mappings. |
+| **Database Safety** | `seed.ts` wipes database without environment check. | **CRITICAL** | Wrap cleanup in `seed.ts` with `if (process.env.NODE_ENV === 'production') throw`. |
+| **Frontend/Backend Sync** | CAR Save calls `POST /car/:id` instead of `PUT`. | **HIGH** | In `actions/car.ts:50`, switch `actionApi.post` to `actionApi.put`. |
+| **Frontend/Backend Sync** | Curriculum Map calls `POST /plan/curriculum-map/:id` instead of `PUT`. | **HIGH** | In `actions/plan.ts:69`, switch `actionApi.post` to `actionApi.put`. |
+| **Academic Ledger** | CAR Part 1 `noEnrolled` counts unpopulated `Enrollment` table. | **HIGH** | Upsert `Enrollment` rows during ingest or count distinct `CloAttainment` students. |
+| **Accreditation Workflow** | Missing At-Risk Student Action-Taken / Remediation workflow. | **HIGH** | Add lifecycle fields to `AtRiskFlag` schema; build remediation form and API route. |
+| **Ingest Stability** | Class record re-upload appends duplicate `ComputationRun` records. | **MEDIUM** | Mark prior runs superseded or purge prior unapproved run attainments. |
+| **Executive UI** | Dashboard KPI stats banner hardcoded empty (`stats = []`). | **MEDIUM** | Wire role dashboard shell to aggregate queries (pending approvals, at-risk count). |
+| **Institutional UI** | 7 Periodic/ACT form screens (F02, F09, F20, F21, F26, F27, F28) unbuilt. | **MEDIUM** | Build frontend route pages connecting to `/api/v1/periodic` backend endpoints. |
+| **Compliance Output** | Report Export (PDF/Excel) engine unbuilt. | **LOW** | Implement server-side document rendering targeting official JMCFI form templates. |
