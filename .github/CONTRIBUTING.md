@@ -9,7 +9,7 @@ Development setup and workflow documentation. For a project overview, see the [R
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
 - [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
 - [Docker](https://www.docker.com) — optional; runs the whole self-hosted stack (backend, frontend, ETL, Redis) via the root `docker-compose.yml`, and Redis for local ETL development
-- [just](https://github.com/casey/just) — optional, to use the root [`justfile`](justfile) recipes (§4)
+- [just](https://github.com/casey/just) — optional, to use the root [`justfile`](../justfile) recipes (§4)
 - A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
 
 ---
@@ -147,7 +147,7 @@ Open <http://localhost:3000>. It proxies `api/v1` requests to the backend at `NE
 
 ## 4. Justfile recipes
 
-The root [`justfile`](justfile) wraps the common workflows — install, dev, quality checks, and Vercel deploys — via [just](https://github.com/casey/just). `just install` followed by `just dev` is the fastest path to a running stack (after §2 env setup).
+The root [`justfile`](../justfile) wraps the common workflows — install, dev, quality checks, and Vercel deploys — via [just](https://github.com/casey/just). `just install` followed by `just dev` is the fastest path to a running stack (after §2 env setup).
 
 ### Setup
 

@@ -61,4 +61,4 @@ All development documentation — prerequisites, environment setup, running the 
 
 ## License
 
-See [LICENSE](LICENSE).
+See [LICENSE](../LICENSE).
