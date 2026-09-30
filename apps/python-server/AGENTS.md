@@ -18,6 +18,7 @@ app/
 ├── main.py                        # FastAPI app: CORS, router includes, worker lifecycle
 ├── core/
 │   ├── config.py                  # pydantic-settings Settings (OBELISK_* env prefix)
+│   ├── env.py                     # decrypts the repo-root .env.local/.env.prod (OBELISK_ENV) into os.environ
 │   ├── exceptions.py              # OBELISKError hierarchy → structured to_dict()
 │   └── logging.py                 # structlog configuration
 ├── api/routes/
@@ -52,6 +53,7 @@ documentations/                    # CONSTANTS.md, FORMULAS.md, INTEGRATION.md, 
 
 ## Conventions
 
+- **Env**: configuration comes only from the repo-root `.env.local` / `.env.prod` (dotenvx-encrypted, shared with backend/frontend) — `app/core/env.py` decrypts the file `OBELISK_ENV` selects (`local` default, `prod` in compose) into `os.environ` before `Settings()` is built. Never reintroduce a per-package `.env`; new `OBELISK_*` settings are added to the root files.
 - **Constants**: All sheet names, cell addresses, column letters, thresholds, and formula keys live in `app/etl/etl_const.py` (grouped classes). Never hardcode a cell/threshold inside a function — `documentations/CONSTANTS.md` documents them.
 - **Schemas**: Pydantic v2 models with `ConfigDict(extra="forbid")`. Input payloads are validated strictly; add `model_config = ConfigDict(extra="forbid")` to new schemas.
 - **Errors**: Raise subclasses of `OBELISKError` (in `core/exceptions.py`); they expose `to_dict()` with `error_type`/`message`/`details` for the webapp to render. Map to HTTP in routes; keep error metadata structured.

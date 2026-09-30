@@ -34,14 +34,15 @@ This is the simplest and most reliable way to run the service and all its depend
 
 **Prerequisites:**
 -   Docker (with Compose v2) installed and running.
+-   The root `.env.prod` **and** the gitignored `.env.keys` in place — compose bind-mounts both read-only and `app/core/env.py` decrypts the file inside the container (`OBELISK_ENV=prod`).
 -   One or more LLM API keys (e.g., from Google AI Studio) if live LLM generation is desired.
 
 **Instructions:**
 
 1.  **Configure Environment:**
-    Create a `.env` file in this directory (`apps/python-server/`).
+    All env lives in the **repository root** files — `.env.local` (dev) and `.env.prod` (Docker/production), the same single pair the backend and frontend read; there is no per-package env file anymore. Both are dotenvx-encrypted: get the root `.env.keys` from a maintainer and run `just env-decrypt` (repo root) to edit them. `OBELISK_ENV` selects which file is used (`local` by default, `prod` inside compose).
     ```env
-    # .env
+    # .env.local (dev) / .env.prod (prod) — at the repository root
     OBELISK_ALLOWED_ORIGINS=["http://localhost:3000"]
 
     # Multiple LLM API Keys with Automatic Failover:
@@ -71,7 +72,7 @@ This method allows for faster iteration on the Python code but requires Redis to
 **Prerequisites:**
 -   [uv](https://docs.astral.sh/uv/)
 -   Docker installed and running.
--   A `.env` file in this directory (see above).
+-   The root `.env.local` in place (see above). `app/core/env.py` walks up from this package to find it; without the root `.env.keys` it logs a warning and runs on built-in defaults.
 
 **Instructions:**
 
@@ -87,7 +88,7 @@ This method allows for faster iteration on the Python code but requires Redis to
     ```
 
 3.  **Start the development server:**
-    The application will automatically load the `.env` file and connect to the Redis container you started in step 1.
+    The application loads the root `.env.local` (see above) and connects to the Redis container you started in step 1.
     ```sh
     uv run dev
     ```

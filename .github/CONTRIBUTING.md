@@ -25,7 +25,7 @@ cd Obelisk
 
 ## 2. Environment setup
 
-The repo is a **Bun-workspaces monorepo**: `apps/backend/` and `apps/frontend/` both read their configuration from a single pair of env files at the repository root:
+The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and `apps/python-server/` all read their configuration from a single pair of env files at the repository root:
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
 - **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack and Vercel builds).
@@ -48,11 +48,11 @@ just env-encrypt   # re-encrypt; the private keys stay in the gitignored .env.ke
 
 dotenvx reads plaintext (unencrypted) env files fine. Create `.env.local` at the repo root with the variables listed below.
 
-> The old per-service files (`apps/backend/.env.local`, `apps/frontend/.env.local`) are no longer read by any script — the root files are the single source of truth.
+> The old per-service files (`apps/backend/.env.local`, `apps/frontend/.env.local`, `apps/python-server/.env`) are no longer read by any script — the root files are the single source of truth.
 
 ### Required variables
 
-One root file covers both packages — server vars are validated by `@obelisk/env/server` (`packages/env/src/server.ts`, re-exported as `env` from `apps/backend/utils/env.ts`), frontend vars by `@obelisk/env/client` (`packages/env/src/client.ts`, re-exported from `apps/frontend/utils/env.ts`):
+One root file covers all three services — server vars are validated by `@obelisk/env/server` (`packages/env/src/server.ts`, re-exported as `env` from `apps/backend/utils/env.ts`), frontend vars by `@obelisk/env/client` (`packages/env/src/client.ts`, re-exported from `apps/frontend/utils/env.ts`):
 
 ```env
 # backend
@@ -72,15 +72,16 @@ REDIS_PORT="6379"
 # frontend
 NEXT_PUBLIC_API_URL="http://localhost:8080"
 # DEVELOPMENT=true             # optional — disables the auth gate for quick local preview
+
+# etl / python-server (OBELISK_ prefix)
+OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
+# OBELISK_LLM_API_KEYS="key1,key2"   # optional — live AI recommendations (comma-separated or JSON list)
+# OBELISK_WEBAPP_SHARED_SECRET=""    # optional — X-Webapp-Secret caller check
 ```
 
 `.env.prod` must contain the same keys with production values (Vercel URLs, real secrets). Keep `DEVELOPMENT` / `DEV_SESSION_ENABLED` unset there — `next.config.ts` refuses to build while `DEV_SESSION_ENABLED=true`.
 
-**`apps/python-server/.env`** (optional) — CORS origins for the web app:
-
-```env
-OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
-```
+The ETL decrypts these same root files itself at startup (`apps/python-server/app/core/env.py`): `OBELISK_ENV` picks the file — unset/`local` → `.env.local`, `prod` (set by compose) → `.env.prod`. There is no `apps/python-server/.env` anymore; without the root `.env.keys` it logs a warning in local mode and runs on built-in defaults, and fails fast in prod mode.
 
 ---
 
@@ -111,7 +112,7 @@ docker compose up -d --build          # all four services (or: just docker-up)
 docker compose up -d etl              # this service only (Redis starts as its dependency)
 ```
 
-The compose file lives at the repo root and also owns Redis; the ETL reads optional `OBELISK_*` overrides from `apps/python-server/.env` (compose `env_file`, gitignored).
+The compose file lives at the repo root and also owns Redis; the ETL container bind-mounts the root `.env.prod` + `.env.keys` read-only and decrypts them itself at startup (`OBELISK_ENV=prod`), with `OBELISK_REDIS_HOST` / `OBELISK_REDIS_PORT` injected as in-network `environment:` overrides.
 
 Verify: <http://localhost:8000/health>
 

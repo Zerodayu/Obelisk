@@ -28,8 +28,8 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 
 - **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts.
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
-- **Config:** `app/core/config.py` reads `OBELISK_*` env vars (`.env` optional): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**.
-- **CORS:** default allow `http://localhost:3000` + `http://127.0.0.1:3000`, credentials enabled.
+- **Config:** `app/core/config.py` reads `OBELISK_*` env vars from process env; `app/core/env.py` first decrypts the repo-root `.env.local` / `.env.prod` into it (`OBELISK_ENV` picks the file, `local` by default, `prod` in compose — there is no per-package `.env`): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**.
+- **CORS:** `OBELISK_ALLOWED_ORIGINS` from the root env files (comma-separated or JSON list); built-in fallback is `["*"]` with credentials enabled.
 - **Logging:** structlog key=value events (`configure_logging` in `app/core/logging.py`).
 
 ## 2. Request flow

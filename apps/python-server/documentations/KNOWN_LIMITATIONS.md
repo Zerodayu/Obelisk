@@ -4,7 +4,7 @@ This document lists known limitations, design trade-offs, and deferred implement
 
 1.  **LLM Integration Status**
     -   **Status**: Implemented (`google-genai` client, Debug/Mock Mode Currently Active by Default)
-    -   **Details**: The AI-powered recommendation features are wired to Google's Gemini API (`gemini-3.6-flash` in `app/analytics/cqi_recommender.py`) using the new `google-genai` SDK. By default, `IS_DEBUG_MODE` is set to `True` to provide deterministic mock responses without requiring an active API key or incurring external latency. To activate live LLM generation, set `IS_DEBUG_MODE = False` in `cqi_recommender.py` and supply a valid `OBELISK_LLM_API_KEY` in `.env`.
+    -   **Details**: The AI-powered recommendation features are wired to Google's Gemini API (`gemini-3.6-flash` in `app/analytics/cqi_recommender.py`) using the new `google-genai` SDK. By default, `IS_DEBUG_MODE` is set to `True` to provide deterministic mock responses without requiring an active API key or incurring external latency. To activate live LLM generation, set `IS_DEBUG_MODE = False` in `cqi_recommender.py` and supply a valid `OBELISK_LLM_API_KEY` in the root env file (`.env.local` / `.env.prod`).
 
 2.  **Indirect Attainment Ingestion (v2 AUN-OBE Template)**
     -   **Status**: Implemented (Per-Student Direct Rating Recomputation)
