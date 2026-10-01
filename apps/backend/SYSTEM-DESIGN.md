@@ -10,6 +10,7 @@
 - **Runtime:** Bun. **HTTP:** Elysia. **DB:** PostgreSQL via Prisma + Neon driver adapter. **Auth:** better-auth (Google OAuth for new accounts — restricted to the organization's Workspace domain; email/password sign-in kept for existing accounts, new email sign-ups disabled). **Validation:** Elysia `t` (backend) and Zod.
 - **Shared plumbing:** `lib/prisma.ts` (single `PrismaClient` singleton with the Neon adapter — shared by auth, forms, and future modules), `lib/role-access.ts` (**role → feature vocabulary** — `FEATURE_ACCESS` allow-lists for class-record capture, archive, PLO management, role requests, cluster confirm, AI insight generation + `assertCanCaptureClassRecords`/`assertCanGenerateAiInsights`; mirrored by `apps/frontend/lib/role-access.ts`, drift-guarded by `test/unit/role-access-sync.test.ts`), `lib/forms/state-machine.ts` (pure submission lifecycle rules — status transitions, approval-chain validation, editable states), `lib/forms/approval-routes.ts` (server-side registry mapping each `FormType.code` to its preparer roles + ordered approval chain, plus workflow authorization — submit/approve/return/archive guards; sources `ARCHIVE_ROLES` from `lib/role-access.ts`), `lib/validators/` (attainment, root-cause, retention constants), `lib/ingest/ingest-client.ts` (python-server HTTP client), `lib/ingest/csv.ts` (CSV/TSV parsing helpers — delimiter detection, quoted-cell parsing, name/percent coercion), `lib/ingest/score-edit.ts` (pure recompute helpers for score edits — composite recomputation and at-risk reconciliation).
 - **App bootstrap** `src/index.ts`:
+  0. `.onRequest` + `.onAfterResponse` — per-request access log (`[backend] METHOD path status ms` → stdout → Dozzle). The start time rides on the `Request` object; `set.status` is read as-is because the implicit 200 is only applied by `mapResponse` after the hook.
   1. `@elysia/openapi` (served at `/openapi`; gathers paths from the better-auth OpenAPI plugin + feature routes).
   2. `@elysia/cors` — origins from `FRONTEND_URL` + `http://localhost:3000`, credentials enabled.
   3. `.mount(auth.handler)` — better-auth at basePath `/api/v1/auth`.
@@ -21,6 +22,7 @@
 
 ```
 Browser/Next.js ──(cookie/Auth header)──> Elysia
+  └─onRequest / onAfterResponse ─ access log (stdout → Dozzle)
   └─@elysia/openapi ─ /openapi
   └─@elysia/cors
   └─better-auth handler ─ /api/v1/auth/* (sign-in, session, me)

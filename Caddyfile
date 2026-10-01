@@ -6,6 +6,14 @@
 {$APP_DOMAIN} {
 	encode zstd gzip
 
+	# NOTE: access log → stdout → docker json-file → Dozzle (obelisk-caddy) — the
+	# one hop that sees every request (next start logs nothing in production)
+	@loggable not path /_next/* /images/* /favicon.ico
+	log @loggable {
+		output stdout
+		format json
+	}
+
 	# NOTE: API → in-network backend (no published port); the path passes through as-is
 	handle /api/* {
 		reverse_proxy backend:8080

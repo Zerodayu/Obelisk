@@ -10,6 +10,22 @@ import { OpenAPI } from "./v1/auth/controller";
 import { auth } from "./v1/auth/service";
 
 const app = new Elysia()
+	// NOTE: per-request access log → stdout → Dozzle (obelisk-backend) — Elysia
+	// is silent by default, so login POSTs and API calls were invisible before.
+	// The start time rides on the Request object (one per request, no globals)
+	.onRequest(({ request }) => {
+		(request as Request & { _start?: number })._start = performance.now();
+	})
+	.onAfterResponse(({ request, path, set }) => {
+		const start = (request as Request & { _start?: number })._start;
+		const ms =
+			start === undefined ? "?" : `${Math.round(performance.now() - start)}ms`;
+		// NOTE: set.status stays undefined for the implicit 200 (mapResponse
+		// applies it after this hook runs)
+		console.log(
+			`[backend] ${request.method} ${path} ${set.status ?? 200} ${ms}`,
+		);
+	})
 	.use(
 		openapi({
 			documentation: {
