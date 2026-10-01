@@ -185,6 +185,13 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			});
 			expect(atRiskFlag?.studentId).toBe(IDS.existingStudent);
 			expect(atRiskFlag?.reason).toContain("CLO3");
+
+			// NOTE: one Enrollment per resolved student so CAR P1 noEnrolled is non-zero (testing_results 6.5)
+			const enrollments = await prisma.enrollment.findMany({
+				where: { classSectionId: IDS.classSection },
+			});
+			expect(enrollments).toHaveLength(2);
+			expect(new Set(enrollments.map((e) => e.studentId)).size).toBe(2);
 		} finally {
 			await prisma.atRiskFlag.deleteMany({
 				where: {

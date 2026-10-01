@@ -14,6 +14,7 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 			term: "it-car-term",
 			course: "it-car-course",
 			classSection: "it-car-section",
+			classSection2: "it-car-section-2",
 			user: "it-car-user",
 			formType: "it-car-form-type",
 		};
@@ -87,6 +88,33 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 					description: "CLO 2",
 				},
 			});
+			await prisma.clo.create({
+				data: {
+					id: "it-car-clo-3",
+					courseId: ids.course,
+					code: "CLO3",
+					description: "CLO 3",
+				},
+			});
+			// NOTE: DB map is P1's IPD/weight source until faculty saves them (testing_results 6.4)
+			await prisma.cloToPloMap.create({
+				data: {
+					id: "it-car-map-1",
+					cloId: "it-car-clo-1",
+					ploId: "it-car-plo-1",
+					stage: "i",
+					weight: 0.8,
+				},
+			});
+			// NOTE: no facultyId — P1 facultyName must fall back to the run's ETL snapshot (testing_results 6.5)
+			await prisma.classSection.create({
+				data: {
+					id: ids.classSection2,
+					courseId: ids.course,
+					termId: ids.term,
+					sectionCode: "C2",
+				},
+			});
 
 			let computationRunId = "";
 
@@ -94,6 +122,15 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 				{
 					header: {},
 					clo_plo_mapping: {},
+					// NOTE: snapshot feeds P1 year level/faculty fallbacks (testing_results 6.5)
+					section: {
+						code: "C1",
+						program: "IT-CAR-PROG",
+						year_level: 3,
+						section_letter: "1",
+						raw: "IT-CAR-PROG C1",
+					},
+					setup: { faculty_name: "ETL Snapshot Faculty" },
 					attainments: [
 						{
 							student_name: "Doe, John",
@@ -139,6 +176,18 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 							exam_pct: 0.4,
 							output_pct: null,
 						},
+						{
+							// NOTE: no breakdown pcts — P2 must drop this row (testing_results 6.6)
+							student_name: "Doe, John",
+							student_id: null,
+							clo_code: "CLO3",
+							direct_clo_attainment_pct: 0.85,
+							met_threshold: true,
+							tla_pct: null,
+							at_pct: null,
+							exam_pct: null,
+							output_pct: null,
+						},
 					],
 				},
 				ids.classSection,
@@ -166,14 +215,25 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 				programCode: "IT-CAR-PROG",
 				schoolYear: "2096-2097",
 				semester: "2nd",
-				noEnrolled: 0,
+				// NOTE: ingest now upserts one Enrollment per student (testing_results 6.5)
+				noEnrolled: 2,
 				noCompleted: 2,
 			});
 			expect(car.part1.facultyName).toBe("CAR Faculty");
+			// NOTE: section faculty wins over the ETL snapshot faculty
+			expect(car.part1.facultyName).not.toBe("ETL Snapshot Faculty");
+			// NOTE: no saved formData → year level comes from the run's ETL snapshot (testing_results 6.5)
+			expect(car.part1.yearLevel).toBe(3);
 			expect(car.part1.cloPloMapping.map((r) => r.cloCode)).toEqual([
 				"CLO1",
 				"CLO2",
+				"CLO3",
 			]);
+			// NOTE: DB CloToPloMap fills P1 IPD/weight before any save (testing_results 6.4)
+			const clo1Row = car.part1.cloPloMapping.find((r) => r.cloCode === "CLO1");
+			expect(clo1Row?.ploCode).toBe("PLO1");
+			expect(clo1Row?.ipdStage).toBe("i");
+			expect(clo1Row?.weightInGradePct).toBe(80);
 
 			// Part 2 — assessment-type means (ETL fractions x100 saved directly).
 			const exams = Object.fromEntries(
@@ -183,6 +243,21 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 			expect(exams.CLO1.belowBenchmark).toBe(false);
 			expect(exams.CLO2.attainmentPct).toBe(40);
 			expect(exams.CLO2.belowBenchmark).toBe(true);
+			// NOTE: all-null breakdown rows are dropped from every P2 list (testing_results 6.6)
+			for (const list of [
+				car.part2.exams,
+				car.part2.rubric,
+				car.part2.perfTasks,
+				car.part2.portfolio,
+			]) {
+				expect(list.map((r) => r.cloCode)).not.toContain("CLO3");
+			}
+			// NOTE: one Enrollment per resolved student, written at ingest (testing_results 6.5)
+			expect(
+				await prisma.enrollment.count({
+					where: { classSectionId: ids.classSection },
+				}),
+			).toBe(2);
 
 			// Part 3 — consolidated rows grouped by cohort (no yearLevel → null).
 			expect(car.part3).toHaveLength(1);
@@ -236,6 +311,71 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 				rootCauseCategory: "3-Assessment Design",
 				intervention: "Add formative feedback before midterm",
 			});
+
+			// Saved P1 edits win over both the ETL snapshot and the DB map (6.4).
+			await carService.save(draft.id, ids.user, {
+				part1: {
+					yearLevel: 1,
+					cloPloMapping: [
+						{ cloCode: "CLO1", ipdStage: "d", weightInGradePct: 45 },
+					],
+				},
+			});
+			const p1regen = await carService.generateFromSubmission(draft.id);
+			expect(p1regen.part1.yearLevel).toBe(1);
+			const savedRow = p1regen.part1.cloPloMapping.find(
+				(r) => r.cloCode === "CLO1",
+			);
+			expect(savedRow?.ipdStage).toBe("d");
+			expect(savedRow?.weightInGradePct).toBe(45);
+
+			// Section2: all-null breakdowns → empty P2 + snapshot-only P1 fields.
+			const summary2 = await attainmentService.persistAttainment(
+				{
+					header: {},
+					clo_plo_mapping: {},
+					section: {
+						code: "C2",
+						program: "IT-CAR-PROG",
+						year_level: 2,
+						section_letter: "2",
+						raw: "IT-CAR-PROG C2",
+					},
+					setup: { faculty_name: "ETL Snapshot Faculty" },
+					attainments: [
+						{
+							student_name: "Doe, John",
+							student_id: null,
+							clo_code: "CLO1",
+							direct_clo_attainment_pct: 0.9,
+							met_threshold: true,
+							tla_pct: null,
+							at_pct: null,
+							exam_pct: null,
+							output_pct: null,
+						},
+					],
+				},
+				ids.classSection2,
+				ids.user,
+			);
+			await carService.ensureDraft(
+				ids.classSection2,
+				ids.user,
+				summary2.computationRunId,
+			);
+			const car2 = await carService.generate(
+				ids.classSection2,
+				summary2.computationRunId,
+			);
+			// NOTE: no breakdown data anywhere → every P2 list is empty so the frontend can show its empty state (testing_results 6.6)
+			expect(car2.part2.exams).toEqual([]);
+			expect(car2.part2.rubric).toEqual([]);
+			expect(car2.part2.perfTasks).toEqual([]);
+			expect(car2.part2.portfolio).toEqual([]);
+			// NOTE: section has no faculty → P1 falls back to the run's ETL snapshot (testing_results 6.5)
+			expect(car2.part1.facultyName).toBe("ETL Snapshot Faculty");
+			expect(car2.part1.yearLevel).toBe(2);
 		} finally {
 			await prisma.auditLog.deleteMany({ where: { moduleAffected: "car" } });
 			await prisma.formSubmission.deleteMany({
@@ -245,15 +385,20 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 				where: { student: { programId: ids.program } },
 			});
 			await prisma.cloAttainment.deleteMany({
-				where: { classSectionId: ids.classSection },
+				where: {
+					classSectionId: { in: [ids.classSection, ids.classSection2] },
+				},
 			});
 			await prisma.computationRun.deleteMany({
-				where: { scope: ids.classSection },
+				where: { scope: { in: [ids.classSection, ids.classSection2] } },
 			});
+			// NOTE: enrollment rows cascade off student/classSection deletes
 			await prisma.student.deleteMany({ where: { programId: ids.program } });
 			await prisma.clo.deleteMany({ where: { courseId: ids.course } });
 			await prisma.plo.deleteMany({ where: { programId: ids.program } });
-			await prisma.classSection.delete({ where: { id: ids.classSection } });
+			await prisma.classSection.deleteMany({
+				where: { id: { in: [ids.classSection, ids.classSection2] } },
+			});
 			await prisma.course.delete({ where: { id: ids.course } });
 			await prisma.academicTerm.delete({ where: { id: ids.term } });
 			await prisma.program.delete({ where: { id: ids.program } });
