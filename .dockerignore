@@ -1,7 +1,6 @@
 # NOTE: build-context hygiene for the root Dockerfile (all targets)
 
-# NOTE: VCS, tooling output, caches and upload artifacts — the ETL volume must
-# start empty instead of seeded with dev leftovers
+# NOTE: VCS, tooling output, caches and upload artifacts — the ETL volume must start empty instead of seeded with dev leftovers
 .git
 **/node_modules
 **/.next
@@ -14,16 +13,11 @@
 **/.dev-session
 **/uploads
 
-# NOTE: .env.keys only ever enters a build as a BuildKit secret (never a
-# layer) and plaintext `**/.env` stays out — compose bind-mounts the encrypted
-# root .env.prod + .env.keys read-only instead. The encrypted .env.local /
-# .env.prod deliberately STAY in context: the build scripts decrypt them.
+# NOTE: .env.keys only ever enters a build as a BuildKit secret (never a layer) and plaintext `**/.env` stays out — compose bind-mounts the encrypted root .env.prod + .env.keys read-only instead. The encrypted .env.local / .env.prod deliberately STAY in context: the build scripts decrypt them.
 .env.keys
 **/.env.keys
 **/.env
-# NOTE: compose-only config (APP_DOMAIN/ADMIN_IPS, umami secrets) — read on the
-# host by compose's env_file, never needed inside the build context
-.env.docker
+# NOTE: compose-only config — the encrypted .env.docker deliberately STAYS in context like .env.prod/.env.local (COPY . . carries it as ciphertext into base; no build script reads it)
 
 # NOTE: the host's decrypted bake must never ship — the backend stage re-bakes
 # under dotenvx itself, the postinstall stub covers everything else

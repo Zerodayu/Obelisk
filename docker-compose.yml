@@ -16,7 +16,7 @@ x-logging: &log-rotation
 services:
   # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
   # HTTP-01 via :80) and splits traffic: /api/* → backend, everything else →
-  # frontend (see the Caddyfile). .env.docker supplies {$APP_DOMAIN}/{$ADMIN_IPS}.
+  # frontend (see the Caddyfile).
   caddy:
     image: caddy:2-alpine
     container_name: obelisk-caddy
@@ -27,8 +27,18 @@ services:
       - "443:443"
       # NOTE: HTTP/3 — harmless to leave if the VPS firewall blocks UDP 443
       - "443:443/udp"
-    env_file:
-      - ./.env.docker
+    environment:
+      # NOTE: injected by the dotenvx wrap in `just docker-deploy` through compose
+      # interpolation — env_file can't be used, it reads the file itself and
+      # would pass the encrypted .env.docker values through verbatim
+      APP_DOMAIN: ${APP_DOMAIN:-}
+      ADMIN_IPS: ${ADMIN_IPS:-}
+    # NOTE: refuse to boot without the dotenvx wrap — an empty APP_DOMAIN would
+    # otherwise start a hostless site with no certificate (restart loop shows
+    # the message in `just docker-logs`)
+    command: >
+      sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
+      exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # NOTE: certs/config must survive recreates — re-issuing on every deploy

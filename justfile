@@ -239,9 +239,10 @@ check: lint typecheck test
 # --- deploy (docker self-hosted stack) ---
 
 # build + (re)start the whole stack in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first so dev/prod don't mix
+# NOTE: the dotenvx wrap injects APP_DOMAIN/ADMIN_IPS from .env.docker for compose interpolation (the file stays encrypted — a bare `docker compose up` starts caddy without them and its guard refuses to boot)
 [group('deploy')]
 docker-deploy:
-    docker compose up -d --build
+    bunx dotenvx run -f .env.docker -- docker compose up -d --build
 
 # restart the running containers in place — no rebuild, for config/resource tweaks
 [group('deploy')]

@@ -1,6 +1,7 @@
 # NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$ADMIN_IPS}
-# are injected by compose (env_file: .env.docker) and substituted before parsing,
-# so a space-separated ADMIN_IPS expands to one remote_ip token per IP.
+# are injected into compose by the dotenvx wrap in `just docker-deploy` and
+# substituted before parsing, so a space-separated ADMIN_IPS expands to one
+# remote_ip token per IP.
 
 {$APP_DOMAIN} {
 	encode zstd gzip
