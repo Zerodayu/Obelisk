@@ -69,7 +69,7 @@ All of these live in the root env files ([`CONTRIBUTING.md` §2](CONTRIBUTING.md
 | `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_API_URL` | Your domains — localhost for dev, your public origin for prod |
 | `OBELISK_ALLOWED_ORIGINS` | Your frontend origin(s), for the ETL CORS check |
 | `OBELISK_LLM_API_KEYS`, `OBELISK_WEBAPP_SHARED_SECRET` | Optional — your own keys, see `CONTRIBUTING.md` §2 |
-| `APP_DOMAIN`, `ADMIN_IPS` (`.env.docker`) | Your deployment domain and admin IPs, see `DEPLOYMENT.md` |
+| `APP_DOMAIN`, `DOZZLE_DOMAIN`, `ADMIN_IPS` (`.env.docker`) | Your deployment domain, log-viewer domain and admin IPs, see `DEPLOYMENT.md` |
 
 ---
 

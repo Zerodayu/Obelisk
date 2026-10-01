@@ -6,23 +6,24 @@ Self-hosted deployment of OBELISK on a VPS behind [Caddy](https://caddyserver.co
 
 ## Architecture
 
-The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — five services, one public entrypoint:
+The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — six services, one public entrypoint:
 
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
-| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)) |
+| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)); a second site block serves dozzle on `DOZZLE_DOMAIN` |
 | **backend** | `obelisk-backend` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
 | **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
+| **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer at `https://<DOZZLE_DOMAIN>` — caddy answers non-`ADMIN_IPS` clients with 403 before proxying |
 
 Design notes:
 
 - The stack is **`.env.prod`-only**. The encrypted `.env.prod` and the gitignored `.env.keys` are bind-mounted read-only into every app container and decrypted by dotenvx **inside** the container (the build also receives `.env.keys` as a BuildKit secret — never a layer).
 - In-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`); the frontend's server-side fetch/auth rewrite uses the build arg `API_INTERNAL_URL=http://backend:8080`.
 - Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`) is **baked from `.env.prod` at build time** — see [Rebuild rules](#rebuild-rules).
-- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback.
-- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned).
+- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — it is reachable only through caddy on `DOZZLE_DOMAIN`, gated by the `ADMIN_IPS` allow-list, with container actions/shell disabled.
+- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings).
 
 ---
 
@@ -75,12 +76,15 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Two keys consumed by the compose file for Caddy (via the dotenvx wrap in `just docker-deploy`):
+Three keys consumed by the compose file for Caddy (via the dotenvx wrap in `just docker-deploy`):
 
 ```env
-APP_DOMAIN="obelisk.example.com"     # the public site address — Caddy refuses to boot without it
-ADMIN_IPS="203.0.113.10"             # space-separated IPs for the admin allow-list (see the Caddyfile TODO block)
+APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
+DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
+ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN)
 ```
+
+> ⚠️ `ADMIN_IPS` must be the address **Caddy sees on the connection** — your public egress IP (`curl ifconfig.me`), not a LAN IP. Caddy matches the TCP peer, so a private `192.168.x.x` entry only works if you reach the server from that LAN/VPN. Wrong value = `403` on the log viewer.
 
 ### 5. Re-encrypt
 
@@ -109,9 +113,9 @@ From the repo root **on the server**:
 just docker-deploy
 ```
 
-That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all five services with `.env.prod` values. `APP_DOMAIN` / `ADMIN_IPS` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all six services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `ADMIN_IPS` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
 
-Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend). Logs: `just docker-logs`.
+Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — 403 unless the request comes from an `ADMIN_IPS` address). Logs: `just docker-logs`.
 
 > Stop `just dev` first — the dev stack and the Docker stack bind the same host ports (Redis aside, which is shared via loopback).
 
@@ -157,7 +161,10 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 
 ## Troubleshooting
 
-- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN`. Run `just docker-deploy`; check `just docker-logs`.
+- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `ADMIN_IPS`). Run `just docker-deploy`; check `just docker-logs`.
+- **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — the request's source IP is not in `ADMIN_IPS`. Caddy matches the TCP peer (public egress IP), so compare `curl ifconfig.me` with the value in `.env.docker`, update it, re-encrypt and redeploy.
+- **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (DuckDNS has no wildcards: each name needs its own entry). Cert progress is in `just docker-logs` (caddy).
+- **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
 - **No TLS certificate / `404` from Caddy** — the domain's A record does not point at this server, or port 80 is blocked (HTTP-01 needs it). Check DNS and the firewall; cert progress is in `just docker-logs` (caddy).
 - **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.

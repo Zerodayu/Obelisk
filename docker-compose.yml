@@ -1,8 +1,9 @@
-# NOTE: whole self-hosted stack in one compose file (5 services), .env.prod-only —
+# NOTE: whole self-hosted stack in one compose file (6 services), .env.prod-only —
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
-# published — frontend/backend/etl are compose-internal, redis keeps loopback so
-# `just dev` can reach it; stop `just dev` before deploying so dev/prod don't mix.
+# published — frontend/backend/etl/dozzle are compose-internal, redis keeps
+# loopback so `just dev` can reach it; stop `just dev` before deploying so
+# dev/prod don't mix.
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
 # .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
 
@@ -16,7 +17,8 @@ x-logging: &log-rotation
 services:
   # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
   # HTTP-01 via :80) and splits traffic: /api/* → backend, everything else →
-  # frontend (see the Caddyfile).
+  # frontend; a second site block serves dozzle at DOZZLE_DOMAIN behind the
+  # ADMIN_IPS allow-list (see the Caddyfile).
   caddy:
     image: caddy:2-alpine
     container_name: obelisk-caddy
@@ -32,12 +34,17 @@ services:
       # interpolation — env_file can't be used, it reads the file itself and
       # would pass the encrypted .env.docker values through verbatim
       APP_DOMAIN: ${APP_DOMAIN:-}
+      # NOTE: admin log-viewer hostname (see the DOZZLE_DOMAIN site block)
+      DOZZLE_DOMAIN: ${DOZZLE_DOMAIN:-}
       ADMIN_IPS: ${ADMIN_IPS:-}
     # NOTE: refuse to boot without the dotenvx wrap — an empty APP_DOMAIN would
-    # otherwise start a hostless site with no certificate (restart loop shows
+    # otherwise start a hostless site with no certificate, and an empty
+    # DOZZLE_DOMAIN/ADMIN_IPS breaks the Caddyfile parse (restart loop shows
     # the message in `just docker-logs`)
     command: >
       sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
+      test -n "$$DOZZLE_DOMAIN" || { echo "DOZZLE_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
+      test -n "$$ADMIN_IPS" || { echo "ADMIN_IPS not set - deploy via just docker-deploy" >&2; exit 1; };
       exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
@@ -48,6 +55,7 @@ services:
     depends_on:
       - frontend
       - backend
+      - dozzle
     networks:
       - edge
 
@@ -138,12 +146,33 @@ services:
     networks:
       - internal
 
+  # NOTE: container log viewer at https://<DOZZLE_DOMAIN> — private by design:
+  # no published port, only caddy reaches it over edge, and the Caddyfile
+  # answers every remote_ip outside ADMIN_IPS with 403 before proxying
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: obelisk-dozzle
+    restart: unless-stopped
+    logging: *log-rotation
+    # WARN: docker.sock is root-equivalent on the host — the :ro bind only
+    # freezes the file, the API still passes through; keep actions/shell off
+    # TODO(hardening): front the socket with tecnativa/docker-socket-proxy if
+    # dozzle ever needs to be reachable from a less trusted network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # NOTE: /data keeps dozzle settings across recreates
+      - dozzle-data:/data
+    networks:
+      - edge
+
 volumes:
   uploads:
   # NOTE: caddy certs/config survive recreates — otherwise every deploy
   # re-issues and burns Let's Encrypt rate limits
   caddy-data:
   caddy-config:
+  # NOTE: dozzle settings (users/filters if auth is enabled later)
+  dozzle-data:
 
 networks:
   # NOTE: caddy + the app tier — backend joins both (caddy proxies /api to it,

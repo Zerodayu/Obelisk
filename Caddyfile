@@ -1,7 +1,7 @@
-# NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$ADMIN_IPS}
-# are injected into compose by the dotenvx wrap in `just docker-deploy` and
-# substituted before parsing, so a space-separated ADMIN_IPS expands to one
-# remote_ip token per IP.
+# NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$DOZZLE_DOMAIN}
+# / {$ADMIN_IPS} are injected into compose by the dotenvx wrap in
+# `just docker-deploy` and substituted before parsing, so a space-separated
+# ADMIN_IPS expands to one remote_ip token per IP.
 
 {$APP_DOMAIN} {
 	encode zstd gzip
@@ -26,12 +26,27 @@
 	}
 }
 
-# TODO(admin): to put an admin app (umami, dozzle) behind the ADMIN_IPS
-# allow-list, paste this above the catch-all handle in the site block and
-# point the proxy at the app's in-network service:
-#	@admin remote_ip {$ADMIN_IPS}
-#	@not_admin not @admin
-#	handle /stats/* {
-#		respond @not_admin 403
-#		reverse_proxy umami:3000
-#	}
+# NOTE: admin-only log viewer on its own hostname (no shared origin with the
+# app) — `remote_ip` is the whole privacy story here, so ADMIN_IPS must hold
+# the client IP as Caddy sees it (public egress, not a LAN address)
+{$DOZZLE_DOMAIN} {
+	encode zstd gzip
+
+	# NOTE: inline remote_ip — `not` can't reference a named matcher here
+	@not_admin not remote_ip {$ADMIN_IPS}
+	# NOTE: respond runs before reverse_proxy, so denied IPs never reach dozzle
+	respond @not_admin 403
+
+	# NOTE: flush_interval -1 disables response buffering — dozzle streams logs
+	# over SSE and buffered proxies would deliver them in bursts or never
+	reverse_proxy dozzle:8080 {
+		flush_interval -1
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
