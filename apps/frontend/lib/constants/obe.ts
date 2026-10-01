@@ -7,3 +7,13 @@ export const ROOT_CAUSES = [
   "5-Resources & Tools",
   "6-Industry & Field Alignment",
 ] as const;
+
+/** Bloom's taxonomy levels — CAR P1 CLO mapping table. */
+export const BLOOMS_LEVELS = [
+  "Remember",
+  "Understand",
+  "Apply",
+  "Analyze",
+  "Evaluate",
+  "Create",
+] as const;

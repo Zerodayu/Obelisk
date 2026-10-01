@@ -48,7 +48,8 @@ export async function saveCar(
   },
 ): Promise<ActionResult<{ id: string; formData: Record<string, unknown> }>> {
   try {
-    const data = await actionApi.post<{
+    // NOTE: backend route is PUT /car/:id only — POST answers 404 (testing_results 6.3)
+    const data = await actionApi.put<{
       id: string;
       formData: Record<string, unknown>;
     }>(`/car/${id}`, parts);

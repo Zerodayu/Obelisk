@@ -235,6 +235,8 @@ export class AttainmentService {
 
 		const cloCache = new Map<string, { id: string } | null>();
 		const studentCache = new Map<string, { id: string }>();
+		// NOTE: students seen this run — enrollment upserted once each so noEnrolled is non-zero (testing_results 6.5)
+		const enrolledCache = new Set<string>();
 
 		for (const record of etlLoadedData.attainments) {
 			summary.studentsProcessed++;
@@ -262,6 +264,25 @@ export class AttainmentService {
 				}
 				student = { id: resolved.id };
 				studentCache.set(cacheKey, student);
+			}
+
+			if (!enrolledCache.has(student.id)) {
+				// NOTE: idempotent across re-uploads via the (studentId, classSectionId) unique — re-upload still appends runs (testing_results 5.5)
+				await prisma.enrollment.upsert({
+					where: {
+						studentId_classSectionId: {
+							studentId: student.id,
+							classSectionId,
+						},
+					},
+					create: {
+						id: crypto.randomUUID(),
+						studentId: student.id,
+						classSectionId,
+					},
+					update: {},
+				});
+				enrolledCache.add(student.id);
 			}
 
 			let clo: { id: string } | null;

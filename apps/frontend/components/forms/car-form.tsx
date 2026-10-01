@@ -19,7 +19,7 @@ import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
-import { ROOT_CAUSES } from "@/lib/constants/obe";
+import { BLOOMS_LEVELS, ROOT_CAUSES } from "@/lib/constants/obe";
 import {
   type AssessmentTypeRow,
   type CarPart1,
@@ -30,6 +30,7 @@ import {
   type CarPart6,
   type CarPart7,
   type CarPayload,
+  type CloPloMappingRow,
   carDirtyAtom,
   carPayloadAtom,
 } from "@/lib/store/atoms/car";
@@ -70,7 +71,13 @@ function levelBadge(level: string | null | undefined, status: string) {
 // Part components
 // ---------------------------------------------------------------------------
 
-function Part1({ part1 }: { part1?: CarPart1 }) {
+function Part1({
+  part1,
+  onChange,
+}: {
+  part1?: CarPart1;
+  onChange?: (part1: CarPart1) => void;
+}) {
   if (!part1) {
     return (
       <p className="text-sm text-muted-foreground">
@@ -83,6 +90,17 @@ function Part1({ part1 }: { part1?: CarPart1 }) {
     part1.courseCode && part1.courseTitle
       ? `${part1.courseCode} — ${part1.courseTitle}`
       : part1.courseCode || part1.courseTitle || "—";
+
+  // NOTE: only Bloom's and weight are editable here — no other source fills them (testing_results 6.4)
+  const updateMapping = (cloCode: string, patch: Partial<CloPloMappingRow>) => {
+    if (!onChange) return;
+    onChange({
+      ...part1,
+      cloPloMapping: part1.cloPloMapping.map((row) =>
+        row.cloCode === cloCode ? { ...row, ...patch } : row,
+      ),
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -137,7 +155,21 @@ function Part1({ part1 }: { part1?: CarPart1 }) {
               {part1.cloPloMapping.map((row) => (
                 <tr key={row.cloCode} className="border-b last:border-0">
                   <td className="py-2 pr-4 font-medium">{row.cloCode}</td>
-                  <td className="py-2 pr-4">{row.bloomsLevel || "—"}</td>
+                  <td className="py-2 pr-4">
+                    <FormSelect
+                      value={row.bloomsLevel ?? ""}
+                      onValueChange={(v) =>
+                        updateMapping(row.cloCode, { bloomsLevel: v })
+                      }
+                      options={BLOOMS_LEVELS.map((level) => ({
+                        value: level,
+                        label: level,
+                      }))}
+                      placeholder="—"
+                      disabled={!onChange}
+                      className="h-8 w-32"
+                    />
+                  </td>
                   <td className="py-2 pr-4">
                     <Badge variant="outline">
                       {row.ipdStage?.toUpperCase() || "—"}
@@ -147,10 +179,22 @@ function Part1({ part1 }: { part1?: CarPart1 }) {
                     {row.assessmentTypes?.join(", ") || "—"}
                   </td>
                   <td className="py-2 pr-4 text-right">
-                    {row.weightInGradePct !== null &&
-                    row.weightInGradePct !== undefined
-                      ? `${row.weightInGradePct}%`
-                      : "—"}
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={row.weightInGradePct ?? ""}
+                      onChange={(e) =>
+                        updateMapping(row.cloCode, {
+                          weightInGradePct:
+                            e.target.value === ""
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                      disabled={!onChange}
+                      className="h-8 w-20 text-right"
+                    />
                   </td>
                 </tr>
               ))}
@@ -765,6 +809,12 @@ export function CarForm() {
     setDirty(true);
   };
 
+  const updatePart1 = (part1: CarPart1) => {
+    if (!payload) return;
+    setPayload({ ...payload, part1 });
+    setDirty(true);
+  };
+
   const updatePart6 = (value: CarPart6) => {
     if (!payload) return;
     setPayload({ ...payload, part6: value });
@@ -879,7 +929,9 @@ export function CarForm() {
           {/* Tab content */}
           <Frame>
             <FramePanel>
-              {activeTab === "p1" && <Part1 part1={payload.part1} />}
+              {activeTab === "p1" && (
+                <Part1 part1={payload.part1} onChange={updatePart1} />
+              )}
               {activeTab === "p2" && <Part2 part2={payload.part2} />}
               {activeTab === "p3" && <Part3 part3={payload.part3} />}
               {activeTab === "p4" && <Part4 part4={payload.part4} />}

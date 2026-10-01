@@ -157,15 +157,26 @@ export class CarService {
 		const rows = this.normalizeRows(attainments);
 		const noCompleted = new Set(rows.map((row) => row.studentId)).size;
 
+		const snapshot = (run.etlSnapshotJson ?? null) as {
+			section?: { year_level?: number | null } | null;
+			setup?: { faculty_name?: string | null } | null;
+		} | null;
+
 		return {
 			classSectionId,
 			computationRunId: run.id,
 			formSubmissionId: carSubmission?.id ?? null,
 			generatedAt: new Date().toISOString(),
-			part1: this.buildPart1(section, rows, saved.part1, {
-				noEnrolled,
-				noCompleted,
-			}),
+			part1: this.buildPart1(
+				section,
+				rows,
+				saved.part1,
+				{
+					noEnrolled,
+					noCompleted,
+				},
+				snapshot,
+			),
 			part2: this.buildPart2(rows),
 			part3: this.buildPart3(rows),
 			part4: this.buildPart4(rows),
@@ -346,7 +357,16 @@ export class CarService {
 							},
 						},
 						clos: {
-							select: { id: true, code: true, description: true },
+							// NOTE: stage/weight feed the P1 mapping table when no saved formData exists (testing_results 6.4)
+							select: {
+								id: true,
+								code: true,
+								description: true,
+								cloToPloMaps: {
+									select: { stage: true, weight: true },
+									take: 1,
+								},
+							},
 							orderBy: { code: "asc" },
 						},
 					},
@@ -360,17 +380,18 @@ export class CarService {
 	private async resolveRun(
 		classSectionId: string,
 		computationRunId?: string,
-	): Promise<{ id: string } | null> {
+		// NOTE: etlSnapshotJson feeds P1 year-level/faculty fallbacks when formData and section.faculty are empty (testing_results 6.5)
+	): Promise<{ id: string; etlSnapshotJson: unknown } | null> {
 		if (computationRunId) {
 			return prisma.computationRun.findFirst({
 				where: { id: computationRunId, scope: classSectionId },
-				select: { id: true },
+				select: { id: true, etlSnapshotJson: true },
 			});
 		}
 		return prisma.computationRun.findFirst({
 			where: { scope: classSectionId },
 			orderBy: { runAt: "desc" },
-			select: { id: true },
+			select: { id: true, etlSnapshotJson: true },
 		});
 	}
 
@@ -429,21 +450,36 @@ export class CarService {
 		rows: NormalizedRow[],
 		saved: SaveCarParts["part1"],
 		counts: { noEnrolled: number; noCompleted: number },
+		snapshot: {
+			section?: { year_level?: number | null } | null;
+			setup?: { faculty_name?: string | null } | null;
+		} | null = null,
 	): CarPart1 {
 		const clos = section.course.clos.map((clo) => {
 			const mapped = saved?.cloPloMapping?.find((m) => m.cloCode === clo.code);
+			// NOTE: DB CloToPloMap fills IPD/weight until faculty saves them in P1; saved formData always wins (testing_results 6.4)
+			const dbMap = clo.cloToPloMaps[0] ?? null;
 			const plo = ploForClo(rows, clo.code);
 			return {
 				cloCode: clo.code,
 				cloDescription: clo.description,
 				ploCode: plo?.code ?? null,
 				ploDescription: plo?.description ?? null,
+				// FIXME: no Bloom's source exists in the DB — saved P1 edits only (testing_results 6.4)
 				bloomsLevel: mapped?.bloomsLevel ?? null,
-				ipdStage: mapped?.ipdStage ?? null,
+				ipdStage: mapped?.ipdStage ?? dbMap?.stage ?? null,
 				assessmentTypes: mapped?.assessmentTypes ?? null,
-				weightInGradePct: mapped?.weightInGradePct ?? null,
+				// NOTE: CloToPloMap.weight is a correlation strength (0–1), shown as percent here
+				weightInGradePct:
+					mapped?.weightInGradePct ??
+					(dbMap ? Number(dbMap.weight) * 100 : null),
 			};
 		});
+
+		// NOTE: ETL snapshot is the only source for year level/faculty while the section has no assigned faculty (testing_results 6.5)
+		const snapshotYearLevel = snapshot?.section?.year_level ?? null;
+		const snapshotFaculty = snapshot?.setup?.faculty_name ?? null;
+		const yearLevel = saved?.yearLevel ?? snapshotYearLevel;
 
 		return {
 			courseCode: section.course.code,
@@ -454,11 +490,15 @@ export class CarService {
 			programCode: section.course.program.code,
 			programName: section.course.program.name,
 			term: saved?.term ?? null,
-			yearLevel: saved?.yearLevel ?? null,
+			yearLevel:
+				yearLevel === 1 || yearLevel === 2 || yearLevel === 3 || yearLevel === 4
+					? yearLevel
+					: null,
 			noEnrolled: counts.noEnrolled,
 			noCompleted: counts.noCompleted,
 			dateSubmitted: saved?.dateSubmitted ?? null,
-			facultyName: saved?.facultyName ?? section.faculty?.name ?? null,
+			facultyName:
+				saved?.facultyName ?? section.faculty?.name ?? snapshotFaculty ?? null,
 			designation: saved?.designation ?? null,
 			cloPloMapping: clos,
 		};
@@ -470,15 +510,18 @@ export class CarService {
 		const toRows = (
 			field: "examPct" | "atPct" | "tlaPct" | "outputPct",
 		): AssessmentTypeRow[] =>
-			[...byClo.entries()].map(([code, group]) => {
-				const pct = meanPct(group.map((r) => r[field] ?? null));
-				return {
-					cloCode: code,
-					cloDescription: group[0].cloDescription,
-					attainmentPct: pct,
-					belowBenchmark: pct !== null ? pct < MIN_ATTAINMENT_PCT : null,
-				};
-			});
+			// NOTE: null-pct rows are dropped so an all-null section renders the frontend's empty state (testing_results 6.6)
+			[...byClo.entries()]
+				.map(([code, group]) => {
+					const pct = meanPct(group.map((r) => r[field] ?? null));
+					return {
+						cloCode: code,
+						cloDescription: group[0].cloDescription,
+						attainmentPct: pct,
+						belowBenchmark: pct !== null ? pct < MIN_ATTAINMENT_PCT : null,
+					};
+				})
+				.filter((row) => row.attainmentPct !== null);
 
 		return {
 			exams: toRows("examPct"),

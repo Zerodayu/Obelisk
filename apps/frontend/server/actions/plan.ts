@@ -67,7 +67,8 @@ export async function saveCurriculumMap(
   },
 ): Promise<ActionResult<Record<string, unknown>>> {
   try {
-    const data = await actionApi.post<Record<string, unknown>>(
+    // NOTE: backend route is PUT /plan/curriculum-map/:id only — POST answers 404 (testing_results 6.3)
+    const data = await actionApi.put<Record<string, unknown>>(
       `/plan/curriculum-map/${id}`,
       body,
     );

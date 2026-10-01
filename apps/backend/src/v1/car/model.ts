@@ -19,39 +19,47 @@ export type GenerateCarParams = typeof GenerateCarParamsSchema.static;
  * Editable CAR parts saved into the submission's `formData`. Computed parts
  * (2/3/4) are never accepted here — they derive live from stored attainment.
  */
+// NOTE: optional fields are Nullable — the frontend round-trips the generated
+// payload as-is, whose empty values are null (a plain Optional would 422).
 export const SaveCarPartsSchema = t.Object({
 	part1: t.Optional(
 		t.Object({
 			term: t.Optional(
-				t.Union([
-					t.Literal("Prelim"),
-					t.Literal("Midterm"),
-					t.Literal("Finals"),
-				]),
+				t.Nullable(
+					t.Union([
+						t.Literal("Prelim"),
+						t.Literal("Midterm"),
+						t.Literal("Finals"),
+					]),
+				),
 			),
 			yearLevel: t.Optional(
-				t.Union([t.Literal(1), t.Literal(2), t.Literal(3), t.Literal(4)]),
+				t.Nullable(
+					t.Union([t.Literal(1), t.Literal(2), t.Literal(3), t.Literal(4)]),
+				),
 			),
-			dateSubmitted: t.Optional(t.String()),
-			facultyName: t.Optional(t.String()),
-			designation: t.Optional(t.String()),
+			dateSubmitted: t.Optional(t.Nullable(t.String())),
+			facultyName: t.Optional(t.Nullable(t.String())),
+			designation: t.Optional(t.Nullable(t.String())),
 			cloPloMapping: t.Optional(
 				t.Array(
 					t.Object({
 						cloCode: t.String(),
-						bloomsLevel: t.Optional(t.String()),
-						ipdStage: t.Optional(t.String()),
+						bloomsLevel: t.Optional(t.Nullable(t.String())),
+						ipdStage: t.Optional(t.Nullable(t.String())),
 						assessmentTypes: t.Optional(
-							t.Array(
-								t.Union([
-									t.Literal("Exam"),
-									t.Literal("Rubric"),
-									t.Literal("Perf.Task"),
-									t.Literal("Portfolio"),
-								]),
+							t.Nullable(
+								t.Array(
+									t.Union([
+										t.Literal("Exam"),
+										t.Literal("Rubric"),
+										t.Literal("Perf.Task"),
+										t.Literal("Portfolio"),
+									]),
+								),
 							),
 						),
-						weightInGradePct: t.Optional(t.Number()),
+						weightInGradePct: t.Optional(t.Nullable(t.Number())),
 					}),
 				),
 			),
@@ -77,26 +85,28 @@ export const SaveCarPartsSchema = t.Object({
 				t.Array(
 					t.Object({
 						cloPloCode: t.String(),
-						studentAvgPerceived: t.Optional(t.Number()),
-						facultyNote: t.Optional(t.String()),
+						studentAvgPerceived: t.Optional(t.Nullable(t.Number())),
+						facultyNote: t.Optional(t.Nullable(t.String())),
 					}),
 				),
 			),
 			teachingStrategies: t.Optional(t.Array(t.String(), { maxItems: 11 })),
-			facultyReflection: t.Optional(t.String()),
+			facultyReflection: t.Optional(t.Nullable(t.String())),
 		}),
 	),
 	part7: t.Optional(
 		t.Object({
 			programChairDisposition: t.Optional(
-				t.Object({
-					accepted: t.Optional(t.Boolean()),
-					returnReason: t.Optional(t.String()),
-					returnByDate: t.Optional(t.String()),
-					cqiEntriesReviewed: t.Optional(t.Boolean()),
-					escalationRequired: t.Optional(t.Boolean()),
-					atRiskListReceived: t.Optional(t.Boolean()),
-				}),
+				t.Nullable(
+					t.Object({
+						accepted: t.Optional(t.Nullable(t.Boolean())),
+						returnReason: t.Optional(t.Nullable(t.String())),
+						returnByDate: t.Optional(t.Nullable(t.String())),
+						cqiEntriesReviewed: t.Optional(t.Nullable(t.Boolean())),
+						escalationRequired: t.Optional(t.Nullable(t.Boolean())),
+						atRiskListReceived: t.Optional(t.Nullable(t.Boolean())),
+					}),
+				),
 			),
 		}),
 	),
