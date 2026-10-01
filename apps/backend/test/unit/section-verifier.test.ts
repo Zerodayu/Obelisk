@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
 import {
+	type AcademicContextForComparison,
 	compareSectionToWorkbook,
 	extractSchoolYear,
 	normalizeSemester,
-	type AcademicContextForComparison,
 } from "@v1/ingest/section-verifier";
 
 const BASE_CLASS_SECTION: AcademicContextForComparison = {

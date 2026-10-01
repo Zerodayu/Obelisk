@@ -7,8 +7,6 @@
 
 import { atom } from "jotai";
 
-import { api } from "@/lib/api-client";
-
 export interface CloPloMappingRow {
   cloCode: string;
   cloDescription?: string;

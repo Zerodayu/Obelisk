@@ -19,7 +19,6 @@ import {
 	ingestService,
 	MalformedRosterCsvError,
 	SectionBindingMismatchError,
-	SectionMismatchError,
 } from "./service";
 
 /** The authenticated caller's role (better-auth additional field). */

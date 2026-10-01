@@ -1,5 +1,4 @@
 import type {
-	EtlLoadedData,
 	EtlSectionExtractionStatus,
 	EtlSectionInfo,
 	EtlSetupInfo,
