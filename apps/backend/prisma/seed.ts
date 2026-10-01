@@ -452,11 +452,16 @@ async function main() {
 			},
 		});
 
+		// NOTE: CLO6/CLO7 exist only to reach the seeded count of 7 — the workbook yields CLO1–CLO5, so label them as dev fixtures (testing_results 6.10)
+		const description = ["CLO6", "CLO7"].includes(cloCode)
+			? `Placeholder CLO (${cloCode}) — not yet defined (dev fixture)`
+			: `CLO for ${firstCourse!.title}`;
+
 		if (existingClo) {
 			await prisma.clo.update({
 				where: { id: existingClo.id },
 				data: {
-					description: `CLO for ${firstCourse!.title}`,
+					description,
 				},
 			});
 		} else {
@@ -464,7 +469,7 @@ async function main() {
 				data: {
 					id: crypto.randomUUID(),
 					code: cloCode,
-					description: `CLO for ${firstCourse!.title}`,
+					description,
 					courseId: firstCourse!.id,
 				},
 			});
