@@ -87,6 +87,16 @@ DUCKDNS_SUBDOMAINS="obelisk,dozzle"   # bare names, comma-separated — the upda
 DUCKDNS_TOKEN="..."                   # token from the duckdns.org dashboard (subdomains are created there, not here)
 ```
 
+Plus five `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
+
+```env
+LOCAL_APP_DOMAIN="obelisk-jmc.localhost"       # *.localhost resolves to loopback; Caddy signs it with its internal CA (no ACME)
+LOCAL_DOZZLE_DOMAIN="dozzle-jmc.localhost"
+LOCAL_ADMIN_IPS="127.0.0.1 ::1 192.168.1.14 172.16.0.0/12"
+LOCAL_FRONTEND_URL="https://obelisk-jmc.localhost"
+LOCAL_API_URL="https://obelisk-jmc.localhost/api/v1"
+```
+
 > ⚠️ `ADMIN_IPS` must be the address **Caddy sees on the connection** — your public egress IP (`curl ifconfig.me`), not a LAN IP. Caddy matches the TCP peer, so a private `192.168.x.x` entry only works if you reach the server from that LAN/VPN. Wrong value = `403` on the log viewer.
 
 ### 5. Re-encrypt
@@ -138,6 +148,32 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 - **frontend** — `next build` with prod values inlined; `API_INTERNAL_URL=http://backend:8080` is fixed as a build arg/ENV so server-side fetches and the auth rewrite reach the backend over the compose network.
 - **etl** — no build-time env; it decrypts the bind-mounted `.env.prod` itself at startup (`OBELISK_ENV=prod`, `apps/python-server/app/core/env.py`) and fails fast if `.env.keys` is missing.
 
+### Local deployment
+
+`just deploy-local` runs the same seven services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
+
+```sh
+just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+```
+
+The second `-f` layers [`docker-compose.local.yml`](../docker-compose.local.yml) over the base file (later file wins per key): Caddy's site addresses swap to the `LOCAL_*` values, the frontend build receives the local origins as `ARG`s (public mode passes none, so `just docker-deploy` is unaffected), and backend/etl get them injected at runtime. `*.localhost` is ineligible for public certificates, so Caddy issues from its internal CA automatically — the ACME retry loop never starts. Origins are baked at build, so switching modes rebuilds (same rule as [Rebuild rules](#rebuild-rules)).
+
+Trust the local CA once per machine:
+
+```sh
+docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-local-root.crt
+# import into the OS/browser trust store (Arch: sudo trust anchor --store caddy-local-root.crt; Firefox has its own store — Settings → Certificates), then delete the file
+```
+
+Until the root is imported the browser shows a certificate interstitial.
+
+Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>` (log viewer — `403` unless the peer Caddy sees is in `LOCAL_ADMIN_IPS`; the peer appears in `just docker-logs`). Google sign-in needs the local redirect URI registered in the Google console.
+
+Notes:
+
+- `just docker-deploy` (and `just docker-update`, which runs it) switches back to public mode — re-run `just deploy-local` to return.
+- The `duckdns` updater keeps running and keeps the **public** records on the real IP — unrelated to the local names, and ready for when the network is reachable.
+
 ---
 
 ## Day-2 operations
@@ -150,6 +186,7 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 | Restart containers in place (no rebuild) | `just docker-restart` |
 | Reload Caddy after editing the `Caddyfile` (no downtime) | `just docker-caddy-reload` |
 | Stop the stack (containers/images stay) | `just docker-down` |
+| Deploy for machine-local access only (`*.localhost`, no public exposure) | `just deploy-local` |
 
 ### Update workflow
 

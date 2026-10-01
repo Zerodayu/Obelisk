@@ -244,6 +244,12 @@ check: lint typecheck test
 docker-deploy:
     bunx dotenvx run -f .env.docker -- docker compose up -d --build
 
+# deploy for machine-local access only — *.localhost → loopback, Caddy internal CA, no ACME/public exposure (LOCAL_* from .env.docker; `just docker-deploy` switches back to public mode)
+# NOTE: second -f layers docker-compose.local.yml over the base file — origins are baked, so this rebuilds like docker-deploy does
+[group('deploy')]
+deploy-local:
+    bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
 # restart the running containers in place — no rebuild, for config/resource tweaks
 [group('deploy')]
 docker-restart:

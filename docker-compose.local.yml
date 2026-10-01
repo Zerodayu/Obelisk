@@ -1,0 +1,39 @@
+# NOTE: local-mode override — layered onto docker-compose.yml ONLY by `just deploy-local`
+# (`docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build`; the plain
+# `just docker-deploy` never loads this file). Later file wins per key: caddy's site addresses
+# swap to the LOCAL_* *.localhost names (loopback + Caddy internal CA — no ACME), and the local
+# origins reach the frontend at build time (ARGs) and backend/etl at runtime (environment).
+# NOTE: duckdns is deliberately absent — it keeps the PUBLIC records on the real IP, ready for
+# `just docker-deploy` once the network is reachable again.
+
+services:
+  caddy:
+    environment:
+      # NOTE: LOCAL_* flow from .env.docker through the dotenvx wrap in `just deploy-local`
+      APP_DOMAIN: ${LOCAL_APP_DOMAIN:-}
+      DOZZLE_DOMAIN: ${LOCAL_DOZZLE_DOMAIN:-}
+      ADMIN_IPS: ${LOCAL_ADMIN_IPS:-}
+
+  frontend:
+    build:
+      args:
+        # NOTE: Dockerfile declares these as ARG, not ENV — public mode passes nothing, so
+        # build:prod falls back to .env.prod (dotenvx never overrides an already-set var)
+        NEXT_PUBLIC_API_URL: ${LOCAL_API_URL:-}
+        BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
+        FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}
+    environment:
+      # NOTE: runtime `next start` reads .env.prod via dotenvx — compose-injected vars win
+      BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
+      FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}
+
+  backend:
+    environment:
+      # NOTE: process.env beats the baked runtime-env snapshot (same mechanism as REDIS_HOST)
+      BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
+      FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}
+
+  etl:
+    environment:
+      # NOTE: the ETL CORS check must allow the local origin
+      OBELISK_ALLOWED_ORIGINS: ${LOCAL_FRONTEND_URL:-}

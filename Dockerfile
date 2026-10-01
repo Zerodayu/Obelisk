@@ -42,6 +42,12 @@ FROM base AS frontend
 # `next start` on that origin; the browser keeps the baked NEXT_PUBLIC_API_URL
 ARG API_INTERNAL_URL=http://backend:8080
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
+# NOTE: local mode (`just deploy-local` → docker-compose.local.yml) passes the *.localhost
+# origins here; public mode passes nothing — an unset ARG never enters the RUN env, so
+# build:prod keeps taking them from .env.prod (dotenvx never overrides a set var either way)
+ARG NEXT_PUBLIC_API_URL
+ARG BETTER_AUTH_URL
+ARG FRONTEND_URL
 WORKDIR /app/apps/frontend
 # NOTE: same build command as vercel.json's buildCommand
 RUN --mount=type=secret,id=envkeys,target=/app/.env.keys bun run build:prod
