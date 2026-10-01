@@ -155,9 +155,9 @@ services:
       - internal
 
   # NOTE: DuckDNS dynamic-DNS updater — keeps the A records for APP_DOMAIN /
-  # DOZZLE_DOMAIN pointed at this server's public IP (updates every ~5 min).
-  # The subdomains are created on the duckdns.org dashboard; this only
-  # refreshes the IP, and SUBDOMAINS takes bare names (no .duckdns.org)
+  # DOZZLE_DOMAIN / UMAMI_DOMAIN pointed at this server's public IP (updates
+  # every ~5 min). The subdomains are created on the duckdns.org dashboard;
+  # this only refreshes the IP, and SUBDOMAINS takes bare names (no .duckdns.org)
   duckdns:
     image: lscr.io/linuxserver/duckdns:latest
     container_name: obelisk-duckdns

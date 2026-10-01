@@ -59,11 +59,11 @@ This is the simplest and most reliable way to run the service and all its depend
 
 2.  **Build and start the services** (from the **repository root**):
     ```sh
-    docker compose up -d --build        # whole stack: backend, frontend, etl, redis
+    just docker-deploy                 # whole stack: caddy, backend, frontend, etl, redis, duckdns, dozzle, umami
     docker compose up -d etl            # this service only (Redis starts as its dependency)
     ```
 
-The API will be available at `http://localhost:8000`.
+In Docker the service publishes no port — it is reached in-network at `http://etl:8000` (that is what the backend uses), and a bare `docker compose up` for the whole stack skips the dotenvx wrap that Caddy needs. For `http://localhost:8000` run Option B, or the root `just dev`.
 
 ### Option B: Running Locally with uv (for Active Development)
 

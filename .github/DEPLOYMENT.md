@@ -76,7 +76,7 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 - `ORG_EMAIL_DOMAIN`, Google OAuth credentials, `OBELISK_*` — production values
 - Keep `DEVELOPMENT` and `DEV_SESSION_ENABLED` **unset** — `next.config.ts` refuses to build while `DEV_SESSION_ENABLED=true`
 
-`.env.prod` must contain the **complete key set**: dotenvx never overrides an existing variable, so any key it lacks silently falls back to its `.env.local` value (which does not exist in a container).
+`.env.prod` must contain the **complete key set**: dotenvx only reads the file it is given and never overrides an existing variable, so any key `.env.prod` lacks is simply **unset** in the container — there is no `.env.local` fallback, and a missing value either takes a code default or fails the Zod startup validation.
 
 ### 4. Fill `.env.docker`
 
@@ -89,7 +89,7 @@ UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS re
 ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN + the umami dashboard)
 DUCKDNS_SUBDOMAINS="obelisk,dozzle,umami"  # bare names, comma-separated — the updater keeps their A records on this server's IP
 DUCKDNS_TOKEN="..."                   # token from the duckdns.org dashboard (subdomains are created there, not here)
-UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container
+UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection
 UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
 ```
 
@@ -157,10 +157,10 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 
 - `NEXT_PUBLIC_API_URL` — inlined into client bundles
 - `NEXT_PUBLIC_UMAMI_DOMAIN` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — inlined into the tracker `<Script>` (domain comes from the compose build arg, the key from `.env.prod`)
-- `BETTER_AUTH_URL` / `FRONTEND_URL` — baked into the runtime-env snapshot and routes manifest
+- `BETTER_AUTH_URL` / `FRONTEND_URL` — baked into the backend runtime-env snapshot (the frontend routes-manifest rewrite follows `API_INTERNAL_URL` / `NEXT_PUBLIC_API_URL`, not these)
 - any other `.env.prod` change consumed at build (`packages/env/src/generated/runtime-env.ts` is written by `build:prod`)
 
-`just docker-deploy` always runs `--build`, so it picks up env changes and source changes alike. The canonical env key list is `packages/env/env-keys.ts`.
+`just docker-deploy` always runs `--build`, so it picks up env changes and source changes alike. Canonical key lists: backend server keys `packages/env/env-keys.ts`, client keys `packages/env/src/client.ts`, ETL keys `OBELISK_*` in `apps/python-server/app/core/config.py`, deploy keys [§4](#4-fill-envdocker) above.
 
 ### What the build does
 
@@ -228,7 +228,7 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (DuckDNS has no wildcards: each name needs its own entry, including `umami`). Cert progress is in `just docker-logs` (caddy).
 - **`KO` from `obelisk-duckdns` in `just docker-logs`** — DuckDNS rejected the update: wrong `DUCKDNS_TOKEN`, a name in `DUCKDNS_SUBDOMAINS` that was never created on the duckdns.org dashboard (bare names, no `.duckdns.org` suffix), or empty keys (a bare `docker compose up` skips the dotenvx wrap — no guard on purpose, the stack runs but the records stop following your IP). Fix `.env.docker`, `just env-encrypt`, redeploy.
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
-- **No request lines in the log viewer** — per-request access logs come from three places: `obelisk-caddy` (JSON access log from the `log` block in the `APP_DOMAIN` site — status + latency, the only view of requests that reach neither app), `obelisk-frontend` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.
+- **No request lines in the log viewer** — per-request access logs come from caddy (JSON access log from the `log` blocks: `APP_DOMAIN`, plus the `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` sites with tracker paths skipped), `obelisk-frontend` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
 - **No TLS certificate / `404` from Caddy** — the domain's A record does not point at this server, or port 80 is blocked (HTTP-01 needs it). Check DNS and the firewall; cert progress is in `just docker-logs` (caddy).
 - **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.

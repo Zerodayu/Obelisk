@@ -72,7 +72,7 @@ REDIS_PORT="6379"
 
 # frontend
 NEXT_PUBLIC_API_URL="http://localhost:8080"
-# NEXT_PUBLIC_UMAMI_DOMAIN="http://localhost:3001"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
+# NEXT_PUBLIC_UMAMI_DOMAIN="https://umami-jmc.localhost"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
 # NEXT_PUBLIC_UMAMI_WEBSITE_ID=""                  # optional — umami website key; unset/empty = no script
 # DEVELOPMENT=true             # optional — disables the auth gate for quick local preview
 
@@ -181,13 +181,13 @@ bun run start          # turbo-cached build + serve backend (:8080) and frontend
 bun run start:prod     # same, built and served with .env.prod — stop the dev stack first (same ports)
 ```
 
-Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks silently falls back to its `.env.local` value.
+Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks is never loaded at all (dotenvx only reads the file it is given), so it stays unset instead of falling back to `.env.local`.
 
 The ETL service is not a turbo workspace; run it separately (`just dev-etl`).
 
 ### Docker & deploy (self-hosted stack)
 
-The whole stack (Caddy + backend + frontend + ETL + Redis) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, updates, migrations, and day-2 operations.
+The whole stack (Caddy, backend, frontend, ETL, Redis, DuckDNS, Dozzle and umami + umami-db — nine services) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, machine-local mode (`just deploy-local`), updates, migrations, and day-2 operations.
 
 ### Quality
 
@@ -241,7 +241,7 @@ Setting `DEVELOPMENT=true` in the root `.env.local` disables the auth gate so ev
 DEVELOPMENT=true
 ```
 
-To simulate a role, edit `DEV_ROLE` in `apps/frontend/server/api-client.ts` (default `system_admin`).
+To simulate a role, edit `DEV_ROLE` in `apps/frontend/server/api-client.ts` (default `faculty`).
 
 ### Testing with a real account (per role)
 
