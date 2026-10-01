@@ -4,26 +4,14 @@ Release notes for [Obelisk](https://github.com/Zerodayu/Obelisk), newest first. 
 
 ---
 
-# Unreleased — remove DuckDNS and container log rotation
+# v0.2.0 — edge stack: Caddy, Dozzle & umami
 
-> **Slimmer stack.** The dynamic-DNS updater and the shared log-rotation anchor are gone — eight services, Docker's default logging.
-
-## — Changes
-- **DuckDNS updater removed** — the `duckdns` service is gone from the compose stack (nine → **eight** services), together with `DUCKDNS_SUBDOMAINS` / `DUCKDNS_TOKEN` from `.env.docker` and the dotenvx wrap in `just docker-deploy`; your A records must now be kept fresh by hand or by your provider's own DDNS. The stale `obelisk-duckdns` container is an orphan — `docker compose down --remove-orphans` (or `docker rm -f obelisk-duckdns`) once after upgrading
-- **Container log rotation removed** — the `x-logging: &log-rotation` anchor and every `logging:` block are gone, so containers fall back to Docker's default unbounded json-file driver (Dozzle still streams them; watch `/var/lib/docker/containers` — `just docker-update` prunes old images)
-- Docs synced with the eight-service stack: DEPLOYMENT (service table, `.env.docker` key list, deploy paragraph, troubleshooting), FORKING, CONTRIBUTING, README, `apps/python-server/README.md`; the "duckdns is deliberately absent" note is dropped from `docker-compose.local.yml`
-
----
-
-# v0.2.0 — edge stack: Caddy, DuckDNS, Dozzle & umami
-
-> **One public port.** The self-hosted stack now runs behind a single Caddy edge with automatic HTTPS, keeps its own DNS records up to date, and ships a private log viewer plus self-hosted analytics.
+> **One public port.** The self-hosted stack now runs behind a single Caddy edge with automatic HTTPS and ships a private log viewer plus self-hosted analytics.
 
 ## — Features / What's New
 
-### • Edge stack (Caddy + DuckDNS)
+### • Edge stack (Caddy)
 - **Caddy is the only public entrypoint** — one container terminates TLS (Let's Encrypt, HTTP-01, HTTP/3) and routes `/api/*` → backend, everything else → frontend; backend, frontend, ETL, Redis, Dozzle and umami publish no ports at all, so only **80 / 443** are open
-- **DuckDNS updater** keeps the A records for the app, Dozzle and umami hostnames pointed at this server's public IP (refreshed every ~5 min; names + token come from `.env.docker`, subdomains are created on the DuckDNS dashboard)
 - **Per-request access logs on every hop** — caddy (JSON, static assets skipped via `log_skip`), the frontend proxy (`[frontend] METHOD path decision`) and the backend hooks (`[backend] METHOD path status ms`), all readable in one place through Dozzle
 
 ### • Private ops tooling
@@ -36,7 +24,7 @@ Release notes for [Obelisk](https://github.com/Zerodayu/Obelisk), newest first. 
 - One-time setup, the `403`-by-design rule and a `pg_dump` backup command documented in DEPLOYMENT.md
 
 ### • Machine-local deployment
-- `just deploy-local` runs the same nine services with **no public exposure**: `*.localhost` names, Caddy's internal CA (trust it once per machine), no ACME — useful for testing the full stack before it touches a VPS
+- `just deploy-local` runs the same eight services with **no public exposure**: `*.localhost` names, Caddy's internal CA (trust it once per machine), no ACME — useful for testing the full stack before it touches a VPS
 
 ### • Also new
 - Prod DB recipes: `just db-migrate` / `db-generate` against `.env.prod`, plus `bun run db:migrate-prod` and friends from your machine; `just docker-migrate` applies Prisma inside the running container
@@ -55,7 +43,7 @@ Release notes for [Obelisk](https://github.com/Zerodayu/Obelisk), newest first. 
 - Broken `LICENSE` / `justfile` links in `.github`
 
 ## — Changes
-- Compose stack grows from four services to **nine** (caddy, backend, frontend, etl, redis, duckdns, dozzle, umami, umami-db) on separate `edge` / `internal` networks, with json-file log rotation (10 MB × 3) on every container
+- Compose stack grows from four services to **eight** (caddy, backend, frontend, etl, redis, dozzle, umami, umami-db) on separate `edge` / `internal` networks, on Docker's default json-file logging (no `logging:` overrides)
 - Env handling consolidated: Python, backend and frontend all load the three root files; `.env.docker` joined the encrypt/decrypt chain and is injected by the dotenvx wrap in `just docker-deploy` instead of a compose `env_file` — a bare `docker compose up` no longer starts Caddy (its guard refuses)
 - **`DIRECT_URL` restored**: Prisma CLI (migrate/introspect) runs on the unpooled direct URL while the client keeps the pooled `DATABASE_URL`, and the key is part of the Zod-validated server env set
 - Workspace versions aligned at **0.2.0** (backend was `1.0.50`, `@obelisk/env` was `0.0.0`), and the OpenAPI document advertises the release version instead of `v0`
@@ -68,7 +56,7 @@ Deploy the whole stack on a server with Docker:
 
 ### • Requirements
 - Docker Engine with the **compose plugin** and **Buildx** (`docker compose version` must work), plus [`just`](https://just.systems/), [`dotenvx`](https://dotenvx.com/) and [`bun`](https://bun.sh)
-- A **domain** whose A record points at the server — ports **80 / 443** must be reachable (Caddy issues the TLS certificate); DuckDNS works too and the stack keeps its own records fresh
+- A **domain** whose A record points at the server — ports **80 / 443** must be reachable (Caddy issues the TLS certificate)
 - A **PostgreSQL database** reachable from the server ([Neon](https://neon.tech) or a local Postgres)
 
 ### • One-time setup
@@ -78,13 +66,13 @@ cd Obelisk
 # put the .env.keys file (gitignored) in the repo root — for a fork, generate your own (FORKING.md)
 just env-decrypt        # decrypt .env.prod + .env.docker for editing
 # fill .env.prod (DATABASE_URL, DIRECT_URL, BETTER_AUTH_SECRET, https://<domain> origins) and
-# .env.docker (APP_DOMAIN, DOZZLE_DOMAIN, UMAMI_DOMAIN, ADMIN_IPS, DUCKDNS_*, UMAMI_*)
+# .env.docker (APP_DOMAIN, DOZZLE_DOMAIN, UMAMI_DOMAIN, ADMIN_IPS, UMAMI_*)
 just env-encrypt        # re-encrypt — .env.keys stays gitignored
 ```
 
 ### • First deploy
 ```sh
-just docker-deploy      # build the images + start all nine services
+just docker-deploy      # build the images + start all eight services
 just docker-migrate     # prisma migrate deploy, inside the backend container
 ```
 
