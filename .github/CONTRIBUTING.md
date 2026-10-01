@@ -29,7 +29,7 @@ The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
 - **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack).
-- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `ADMIN_IPS` — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
+- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `ADMIN_IPS`, `DUCKDNS_SUBDOMAINS`, `DUCKDNS_TOKEN` — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
 
 All three are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD` / `DOTENV_PUBLIC_KEY_DOCKER`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
 

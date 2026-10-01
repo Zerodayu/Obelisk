@@ -70,6 +70,7 @@ All of these live in the root env files ([`CONTRIBUTING.md` §2](CONTRIBUTING.md
 | `OBELISK_ALLOWED_ORIGINS` | Your frontend origin(s), for the ETL CORS check |
 | `OBELISK_LLM_API_KEYS`, `OBELISK_WEBAPP_SHARED_SECRET` | Optional — your own keys, see `CONTRIBUTING.md` §2 |
 | `APP_DOMAIN`, `DOZZLE_DOMAIN`, `ADMIN_IPS` (`.env.docker`) | Your deployment domain, log-viewer domain and admin IPs, see `DEPLOYMENT.md` |
+| `DUCKDNS_SUBDOMAINS`, `DUCKDNS_TOKEN` (`.env.docker`) | DuckDNS updater — bare subdomain names + dashboard token (or delete the `duckdns` service if you don't use DuckDNS), see `DEPLOYMENT.md` |
 
 ---
 
