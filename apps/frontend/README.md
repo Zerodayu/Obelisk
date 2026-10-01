@@ -19,14 +19,14 @@ bun install          # repo root (once) — one lockfile for backend + frontend
 cd apps/frontend
 bun dev              # = bunx dotenvx run -f ../../.env.local -- next dev  → http://localhost:3000
 bun run build        # production build (dotenvx over the root .env.local)
-bun run build:prod # prod build — what Vercel runs (dotenvx over the root .env.prod)
+bun run build:prod # prod build — dotenvx over the root .env.prod (what the Docker image runs)
 bun run lint         # biome check
 bun run format       # biome format --write
 ```
 
 Secrets: the encrypted env files live at the **repo root** (`.env.local` for dev, `.env.prod` for production, header `DOTENV_PUBLIC_KEY_LOCAL`); the private keys live in the gitignored root `.env.keys`. Edit via `just env-decrypt` → edit → `just env-encrypt` (repo root). Env vars are validated by Zod in `@obelisk/env/client` (re-exported by `utils/env.ts`).
 
-Deploy from the repo root with `just deploy-frontend [prod]` (one-time `just vercel-link`; see `../../.github/CONTRIBUTING.md` §8). Note: `next build` skips type errors (`typescript.ignoreBuildErrors` in `next.config.ts`) until the pre-existing `components/ui` type errors are fixed — check manually with `bunx tsc --noEmit`.
+Production deploys are self-hosted Docker on a VPS behind Caddy — from the repo root: `just docker-deploy` (see `../../.github/DEPLOYMENT.md`). Note: `next build` skips type errors (`typescript.ignoreBuildErrors` in `next.config.ts`) until the pre-existing `components/ui` type errors are fixed — check manually with `bunx tsc --noEmit`.
 
 ### Development mode
 

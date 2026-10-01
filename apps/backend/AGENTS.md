@@ -37,12 +37,12 @@ src/
 - **caching & limits**: wrap read-only GET handlers with `cached(ttlSeconds, handler)` from `@lib/cache` (Redis-backed, falls through on miss); rate limiting applies globally (100 requests / 15 min).
 - **shared libs** (`lib/`): `lib/role-access.ts` (**role → feature allow-lists + asserts** — class-record capture, archive, PLO management, role requests, cluster confirm, AI insight generation; mirrored by `apps/frontend/lib/role-access.ts` and drift-guarded by `test/unit/role-access-sync.test.ts`), `lib/forms/approval-routes.ts` (per-form-code approval chains + RBAC — see Domain Rules), `lib/forms/state-machine.ts` (submission status transitions), `lib/forms/submit-gates.ts` (pre-submit validation gates), `lib/forms/approval-effects.ts` (per-form-code **final-approval side effects**, run inside the `decide` transaction — e.g. `action_taken` clearing `AtRiskFlag`s; same registration pattern as submit-gates), `lib/validators` (domain floors/enums), `lib/ingest` (python-server client), `lib/prisma.ts`, `lib/cache.ts`.
 
-## Environment & Vercel deployment (monorepo)
+## Environment & deployment (monorepo)
 
 - **Env files live at the repo root**: `.env.local` (dev) and `.env.prod` (production), both dotenvx-encrypted; private keys in the gitignored root `.env.keys`. Every package script wraps `dotenvx run -f ../../.env.local -- …` (dev/build/test) or `-f ../../.env.prod` (`build:prod`). Edit via `just env-decrypt` / `just env-encrypt` (repo root) — there are no per-package `env:*` scripts.
 - **Runtime env fallback:** `@obelisk/env/server` reads `process.env.X ?? runtimeEnv.X`, where `runtimeEnv` is the build-time snapshot from `packages/env/src/generated/runtime-env.ts` — gitignored, written by `packages/env/scripts/gen-runtime-env.ts` from the decrypted `.env.prod` during `build:prod` (canonical key list: `packages/env/env-keys.ts` — add new vars there **and** mirror the `process.env.X` reads in `packages/env/src/server.ts`). The root `postinstall` writes an empty stub so a fresh clone typechecks before any build.
 - **Entry point:** `src/index.ts` **default-exports the Elysia app**; `app.listen(8080)` is guarded by `import.meta.main && !process.env.VERCEL`, so Vercel (zero-config Elysia detection + `bunVersion: "1.x"` in `apps/backend/vercel.json`) serves the exported app while `bun run dev` still listens locally.
-- **Deploy:** `just vercel-link` once, then `just deploy-backend [prod]` from the repo root — the build runs `bun run build:prod` (prisma generate + runtime-env bake). Setup details: `../../.github/CONTRIBUTING.md` §8.
+- **Deploy:** self-hosted Docker on a VPS behind Caddy — from the repo root: `just docker-deploy` (image build runs `bun run build:prod` — prisma generate + runtime-env bake). Details: `../../.github/DEPLOYMENT.md`.
 
 ## Domain Rules (canonical — do not violate)
 

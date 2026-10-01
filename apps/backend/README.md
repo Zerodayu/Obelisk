@@ -20,6 +20,6 @@ bun db:studio
 
 Open <http://localhost:8080/> with your browser to see the result. then go to `/openapi` for the apis documentation
 
-### deploy (vercel)
+### deploy (docker)
 
-From the repo root: `just deploy-backend` (preview) or `just deploy-backend prod`. The build runs `bun run build:prod`, which decrypts the root `.env.prod` and bakes it into `packages/env/src/generated/runtime-env.ts` (gitignored) so the Bun-runtime function has env vars at runtime. One-time setup: `../../.github/CONTRIBUTING.md` §8.
+Production deploys are self-hosted Docker on a VPS behind Caddy — from the repo root: `just docker-deploy` (see `../../.github/DEPLOYMENT.md`). The image build runs `bun run build:prod`, which decrypts the root `.env.prod` and bakes it into `packages/env/src/generated/runtime-env.ts` (gitignored) so the Bun-runtime process has env vars at runtime.

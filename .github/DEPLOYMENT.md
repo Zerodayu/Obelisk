@@ -1,0 +1,166 @@
+# Deployment
+
+Self-hosted deployment of OBELISK on a VPS behind [Caddy](https://caddyserver.com) (automatic HTTPS). For development setup, see [`CONTRIBUTING.md`](CONTRIBUTING.md); for starting your own instance, see [`FORKING.md`](FORKING.md).
+
+---
+
+## Architecture
+
+The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — five services, one public entrypoint:
+
+| Service | Container | Exposed | Role |
+| :--- | :--- | :--- | :--- |
+| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)) |
+| **backend** | `obelisk-backend` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
+| **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
+| **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
+| **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
+
+Design notes:
+
+- The stack is **`.env.prod`-only**. The encrypted `.env.prod` and the gitignored `.env.keys` are bind-mounted read-only into every app container and decrypted by dotenvx **inside** the container (the build also receives `.env.keys` as a BuildKit secret — never a layer).
+- In-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`); the frontend's server-side fetch/auth rewrite uses the build arg `API_INTERNAL_URL=http://backend:8080`.
+- Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`) is **baked from `.env.prod` at build time** — see [Rebuild rules](#rebuild-rules).
+- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback.
+- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned).
+
+---
+
+## Requirements
+
+On the server:
+
+- A **VPS** (any provider) with Docker — [Docker Engine](https://docs.docker.com/engine/install/) including the **compose plugin** and **Buildx** (`docker compose version` must work)
+- [just](https://just.systems/) — recipe runner (`pacman -S just`, `apt install just`, …)
+- [dotenvx](https://dotenvx.com/) — used by `just docker-deploy` to inject `.env.docker` into compose
+- [Bun](https://bun.sh) — runs the root scripts behind some recipes
+- A **domain** (or subdomain) whose **A record points at the server's IP** — Caddy issues the TLS certificate via HTTP-01, so ports **80 and 443** must be reachable (443/udp is optional, HTTP/3 only)
+- A **PostgreSQL database** reachable from the server ([Neon](https://neon.tech) or a local Postgres)
+
+On your machine: none of the above is needed to *operate* the stack once it is on the server — everything below runs there.
+
+---
+
+## One-time server setup
+
+### 1. Clone
+
+```sh
+git clone https://github.com/Zerodayu/Obelisk.git
+cd Obelisk
+```
+
+### 2. Secrets: `.env.keys`
+
+The committed env files are encrypted; the private keys live in the gitignored **`.env.keys`**. Copy the maintainer's `.env.keys` to the repo root (for a fork, generate your own — see [`FORKING.md`](FORKING.md)).
+
+```sh
+just env-decrypt    # decrypt .env.prod + .env.docker for editing (also .env.local)
+```
+
+### 3. Fill `.env.prod`
+
+The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with **production values**:
+
+- `DATABASE_URL` / `DIRECT_URL` — the production Postgres connection string
+- `BETTER_AUTH_SECRET` — a new long random secret (not the dev one)
+- `BETTER_AUTH_URL` / `FRONTEND_URL` — `https://<your-domain>` (caddy terminates TLS, so these are the public HTTPS origin)
+- `NEXT_PUBLIC_API_URL` — `https://<your-domain>/api/v1` (**baked at build** — see [Rebuild rules](#rebuild-rules))
+- `PYTHON_SERVER_URL` — leave as `http://localhost:8000`; the compose file overrides it in-network to `http://etl:8000`
+- `REDIS_HOST` / `REDIS_PORT` — leave as `localhost` / `6379`; overridden in-network to `redis`
+- `ORG_EMAIL_DOMAIN`, Google OAuth credentials, `OBELISK_*` — production values
+- Keep `DEVELOPMENT` and `DEV_SESSION_ENABLED` **unset** — `next.config.ts` refuses to build while `DEV_SESSION_ENABLED=true`
+
+`.env.prod` must contain the **complete key set**: dotenvx never overrides an existing variable, so any key it lacks silently falls back to its `.env.local` value (which does not exist in a container).
+
+### 4. Fill `.env.docker`
+
+Two keys consumed by the compose file for Caddy (via the dotenvx wrap in `just docker-deploy`):
+
+```env
+APP_DOMAIN="obelisk.example.com"     # the public site address — Caddy refuses to boot without it
+ADMIN_IPS="203.0.113.10"             # space-separated IPs for the admin allow-list (see the Caddyfile TODO block)
+```
+
+### 5. Re-encrypt
+
+```sh
+just env-encrypt    # re-encrypt all three env files; .env.keys stays gitignored
+```
+
+### 6. Apply the database schema
+
+```sh
+just docker-deploy                        # first build + start (see below), then:
+just docker-migrate                       # prisma migrate deploy, inside the backend container
+```
+
+Or apply migrations from your machine against the prod database with `cd apps/backend && bun run db:migrate-prod`.
+
+> ⚠️ **Do not run `db:seed` against production.** The seed wipes and recreates accounts/reference data and has no production guard yet (tracked in [`system-docs/testing_results.md`](../system-docs/testing_results.md) §1.3).
+
+---
+
+## Deploying
+
+From the repo root **on the server**:
+
+```sh
+just docker-deploy
+```
+
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all five services with `.env.prod` values. `APP_DOMAIN` / `ADMIN_IPS` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
+
+Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend). Logs: `just docker-logs`.
+
+> Stop `just dev` first — the dev stack and the Docker stack bind the same host ports (Redis aside, which is shared via loopback).
+
+### Rebuild rules
+
+Browser-facing values are **inlined into the JS bundle at build time**, so the image must be rebuilt (not just restarted) whenever they change:
+
+- `NEXT_PUBLIC_API_URL` — inlined into client bundles
+- `BETTER_AUTH_URL` / `FRONTEND_URL` — baked into the runtime-env snapshot and routes manifest
+- any other `.env.prod` change consumed at build (`packages/env/src/generated/runtime-env.ts` is written by `build:prod`)
+
+`just docker-deploy` always runs `--build`, so it picks up env changes and source changes alike. The canonical env key list is `packages/env/env-keys.ts`.
+
+### What the build does
+
+- **backend** — `bun run build:prod`: `prisma generate` **plus** `packages/env/scripts/gen-runtime-env.ts`, which bakes the decrypted `.env.prod` values into `packages/env/src/generated/runtime-env.ts` (gitignored) so the process has env vars at runtime. `@obelisk/env/server` reads `process.env.X ?? runtimeEnv.X`, so compose-injected vars (`REDIS_HOST`, `PYTHON_SERVER_URL`) still override the baked file.
+- **frontend** — `next build` with prod values inlined; `API_INTERNAL_URL=http://backend:8080` is fixed as a build arg/ENV so server-side fetches and the auth rewrite reach the backend over the compose network.
+- **etl** — no build-time env; it decrypts the bind-mounted `.env.prod` itself at startup (`OBELISK_ENV=prod`, `apps/python-server/app/core/env.py`) and fails fast if `.env.keys` is missing.
+
+---
+
+## Day-2 operations
+
+| Task | Command |
+| :--- | :--- |
+| Update to latest code (pull + rebuild + prune old images) | `just docker-update` |
+| Apply pending DB migrations after an update | `just docker-migrate` |
+| Tail all service logs | `just docker-logs` |
+| Restart containers in place (no rebuild) | `just docker-restart` |
+| Reload Caddy after editing the `Caddyfile` (no downtime) | `just docker-caddy-reload` |
+| Stop the stack (containers/images stay) | `just docker-down` |
+
+### Update workflow
+
+```sh
+just docker-update       # git pull --ff-only → just docker-deploy → docker image prune -f
+just docker-migrate      # only when the release includes new Prisma migrations
+```
+
+Plain Compose equivalents work too (`docker compose up -d --build`, `docker compose logs -f`, `docker compose down`) — but without the dotenvx wrap Caddy will not start, so prefer the recipes. Managing containers via [lazydocker](https://github.com/jesseduffield/lazydocker) is fine for inspection.
+
+---
+
+## Troubleshooting
+
+- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN`. Run `just docker-deploy`; check `just docker-logs`.
+- **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
+- **No TLS certificate / `404` from Caddy** — the domain's A record does not point at this server, or port 80 is blocked (HTTP-01 needs it). Check DNS and the firewall; cert progress is in `just docker-logs` (caddy).
+- **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.
+- **Frontend talks to the wrong API origin** — `NEXT_PUBLIC_API_URL` changed without a rebuild; run `just docker-deploy`.
+- **Stale container after a config-only change** — `docker compose restart` does not re-read `environment:`; use `just docker-deploy` (recreates) or `just docker-restart` where only the process needs a kick.
+- **Disk filling up** — logs are capped by rotation (`json-file`, 10 MB × 3 per container); old images are pruned by `just docker-update`. Also see `docker system df`.

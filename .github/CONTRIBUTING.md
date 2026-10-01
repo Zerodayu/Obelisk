@@ -1,6 +1,6 @@
 # Contributing to OBELISK
 
-Development setup and workflow documentation. For a project overview, see the [README](README.md); for live progress, see [`roadmap.md`](../system-docs/roadmap.md).
+Development setup and workflow documentation. For a project overview, see the [README](README.md); for going live, see [DEPLOYMENT.md](DEPLOYMENT.md); for running your own instance, see [FORKING.md](FORKING.md); for live progress, see [`roadmap.md`](../system-docs/roadmap.md).
 
 ---
 
@@ -8,7 +8,7 @@ Development setup and workflow documentation. For a project overview, see the [R
 
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
 - [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
-- [Docker](https://www.docker.com) — optional; runs the whole self-hosted stack (backend, frontend, ETL, Redis) via the root `docker-compose.yml`, and Redis for local ETL development
+- [Docker](https://www.docker.com) — optional; starts Redis for local ETL development (`just redis`). The full self-hosted stack also runs in Docker — see [DEPLOYMENT.md](DEPLOYMENT.md).
 - [just](https://github.com/casey/just) — optional, to use the root [`justfile`](../justfile) recipes (§4)
 - A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
 
@@ -25,12 +25,13 @@ cd Obelisk
 
 ## 2. Environment setup
 
-The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and `apps/python-server/` all read their configuration from a single pair of env files at the repository root:
+The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and `apps/python-server/` all read their configuration from a single set of env files at the repository root:
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
-- **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack and Vercel builds).
+- **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack).
+- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `ADMIN_IPS` — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
 
-Both are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
+All three are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD` / `DOTENV_PUBLIC_KEY_DOCKER`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
 
 Choose **one** of the two options below.
 
@@ -39,7 +40,7 @@ Choose **one** of the two options below.
 Obtain `.env.keys` from a maintainer and place it at the repo root, then:
 
 ```sh
-just env-decrypt   # decrypt .env.local + .env.prod for editing
+just env-decrypt   # decrypt .env.local + .env.prod + .env.docker for editing
 # ... edit ...
 just env-encrypt   # re-encrypt; the private keys stay in the gitignored .env.keys
 ```
@@ -79,7 +80,7 @@ OBELISK_ALLOWED_ORIGINS="http://localhost:3000,http://127.0.0.1:3000"
 # OBELISK_WEBAPP_SHARED_SECRET=""    # optional — X-Webapp-Secret caller check
 ```
 
-`.env.prod` must contain the same keys with production values (Vercel URLs, real secrets). Keep `DEVELOPMENT` / `DEV_SESSION_ENABLED` unset there — `next.config.ts` refuses to build while `DEV_SESSION_ENABLED=true`.
+`.env.prod` must contain the same keys with production values (public URLs, real secrets). Keep `DEVELOPMENT` / `DEV_SESSION_ENABLED` unset there — `next.config.ts` refuses to build while `DEV_SESSION_ENABLED=true`.
 
 The ETL decrypts these same root files itself at startup (`apps/python-server/app/core/env.py`): `OBELISK_ENV` picks the file — unset/`local` → `.env.local`, `prod` (set by compose) → `.env.prod`. There is no `apps/python-server/.env` anymore; without the root `.env.keys` it logs a warning in local mode and runs on built-in defaults, and fails fast in prod mode.
 
@@ -105,14 +106,7 @@ uv sync
 uv run dev
 ```
 
-**Docker (whole stack — from the repo root):**
-
-```sh
-docker compose up -d --build          # all four services (or: just docker-up)
-docker compose up -d etl              # this service only (Redis starts as its dependency)
-```
-
-The compose file lives at the repo root and also owns Redis; the ETL container bind-mounts the root `.env.prod` + `.env.keys` read-only and decrypts them itself at startup (`OBELISK_ENV=prod`), with `OBELISK_REDIS_HOST` / `OBELISK_REDIS_PORT` injected as in-network `environment:` overrides.
+**Docker:** Redis for local ETL development comes from the root compose file — `just redis` (or `just install-etl`, which also runs `uv sync`). Running the **whole stack** in Docker is a deployment concern: see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Verify: <http://localhost:8000/health>
 
@@ -123,10 +117,10 @@ cd apps/backend
 
 # create the root .env.local (see §2), then apply the database schema:
 bun run db:generate
-bun run db:migrate dev
+bun run db:migrate        # prisma migrate dev — applies pending migrations (asks before resetting on drift)
 
-# or, if migrations already exist and you only need to apply them:
-# bun run db:migrate deploy
+# against the production database instead (reads .env.prod):
+# bun run db:migrate-prod # prisma migrate deploy
 
 bun run dev
 ```
@@ -148,7 +142,7 @@ Open <http://localhost:3000>. It proxies `api/v1` requests to the backend at `NE
 
 ## 4. Justfile recipes
 
-The root [`justfile`](../justfile) wraps the common workflows — install, dev, quality checks, and Vercel deploys — via [just](https://github.com/casey/just). `just install` followed by `just dev` is the fastest path to a running stack (after §2 env setup).
+The root [`justfile`](../justfile) wraps the common workflows — install, dev, database, quality checks — via [just](https://github.com/casey/just). `just install` followed by `just dev` is the fastest path to a running stack (after §2 env setup).
 
 ### Setup
 
@@ -156,10 +150,13 @@ The root [`justfile`](../justfile) wraps the common workflows — install, dev, 
 | :--- | :--- |
 | `just install` | Install dependencies for all packages (Bun + uv) |
 | `just install-bun` | One root `bun install` for the whole workspace (postinstall writes the runtime-env stub) |
-| `just env-decrypt` | Decrypt the root `.env.local` + `.env.prod` for editing |
+| `just env-decrypt` | Decrypt the root `.env.local` + `.env.prod` + `.env.docker` for editing |
 | `just env-encrypt` | Re-encrypt the root env files (private keys stay in the gitignored `.env.keys`) |
 | `just install-etl` | Start Redis (Docker Compose), then `uv sync` python-server deps |
 | `just redis` | Start Redis via Docker Compose (needed by the ETL service) |
+| `just db-generate` | Regenerate the Prisma client after a schema change |
+| `just db-migrate` | Apply pending Prisma migrations (from the root `.env.local`) |
+| `just db-seed` | Seed dev data — one account per role, department, program, term, course, section (wipes previous seed rows; re-run after `just test`) |
 
 ### Dev
 
@@ -173,36 +170,22 @@ The root [`justfile`](../justfile) wraps the common workflows — install, dev, 
 | `just dev-frontend` | Run only the frontend (`next dev`, `:3000`) |
 | `just dev-etl` | Run only the Python ETL service (uvicorn reload on `:8000`) |
 
-### Build & run (production servers)
+### Build & run (local production servers)
 
-| Recipe | What it does |
-| :--- | :--- |
-| `just start` | Turbo-cached build + serve backend (`:8080`) and frontend (`:3000`) with the root `.env.local`; Ctrl+C stops both |
-| `just start-prod` | Same, but built and served with the root `.env.prod` — stop the other stack first (same ports) |
-
-Root equivalents are `bun run start` / `bun run start:prod`. Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks silently falls back to its `.env.local` value.
-
-The ETL service is not a turbo workspace; run it separately (`just dev-etl` or Docker, §3a).
-
-### Docker (self-hosted stack)
-
-| Recipe | What it does |
-| :--- | :--- |
-| `just docker-up` | `docker compose up -d --build` — all four services with the root `.env.prod` (fill it + `just env-encrypt` first; stop `just dev` first — same ports) |
-| `just docker-up-prod` | Alias of `just docker-up` — the stack is `.env.prod`-only |
-| `just docker-down` | Stop the stack (containers stay around for lazydocker) |
-| `just docker-logs` | Tail all service logs (Ctrl+C detaches) |
-
-`just` is optional — the recipes are thin wrappers around plain Compose; deploying without it (from the repo root; needs the committed encrypted `.env.local`/`.env.prod` plus the gitignored `.env.keys` in place — dotenvx decrypts **inside** the containers, nothing to install locally):
+There are no `just` recipes for this — use the root scripts:
 
 ```sh
-docker compose up -d --build          # all four services (.env.prod-only, what `just docker-up` runs)
-docker compose logs -f                # tail all service logs (Ctrl+C detaches)
-docker compose down                   # stop the stack (containers stay around for lazydocker)
-docker compose up -d etl              # single service + its dependency (redis)
+bun run start          # turbo-cached build + serve backend (:8080) and frontend (:3000) with .env.local
+bun run start:prod     # same, built and served with .env.prod — stop the dev stack first (same ports)
 ```
 
-The root `Dockerfile` is multi-stage (`--target backend \| frontend \| etl`) and the root `docker-compose.yml` wires the four services together. Design notes: the stack is `.env.prod`-only — the encrypted env files are bind-mounted read-only and decrypted by dotenvx **inside** the containers (the gitignored `.env.keys` is required — builds also receive it as a BuildKit secret, never a layer); in-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`) and a build arg (`API_INTERNAL_URL=http://backend:8080`, used by the auth rewrite and server-side fetches); everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`) is baked from `.env.prod` at build time — **rebuild** whenever `NEXT_PUBLIC_API_URL` changes, since it is inlined. The `etl` and `redis` ports bind `127.0.0.1` only (etl has no auth, redis has no password); only backend/frontend face the network.
+Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks silently falls back to its `.env.local` value.
+
+The ETL service is not a turbo workspace; run it separately (`just dev-etl`).
+
+### Docker & deploy (self-hosted stack)
+
+The whole stack (Caddy + backend + frontend + ETL + Redis) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, updates, migrations, and day-2 operations.
 
 ### Quality
 
@@ -216,17 +199,7 @@ The root `Dockerfile` is multi-stage (`--target backend \| frontend \| etl`) and
 | `just test-integration` | Run backend integration tests |
 | `just check` | Run all quality checks (lint + typecheck + test) |
 
-### Deploy (Vercel)
-
-| Recipe | What it does |
-| :--- | :--- |
-| `just vercel-link` | Link `apps/backend/` + `apps/frontend/` to Vercel projects (run once; needs `bunx vercel login`) |
-| `just deploy-backend [prod]` | Deploy the backend — preview by default, `prod` for production |
-| `just deploy-frontend [prod]` | Deploy the frontend — preview by default, `prod` for production |
-
-See §8 for the one-time Vercel setup.
-
-Run `just --list` to see all recipes.
+Run `just --list` to see all recipes (the `deploy` group — `docker-deploy`, `docker-update`, `docker-migrate`, … — is documented in [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ---
 
@@ -283,33 +256,15 @@ Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `get
 
 ## 7. Troubleshooting
 
-- **`[dotenvx] This is a private key. Please use the public key...`, `[DECRYPTION_FAILED]`, or other decryption errors** — you don't have the root `.env.keys`. Ask a maintainer for it and place it at the repo root, or replace `.env.local` with a plaintext file (Option B in §2). On Vercel this means the project is missing the `DOTENV_PRIVATE_KEY_PROD` env var (§8).
+- **`[dotenvx] This is a private key. Please use the public key...`, `[DECRYPTION_FAILED]`, or other decryption errors** — you don't have the root `.env.keys`. Ask a maintainer for it and place it at the repo root, or replace `.env.local` with a plaintext file (Option B in §2).
 - **Backend fails to start with a missing-var error** — all required env vars are Zod-validated at startup in `packages/env/src/server.ts` (via `apps/backend/utils/env.ts`); fill in the missing ones in the root `.env.local`.
-- **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point to a reachable Postgres (Neon or local) and that the schema was applied (`bun run db:migrate dev`).
+- **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point to a reachable Postgres (Neon or local) and that the schema was applied (`bun run db:migrate`).
 - **Port already in use** — the services expect `8080`, `3000`, and `8000`. Stop anything occupying those ports.
 - **Frontend can't reach the API** — ensure the backend is running and `NEXT_PUBLIC_API_URL` matches its origin (`http://localhost:8080`).
 - **python-server uploads fail** — the ETL service has no database and no auth; the backend must be reachable (`PYTHON_SERVER_URL`), and the upload endpoints require the backend to be running too.
 
 ---
 
-## 8. Deploying to Vercel
+## 8. Deployment
 
-`apps/backend/` and `apps/frontend/` deploy as two separate Vercel projects from this repo; `python-server` stays on your own host (the root `docker-compose.yml` on the docker host — `just docker-up`, or plain `docker compose up -d --build`, runs the whole stack there). Both projects use zero-config framework detection plus a `vercel.json` override — `buildCommand: "bun run build:prod"` (and `bunVersion: "1.x"` for the backend, which deploys as a Bun-runtime Elysia function: `apps/backend/src/index.ts` default-exports the app).
-
-### One-time setup
-
-1. `bunx vercel login`, then `just vercel-link` (links `apps/backend/` + `apps/frontend/` to Vercel projects).
-2. In **both** Vercel projects, add the environment variable **`DOTENV_PRIVATE_KEY_PROD`** with the value of the matching line from the root `.env.keys` (e.g. `DOTENV_PRIVATE_KEY_PROD=a08d…`). The gitignored keys file cannot reach Vercel's build container; the env *values* still come from the committed, encrypted `.env.prod` — only the decryption key lives in Vercel. Without it the build fails with `[DECRYPTION_FAILED]` (§7).
-
-### Deploying
-
-```sh
-just deploy-backend          # preview deployment
-just deploy-frontend
-just deploy-backend prod     # production
-just deploy-frontend prod
-```
-
-### What the build does
-
-- `bun run build:prod` decrypts `../../.env.prod` (root file) and runs the normal build: the frontend builds Next.js with prod values inlined (`NEXT_PUBLIC_API_URL`), the backend runs `prisma generate` **and** `packages/env/scripts/gen-runtime-env.ts`, which bakes the decrypted values into `packages/env/src/generated/runtime-env.ts` (gitignored, generated only at build time) so the serverless function has env vars at runtime. `@obelisk/env/server` reads `process.env.X ?? runtimeEnv.X`, so platform-provided vars still override the baked-in file. The canonical key list is `packages/env/env-keys.ts`.
+Production deployment (self-hosted Docker stack on a VPS behind Caddy) is documented in **[DEPLOYMENT.md](DEPLOYMENT.md)** — server prerequisites, env setup, `just docker-deploy`, updates, and database migrations. If you are setting up your own instance instead, see **[FORKING.md](FORKING.md)**.
