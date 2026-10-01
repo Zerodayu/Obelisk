@@ -14,7 +14,7 @@
     },
     "apps/backend": {
       "name": "backend",
-      "version": "1.0.50",
+      "version": "0.2.0",
       "dependencies": {
         "@better-auth/prisma-adapter": "^1.6.23",
         "@dotenvx/dotenvx": "^2.20.1",
@@ -40,7 +40,7 @@
     },
     "apps/frontend": {
       "name": "frontend",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ark-ui/react": "^5.38.0",
         "@base-ui/react": "1.6.0",
@@ -85,11 +85,11 @@
     },
     "packages/app-info": {
       "name": "@obelisk/app-info",
-      "version": "0.1.0",
+      "version": "0.2.0",
     },
     "packages/env": {
       "name": "@obelisk/env",
-      "version": "0.0.0",
+      "version": "0.2.0",
       "dependencies": {
         "zod": "^4.4.3",
       },

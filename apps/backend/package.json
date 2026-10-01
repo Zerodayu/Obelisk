@@ -1,6 +1,6 @@
 {
 	"name": "backend",
-	"version": "1.0.50",
+	"version": "0.2.0",
 	"scripts": {
 		"test": "dotenvx run -f ../../.env.local -- bun test/helpers/run-tests.ts",
 		"test:unit": "dotenvx run -f ../../.env.local -- bun test -- test/unit",

@@ -30,7 +30,7 @@ const app = new Elysia()
 		openapi({
 			documentation: {
 				info: {
-					version: "v0",
+					version: "0.2.0",
 					title: `Obelisk(backend) — ${appINFO.description}`,
 				},
 				components: (await OpenAPI.components) as OpenAPIV3.ComponentsObject,

@@ -2,7 +2,7 @@
 // `app` from the shim in utils/app-info.ts (or straight from @obelisk/app-info).
 export const app = {
   title: "Obelisk",
-  version: "0.1.0",
+  version: "0.2.0",
   description:
     "Outcomes-based Educational Learning and Intelligent System Kit for Jose Maria College Foundation Inc.",
   legalTitle:
