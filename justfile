@@ -238,7 +238,7 @@ check: lint typecheck test
 
 # --- deploy (docker self-hosted stack) ---
 
-# build + (re)start all four services in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first (same ports)
+# build + (re)start the whole stack in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first so dev/prod don't mix
 [group('deploy')]
 docker-deploy:
     docker compose up -d --build
@@ -269,3 +269,8 @@ docker-down:
 [group('deploy')]
 docker-logs:
     docker compose logs -f
+
+# reload caddy in place after editing the Caddyfile — no rebuild, no downtime
+[group('deploy')]
+docker-caddy-reload:
+    docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile

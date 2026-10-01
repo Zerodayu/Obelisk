@@ -1,9 +1,10 @@
-# NOTE: whole self-hosted stack in one compose file (4 services), .env.prod-only —
+# NOTE: whole self-hosted stack in one compose file (5 services), .env.prod-only —
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
-# starts, `just docker-logs` tails (or lazydocker). Ports collide with `just dev`,
-# and only backend/frontend face the network (etl/redis are loopback-only).
-# TODO(prod): NEXT_PUBLIC_API_URL is baked from .env.prod at build — rebuild the
-# frontend whenever that value changes.
+# starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
+# published — frontend/backend/etl are compose-internal, redis keeps loopback so
+# `just dev` can reach it; stop `just dev` before deploying so dev/prod don't mix.
+# TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
+# .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
 
 # NOTE: json-file rotation so container logs can't fill the disk
 x-logging: &log-rotation
@@ -13,6 +14,33 @@ x-logging: &log-rotation
     max-file: "3"
 
 services:
+  # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
+  # HTTP-01 via :80) and splits traffic: /api/* → backend, everything else →
+  # frontend (see the Caddyfile). .env.docker supplies {$APP_DOMAIN}/{$ADMIN_IPS}.
+  caddy:
+    image: caddy:2-alpine
+    container_name: obelisk-caddy
+    restart: unless-stopped
+    logging: *log-rotation
+    ports:
+      - "80:80"
+      - "443:443"
+      # NOTE: HTTP/3 — harmless to leave if the VPS firewall blocks UDP 443
+      - "443:443/udp"
+    env_file:
+      - ./.env.docker
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # NOTE: certs/config must survive recreates — re-issuing on every deploy
+      # would hit Let's Encrypt rate limits
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - edge
+
   backend:
     build:
       context: .
@@ -23,21 +51,24 @@ services:
     container_name: obelisk-backend
     restart: unless-stopped
     logging: *log-rotation
-    ports:
-      - "8080:8080"
+    # NOTE: no published ports — in-network only (caddy /api over edge, etl/redis over internal)
     environment:
       # NOTE: in-network addresses — .env.prod says "localhost", which inside a
       # container is the container itself; dotenvx won't touch these (it never
       # overrides an already-set var)
       REDIS_HOST: redis
       PYTHON_SERVER_URL: http://etl:8000
-      # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing (localhost:3000)
+      # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing — the public
+      # https://<APP_DOMAIN> origin from .env.prod (caddy terminates TLS)
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
     depends_on:
       - redis
       - etl
+    networks:
+      - edge
+      - internal
 
   frontend:
     build:
@@ -49,8 +80,7 @@ services:
     container_name: obelisk-frontend
     restart: unless-stopped
     logging: *log-rotation
-    ports:
-      - "3000:3000"
+    # NOTE: no published ports — served by caddy over the edge network
     # NOTE: API_INTERNAL_URL is baked as a build ARG and kept as an image ENV —
     # no runtime override; NEXT_PUBLIC_API_URL keeps its baked browser-facing value
     volumes:
@@ -58,6 +88,8 @@ services:
       - ./.env.keys:/app/.env.keys:ro
     depends_on:
       - backend
+    networks:
+      - edge
 
   etl:
     build:
@@ -67,9 +99,8 @@ services:
     container_name: obelisk-etl
     restart: unless-stopped
     logging: *log-rotation
-    # NOTE: no auth by design — loopback only; the backend reaches http://etl:8000 over the compose network
-    ports:
-      - "127.0.0.1:8000:8000"
+    # NOTE: no auth by design and no published ports — backend reaches
+    # http://etl:8000 over the internal network only
     environment:
       OBELISK_ENV: prod
       # NOTE: in-network overrides — the root .env.prod says "localhost"
@@ -83,6 +114,8 @@ services:
       - uploads:/app/uploads
     depends_on:
       - redis
+    networks:
+      - internal
 
   redis:
     image: redis:alpine
@@ -92,9 +125,23 @@ services:
     # WARN: no password — loopback only (`just dev` still reaches it via localhost:6379)
     ports:
       - "127.0.0.1:6379:6379"
+    networks:
+      - internal
 
 volumes:
   uploads:
+  # NOTE: caddy certs/config survive recreates — otherwise every deploy
+  # re-issues and burns Let's Encrypt rate limits
+  caddy-data:
+  caddy-config:
+
+networks:
+  # NOTE: caddy + the app tier — backend joins both (caddy proxies /api to it,
+  # and it must reach etl/redis); the frontend only ever talks to backend
+  edge:
+  # NOTE: named "internal" but NOT `internal: true` — backend still needs
+  # egress from here (Google OAuth token exchange)
+  internal:
 
 # NOTE: build-time decryption only — mounted per RUN, never baked into a layer
 secrets:

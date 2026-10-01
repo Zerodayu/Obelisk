@@ -21,6 +21,9 @@
 .env.keys
 **/.env.keys
 **/.env
+# NOTE: compose-only config (APP_DOMAIN/ADMIN_IPS, umami secrets) — read on the
+# host by compose's env_file, never needed inside the build context
+.env.docker
 
 # NOTE: the host's decrypted bake must never ship — the backend stage re-bakes
 # under dotenvx itself, the postinstall stub covers everything else

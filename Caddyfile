@@ -1,0 +1,36 @@
+# NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$ADMIN_IPS}
+# are injected by compose (env_file: .env.docker) and substituted before parsing,
+# so a space-separated ADMIN_IPS expands to one remote_ip token per IP.
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	# NOTE: API → in-network backend (no published port); the path passes through as-is
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# NOTE: first match wins — keep this catch-all handle last
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	# NOTE: Caddy sets X-Forwarded-Proto/Host/For on both upstreams by default;
+	# HSTS only takes effect once the browser has seen the https response
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
+
+# TODO(admin): to put an admin app (umami, dozzle) behind the ADMIN_IPS
+# allow-list, paste this above the catch-all handle in the site block and
+# point the proxy at the app's in-network service:
+#	@admin remote_ip {$ADMIN_IPS}
+#	@not_admin not @admin
+#	handle /stats/* {
+#		respond @not_admin 403
+#		reverse_proxy umami:3000
+#	}
