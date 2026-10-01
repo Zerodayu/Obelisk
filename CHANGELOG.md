@@ -4,6 +4,17 @@ Release notes for [Obelisk](https://github.com/Zerodayu/Obelisk), newest first. 
 
 ---
 
+# Unreleased — remove DuckDNS and container log rotation
+
+> **Slimmer stack.** The dynamic-DNS updater and the shared log-rotation anchor are gone — eight services, Docker's default logging.
+
+## — Changes
+- **DuckDNS updater removed** — the `duckdns` service is gone from the compose stack (nine → **eight** services), together with `DUCKDNS_SUBDOMAINS` / `DUCKDNS_TOKEN` from `.env.docker` and the dotenvx wrap in `just docker-deploy`; your A records must now be kept fresh by hand or by your provider's own DDNS. The stale `obelisk-duckdns` container is an orphan — `docker compose down --remove-orphans` (or `docker rm -f obelisk-duckdns`) once after upgrading
+- **Container log rotation removed** — the `x-logging: &log-rotation` anchor and every `logging:` block are gone, so containers fall back to Docker's default unbounded json-file driver (Dozzle still streams them; watch `/var/lib/docker/containers` — `just docker-update` prunes old images)
+- Docs synced with the eight-service stack: DEPLOYMENT (service table, `.env.docker` key list, deploy paragraph, troubleshooting), FORKING, CONTRIBUTING, README, `apps/python-server/README.md`; the "duckdns is deliberately absent" note is dropped from `docker-compose.local.yml`
+
+---
+
 # v0.2.0 — edge stack: Caddy, DuckDNS, Dozzle & umami
 
 > **One public port.** The self-hosted stack now runs behind a single Caddy edge with automatic HTTPS, keeps its own DNS records up to date, and ships a private log viewer plus self-hosted analytics.
