@@ -6,7 +6,7 @@ Self-hosted deployment of OBELISK on a VPS behind [Caddy](https://caddyserver.co
 
 ## Architecture
 
-The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — nine services, one public entrypoint:
+The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — eight services, one public entrypoint:
 
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
@@ -15,7 +15,6 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 | **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
-| **duckdns** | `lscr.io/linuxserver/duckdns` | — (in-network) | Dynamic-DNS updater — refreshes the A records for `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` to this server's public IP every ~5 min (names + token from `.env.docker`) |
 | **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer at `https://<DOZZLE_DOMAIN>` — caddy answers non-`ADMIN_IPS` clients with 403 before proxying |
 | **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics at `https://<UMAMI_DOMAIN>` — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path with 403 unless the client is in `ADMIN_IPS` |
 | **umami-db** | `postgres:15-alpine` | — (in-network) | Umami's datastore — reached only by `umami` over `umami-db:5432`, data in the `umami-db-data` volume |
@@ -80,15 +79,13 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, two for the DuckDNS updater, two for umami:
+Six keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, two for umami:
 
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
 DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
 UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (also baked into the frontend tracker origin)
 ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN + the umami dashboard)
-DUCKDNS_SUBDOMAINS="obelisk,dozzle,umami"  # bare names, comma-separated — the updater keeps their A records on this server's IP
-DUCKDNS_TOKEN="..."                   # token from the duckdns.org dashboard (subdomains are created there, not here)
 UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection
 UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
 ```
@@ -134,7 +131,7 @@ From the repo root **on the server**:
 just docker-deploy
 ```
 
-That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all nine services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS` / `DUCKDNS_SUBDOMAINS` / `DUCKDNS_TOKEN` / `UMAMI_DB_PASSWORD` / `UMAMI_APP_SECRET` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all eight services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS` / `UMAMI_DB_PASSWORD` / `UMAMI_APP_SECRET` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
 
 Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — 403 unless the request comes from an `ADMIN_IPS` address), `https://<UMAMI_DOMAIN>` (dashboard — 403 unless admin; `curl -I https://<UMAMI_DOMAIN>/script.js` answers 200 from anywhere). Logs: `just docker-logs`.
 
@@ -170,7 +167,7 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 
 ### Local deployment
 
-`just deploy-local` runs the same nine services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
+`just deploy-local` runs the same eight services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
 
 ```sh
 just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
@@ -192,7 +189,6 @@ Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>`
 Notes:
 
 - `just docker-deploy` (and `just docker-update`, which runs it) switches back to public mode — re-run `just deploy-local` to return.
-- The `duckdns` updater keeps running and keeps the **public** records on the real IP — unrelated to the local names, and ready for when the network is reachable.
 
 ---
 
@@ -225,8 +221,7 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — the request's source IP is not in `ADMIN_IPS`. Caddy matches the TCP peer (public egress IP), so compare `curl ifconfig.me` with the value in `.env.docker`, update it, re-encrypt and redeploy.
 - **`403` on `https://<UMAMI_DOMAIN>`** — same allow-list as dozzle: your IP is not in `ADMIN_IPS` (this is intended for non-admins). `curl -I https://<UMAMI_DOMAIN>/script.js` should still answer `200` — if it doesn't, the tracker paths lost their `handle` in the `UMAMI_DOMAIN` block.
 - **No pageviews in umami** — the frontend bundle has no tracker: `NEXT_PUBLIC_UMAMI_WEBSITE_ID` empty in `.env.prod` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
-- **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (DuckDNS has no wildcards: each name needs its own entry, including `umami`). Cert progress is in `just docker-logs` (caddy).
-- **`KO` from `obelisk-duckdns` in `just docker-logs`** — DuckDNS rejected the update: wrong `DUCKDNS_TOKEN`, a name in `DUCKDNS_SUBDOMAINS` that was never created on the duckdns.org dashboard (bare names, no `.duckdns.org` suffix), or empty keys (a bare `docker compose up` skips the dotenvx wrap — no guard on purpose, the stack runs but the records stop following your IP). Fix `.env.docker`, `just env-encrypt`, redeploy.
+- **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (each hostname needs its own A record, `umami` included). Cert progress is in `just docker-logs` (caddy).
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
 - **No request lines in the log viewer** — per-request access logs come from caddy (JSON access log from the `log` blocks: `APP_DOMAIN`, plus the `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` sites with tracker paths skipped), `obelisk-frontend` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
@@ -234,4 +229,4 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.
 - **Frontend talks to the wrong API origin** — `NEXT_PUBLIC_API_URL` changed without a rebuild; run `just docker-deploy`.
 - **Stale container after a config-only change** — `docker compose restart` does not re-read `environment:`; use `just docker-deploy` (recreates) or `just docker-restart` where only the process needs a kick.
-- **Disk filling up** — logs are capped by rotation (`json-file`, 10 MB × 3 per container); old images are pruned by `just docker-update`. Also see `docker system df`.
+- **Disk filling up** — container logs run on Docker's default json-file driver with **no rotation** (the compose file sets no `logging:` limits), so `/var/lib/docker/containers` grows until you prune: `just docker-update` removes old images, and `docker container prune` / `docker system df` show the rest.
