@@ -14,8 +14,8 @@
     "build:prod": "dotenvx run -f .env.prod -- turbo run build",
     "start": "dotenvx run -f .env.local -- turbo run start",
     "start:prod": "dotenvx run -f .env.prod -- turbo run start:prod",
-    "env:encrypt": "dotenvx encrypt -f .env.local && dotenvx encrypt -f .env.prod",
-    "env:decrypt": "dotenvx decrypt -f .env.local && dotenvx decrypt -f .env.prod",
+    "env:encrypt": "dotenvx encrypt -f .env.local && dotenvx encrypt -f .env.prod && dotenvx encrypt -f .env.docker",
+    "env:decrypt": "dotenvx decrypt -f .env.local && dotenvx decrypt -f .env.prod && dotenvx decrypt -f .env.docker",
     "postinstall": "bun packages/env/scripts/gen-runtime-env.ts --stub"
   },
   "trustedDependencies": [

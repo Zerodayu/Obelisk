@@ -24,7 +24,7 @@ install: install-bun install-etl
 install-bun:
     bun install
 
-# decrypt the root .env.local + .env.prod for editing (re-encrypt with `just env-encrypt`)
+# decrypt the root .env.local + .env.prod + .env.docker for editing (re-encrypt with `just env-encrypt`)
 [group('setup')]
 env-decrypt:
     bun run env:decrypt
