@@ -343,21 +343,15 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
   ```
 - **Tracking:** `testing_results.md` 1.3 (❌) and §10 pre-deployment checklist.
 
-### 7.2 Blocker 2: HTTP Method Mismatch on CAR Save (HIGH) `[OPEN]`
-- **Source Locations:**
-  - Client: [`apps/frontend/server/actions/car.ts:51-54`](../apps/frontend/server/actions/car.ts) — `actionApi.post(\`/car/${id}\`, parts)` inside `saveCar` (`:41`).
-  - Server: [`apps/backend/src/v1/car/controller.ts:96-97`](../apps/backend/src/v1/car/controller.ts) — `.put("/:id")` (POST exists only on `/generate`).
-- **Defect:** Frontend Server Action calls `actionApi.post('/car/${id}', parts)`, but backend controller listens on `.put("/:id")` — `actionApi.post` really sends `POST`, with no verb translation.
-- **Impact:** Clicking "Save Draft" on CAR throws 404/405, preventing saving parts 1, 5, 6, and 7 (live-observed "Save failed", `testing_results.md` 6.3).
-- **Remedy:** Change `actionApi.post` to `actionApi.put` in `apps/frontend/server/actions/car.ts` (as `check.ts:83` and `plan.ts:362` already do).
+### 7.2 Blocker 2: HTTP Method Mismatch on CAR Save (HIGH) `[RESOLVED 2026-10-01]`
+- **Original Defect:** Frontend Server Action called `actionApi.post('/car/${id}', parts)`, but the backend controller listens on `.put("/:id")` — `actionApi.post` really sends `POST`, with no verb translation → 404 "Save failed" (`testing_results.md` 6.3).
+- **Fix Applied:** `apps/frontend/server/actions/car.ts` now calls `actionApi.put`. A second defect surfaced while verifying: `SaveCarPartsSchema` optionals were plain `t.Optional`, so the generated payload's nulls (`term`, `yearLevel`, `bloomsLevel`, `weightInGradePct`, `programChairDisposition`, …) failed validation with 422 — the optionals are now Nullable (`src/v1/car/model.ts`); unknown keys (`ploCode`, `cloDescription`, …) are stripped by Elysia rather than rejected.
+- **Verification:** Live 2026-10-01 — `PUT /car/:id` → **200** with the full generated `part1` round-tripped and persisted; `POST /car/:id` → 404 (the pre-fix path). Covered by the extended `car.test.ts` save/regenerate assertions.
 
-### 7.3 Blocker 3: HTTP Method Mismatch on Curriculum Map Save (HIGH) `[OPEN]`
-- **Source Locations:**
-  - Client: [`apps/frontend/server/actions/plan.ts:70-73`](../apps/frontend/server/actions/plan.ts) — `actionApi.post('/plan/curriculum-map/${id}', body)` inside `saveCurriculumMap` (`:46`).
-  - Server: [`apps/backend/src/v1/plan/controller.ts:168-169`](../apps/backend/src/v1/plan/controller.ts) — `.put("/curriculum-map/:id")`.
-- **Defect:** Frontend calls `actionApi.post`, but backend exposes only GET/PUT on that path → 404.
-- **Impact:** Program chairs cannot persist matrix changes to the CLO-PLO Curriculum Map (F01).
-- **Remedy:** Change `actionApi.post` to `actionApi.put` in `apps/frontend/server/actions/plan.ts`.
+### 7.3 Blocker 3: HTTP Method Mismatch on Curriculum Map Save (HIGH) `[RESOLVED 2026-10-01]`
+- **Original Defect:** `apps/frontend/server/actions/plan.ts` called `actionApi.post`, but the backend exposes only GET/PUT on `/plan/curriculum-map/:id` → 404, so program chairs could not persist matrix changes (F01).
+- **Fix Applied:** `saveCurriculumMap` now calls `actionApi.put` (same one-word change as 7.2).
+- **Verification:** Live 2026-10-01 — `PUT /plan/curriculum-map/:id` → **200** (PLO directory row persisted); `POST` → 404 (the pre-fix path).
 
 ### 7.4 Blocker 4: Broken Mapping Bridge in PLO Rollup (CRITICAL) `[RESOLVED 2026-09-29]`
 - **Original Defect:** The extractor returned `clo_plo_mapping: []` ([`extractor.py:191-192`](../apps/python-server/app/etl/extract/extractor.py)) and the backend rollup service constructed the python `/analytics/summary` payload from the snapshot without querying `CloToPloMap` — so every PLO was skipped and `persistPloAttainment` wrote nothing.
@@ -372,20 +366,17 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
 - **Remedy:** Implement replace-or-supersede logic marking earlier runs as inactive prior to persisting new attainment records — or make every reader run-scoped.
 - **Tracking:** `testing_results.md` 5.5 (❌): "Decide block-or-replace before real use."
 
-### 7.6 Blocker 6: CAR Part 1 Enrolled Count Always Zero (HIGH) `[OPEN]`
-- **Source Location:** [`apps/backend/src/v1/car/service.ts:150`](../apps/backend/src/v1/car/service.ts) — `prisma.enrollment.count({ where: { classSectionId } })`.
-- **Defect:** Zero routines in the entire repo write to `Enrollment` (no `enrollment.create|upsert|createMany` anywhere in `apps/` or `packages/`); the model exists unused at [`prisma/schema/03-academic.prisma:122-132`](../apps/backend/prisma/schema/03-academic.prisma).
-- **Impact:** CAR displays "No. Enrolled: 0" next to a real completed count. Related: Year Level / Faculty headers also render dashes because the ETL-extracted values sit unused in `ComputationRun.etlSnapshotJson` (`testing_results.md` 6.5).
-- **Remedy:** During class record persistence, upsert `Enrollment` rows for each student in the section, or fall back to counting distinct students with scores in that section.
+### 7.6 Blocker 6: CAR Part 1 Enrolled Count Always Zero (HIGH) `[RESOLVED 2026-10-01]`
+- **Original Defect:** Nothing in the repo wrote to `Enrollment` ([`prisma/schema/03-academic.prisma:122-132`](../apps/backend/prisma/schema/03-academic.prisma)), so `enrollment.count` at [`src/v1/car/service.ts`](../apps/backend/src/v1/car/service.ts) always returned 0; Year Level / Faculty also rendered dashes although the ETL-extracted values sat unused in `ComputationRun.etlSnapshotJson` (`testing_results.md` 6.5).
+- **Fix Applied:** the ingest persist loop upserts one `Enrollment` per student×section (unique-key idempotent, `src/v1/ingest/service.ts`), and `resolveRun` now selects `etlSnapshotJson` with P1 fallbacks saved formData → `section.faculty` → snapshot for year level and faculty (`buildPart1`).
+- **Verification:** Live 2026-10-01 — after a fresh seed + template upload the DB holds **30 enrollments**, CAR P1 reads `noEnrolled: 30` (was 0), `yearLevel: 1` and `facultyName: "Sample: Prof. Juan Dela Cruz"` from the snapshot; saved `yearLevel: 3` wins on regenerate. Assertions added in `car.test.ts` (incl. a faculty-less section) and `ingest.test.ts`.
+- **Residual:** P1's `term` still has no snapshot fallback (`setup.term` unused) — saved-formData-only (`testing_results.md` §7).
 
-### 7.7 Blocker 7: CAR Part 2 Category Breakdown Renders Dashes (MEDIUM, re-scoped) `[PARTIALLY MITIGATED]`
-- **Source Locations:**
-  - Backend: [`apps/backend/src/v1/car/service.ts:467-489`](../apps/backend/src/v1/car/service.ts) — `buildPart2` now computes exam/rubric/perf-task/portfolio means from `examPct/atPct/tlaPct/outputPct` columns (written by ingest at `src/v1/ingest/service.ts:305-308`), with `meanPct` returning `null` for absent values ([`car/compute.ts:39-47`](../apps/backend/src/v1/car/compute.ts)).
-  - Frontend: empty-state message exists in [`car-form.tsx:166-187`](../apps/frontend/components/forms/car-form.tsx).
-- **Current Defect (narrowed):** The backend logic is no longer the problem — the **source columns are NULL for the current template**: `AssessmentCategory` was removed from the ETL for the AUN-OBE template (`etl_const.py:205-215`), so `transformer.py:166` always yields `None`. Because `buildPart2` emits one row per CLO, the frontend empty-state is unreachable and the tables render dashes.
-- **Impact:** CAR Part 2 shows four tables of dashes for this template. Rows created via CSV re-import also carry NULL category columns (they set only direct/composite) and contribute nothing to the means.
-- **Remedy:** Make the empty-state fire on all-null rows, or restore per-assessment category granularity in the ETL.
-- **Tracking:** `testing_results.md` 6.6 (❌).
+### 7.7 Blocker 7: CAR Part 2 Category Breakdown Renders Dashes (MEDIUM, re-scoped) `[RESOLVED 2026-10-01]`
+- **Original Defect (narrowed):** `buildPart2` emitted one row per CLO even when every category column was NULL — `AssessmentCategory` was removed from the ETL for the AUN-OBE template (`etl_const.py:205-215`, `transformer.py:166` → `None`) — so the frontend empty-state was unreachable and all four tables rendered dashes (`testing_results.md` 6.6).
+- **Fix Applied:** `buildPart2` now drops null-pct rows (`src/v1/car/service.ts`), so an all-null section yields four empty arrays and the existing empty-state (`car-form.tsx`) fires.
+- **Verification:** Live 2026-10-01 — after the template upload all four P2 lists returned **0 rows** instead of one dash-row per CLO; `car.test.ts` covers both the per-field drop and the all-empty case.
+- **Residual:** the source columns stay NULL for this template (ETL granularity), so P2 shows the "no breakdown" message rather than per-assessment data — restore `AssessmentCategory` in the ETL if that granularity is wanted. CSV re-import rows also carry NULL categories.
 
 ---
 
@@ -410,11 +401,11 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
 | **Pipeline Bridge** | Empty `clo_plo_mapping` sent to python-server in F15 rollup. | **CRITICAL** | ✅ **RESOLVED 2026-09-29** — `loadCloPloMapping` injects DB `CloToPloMap` (rollup + AI paths); verified live with 5 `PloAttainment` rows. |
 | **Accreditation Workflow** | Missing At-Risk Student Action-Taken / Remediation workflow. | **HIGH** | ✅ **RESOLVED 2026-09-30** — `action_taken` form + `/api/v1/atrisk/*` + clear-on-final-approval effect; verified live (34 → 25 flags). |
 | **Database Safety** | `seed.ts` wipes database without environment check. | **CRITICAL** | ⬜ Open — wrap cleanup in `if (process.env.NODE_ENV === 'production') throw` (§7.1). |
-| **Frontend/Backend Sync** | CAR Save calls `POST /car/:id` instead of `PUT`. | **HIGH** | ⬜ Open — in `actions/car.ts:51`, switch `actionApi.post` to `actionApi.put` (§7.2). |
-| **Frontend/Backend Sync** | Curriculum Map calls `POST /plan/curriculum-map/:id` instead of `PUT`. | **HIGH** | ⬜ Open — in `actions/plan.ts:70`, switch `actionApi.post` to `actionApi.put` (§7.3). |
-| **Academic Ledger** | CAR Part 1 `noEnrolled` counts unpopulated `Enrollment` table. | **HIGH** | ⬜ Open — upsert `Enrollment` rows during ingest or count distinct `CloAttainment` students (§7.6). |
+| **Frontend/Backend Sync** | CAR Save calls `POST /car/:id` instead of `PUT`. | **HIGH** | ✅ **RESOLVED 2026-10-01** — `actionApi.put` in `actions/car.ts`; save schema optionals made Nullable (round-trip nulls 422'd before); live PUT 200 / POST 404 (§7.2). |
+| **Frontend/Backend Sync** | Curriculum Map calls `POST /plan/curriculum-map/:id` instead of `PUT`. | **HIGH** | ✅ **RESOLVED 2026-10-01** — `actionApi.put` in `actions/plan.ts`; live PUT 200 (row persisted) / POST 404 (§7.3). |
+| **Academic Ledger** | CAR Part 1 `noEnrolled` counts unpopulated `Enrollment` table. | **HIGH** | ✅ **RESOLVED 2026-10-01** — ingest persist loop upserts `Enrollment` per student×section (30 live), plus ETL snapshot fallbacks for year level/faculty; `term` fallback still open (§7.6, `testing_results.md` §7). |
 | **Ingest Stability** | Class record re-upload appends duplicate `ComputationRun` records; gap analysis reads without a run id. | **MEDIUM** | ⬜ Open — mark prior runs superseded or purge prior unapproved run attainments (§7.5). |
-| **Compliance Output** | CAR Part 2 renders dashes — ETL category columns NULL for this template; empty-state unreachable. | **MEDIUM** | ⬜ Open — fire empty-state on all-null rows or restore ETL category granularity (§7.7). |
+| **Compliance Output** | CAR Part 2 renders dashes — ETL category columns NULL for this template; empty-state unreachable. | **MEDIUM** | ✅ **RESOLVED 2026-10-01** — `buildPart2` drops null-pct rows, four empty arrays reach the frontend empty state (live-verified); ETL category granularity still NULL by design (§7.7). |
 | **Executive UI** | Dashboard KPI stats banner hardcoded empty (`stats = []`). | **MEDIUM** | ⬜ Open — wire role dashboard shell to aggregate queries (pending approvals, at-risk count) or drop the dead prop (§5.2). |
 | **Institutional UI** | 7 Periodic form screens (F02, F09, F20, F21, F26, F27, F28) unbuilt. | **MEDIUM** | ⬜ Open — build frontend route pages connecting to `/api/v1/periodic` backend endpoints. |
 | **Workflow UX** | Approval-step comments wiped on resubmit (survive only in `audit_log`). | **LOW** | ⬜ Open — preserve comments on the rebuilt steps (`testing_results.md` 9.7). |
