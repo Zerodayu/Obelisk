@@ -7,6 +7,9 @@ import runtimeEnv from "./generated/runtime-env";
 
 const rawEnv = {
   DATABASE_URL: process.env.DATABASE_URL ?? runtimeEnv.DATABASE_URL,
+  // NOTE: read by prisma.config.ts (CLI), kept in the validated set so a
+  // missing direct URL fails at startup instead of at `db:migrate-prod`
+  DIRECT_URL: process.env.DIRECT_URL ?? runtimeEnv.DIRECT_URL,
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ?? runtimeEnv.BETTER_AUTH_SECRET,
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? runtimeEnv.BETTER_AUTH_URL,
@@ -24,6 +27,7 @@ const rawEnv = {
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
+  DIRECT_URL: z.string().min(1),
   BETTER_AUTH_SECRET: z.string().min(1),
   BETTER_AUTH_URL: z.string().min(1),
   FRONTEND_URL: z.string().min(1),

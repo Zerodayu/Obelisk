@@ -6,6 +6,9 @@ export default defineConfig({
 		path: "prisma/migrations",
 	},
 	datasource: {
-		url: env("DATABASE_URL"),
+		// NOTE: CLI ops (migrate/introspect/db push) run on the unpooled direct
+		// URL — Neon's pooler rejects migrations; the runtime client keeps the
+		// pooled DATABASE_URL via the neon adapter (lib/prisma.ts)
+		url: env("DIRECT_URL"),
 	},
 });

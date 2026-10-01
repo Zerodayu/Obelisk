@@ -7,6 +7,8 @@
  */
 export const SERVER_ENV_KEYS = [
   "DATABASE_URL",
+  // NOTE: unpooled connection for prisma CLI (migrate) — see prisma.config.ts
+  "DIRECT_URL",
   "BETTER_AUTH_SECRET",
   "BETTER_AUTH_URL",
   "FRONTEND_URL",
