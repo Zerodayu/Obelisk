@@ -6,6 +6,8 @@ Release Title:
 # v0.0.0 — quick release title
 
 # v0.1.0-rc.1 — self-hostable stack (first pre-release)
+
+# v0.2.0 — edge stack: Caddy, DuckDNS, Dozzle & umami
 ```
 
 Release notes:
@@ -16,10 +18,10 @@ Release notes:
 ## — Features / What's New
 
 ### • Self-hosting
-- Run the whole system with **one command**: `docker compose up -d --build`
-- Four services out of the box: **backend** (`:8080`), **web app** (`:3000`), **ETL** (`:8000`), **Redis**
+- Run the whole system with **one command**: `just docker-deploy` (the dotenvx wrap feeds `.env.docker` to compose)
+- Nine services out of the box: **caddy** (the only public port, 80/443), **backend** (`:8080`), **web app** (`:3000`), **ETL** (`:8000`), **Redis**, **DuckDNS**, **Dozzle**, **umami** + **umami-db**
 - Secrets stay safe: env files are encrypted, decrypted inside the container, and the private key never gets baked into a Docker image
-- Helper commands: `just docker-up`, `just docker-logs`, `just docker-down` (`just` is optional; plain Docker Compose works too)
+- Helper commands: `just docker-logs`, `just docker-down`, `just docker-update` (`just` is required for deploys — a bare `docker compose up` skips the dotenvx wrap and Caddy refuses to boot)
 
 ### • Monorepo
 - Rebuilt as a **Bun workspaces + Turborepo** monorepo: one `bun install`, one lockfile, cached builds
