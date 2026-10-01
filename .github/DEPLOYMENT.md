@@ -6,25 +6,27 @@ Self-hosted deployment of OBELISK on a VPS behind [Caddy](https://caddyserver.co
 
 ## Architecture
 
-The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — seven services, one public entrypoint:
+The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — nine services, one public entrypoint:
 
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
-| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)); a second site block serves dozzle on `DOZZLE_DOMAIN` |
+| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)); second site blocks serve dozzle on `DOZZLE_DOMAIN` and umami on `UMAMI_DOMAIN` |
 | **backend** | `obelisk-backend` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
 | **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
-| **duckdns** | `lscr.io/linuxserver/duckdns` | — (in-network) | Dynamic-DNS updater — refreshes the A records for `APP_DOMAIN` / `DOZZLE_DOMAIN` to this server's public IP every ~5 min (names + token from `.env.docker`) |
+| **duckdns** | `lscr.io/linuxserver/duckdns` | — (in-network) | Dynamic-DNS updater — refreshes the A records for `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` to this server's public IP every ~5 min (names + token from `.env.docker`) |
 | **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer at `https://<DOZZLE_DOMAIN>` — caddy answers non-`ADMIN_IPS` clients with 403 before proxying |
+| **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics at `https://<UMAMI_DOMAIN>` — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path with 403 unless the client is in `ADMIN_IPS` |
+| **umami-db** | `postgres:15-alpine` | — (in-network) | Umami's datastore — reached only by `umami` over `umami-db:5432`, data in the `umami-db-data` volume |
 
 Design notes:
 
 - The stack is **`.env.prod`-only**. The encrypted `.env.prod` and the gitignored `.env.keys` are bind-mounted read-only into every app container and decrypted by dotenvx **inside** the container (the build also receives `.env.keys` as a BuildKit secret — never a layer).
 - In-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`); the frontend's server-side fetch/auth rewrite uses the build arg `API_INTERNAL_URL=http://backend:8080`.
-- Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`) is **baked from `.env.prod` at build time** — see [Rebuild rules](#rebuild-rules).
-- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — it is reachable only through caddy on `DOZZLE_DOMAIN`, gated by the `ADMIN_IPS` allow-list, with container actions/shell disabled.
-- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings).
+- Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_UMAMI_*`) is **baked at build time** — see [Rebuild rules](#rebuild-rules).
+- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — it is reachable only through caddy on `DOZZLE_DOMAIN`, gated by the `ADMIN_IPS` allow-list, with container actions/shell disabled. Umami follows the same pattern on `UMAMI_DOMAIN`: dashboard/login/stats API gated by `ADMIN_IPS`, only the tracker endpoints (`/script.js`, `/api/send`) public.
+- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings), `umami-db-data` (analytics events).
 
 ---
 
@@ -68,6 +70,7 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 - `BETTER_AUTH_SECRET` — a new long random secret (not the dev one)
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — `https://<your-domain>` (caddy terminates TLS, so these are the public HTTPS origin)
 - `NEXT_PUBLIC_API_URL` — `https://<your-domain>/api/v1` (**baked at build** — see [Rebuild rules](#rebuild-rules))
+- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — the website key from the umami dashboard (see §4); **leave empty to ship no tracker** — the frontend renders the script only when this and the tracker domain are both set
 - `PYTHON_SERVER_URL` — leave as `http://localhost:8000`; the compose file overrides it in-network to `http://etl:8000`
 - `REDIS_HOST` / `REDIS_PORT` — leave as `localhost` / `6379`; overridden in-network to `redis`
 - `ORG_EMAIL_DOMAIN`, Google OAuth credentials, `OBELISK_*` — production values
@@ -77,24 +80,29 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Five keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — three for Caddy, two for the DuckDNS updater:
+Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, two for the DuckDNS updater, two for umami:
 
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
 DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
-ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN)
-DUCKDNS_SUBDOMAINS="obelisk,dozzle"   # bare names, comma-separated — the updater keeps their A records on this server's IP
+UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (also baked into the frontend tracker origin)
+ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN + the umami dashboard)
+DUCKDNS_SUBDOMAINS="obelisk,dozzle,umami"  # bare names, comma-separated — the updater keeps their A records on this server's IP
 DUCKDNS_TOKEN="..."                   # token from the duckdns.org dashboard (subdomains are created there, not here)
+UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container
+UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
 ```
 
-Plus five `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
+Plus seven `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
 
 ```env
 LOCAL_APP_DOMAIN="obelisk-jmc.localhost"       # *.localhost resolves to loopback; Caddy signs it with its internal CA (no ACME)
 LOCAL_DOZZLE_DOMAIN="dozzle-jmc.localhost"
+LOCAL_UMAMI_DOMAIN="umami-jmc.localhost"
 LOCAL_ADMIN_IPS="127.0.0.1 ::1 192.168.1.14 172.16.0.0/12"
 LOCAL_FRONTEND_URL="https://obelisk-jmc.localhost"
 LOCAL_API_URL="https://obelisk-jmc.localhost/api/v1"
+LOCAL_UMAMI_WEBSITE_ID=""                     # website key of the LOCAL umami instance — empty = no tracker in local builds
 ```
 
 > ⚠️ `ADMIN_IPS` must be the address **Caddy sees on the connection** — your public egress IP (`curl ifconfig.me`), not a LAN IP. Caddy matches the TCP peer, so a private `192.168.x.x` entry only works if you reach the server from that LAN/VPN. Wrong value = `403` on the log viewer.
@@ -126,17 +134,29 @@ From the repo root **on the server**:
 just docker-deploy
 ```
 
-That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all seven services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `ADMIN_IPS` / `DUCKDNS_SUBDOMAINS` / `DUCKDNS_TOKEN` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all nine services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS` / `DUCKDNS_SUBDOMAINS` / `DUCKDNS_TOKEN` / `UMAMI_DB_PASSWORD` / `UMAMI_APP_SECRET` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
 
-Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — 403 unless the request comes from an `ADMIN_IPS` address). Logs: `just docker-logs`.
+Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — 403 unless the request comes from an `ADMIN_IPS` address), `https://<UMAMI_DOMAIN>` (dashboard — 403 unless admin; `curl -I https://<UMAMI_DOMAIN>/script.js` answers 200 from anywhere). Logs: `just docker-logs`.
 
 > Stop `just dev` first — the dev stack and the Docker stack bind the same host ports (Redis aside, which is shared via loopback).
+
+### Umami analytics setup
+
+One-time, after the first deploy:
+
+1. Open `https://<UMAMI_DOMAIN>` from an `ADMIN_IPS` address and sign in with umami's default credentials (`admin` / `umami`) — **change the password immediately**.
+2. Add a **Website** (any name, domain = your `APP_DOMAIN`) and copy its **website ID**.
+3. Put the ID in `.env.prod` as `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, then `just env-encrypt` and `just docker-deploy` — the key is baked into the client bundle at build.
+4. Pageviews show up after the frontend loads (`data-website-id` in the page source confirms the script is active).
+
+The dashboard answers `403` to everyone outside `ADMIN_IPS`; only `/script.js` and `/api/send` are public so visitors' browsers can report. Umami's data lives in the `umami-db-data` volume — back it up with `docker compose exec umami-db pg_dump -U umami umami`.
 
 ### Rebuild rules
 
 Browser-facing values are **inlined into the JS bundle at build time**, so the image must be rebuilt (not just restarted) whenever they change:
 
 - `NEXT_PUBLIC_API_URL` — inlined into client bundles
+- `NEXT_PUBLIC_UMAMI_DOMAIN` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — inlined into the tracker `<Script>` (domain comes from the compose build arg, the key from `.env.prod`)
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — baked into the runtime-env snapshot and routes manifest
 - any other `.env.prod` change consumed at build (`packages/env/src/generated/runtime-env.ts` is written by `build:prod`)
 
@@ -150,7 +170,7 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 
 ### Local deployment
 
-`just deploy-local` runs the same seven services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
+`just deploy-local` runs the same nine services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
 
 ```sh
 just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
@@ -167,7 +187,7 @@ docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-local
 
 Until the root is imported the browser shows a certificate interstitial.
 
-Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>` (log viewer — `403` unless the peer Caddy sees is in `LOCAL_ADMIN_IPS`; the peer appears in `just docker-logs`). Google sign-in needs the local redirect URI registered in the Google console.
+Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>` (log viewer — `403` unless the peer Caddy sees is in `LOCAL_ADMIN_IPS`; the peer appears in `just docker-logs`), `https://<LOCAL_UMAMI_DOMAIN>` (analytics dashboard — same `403` rule; the tracker records locally only when `LOCAL_UMAMI_WEBSITE_ID` is set). Google sign-in needs the local redirect URI registered in the Google console.
 
 Notes:
 
@@ -201,9 +221,11 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 
 ## Troubleshooting
 
-- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `ADMIN_IPS`). Run `just docker-deploy`; check `just docker-logs`.
+- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS`). Run `just docker-deploy`; check `just docker-logs`.
 - **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — the request's source IP is not in `ADMIN_IPS`. Caddy matches the TCP peer (public egress IP), so compare `curl ifconfig.me` with the value in `.env.docker`, update it, re-encrypt and redeploy.
-- **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (DuckDNS has no wildcards: each name needs its own entry). Cert progress is in `just docker-logs` (caddy).
+- **`403` on `https://<UMAMI_DOMAIN>`** — same allow-list as dozzle: your IP is not in `ADMIN_IPS` (this is intended for non-admins). `curl -I https://<UMAMI_DOMAIN>/script.js` should still answer `200` — if it doesn't, the tracker paths lost their `handle` in the `UMAMI_DOMAIN` block.
+- **No pageviews in umami** — the frontend bundle has no tracker: `NEXT_PUBLIC_UMAMI_WEBSITE_ID` empty in `.env.prod` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
+- **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (DuckDNS has no wildcards: each name needs its own entry, including `umami`). Cert progress is in `just docker-logs` (caddy).
 - **`KO` from `obelisk-duckdns` in `just docker-logs`** — DuckDNS rejected the update: wrong `DUCKDNS_TOKEN`, a name in `DUCKDNS_SUBDOMAINS` that was never created on the duckdns.org dashboard (bare names, no `.duckdns.org` suffix), or empty keys (a bare `docker compose up` skips the dotenvx wrap — no guard on purpose, the stack runs but the records stop following your IP). Fix `.env.docker`, `just env-encrypt`, redeploy.
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.

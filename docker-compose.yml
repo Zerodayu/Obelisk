@@ -1,4 +1,4 @@
-# NOTE: whole self-hosted stack in one compose file (7 services), .env.prod-only —
+# NOTE: whole self-hosted stack in one compose file (9 services), .env.prod-only —
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
 # published — frontend/backend/etl/dozzle are compose-internal, redis keeps
@@ -17,8 +17,8 @@ x-logging: &log-rotation
 services:
   # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
   # HTTP-01 via :80) and splits traffic: /api/* → backend, everything else →
-  # frontend; a second site block serves dozzle at DOZZLE_DOMAIN behind the
-  # ADMIN_IPS allow-list (see the Caddyfile).
+  # frontend; second site blocks serve dozzle at DOZZLE_DOMAIN and umami at
+  # UMAMI_DOMAIN, both behind the ADMIN_IPS allow-list (see the Caddyfile).
   caddy:
     image: caddy:2-alpine
     container_name: obelisk-caddy
@@ -36,14 +36,17 @@ services:
       APP_DOMAIN: ${APP_DOMAIN:-}
       # NOTE: admin log-viewer hostname (see the DOZZLE_DOMAIN site block)
       DOZZLE_DOMAIN: ${DOZZLE_DOMAIN:-}
+      # NOTE: analytics hostname (see the UMAMI_DOMAIN site block)
+      UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
       ADMIN_IPS: ${ADMIN_IPS:-}
     # NOTE: refuse to boot without the dotenvx wrap — an empty APP_DOMAIN would
     # otherwise start a hostless site with no certificate, and an empty
-    # DOZZLE_DOMAIN/ADMIN_IPS breaks the Caddyfile parse (restart loop shows
-    # the message in `just docker-logs`)
+    # DOZZLE_DOMAIN/UMAMI_DOMAIN/ADMIN_IPS breaks the Caddyfile parse (restart
+    # loop shows the message in `just docker-logs`)
     command: >
       sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$DOZZLE_DOMAIN" || { echo "DOZZLE_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
+      test -n "$$UMAMI_DOMAIN" || { echo "UMAMI_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$ADMIN_IPS" || { echo "ADMIN_IPS not set - deploy via just docker-deploy" >&2; exit 1; };
       exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
@@ -56,6 +59,7 @@ services:
       - frontend
       - backend
       - dozzle
+      - umami
     networks:
       - edge
 
@@ -92,6 +96,10 @@ services:
     build:
       context: .
       target: frontend
+      args:
+        # NOTE: the tracker origin is baked into the client bundle at build —
+        # .env.prod only holds the website key (NEXT_PUBLIC_UMAMI_WEBSITE_ID)
+        NEXT_PUBLIC_UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
       secrets:
         - envkeys
     image: obelisk-frontend:latest
@@ -186,6 +194,59 @@ services:
     networks:
       - edge
 
+  # NOTE: self-hosted analytics at https://<UMAMI_DOMAIN> — the Caddyfile lets
+  # the tracker endpoints (/script.js, /api/send) through for every visitor and
+  # answers every other path with 403 unless the peer is in ADMIN_IPS
+  umami:
+    image: ghcr.io/umami-software/umami:latest
+    container_name: obelisk-umami
+    restart: unless-stopped
+    logging: *log-rotation
+    # NOTE: umami's own init (signal handling / zombie reaping), as in upstream's compose
+    init: true
+    # NOTE: no published ports — only caddy reaches it over edge
+    environment:
+      # NOTE: injected by the dotenvx wrap in `just docker-deploy` (like
+      # ADMIN_IPS); the postgres password rides along inside the URL
+      DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-}@umami-db:5432/umami
+      APP_SECRET: ${UMAMI_APP_SECRET:-}
+      # TODO: add TWO_FACTOR_ENCRYPTION_KEY (`openssl rand -hex 32`, re-encrypt
+      # + redeploy) to unlock 2FA logins — without it 2FA setup answers 503
+    depends_on:
+      umami-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/heartbeat || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      # NOTE: edge for caddy's proxy, internal to reach umami-db
+      - edge
+      - internal
+
+  # NOTE: umami's datastore — in-network only, no published port; umami reaches
+  # it over umami-db:5432 on the internal network
+  umami-db:
+    image: postgres:15-alpine
+    container_name: obelisk-umami-db
+    restart: unless-stopped
+    logging: *log-rotation
+    environment:
+      POSTGRES_DB: umami
+      POSTGRES_USER: umami
+      POSTGRES_PASSWORD: ${UMAMI_DB_PASSWORD:-}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      # NOTE: events must survive recreates — data lives in postgres only
+      - umami-db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+
 volumes:
   uploads:
   # NOTE: caddy certs/config survive recreates — otherwise every deploy
@@ -194,6 +255,8 @@ volumes:
   caddy-config:
   # NOTE: dozzle settings (users/filters if auth is enabled later)
   dozzle-data:
+  # NOTE: umami analytics events (postgres)
+  umami-db-data:
 
 networks:
   # NOTE: caddy + the app tier — backend joins both (caddy proxies /api to it,

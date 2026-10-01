@@ -1,6 +1,6 @@
 # NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$DOZZLE_DOMAIN}
-# / {$ADMIN_IPS} are injected into compose by the dotenvx wrap in
-# `just docker-deploy` and substituted before parsing, so a space-separated
+# / {$UMAMI_DOMAIN} / {$ADMIN_IPS} are injected into compose by the dotenvx wrap
+# in `just docker-deploy` and substituted before parsing, so a space-separated
 # ADMIN_IPS expands to one remote_ip token per IP.
 
 {$APP_DOMAIN} {
@@ -42,6 +42,36 @@
 	reverse_proxy dozzle:8080 {
 		flush_interval -1
 	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+	}
+}
+
+# NOTE: admin-only analytics dashboard on its own hostname — same remote_ip
+# story as dozzle, but the tracker itself must stay reachable for every
+# visitor's browser or the frontend script records nothing
+{$UMAMI_DOMAIN} {
+	encode zstd gzip
+
+	# NOTE: public tracker endpoints (GET script, POST hit) — a matching handle
+	# is terminal and runs before the respond guard below, so visitors bypass
+	# the allow-list only for these two paths
+	@umami_tracker path /script.js /api/send
+	handle @umami_tracker {
+		reverse_proxy umami:3000
+	}
+
+	# NOTE: inline remote_ip — `not` can't reference a named matcher here
+	@not_admin not remote_ip {$ADMIN_IPS}
+	# NOTE: respond runs before reverse_proxy, so denied IPs never reach umami
+	# (dashboard, login and stats API all sit behind this)
+	respond @not_admin 403
+
+	reverse_proxy umami:3000
 
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

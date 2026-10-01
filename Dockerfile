@@ -48,6 +48,11 @@ ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ARG NEXT_PUBLIC_API_URL
 ARG BETTER_AUTH_URL
 ARG FRONTEND_URL
+# NOTE: umami tracker origin — public mode injects UMAMI_DOMAIN (compose build arg),
+# local mode injects LOCAL_UMAMI_DOMAIN; the website key always comes from .env.prod
+# (or LOCAL_UMAMI_WEBSITE_ID when set)
+ARG NEXT_PUBLIC_UMAMI_DOMAIN
+ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
 WORKDIR /app/apps/frontend
 # NOTE: same build command as vercel.json's buildCommand
 RUN --mount=type=secret,id=envkeys,target=/app/.env.keys bun run build:prod

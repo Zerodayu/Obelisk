@@ -12,6 +12,7 @@ services:
       # NOTE: LOCAL_* flow from .env.docker through the dotenvx wrap in `just deploy-local`
       APP_DOMAIN: ${LOCAL_APP_DOMAIN:-}
       DOZZLE_DOMAIN: ${LOCAL_DOZZLE_DOMAIN:-}
+      UMAMI_DOMAIN: ${LOCAL_UMAMI_DOMAIN:-}
       ADMIN_IPS: ${LOCAL_ADMIN_IPS:-}
 
   frontend:
@@ -22,6 +23,9 @@ services:
         NEXT_PUBLIC_API_URL: ${LOCAL_API_URL:-}
         BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
         FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}
+        # NOTE: local umami is a separate instance → its own hostname and website key
+        NEXT_PUBLIC_UMAMI_DOMAIN: ${LOCAL_UMAMI_DOMAIN:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${LOCAL_UMAMI_WEBSITE_ID:-}
     environment:
       # NOTE: runtime `next start` reads .env.prod via dotenvx — compose-injected vars win
       BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}

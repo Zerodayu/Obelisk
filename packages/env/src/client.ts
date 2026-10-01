@@ -6,6 +6,11 @@ const rawEnv = {
   // set it, a hand-run `bun dev` and every production build leave it off.
   DEV_SESSION_ENABLED: process.env.DEV_SESSION_ENABLED,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+  // NOTE: optional umami tracker config — NEXT_PUBLIC_UMAMI_DOMAIN is injected
+  // as a build ARG (UMAMI_DOMAIN / LOCAL_UMAMI_DOMAIN) and the website key is
+  // filled in .env.prod; both unset in dev, so no script renders there.
+  NEXT_PUBLIC_UMAMI_DOMAIN: process.env.NEXT_PUBLIC_UMAMI_DOMAIN,
+  NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
   // NOTE: server-only in-network backend origin (Docker Compose: http://backend:8080).
   // Not NEXT_PUBLIC, so client bundles compile this to undefined (hence the
   // optional schema below) while the server reads it from the container env.
@@ -21,6 +26,10 @@ const envSchema = z.object({
   DEVELOPMENT: z.string().min(1).optional(),
   DEV_SESSION_ENABLED: z.string().optional(),
   NEXT_PUBLIC_API_URL: z.string().min(1),
+  // NOTE: `.optional()` alone, not `.min(1)` — local-mode builds pass a
+  // set-but-empty key/ID and UmamiTracker treats "" like absent
+  NEXT_PUBLIC_UMAMI_DOMAIN: z.string().optional(),
+  NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().optional(),
   API_INTERNAL_URL: z.string().optional(),
   // DATABASE_URL: z.string().min(1),
   // BETTER_AUTH_SECRET: z.string().min(1),
