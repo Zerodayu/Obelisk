@@ -8,11 +8,14 @@
 
 	# NOTE: access log → stdout → docker json-file → Dozzle (obelisk-caddy) — the
 	# one hop that sees every request (next start logs nothing in production)
+	# NOTE: `log`'s first token is a logger NAME, not a matcher, so the static
+	# exclusion lives in `log_skip` — `log @loggable` would just rename the logger
 	@loggable not path /_next/* /images/* /favicon.ico
-	log @loggable {
+	log {
 		output stdout
 		format json
 	}
+	log_skip @loggable
 
 	# NOTE: API → in-network backend (no published port); the path passes through as-is
 	handle /api/* {
@@ -39,6 +42,13 @@
 # the client IP as Caddy sees it (public egress, not a LAN address)
 {$DOZZLE_DOMAIN} {
 	encode zstd gzip
+
+	# NOTE: its own access log — a `log` block only covers the site it sits in, so
+	# without this the 403 peer IP (the ADMIN_IPS debugging path) logs nowhere
+	log {
+		output stdout
+		format json
+	}
 
 	# NOTE: inline remote_ip — `not` can't reference a named matcher here
 	@not_admin not remote_ip {$ADMIN_IPS}
@@ -72,6 +82,15 @@
 	handle @umami_tracker {
 		reverse_proxy umami:3000
 	}
+
+	# NOTE: its own access log, same as dozzle — a `log` block only covers the
+	# site it sits in, so the 403 peer IP would otherwise log nowhere; tracker
+	# hits are skipped so per-visitor noise doesn't drown the admin view
+	log {
+		output stdout
+		format json
+	}
+	log_skip @umami_tracker
 
 	# NOTE: inline remote_ip — `not` can't reference a named matcher here
 	@not_admin not remote_ip {$ADMIN_IPS}
