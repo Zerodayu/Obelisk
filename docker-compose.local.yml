@@ -3,8 +3,6 @@
 # `just docker-deploy` never loads this file). Later file wins per key: caddy's site addresses
 # swap to the LOCAL_* *.localhost names (loopback + Caddy internal CA — no ACME), and the local
 # origins reach the frontend at build time (ARGs) and backend/etl at runtime (environment).
-# NOTE: duckdns is deliberately absent — it keeps the PUBLIC records on the real IP, ready for
-# `just docker-deploy` once the network is reachable again.
 
 services:
   caddy:
