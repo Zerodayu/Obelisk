@@ -7,7 +7,7 @@ Release notes for [Obelisk](https://github.com/Zerodayu/Obelisk), newest first.
 v0.2.0 - One-port self-hosted stack
 Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewer, analytics and Postgres.
 
-## features / whats new
+## FEATURES / WHATS NEW
 
 - Caddy proxy endpoint (TLS, only public port 80/443)
 - Dozzle log viewer (ADMIN_IPS-gated)
@@ -24,7 +24,7 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 - Action-Taken Record form (clears at-risk flags)
 - LLM key failover (`OBELISK_LLM_API_KEYS`)
 
-## fixes
+## FIXES
 
 - CAR saving works end to end (method, merge, upserts, empty state)
 - PLO roll-up reads DB `CloToPloMap` rows again
@@ -35,7 +35,7 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 - AI usage default restored
 - Broken `LICENSE` / `justfile` links fixed
 
-## changes
+## CHANGES
 
 - Compose stack grew from 4 services to 9 (caddy, backend, frontend, etl, redis, db, dozzle, umami, umami-db)
 - Database moved from Neon to Docker (`db` service)
@@ -62,6 +62,6 @@ Docs: [Deployment](DEPLOYMENT.md) · [Contributing](CONTRIBUTING.md) · [Forking
 
 ### Contributors
 
-<a href="https://github.com/Zerodayu"><img src="https://github.com/Zerodayu.png?size=48" width="48" height="48" alt="@Zerodayu" /></a>
-<a href="https://github.com/SerenicuS"><img src="https://github.com/SerenicuS.png?size=48" width="48" height="48" alt="@SerenicuS" /></a>
-<a href="https://github.com/Rixyne"><img src="https://github.com/Rixyne.png?size=48" width="48" height="48" alt="@Rixyne" /></a>
+- @Zerodayu
+- @SerenicuS
+- @Rixyne
