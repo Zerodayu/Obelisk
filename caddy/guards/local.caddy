@@ -1,0 +1,4 @@
+# NOTE: local mode guard — the peer Caddy sees is loopback/LAN/docker-bridge (LOCAL_ADMIN_IPS)
+@not_admin not remote_ip {$ADMIN_IPS}
+# NOTE: respond runs before reverse_proxy, so denied IPs never reach the upstream
+respond @not_admin 403

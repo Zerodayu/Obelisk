@@ -236,7 +236,7 @@ check: lint typecheck test
 # --- deploy (docker self-hosted stack) ---
 
 # build + (re)start the whole stack in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first so dev/prod don't mix
-# NOTE: the dotenvx wrap injects APP_DOMAIN/DOZZLE_DOMAIN/UMAMI_DOMAIN/ADMIN_IPS/OBELISK_DB_PASSWORD/UMAMI_DB_PASSWORD/UMAMI_APP_SECRET from .env.docker for compose interpolation (a bare `docker compose up` skips them and caddy's guard refuses to boot)
+# NOTE: the dotenvx wrap injects APP_DOMAIN/DOZZLE_DOMAIN/UMAMI_DOMAIN/TS_AUTHKEY/OBELISK_DB_PASSWORD/UMAMI_DB_PASSWORD/UMAMI_APP_SECRET from .env.docker for compose interpolation (a bare `docker compose up` skips them and caddy's guard refuses to boot)
 [group('deploy')]
 docker-deploy:
     bunx dotenvx run -f .env.docker -- docker compose up -d --build

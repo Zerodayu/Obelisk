@@ -1,0 +1,2 @@
+# NOTE: public mode guard — admin surfaces are reachable on the tailnet only
+respond 403

@@ -1,9 +1,9 @@
-# NOTE: whole stack (9 services), .env.prod-only — fill .env.prod + `just env-encrypt` first
+# NOTE: whole stack (11 services), .env.prod-only — fill .env.prod + `just env-encrypt` first
 # NOTE: only caddy publishes ports — stop `just dev` before deploying so host ports don't clash
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL are baked — rebuild on change
 
 services:
-  # NOTE: only public entrypoint — TLS plus /api split, sites gated by ADMIN_IPS (see the Caddyfile)
+  # NOTE: only public entrypoint — TLS plus /api split, admin sites deny by default (see the Caddyfile)
   caddy:
     image: caddy:2-alpine
     container_name: obelisk-caddy
@@ -20,16 +20,18 @@ services:
       DOZZLE_DOMAIN: ${DOZZLE_DOMAIN:-}
       # NOTE: analytics hostname (see the UMAMI_DOMAIN site block)
       UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
-      ADMIN_IPS: ${ADMIN_IPS:-}
+      # NOTE: guard file the admin site blocks import (local overlay swaps in local.caddy)
+      CADDY_ADMIN_GUARD: /etc/caddy/guards/deny.caddy
     # NOTE: refuse to boot without the dotenvx wrap — see `just docker-logs` for the restart loop
     command: >
       sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$DOZZLE_DOMAIN" || { echo "DOZZLE_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$UMAMI_DOMAIN" || { echo "UMAMI_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
-      test -n "$$ADMIN_IPS" || { echo "ADMIN_IPS not set - deploy via just docker-deploy" >&2; exit 1; };
       exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # NOTE: admin guard snippets (deny = public mode, local = deploy-local)
+      - ./caddy/guards:/etc/caddy/guards:ro
       # NOTE: certs must survive recreates — re-issuing would burn Let's Encrypt rate limits
       - caddy-data:/data
       - caddy-config:/config
@@ -157,7 +159,7 @@ services:
     networks:
       - internal
 
-  # NOTE: log viewer at DOZZLE_DOMAIN — no published port, ADMIN_IPS-gated in the Caddyfile
+  # NOTE: log viewer at DOZZLE_DOMAIN — no published port, public host answers 403 in the Caddyfile
   dozzle:
     image: amir20/dozzle:latest
     container_name: obelisk-dozzle
@@ -171,7 +173,32 @@ services:
     networks:
       - edge
 
-  # NOTE: analytics at UMAMI_DOMAIN — tracker paths public, everything else ADMIN_IPS-gated
+  # NOTE: tailnet node serving the log viewer — no published port, WireGuard is the only ingress
+  tailscale-dozzle:
+    image: tailscale/tailscale:latest
+    container_name: obelisk-tailscale-dozzle
+    restart: unless-stopped
+    # NOTE: shares dozzle's netns — userspace mode (image default), so no TUN or cap_add
+    network_mode: "service:dozzle"
+    depends_on:
+      - dozzle
+    environment:
+      # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      # NOTE: MagicDNS name — obelisk-logs.<tailnet>.ts.net
+      TS_HOSTNAME: obelisk-logs
+      # NOTE: state must persist or every restart registers a new node
+      TS_STATE_DIR: /var/lib/tailscale
+      # NOTE: reuse the stored login instead of re-authing on every start
+      TS_AUTH_ONCE: "true"
+      # NOTE: ipn.ServeConfig — tailscaled terminates TLS and proxies to dozzle over loopback
+      TS_SERVE_CONFIG: /config/dozzle.json
+    volumes:
+      # NOTE: mounted as a directory so config edits are re-applied
+      - ./tailscale:/config:ro
+      - ts-dozzle-state:/var/lib/tailscale
+
+  # NOTE: analytics at UMAMI_DOMAIN — tracker paths public, dashboard moves to the tailnet name
   umami:
     image: ghcr.io/umami-software/umami:latest
     container_name: obelisk-umami
@@ -196,6 +223,31 @@ services:
       # NOTE: edge for caddy's proxy, internal to reach umami-db
       - edge
       - internal
+
+  # NOTE: tailnet node serving the analytics dashboard — tracker stays on the public hostname
+  tailscale-umami:
+    image: tailscale/tailscale:latest
+    container_name: obelisk-tailscale-umami
+    restart: unless-stopped
+    # NOTE: shares umami's netns — userspace mode (image default), so no TUN or cap_add
+    network_mode: "service:umami"
+    depends_on:
+      - umami
+    environment:
+      # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
+      TS_AUTHKEY: ${TS_AUTHKEY:-}
+      # NOTE: MagicDNS name — obelisk-stats.<tailnet>.ts.net
+      TS_HOSTNAME: obelisk-stats
+      # NOTE: state must persist or every restart registers a new node
+      TS_STATE_DIR: /var/lib/tailscale
+      # NOTE: reuse the stored login instead of re-authing on every start
+      TS_AUTH_ONCE: "true"
+      # NOTE: ipn.ServeConfig — tailscaled terminates TLS and proxies to umami over loopback
+      TS_SERVE_CONFIG: /config/umami.json
+    volumes:
+      # NOTE: mounted as a directory so config edits are re-applied
+      - ./tailscale:/config:ro
+      - ts-umami-state:/var/lib/tailscale
 
   # NOTE: umami's datastore — in-network only, no published port
   umami-db:
@@ -228,6 +280,9 @@ volumes:
   db-data:
   # NOTE: umami analytics events (postgres)
   umami-db-data:
+  # NOTE: tailscale node identity — losing it re-registers the node under a new name
+  ts-dozzle-state:
+  ts-umami-state:
 
 networks:
   # NOTE: caddy + app tier — backend joins both, frontend only talks to backend

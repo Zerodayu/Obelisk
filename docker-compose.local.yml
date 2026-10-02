@@ -10,6 +10,8 @@ services:
       DOZZLE_DOMAIN: ${LOCAL_DOZZLE_DOMAIN:-}
       UMAMI_DOMAIN: ${LOCAL_UMAMI_DOMAIN:-}
       ADMIN_IPS: ${LOCAL_ADMIN_IPS:-}
+      # NOTE: local mode swaps the public deny for the LOCAL_ADMIN_IPS allow-list
+      CADDY_ADMIN_GUARD: /etc/caddy/guards/local.caddy
 
   frontend:
     build:

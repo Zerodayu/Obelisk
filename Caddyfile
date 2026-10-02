@@ -1,5 +1,5 @@
 # NOTE: single public entrypoint — hostnames injected by the dotenvx wrap in `just docker-deploy`
-# NOTE: space-separated ADMIN_IPS expands to one remote_ip token per IP
+# NOTE: admin sites import a guard file — deny.caddy in public mode, local.caddy in deploy-local
 
 {$APP_DOMAIN} {
 	encode zstd gzip
@@ -32,7 +32,7 @@
 	}
 }
 
-# NOTE: admin-only log viewer — ADMIN_IPS must be the client IP as Caddy sees it
+# NOTE: admin-only log viewer — public host 403s, real access is the tailnet name (tailscale/dozzle.json)
 {$DOZZLE_DOMAIN} {
 	encode zstd gzip
 
@@ -42,10 +42,8 @@
 		format json
 	}
 
-	# NOTE: inline remote_ip — `not` can't reference a named matcher here
-	@not_admin not remote_ip {$ADMIN_IPS}
-	# NOTE: respond runs before reverse_proxy, so denied IPs never reach dozzle
-	respond @not_admin 403
+	# NOTE: guard expands in place — respond is ordered before reverse_proxy
+	import {$CADDY_ADMIN_GUARD:/etc/caddy/guards/deny.caddy}
 
 	# NOTE: flush_interval -1 — dozzle streams logs over SSE and would buffer
 	reverse_proxy dozzle:8080 {
@@ -64,7 +62,7 @@
 {$UMAMI_DOMAIN} {
 	encode zstd gzip
 
-	# NOTE: public tracker paths — a matching handle is terminal and bypasses the allow-list
+	# NOTE: public tracker paths — a matching handle is terminal and bypasses the guard
 	@umami_tracker path /script.js /api/send
 	handle @umami_tracker {
 		reverse_proxy umami:3000
@@ -77,10 +75,8 @@
 	}
 	log_skip @umami_tracker
 
-	# NOTE: inline remote_ip — `not` can't reference a named matcher here
-	@not_admin not remote_ip {$ADMIN_IPS}
-	# NOTE: respond runs before reverse_proxy, so denied IPs never reach umami
-	respond @not_admin 403
+	# NOTE: guard expands in place — handle is ordered before respond, so the tracker paths above bypass it
+	import {$CADDY_ADMIN_GUARD:/etc/caddy/guards/deny.caddy}
 
 	reverse_proxy umami:3000
 
