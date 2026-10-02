@@ -10,9 +10,10 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 ## FEATURES / WHATS NEW
 
 - Caddy proxy endpoint (TLS, only public port 80/443)
-- Dozzle log viewer (ADMIN_IPS-gated)
+- Dozzle log viewer (tailnet-only via a Tailscale sidecar)
 - Access logs on every hop
-- umami analytics (self-hosted, ADMIN_IPS-gated)
+- umami analytics (self-hosted; tracker public, dashboard tailnet-only)
+- Admin surfaces on MagicDNS names (`obelisk-logs` / `obelisk-stats`) — no Tailscale install on the VPS
 - Page-view tracker loads only when configured
 - One-time setup documented in DEPLOYMENT.md
 - Own Postgres — no external database
@@ -37,7 +38,9 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 
 ## CHANGES
 
-- Compose stack grew from 4 services to 9 (caddy, backend, frontend, etl, redis, db, dozzle, umami, umami-db)
+- Compose stack grew from 4 services to 11 (caddy, backend, frontend, etl, redis, db, dozzle, tailscale-dozzle, umami, tailscale-umami, umami-db)
+- `ADMIN_IPS` replaced by `TS_AUTHKEY` — public admin hostnames now always answer 403
+- Admin guard split into `caddy/guards/` (`deny.caddy` public / `local.caddy` for `deploy-local`)
 - Database moved from Neon to Docker (`db` service)
 - Seed refuses to run in production (audit issue 1.3)
 - Env consolidated into the three root env files
@@ -55,7 +58,7 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 Quick usage:
 
 - `just deploy-local` — machine-local only (*.localhost, internal CA, no public exposure)
-- `just docker-deploy` — build images + start all nine services (then `just docker-migrate`)
+- `just docker-deploy` — build images + start all eleven services (then `just docker-migrate`)
 - `just docker-update` — git pull → rebuild → recreate → prune old images (add `just docker-migrate` if the schema changed)
 
 Docs: [Deployment](DEPLOYMENT.md) · [Contributing](CONTRIBUTING.md) · [Forking](FORKING.md)
