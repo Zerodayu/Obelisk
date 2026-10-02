@@ -101,12 +101,12 @@ UMAMI_WEBSITE_ID="..."                # website key from the umami dashboard, ba
 Plus seven `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
 
 ```env
-LOCAL_APP_DOMAIN="obelisk-jmc.localhost"       # *.localhost resolves to loopback; Caddy signs it with its internal CA (no ACME)
-LOCAL_DOZZLE_DOMAIN="dozzle-jmc.localhost"
-LOCAL_UMAMI_DOMAIN="umami-jmc.localhost"
+LOCAL_APP_DOMAIN="obelisk.mini-mal.localhost"  # any *.localhost depth resolves to loopback (RFC 6761); Caddy signs it with its internal CA (no ACME)
+LOCAL_DOZZLE_DOMAIN="logs.mini-mal.localhost"
+LOCAL_UMAMI_DOMAIN="stats.mini-mal.localhost"
 LOCAL_ADMIN_IPS="127.0.0.1 ::1 192.168.1.14 172.16.0.0/12"
-LOCAL_FRONTEND_URL="https://obelisk-jmc.localhost"
-LOCAL_API_URL="https://obelisk-jmc.localhost/api/v1"
+LOCAL_FRONTEND_URL="https://obelisk.mini-mal.localhost"
+LOCAL_API_URL="https://obelisk.mini-mal.localhost/api/v1"
 LOCAL_UMAMI_WEBSITE_ID=""                     # website key of the LOCAL umami instance — empty = no tracker in local builds
 ```
 

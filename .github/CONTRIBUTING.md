@@ -72,7 +72,7 @@ REDIS_PORT="6379"
 
 # frontend
 NEXT_PUBLIC_API_URL="http://localhost:8080"
-# NEXT_PUBLIC_UMAMI_DOMAIN="https://umami-jmc.localhost"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
+# NEXT_PUBLIC_UMAMI_DOMAIN="https://stats.mini-mal.localhost"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
 # NEXT_PUBLIC_UMAMI_WEBSITE_ID=""                  # optional — umami website key; unset/empty = no script
 # DEVELOPMENT=true             # optional — disables the auth gate for quick local preview
 
