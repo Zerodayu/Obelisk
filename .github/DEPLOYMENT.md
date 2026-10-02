@@ -32,10 +32,12 @@ Design notes:
 
 ## Requirements
 
+> Copy-paste walkthrough from a bare VPS (packages → `just docker-deploy`): **[`VPS_SETUP.md`](VPS_SETUP.md)**.
+
 On the server:
 
 - A **VPS** (any provider) with Docker — [Docker Engine](https://docs.docker.com/engine/install/) including the **compose plugin** and **Buildx** (`docker compose version` must work)
-- [just](https://just.systems/) — recipe runner (`pacman -S just`, `apt install just`, …)
+- [just](https://just.systems/) — recipe runner, **≥ 1.27** required by the justfile's `[group(...)]` attributes (`pacman -S just`; `apt install just` on Ubuntu 24.04 ships 1.21 — see [VPS_SETUP.md §3](VPS_SETUP.md#3-just))
 - [dotenvx](https://dotenvx.com/) — used by `just docker-deploy` to inject `.env.docker` into compose
 - [Bun](https://bun.sh) — runs the root scripts behind some recipes
 - A **domain** (or subdomain) whose **A record points at the server's IP** — Caddy issues the TLS certificate via HTTP-01, so ports **80 and 443** must be reachable (443/udp is optional, HTTP/3 only)
