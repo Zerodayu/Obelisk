@@ -60,5 +60,8 @@ Quick usage:
 
 Docs: [Deployment](DEPLOYMENT.md) · [Contributing](CONTRIBUTING.md) · [Forking](FORKING.md)
 
-Contributors: </br>
-@Zerodayu @SerenicuS @Rixyne
+### Contributors
+
+<a href="https://github.com/Zerodayu"><img src="https://github.com/Zerodayu.png?size=48" width="48" height="48" alt="@Zerodayu" /></a>
+<a href="https://github.com/SerenicuS"><img src="https://github.com/SerenicuS.png?size=48" width="48" height="48" alt="@SerenicuS" /></a>
+<a href="https://github.com/Rixyne"><img src="https://github.com/Rixyne.png?size=48" width="48" height="48" alt="@Rixyne" /></a>
