@@ -56,9 +56,9 @@ dotenvx reads plaintext (unencrypted) env files fine. Create `.env.local` at the
 One root file covers all three services — server vars are validated by `@obelisk/env/server` (`packages/env/src/server.ts`, re-exported as `env` from `apps/backend/utils/env.ts`), frontend vars by `@obelisk/env/client` (`packages/env/src/client.ts`, re-exported from `apps/frontend/utils/env.ts`):
 
 ```env
-# backend
-DATABASE_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk"
-DIRECT_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk"
+# backend — dev uses its own database `obelisk_dev` on the Docker db service (just db-up); the deployed stack serves `obelisk`
+DATABASE_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk_dev"
+DIRECT_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk_dev"
 BETTER_AUTH_SECRET="generate-a-long-random-secret"
 BETTER_AUTH_URL="http://localhost:3000"
 FRONTEND_URL="http://localhost:3000"

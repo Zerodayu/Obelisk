@@ -119,7 +119,7 @@ action_taken              -> Action-Taken Record (At-Risk Students)
 
 Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on DB reachability), with lint and typecheck green.
 
-> ⚠️ `bun run test` runs `test/helpers/run-tests.ts`, which **wipes the target database before and after every run** — on this setup that is the dev DB (Docker Postgres, `just db-up`). Re-run `bun run db:seed` (or `just db-seed`) afterwards or every seeded account and all reference data is gone.
+> ⚠️ `bun run test` runs `test/helpers/run-tests.ts`, which **wipes the target database before and after every run** — on this setup that is **`obelisk_dev`** (Docker Postgres, `just db-up`), never the deployed `obelisk` database. Re-run `bun run db:seed` (or `just db-seed`) afterwards or every seeded account and all reference data is gone.
 
 ## Phase 6 Modules
 

@@ -15,7 +15,7 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 | **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
-| **db** | `postgres:15-alpine` | `127.0.0.1:5432` | The app's Postgres (Prisma) — backend reaches it over `db:5432`, the loopback publish lets `just dev` / `just db-migrate` on the same host reach it; data in the `db-data` volume |
+| **db** | `postgres:15-alpine` | `127.0.0.1:5432` | The app's Postgres (Prisma) — backend reaches it over `db:5432`, the loopback publish lets `just dev` / `just db-migrate` on the same host reach it (dev uses its own `obelisk_dev` database, the app serves `obelisk`); data in the `db-data` volume |
 | **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer at `https://<DOZZLE_DOMAIN>` — caddy answers non-`ADMIN_IPS` clients with 403 before proxying |
 | **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics at `https://<UMAMI_DOMAIN>` — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path with 403 unless the client is in `ADMIN_IPS` |
 | **umami-db** | `postgres:15-alpine` | — (in-network) | Umami's datastore — reached only by `umami` over `umami-db:5432`, data in the `umami-db-data` volume |
@@ -67,7 +67,7 @@ just env-decrypt    # decrypt .env.prod + .env.docker for editing (also .env.loc
 
 The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with **production values**:
 
-- `DATABASE_URL` / `DIRECT_URL` — any non-empty placeholder (e.g. `postgresql://obelisk@localhost:5432/obelisk`); the compose file overrides both in-network to the `db` service, the same way `PYTHON_SERVER_URL`/`REDIS_HOST` are overridden
+- `DATABASE_URL` / `DIRECT_URL` — the loopback `db` service URL, e.g. `postgresql://obelisk:OBELISK_DB_PASSWORD@localhost:5432/obelisk` (what `.env.prod` holds, so host-side `bun run db:*-prod` scripts work on the server); the compose file overrides both in-network to `@db:5432`, the same way `PYTHON_SERVER_URL`/`REDIS_HOST` are overridden
 - `BETTER_AUTH_SECRET` — a new long random secret (not the dev one)
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — `https://<your-domain>` (caddy terminates TLS, so these are the public HTTPS origin)
 - `NEXT_PUBLIC_API_URL` — `https://<your-domain>/api/v1` (**baked at build** — see [Rebuild rules](#rebuild-rules))
@@ -122,7 +122,7 @@ just docker-migrate                       # prisma migrate deploy, inside the ba
 
 Or apply migrations from your machine against the prod database with `cd apps/backend && bun run db:migrate-prod`.
 
-> ⚠️ **Do not run `db:seed` against production.** The seed wipes and recreates accounts/reference data and has no production guard yet (tracked in [`system-docs/testing_results.md`](../system-docs/testing_results.md) §1.3).
+> ⚠️ **Do not run `db:seed` against production.** The seed wipes and recreates accounts/reference data and now refuses on production by itself (`NODE_ENV=production` or the in-network `db` host — added 2026-10-02, see [`system-docs/testing_results.md`](../system-docs/testing_results.md) 1.3); never set its `OBELISK_SEED_ALLOW_PROD=1` override against a live instance.
 
 ---
 
