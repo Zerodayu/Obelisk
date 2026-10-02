@@ -8,7 +8,7 @@ This is a monorepo containing three services:
 
 | Service | Path | Stack | Port |
 | :--- | :--- | :--- | :--- |
-| Backend API | `apps/backend/` | Bun · Elysia · Prisma + PostgreSQL (Neon) · better-auth · Zod | `8080` |
+| Backend API | `apps/backend/` | Bun · Elysia · Prisma + PostgreSQL (Docker `db` service) · better-auth · Zod | `8080` |
 | Web frontend | `apps/frontend/` | Next.js 16 · React 19 · Tailwind CSS v4 · shadcn/ui | `3000` |
 | ETL & analytics | `apps/python-server/` | FastAPI · Python + uv (pure compute, no DB access) | `8000` |
 
