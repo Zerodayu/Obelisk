@@ -67,7 +67,7 @@ All of these live in the root env files ([`CONTRIBUTING.md` §2](CONTRIBUTING.md
 | `BETTER_AUTH_SECRET` | Generate a fresh long random string — never reuse upstream's |
 | `DATABASE_URL` / `DIRECT_URL` | Your Postgres database — dev uses the compose `db` service (`just db-up`); in `.env.prod` leave placeholders, the compose file overrides both in-network |
 | `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_API_URL` | Your domains — localhost for dev, your public origin for prod |
-| `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (`.env.prod`) | Optional — umami tracker website key; leave empty to ship no analytics script (see `DEPLOYMENT.md`) |
+| `UMAMI_WEBSITE_ID` (`.env.docker`) | Optional — umami tracker website key; leave empty to ship no analytics script (see `DEPLOYMENT.md`) |
 | `OBELISK_ALLOWED_ORIGINS` | Your frontend origin(s), for the ETL CORS check |
 | `OBELISK_LLM_API_KEYS`, `OBELISK_WEBAPP_SHARED_SECRET` | Optional — your own keys, see `CONTRIBUTING.md` §2 |
 | `APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `ADMIN_IPS` (`.env.docker`) | Your deployment domain, log-viewer domain, analytics domain and admin IPs, see `DEPLOYMENT.md` |

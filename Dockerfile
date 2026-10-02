@@ -39,7 +39,7 @@ ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ARG NEXT_PUBLIC_API_URL
 ARG BETTER_AUTH_URL
 ARG FRONTEND_URL
-# NOTE: tracker origin injected per mode; the website key always comes from .env.prod
+# NOTE: tracker origin + key injected per mode from .env.docker; empty ⇒ no tracker
 ARG NEXT_PUBLIC_UMAMI_DOMAIN
 ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
 WORKDIR /app/apps/frontend

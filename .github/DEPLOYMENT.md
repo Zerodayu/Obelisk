@@ -71,7 +71,6 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 - `BETTER_AUTH_SECRET` — a new long random secret (not the dev one)
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — `https://<your-domain>` (caddy terminates TLS, so these are the public HTTPS origin)
 - `NEXT_PUBLIC_API_URL` — `https://<your-domain>/api/v1` (**baked at build** — see [Rebuild rules](#rebuild-rules))
-- `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — the website key from the umami dashboard (see §4); **leave empty to ship no tracker** — the frontend renders the script only when this and the tracker domain are both set
 - `PYTHON_SERVER_URL` — leave as `http://localhost:8000`; the compose file overrides it in-network to `http://etl:8000`
 - `REDIS_HOST` / `REDIS_PORT` — leave as `localhost` / `6379`; overridden in-network to `redis`
 - `ORG_EMAIL_DOMAIN`, Google OAuth credentials, `OBELISK_*` — production values
@@ -81,7 +80,7 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Seven keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, two for umami, one for the app Postgres:
+Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, three for umami, one for the app Postgres:
 
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
@@ -91,6 +90,7 @@ ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-
 OBELISK_DB_PASSWORD="..."             # postgres password for the db container — URL-safe (letters/digits): compose interpolates it straight into the backend's DATABASE_URL, where `@ / : %` break the connection (openssl rand -hex 12)
 UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection
 UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
+UMAMI_WEBSITE_ID="..."                # website key from the umami dashboard, baked into the frontend build — empty ships no tracker
 ```
 
 Plus seven `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
@@ -146,7 +146,7 @@ One-time, after the first deploy:
 
 1. Open `https://<UMAMI_DOMAIN>` from an `ADMIN_IPS` address and sign in with umami's default credentials (`admin` / `umami`) — **change the password immediately**.
 2. Add a **Website** (any name, domain = your `APP_DOMAIN`) and copy its **website ID**.
-3. Put the ID in `.env.prod` as `NEXT_PUBLIC_UMAMI_WEBSITE_ID`, then `just env-encrypt` and `just docker-deploy` — the key is baked into the client bundle at build.
+3. Put the ID in `.env.docker` as `UMAMI_WEBSITE_ID`, then `just env-encrypt` and `just docker-deploy` — the key is baked into the bundle at build.
 4. Pageviews show up after the frontend loads (`data-website-id` in the page source confirms the script is active).
 
 The dashboard answers `403` to everyone outside `ADMIN_IPS`; only `/script.js` and `/api/send` are public so visitors' browsers can report. Umami's data lives in the `umami-db-data` volume — back it up with `docker compose exec umami-db pg_dump -U umami umami`.
@@ -156,7 +156,7 @@ The dashboard answers `403` to everyone outside `ADMIN_IPS`; only `/script.js` a
 Browser-facing values are **inlined into the JS bundle at build time**, so the image must be rebuilt (not just restarted) whenever they change:
 
 - `NEXT_PUBLIC_API_URL` — inlined into client bundles
-- `NEXT_PUBLIC_UMAMI_DOMAIN` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — inlined into the tracker `<Script>` (domain comes from the compose build arg, the key from `.env.prod`)
+- `NEXT_PUBLIC_UMAMI_DOMAIN` / `NEXT_PUBLIC_UMAMI_WEBSITE_ID` — inlined into the tracker `<Script>` (both come from the compose build args, sourced in `.env.docker`)
 - `BETTER_AUTH_URL` / `FRONTEND_URL` — baked into the backend runtime-env snapshot (the frontend routes-manifest rewrite follows `API_INTERNAL_URL` / `NEXT_PUBLIC_API_URL`, not these)
 - any other `.env.prod` change consumed at build (`packages/env/src/generated/runtime-env.ts` is written by `build:prod`)
 
@@ -223,7 +223,7 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS`). Run `just docker-deploy`; check `just docker-logs`.
 - **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — the request's source IP is not in `ADMIN_IPS`. Caddy matches the TCP peer (public egress IP), so compare `curl ifconfig.me` with the value in `.env.docker`, update it, re-encrypt and redeploy.
 - **`403` on `https://<UMAMI_DOMAIN>`** — same allow-list as dozzle: your IP is not in `ADMIN_IPS` (this is intended for non-admins). `curl -I https://<UMAMI_DOMAIN>/script.js` should still answer `200` — if it doesn't, the tracker paths lost their `handle` in the `UMAMI_DOMAIN` block.
-- **No pageviews in umami** — the frontend bundle has no tracker: `NEXT_PUBLIC_UMAMI_WEBSITE_ID` empty in `.env.prod` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
+- **No pageviews in umami** — the frontend bundle has no tracker: `UMAMI_WEBSITE_ID` empty in `.env.docker` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
 - **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (each hostname needs its own A record, `umami` included). Cert progress is in `just docker-logs` (caddy).
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
 - **No request lines in the log viewer** — per-request access logs come from caddy (JSON access log from the `log` blocks: `APP_DOMAIN`, plus the `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` sites with tracker paths skipped), `obelisk-frontend` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.

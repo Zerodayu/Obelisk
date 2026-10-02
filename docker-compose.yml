@@ -79,8 +79,9 @@ services:
       context: .
       target: frontend
       args:
-        # NOTE: tracker origin is baked at build — .env.prod holds only the website key
+        # NOTE: tracker origin + website key baked at build from .env.docker
         NEXT_PUBLIC_UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
+        NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
       secrets:
         - envkeys
     image: obelisk-frontend:latest

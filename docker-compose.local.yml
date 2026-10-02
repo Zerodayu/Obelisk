@@ -14,7 +14,7 @@ services:
   frontend:
     build:
       args:
-        # NOTE: ARG-only — public mode passes nothing, so build:prod reads .env.prod
+        # NOTE: ARG-only for these keys — public mode passes nothing, so build:prod reads .env.prod
         NEXT_PUBLIC_API_URL: ${LOCAL_API_URL:-}
         BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
         FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}

@@ -92,10 +92,10 @@ export const metadata: Metadata = {
 
 /**
  * Umami tracker — renders only when the build has BOTH the tracker origin
- * (NEXT_PUBLIC_UMAMI_DOMAIN, injected as a compose build ARG from
- * UMAMI_DOMAIN/LOCAL_UMAMI_DOMAIN) and the website key
- * (NEXT_PUBLIC_UMAMI_WEBSITE_ID from .env.prod). Unset/empty ⇒ no script,
- * so dev builds and key-less deploys ship no tracker.
+ * (NEXT_PUBLIC_UMAMI_DOMAIN) and the website key
+ * (NEXT_PUBLIC_UMAMI_WEBSITE_ID) — each injected as a compose build ARG
+ * from .env.docker (UMAMI_ keys, or the LOCAL_ variants in local mode).
+ * Unset/empty ⇒ no script, so dev builds and key-less deploys ship none.
  */
 function UmamiTracker() {
   const domain = env.NEXT_PUBLIC_UMAMI_DOMAIN;

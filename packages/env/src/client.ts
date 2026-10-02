@@ -6,9 +6,9 @@ const rawEnv = {
   // set it, a hand-run `bun dev` and every production build leave it off.
   DEV_SESSION_ENABLED: process.env.DEV_SESSION_ENABLED,
   NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
-  // NOTE: optional umami tracker config — NEXT_PUBLIC_UMAMI_DOMAIN is injected
-  // as a build ARG (UMAMI_DOMAIN / LOCAL_UMAMI_DOMAIN) and the website key is
-  // filled in .env.prod; both unset in dev, so no script renders there.
+  // NOTE: optional umami tracker config — both injected as build ARGs from
+  // .env.docker (UMAMI_DOMAIN / UMAMI_WEBSITE_ID, LOCAL_* in local mode);
+  // unset in dev, so no script renders there.
   NEXT_PUBLIC_UMAMI_DOMAIN: process.env.NEXT_PUBLIC_UMAMI_DOMAIN,
   NEXT_PUBLIC_UMAMI_WEBSITE_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID,
   // NOTE: server-only in-network backend origin (Docker Compose: http://backend:8080).
