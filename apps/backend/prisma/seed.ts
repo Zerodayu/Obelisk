@@ -224,6 +224,21 @@ const BSIT_PLOS = [
 ];
 
 async function main() {
+	/* WARN: destructive seed — refuse production targets (testing_results 1.3):
+	 * NODE_ENV=production (db:seed-prod sets it) or the in-network `db` host;
+	 * OBELISK_SEED_ALLOW_PROD=1 overrides to bootstrap a fresh instance */
+	const seedUrl = process.env.DATABASE_URL ?? process.env.DIRECT_URL ?? "";
+	if (
+		process.env.OBELISK_SEED_ALLOW_PROD !== "1" &&
+		(process.env.NODE_ENV === "production" ||
+			/^postgresql:\/\/[^@/]+@db(:\d+)?\//.test(seedUrl))
+	) {
+		console.error(
+			"FATAL: refusing to seed a production database — set OBELISK_SEED_ALLOW_PROD=1 only to bootstrap a fresh production instance.",
+		);
+		process.exit(1);
+	}
+
 	console.log("Starting seed process...");
 
 	// --- Comprehensive Cleanup ---

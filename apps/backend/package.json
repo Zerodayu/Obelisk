@@ -20,7 +20,7 @@
 		"db:migrate": "dotenvx run -f ../../.env.local -- bunx prisma migrate dev",
 		"db:push-prod": "dotenvx run -f ../../.env.prod -- bunx prisma db push",
 		"db:generate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma generate",
-		"db:seed-prod": "dotenvx run -f ../../.env.prod -- bun prisma/seed.ts",
+		"db:seed-prod": "NODE_ENV=production dotenvx run -f ../../.env.prod -- bun prisma/seed.ts",
 		"db:studio-prod": "dotenvx run -f ../../.env.prod -- bunx prisma studio",
 		"db:migrate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma migrate deploy"
 	},
