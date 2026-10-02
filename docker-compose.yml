@@ -2,8 +2,9 @@
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
 # published — frontend/backend/etl/dozzle are compose-internal, redis and db keep
-# loopback so `just dev` can reach them; stop `just dev` before deploying so
-# dev/prod don't mix (WARN: same host = db's loopback port serves dev AND prod).
+# loopback so `just dev` can reach them (dev uses its own `obelisk_dev`
+# database, the app serves `obelisk`); stop `just dev` before deploying so
+# host ports don't clash.
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
 # .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
 
