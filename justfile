@@ -264,6 +264,22 @@ docker-update:
 docker-migrate:
     docker compose exec backend bun run db:migrate-prod
 
+# NOTE: bunx directly, not a package script — a script wrapper only exists in the image after a rebuild
+# check for pending Prisma migrations without applying them (read-only; no rows from `just db-check` = the DB was never migrated)
+[group('deploy')]
+db-status:
+    docker compose exec backend bunx prisma migrate status
+
+# list the app DB tables (psql `\dt`) — pass `obelisk_dev` for the dev database
+[group('deploy')]
+db-check db="obelisk":
+    docker compose exec db psql -U obelisk -d {{db}} -c '\dt'
+
+# interactive psql shell on the app Postgres for ad-hoc queries (`\q` to exit)
+[group('deploy')]
+docker-db-shell db="obelisk":
+    docker compose exec db psql -U obelisk -d {{db}}
+
 # stop the Docker stack (containers stay around for lazydocker; `docker compose down -v` also drops the uploads volume)
 [group('deploy')]
 docker-down:
