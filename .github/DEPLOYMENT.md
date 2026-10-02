@@ -117,7 +117,9 @@ just env-encrypt    # re-encrypt all three env files; .env.keys stays gitignored
 
 ```sh
 just docker-deploy                        # first build + start (see below), then:
+just db-status                            # read-only: report pending migrations
 just docker-migrate                       # prisma migrate deploy, inside the backend container
+just db-check                             # verify the app tables exist (no rows = blank DB, never migrated)
 ```
 
 Or apply migrations from your machine against the prod database with `cd apps/backend && bun run db:migrate-prod`.
@@ -200,7 +202,10 @@ Notes:
 | Task | Command |
 | :--- | :--- |
 | Update to latest code (pull + rebuild + prune old images) | `just docker-update` |
+| Check for pending DB migrations (read-only) | `just db-status` |
 | Apply pending DB migrations after an update | `just docker-migrate` |
+| List app DB tables (no rows = blank DB, never migrated) | `just db-check` |
+| Interactive psql shell on the app Postgres | `just docker-db-shell` |
 | Tail all service logs | `just docker-logs` |
 | Restart containers in place (no rebuild) | `just docker-restart` |
 | Reload Caddy after editing the `Caddyfile` (no downtime) | `just docker-caddy-reload` |
@@ -211,7 +216,8 @@ Notes:
 
 ```sh
 just docker-update       # git pull --ff-only → just docker-deploy → docker image prune -f
-just docker-migrate      # only when the release includes new Prisma migrations
+just db-status           # read-only: does the release include new Prisma migrations?
+just docker-migrate      # apply them (skip when db-status reports none pending)
 ```
 
 Plain Compose equivalents work too (`docker compose up -d --build`, `docker compose logs -f`, `docker compose down`) — but without the dotenvx wrap Caddy will not start, so prefer the recipes. Managing containers via [lazydocker](https://github.com/jesseduffield/lazydocker) is fine for inspection.
@@ -230,6 +236,7 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
 - **No TLS certificate / `404` from Caddy** — the domain's A record does not point at this server, or port 80 is blocked (HTTP-01 needs it). Check DNS and the firewall; cert progress is in `just docker-logs` (caddy).
 - **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.
+- **Queries fail with `P2021` / `The table ... does not exist`** — the schema was never applied: a fresh `db-data` volume, or a release shipped new migrations and `just docker-migrate` wasn't run. The stack still boots, so the error only surfaces on the first request. Confirm with `just db-check` (no rows = blank DB) + `just db-status`, then apply with `just docker-migrate`.
 - **Frontend talks to the wrong API origin** — `NEXT_PUBLIC_API_URL` changed without a rebuild; run `just docker-deploy`.
 - **Stale container after a config-only change** — `docker compose restart` does not re-read `environment:`; use `just docker-deploy` (recreates) or `just docker-restart` where only the process needs a kick.
 - **Disk filling up** — container logs run on Docker's default json-file driver with **no rotation** (the compose file sets no `logging:` limits), so `/var/lib/docker/containers` grows until you prune: `just docker-update` removes old images, and `docker container prune` / `docker system df` show the rest.
