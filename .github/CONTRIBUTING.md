@@ -29,7 +29,7 @@ The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
 - **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack).
-- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `ADMIN_IPS`, `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET`, `UMAMI_WEBSITE_ID`, plus the `LOCAL_*` set for machine-local mode — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
+- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `TS_AUTHKEY`, `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET`, `UMAMI_WEBSITE_ID`, plus the `LOCAL_*` set for machine-local mode — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
 
 All three are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD` / `DOTENV_PUBLIC_KEY_DOCKER`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
 
@@ -188,7 +188,7 @@ The ETL service is not a turbo workspace; run it separately (`just dev-etl`).
 
 ### Docker & deploy (self-hosted stack)
 
-The whole stack (Caddy, backend, frontend, ETL, Redis, Postgres, Dozzle and umami + umami-db — nine services) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, machine-local mode (`just deploy-local`), updates, migrations, and day-2 operations.
+The whole stack (Caddy, backend, frontend, ETL, Redis, Postgres, Dozzle, umami + umami-db and the two Tailscale sidecars — eleven services) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, machine-local mode (`just deploy-local`), tailnet admin access, updates, migrations, and day-2 operations.
 
 ### Quality
 

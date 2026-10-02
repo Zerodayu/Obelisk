@@ -18,7 +18,7 @@ Every install step gives two paths side by side: **Debian / Ubuntu** (`apt`) and
 | **openssl** | generating the secrets for `.env.prod` / `.env.docker` (`DEPLOYMENT.md` [§3](DEPLOYMENT.md#3-fill-envprod)–[§4](DEPLOYMENT.md#4-fill-envdocker)) |
 | **ufw** (optional) | host firewall — Docker publishes 80/443 around it, everything else stays closed |
 
-**Not needed on the server:** Node.js, Python, `uv`, Postgres, Redis — the three services and the datastores build and run inside Docker images.
+**Not needed on the server:** Node.js, Python, `uv`, Postgres, Redis — the three services and the datastores build and run inside Docker images. Tailscale is not installed either: the admin surfaces join the tailnet through sidecar containers ([`DEPLOYMENT.md` → Tailscale admin access](DEPLOYMENT.md#tailscale-admin-access)).
 
 ### Assumptions
 
@@ -182,13 +182,13 @@ just env-decrypt
 #      .env.prod   → DEPLOYMENT.md §3  (complete key set: BETTER_AUTH_SECRET,
 #                    public URLs, Google OAuth, OBELISK_* — no fallbacks in the container)
 #      .env.docker → DEPLOYMENT.md §4  (APP_DOMAIN, DOZZLE_DOMAIN, UMAMI_DOMAIN,
-#                    ADMIN_IPS, OBELISK_DB_PASSWORD, UMAMI_DB_PASSWORD, UMAMI_APP_SECRET)
+#                    TS_AUTHKEY, OBELISK_DB_PASSWORD, UMAMI_DB_PASSWORD, UMAMI_APP_SECRET)
 
 # 3. re-encrypt before deploying (.env.keys stays gitignored)
 just env-encrypt
 ```
 
-> ⚠️ `ADMIN_IPS` must be the address **Caddy sees on the connection** — your public egress IP (`curl ifconfig.me`), not a LAN IP. Wrong value = `403` on the log viewer and umami dashboard.
+> ⚠️ `TS_AUTHKEY` must be a **reusable** Tailscale auth key tagged `tag:obelisk` (both sidecars register with it) — create it in the Tailscale admin console → Settings → Keys. Wrong/empty key = the tailnet names for the log viewer and dashboard never resolve ([`DEPLOYMENT.md` → Tailscale admin access](DEPLOYMENT.md#tailscale-admin-access)).
 
 ## 9. Deploy
 
@@ -196,7 +196,7 @@ just env-encrypt
 just docker-deploy
 ```
 
-That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build`: three images build (backend / frontend / etl — first build takes a few minutes) and nine services start with `.env.prod` values. Caddy requests its certificates during startup.
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build`: three images build (backend / frontend / etl — first build takes a few minutes) and eleven services start with `.env.prod` values. Caddy requests its certificates during startup.
 
 Verify:
 
@@ -207,7 +207,8 @@ just db-status      # migration status of the fresh db volume
 
 - `https://<APP_DOMAIN>` — frontend
 - `https://<APP_DOMAIN>/api/v1` — backend
-- `https://<DOZZLE_DOMAIN>` — log viewer (`403` unless your IP is in `ADMIN_IPS`)
+- `https://<DOZZLE_DOMAIN>` — log-viewer hostname (`403` by design — the viewer itself is served on the tailnet, see [`DEPLOYMENT.md` → Tailscale admin access](DEPLOYMENT.md#tailscale-admin-access))
+- `https://<UMAMI_DOMAIN>/script.js` — tracker (`200` from anywhere; dashboard paths `403` and live on the tailnet)
 
 Then apply the schema with `just docker-migrate` ([`DEPLOYMENT.md` §6](DEPLOYMENT.md#6-apply-the-database-schema)). **Never run `db:seed` against production.**
 

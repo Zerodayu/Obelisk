@@ -59,7 +59,7 @@ This is the simplest and most reliable way to run the service and all its depend
 
 2.  **Build and start the services** (from the **repository root**):
     ```sh
-    just docker-deploy                 # whole stack: caddy, backend, frontend, etl, redis, dozzle, umami
+    just docker-deploy                 # whole stack: caddy, backend, frontend, etl, redis, dozzle, umami (+ tailscale sidecars)
     docker compose up -d etl            # this service only (Redis starts as its dependency)
     ```
 

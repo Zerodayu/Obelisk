@@ -6,7 +6,7 @@ Self-hosted deployment of OBELISK on a VPS behind [Caddy](https://caddyserver.co
 
 ## Architecture
 
-The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — nine services, one public entrypoint:
+The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from the repo root — eleven services, one public entrypoint:
 
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
@@ -16,8 +16,10 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
 | **db** | `postgres:15-alpine` | `127.0.0.1:5432` | The app's Postgres (Prisma) — backend reaches it over `db:5432`, the loopback publish lets `just dev` / `just db-migrate` on the same host reach it (dev uses its own `obelisk_dev` database, the app serves `obelisk`); data in the `db-data` volume |
-| **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer at `https://<DOZZLE_DOMAIN>` — caddy answers non-`ADMIN_IPS` clients with 403 before proxying |
-| **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics at `https://<UMAMI_DOMAIN>` — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path with 403 unless the client is in `ADMIN_IPS` |
+| **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer — the public `DOZZLE_DOMAIN` site answers **every** request with 403; real access is the tailnet name served by the sidecar below |
+| **tailscale-dozzle** | `tailscale/tailscale:latest` | — (shares dozzle's netns) | Tailscale sidecar — registers as `obelisk-logs.<tailnet>.ts.net` and proxies dozzle to tailnet devices only (no published port, no Tailscale install on the host) |
+| **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path on `UMAMI_DOMAIN` with 403; the dashboard is served on the tailnet by the sidecar below |
+| **tailscale-umami** | `tailscale/tailscale:latest` | — (shares umami's netns) | Tailscale sidecar — registers as `obelisk-stats.<tailnet>.ts.net` and proxies the umami dashboard to tailnet devices only |
 | **umami-db** | `postgres:15-alpine` | — (in-network) | Umami's datastore — reached only by `umami` over `umami-db:5432`, data in the `umami-db-data` volume |
 
 Design notes:
@@ -25,8 +27,8 @@ Design notes:
 - The stack is **`.env.prod`-only**. The encrypted `.env.prod` and the gitignored `.env.keys` are bind-mounted read-only into every app container and decrypted by dotenvx **inside** the container (the build also receives `.env.keys` as a BuildKit secret — never a layer).
 - In-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`, `DATABASE_URL`/`DIRECT_URL=…@db:5432` — these two override whatever `.env.prod` holds, dotenvx never overrides a set var); the frontend's server-side fetch/auth rewrite uses the build arg `API_INTERNAL_URL=http://backend:8080`.
 - Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_UMAMI_*`) is **baked at build time** — see [Rebuild rules](#rebuild-rules).
-- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — it is reachable only through caddy on `DOZZLE_DOMAIN`, gated by the `ADMIN_IPS` allow-list, with container actions/shell disabled. Umami follows the same pattern on `UMAMI_DOMAIN`: dashboard/login/stats API gated by `ADMIN_IPS`, only the tracker endpoints (`/script.js`, `/api/send`) public.
-- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings), `db-data` (app Postgres), `umami-db-data` (analytics events).
+- Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — on `DOZZLE_DOMAIN` caddy answers **every** request with 403 (fail-closed), and the only working entrypoint is the `tailscale-dozzle` sidecar (`https://obelisk-logs.<tailnet>.ts.net`, gated by tailnet membership + ACL), with container actions/shell disabled. Umami follows the same pattern on `UMAMI_DOMAIN`: only the tracker endpoints (`/script.js`, `/api/send`) are public, the dashboard paths 403 and live on `https://obelisk-stats.<tailnet>.ts.net` via `tailscale-umami`.
+- Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings), `db-data` (app Postgres), `umami-db-data` (analytics events), `ts-dozzle-state` + `ts-umami-state` (the sidecars' tailnet identity — losing them re-registers the nodes).
 
 ---
 
@@ -41,6 +43,7 @@ On the server:
 - [dotenvx](https://dotenvx.com/) — used by `just docker-deploy` to inject `.env.docker` into compose
 - [Bun](https://bun.sh) — runs the root scripts behind some recipes
 - A **domain** (or subdomain) whose **A record points at the server's IP** — Caddy issues the TLS certificate via HTTP-01, so ports **80 and 443** must be reachable (443/udp is optional, HTTP/3 only)
+- A **Tailscale account** (a tailnet — free tier is enough) — the log viewer and analytics dashboard are reachable from tailnet devices only; the server itself installs no Tailscale, the sidecar containers join instead (see [Tailscale admin access](#tailscale-admin-access))
 
 On your machine: none of the above is needed to *operate* the stack once it is on the server — everything below runs there.
 
@@ -82,13 +85,13 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — four for Caddy, three for umami, one for the app Postgres:
+Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — three for Caddy, one for Tailscale, three for umami, one for the app Postgres:
 
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
 DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
 UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (also baked into the frontend tracker origin)
-ADMIN_IPS="203.0.113.10"              # space-separated IPs for the admin allow-list (guards DOZZLE_DOMAIN + the umami dashboard)
+TS_AUTHKEY="tskey-auth-..."           # reusable Tailscale auth key tagged `tag:obelisk` — both sidecars register with it (admin console → Settings → Keys; see Tailscale admin access)
 OBELISK_DB_PASSWORD="..."             # postgres password for the db container — URL-safe (letters/digits): compose interpolates it straight into the backend's DATABASE_URL, where `@ / : %` break the connection (openssl rand -hex 12)
 UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection
 UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
@@ -107,7 +110,7 @@ LOCAL_API_URL="https://obelisk-jmc.localhost/api/v1"
 LOCAL_UMAMI_WEBSITE_ID=""                     # website key of the LOCAL umami instance — empty = no tracker in local builds
 ```
 
-> ⚠️ `ADMIN_IPS` must be the address **Caddy sees on the connection** — your public egress IP (`curl ifconfig.me`), not a LAN IP. Caddy matches the TCP peer, so a private `192.168.x.x` entry only works if you reach the server from that LAN/VPN. Wrong value = `403` on the log viewer.
+> ⚠️ `TS_AUTHKEY` must be **reusable** (both sidecars register with it) and tagged `tag:obelisk` (create the tag first under Settings → ACL tags). An empty, single-use or expired key leaves `tailscale-dozzle` / `tailscale-umami` in a registration loop — the stack still runs, the tailnet names just don't resolve. Details: [Tailscale admin access](#tailscale-admin-access).
 
 ### 5. Re-encrypt
 
@@ -138,22 +141,58 @@ From the repo root **on the server**:
 just docker-deploy
 ```
 
-That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all nine services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS` / `OBELISK_DB_PASSWORD` / `UMAMI_DB_PASSWORD` / `UMAMI_APP_SECRET` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
+That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — it builds the three images (root multi-stage [`Dockerfile`](../Dockerfile), targets `backend` / `frontend` / `etl`) and starts all eleven services with `.env.prod` values. `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `TS_AUTHKEY` / `OBELISK_DB_PASSWORD` / `UMAMI_DB_PASSWORD` / `UMAMI_APP_SECRET` are injected for compose interpolation; **a bare `docker compose up` skips the wrap** and Caddy's guard exits with `APP_DOMAIN not set - deploy via just docker-deploy`.
 
-Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — 403 unless the request comes from an `ADMIN_IPS` address), `https://<UMAMI_DOMAIN>` (dashboard — 403 unless admin; `curl -I https://<UMAMI_DOMAIN>/script.js` answers 200 from anywhere). Logs: `just docker-logs`.
+Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — **403 by design**, the public hostname is fail-closed), `https://<UMAMI_DOMAIN>` (dashboard paths — 403 by design; `curl -I https://<UMAMI_DOMAIN>/script.js` answers 200 from anywhere), plus both tailnet names from a tailnet device (see [Tailscale admin access](#tailscale-admin-access)). Logs: `just docker-logs`.
 
 > Stop `just dev` first — the dev stack and the Docker stack bind the same host ports (Redis aside, which is shared via loopback).
+
+### Tailscale admin access
+
+The two admin surfaces are **not reachable from the public internet**: caddy answers both public hostnames with `403`, and the real entrypoints are MagicDNS names served by the sidecars:
+
+| Surface | Tailnet URL | Sidecar |
+| :--- | :--- | :--- |
+| Dozzle log viewer | `https://obelisk-logs.<tailnet>.ts.net` | `tailscale-dozzle` |
+| umami dashboard | `https://obelisk-stats.<tailnet>.ts.net` | `tailscale-umami` |
+
+One-time, **before the first deploy**: create an auth key in the [Tailscale admin console](https://admin.tailscale.com/admin/settings/keys) — **reusable** (both sidecars register with it) and tagged `tag:obelisk` (create the tag first under Settings → ACL tags) — and put it in `.env.docker` as `TS_AUTHKEY` ([§4](#4-fill-envdocker)). Each sidecar joins the tailnet itself (userspace mode — no Tailscale install, no extra capabilities on the host), shares its target's network namespace, and terminates TLS with a certificate issued by your tailnet's CA.
+
+Verify after the first deploy, from a device in your tailnet:
+
+- `https://obelisk-logs.<tailnet>.ts.net` and `https://obelisk-stats.<tailnet>.ts.net` load (the first visit can take ~10s while the sidecars request their certificates); the exact names come from `docker compose exec tailscale-dozzle tailscale status`)
+- from any device **outside** the tailnet, `https://<DOZZLE_DOMAIN>` and `https://<UMAMI_DOMAIN>` still answer `403`
+
+### Granting a teammate access
+
+Access = tailnet membership (network path) + a umami login (app gate for the dashboard):
+
+1. **Invite them to the tailnet** — Admin console → Users → Invite user; they sign in with the Tailscale client on their own machine. The server needs nothing new: the sidecars are already registered.
+2. **ACL** — the default tailnet ACL lets every member reach every device, so nothing else is required. If you've tightened the ACL, allow your users to the sidecars' tag on 443:
+
+   ```json
+   {
+     "action": "accept",
+     "src": ["user:teammate@example.com"],
+     "dst": ["tag:obelisk:443"]
+   }
+   ```
+
+   To separate log access from analytics, register each sidecar under its own tag (a second, differently-tagged `TS_AUTHKEY` per service) and allow each tag individually.
+3. **umami login** — the tailnet only carries the traffic; the dashboard still needs an account. Create a second user in the umami dashboard (Settings → Users) instead of sharing `admin`. The log viewer needs no app login: tailnet membership is the gate (dozzle runs with container actions/shell disabled).
+
+Rotating `TS_AUTHKEY`: generate a new reusable tagged key, update `.env.docker`, `just env-encrypt`, `just docker-deploy`. Auth keys expire (≤ 90 days) but only matter for **new** registrations — the sidecars keep their identity in the `ts-*-state` volumes, so a lapsed key breaks only a fresh sidecar, not the running ones.
 
 ### Umami analytics setup
 
 One-time, after the first deploy:
 
-1. Open `https://<UMAMI_DOMAIN>` from an `ADMIN_IPS` address and sign in with umami's default credentials (`admin` / `umami`) — **change the password immediately**.
+1. Open `https://obelisk-stats.<tailnet>.ts.net` from a tailnet device and sign in with umami's default credentials (`admin` / `umami`) — **change the password immediately**.
 2. Add a **Website** (any name, domain = your `APP_DOMAIN`) and copy its **website ID**.
 3. Put the ID in `.env.docker` as `UMAMI_WEBSITE_ID`, then `just env-encrypt` and `just docker-deploy` — the key is baked into the bundle at build.
 4. Pageviews show up after the frontend loads (`data-website-id` in the page source confirms the script is active).
 
-The dashboard answers `403` to everyone outside `ADMIN_IPS`; only `/script.js` and `/api/send` are public so visitors' browsers can report. Umami's data lives in the `umami-db-data` volume — back it up with `docker compose exec umami-db pg_dump -U umami umami`.
+The public `UMAMI_DOMAIN` dashboard paths answer `403` to everyone — the dashboard lives on the tailnet instead; only `/script.js` and `/api/send` are public so visitors' browsers can report. Umami's data lives in the `umami-db-data` volume — back it up with `docker compose exec umami-db pg_dump -U umami umami`.
 
 ### Rebuild rules
 
@@ -174,7 +213,7 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 
 ### Local deployment
 
-`just deploy-local` runs the same nine services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
+`just deploy-local` runs the same eleven services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
 
 ```sh
 just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
@@ -209,6 +248,7 @@ Notes:
 | List app DB tables (no rows = blank DB, never migrated) | `just db-check` |
 | Interactive psql shell on the app Postgres | `just docker-db-shell` |
 | Tail all service logs | `just docker-logs` |
+| Check a sidecar's tailnet registration | `docker compose exec tailscale-dozzle tailscale status` |
 | Restart containers in place (no rebuild) | `just docker-restart` |
 | Reload Caddy after editing the `Caddyfile` (no downtime) | `just docker-caddy-reload` |
 | Stop the stack (containers/images stay) | `just docker-down` |
@@ -228,9 +268,10 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 
 ## Troubleshooting
 
-- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` / `ADMIN_IPS`). Run `just docker-deploy`; check `just docker-logs`.
-- **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — the request's source IP is not in `ADMIN_IPS`. Caddy matches the TCP peer (public egress IP), so compare `curl ifconfig.me` with the value in `.env.docker`, update it, re-encrypt and redeploy.
-- **`403` on `https://<UMAMI_DOMAIN>`** — same allow-list as dozzle: your IP is not in `ADMIN_IPS` (this is intended for non-admins). `curl -I https://<UMAMI_DOMAIN>/script.js` should still answer `200` — if it doesn't, the tracker paths lost their `handle` in the `UMAMI_DOMAIN` block.
+- **`APP_DOMAIN not set - deploy via just docker-deploy`** (caddy restart loop) — you started compose without the dotenvx wrap, or `.env.docker` lacks `APP_DOMAIN` (same message for `DOZZLE_DOMAIN` / `UMAMI_DOMAIN`). Run `just docker-deploy`; check `just docker-logs`.
+- **`403` on `https://<DOZZLE_DOMAIN>` from your own machine** — expected: the public log-viewer hostname is fail-closed and answers `403` to everyone. Open `https://obelisk-logs.<tailnet>.ts.net` from a device in your tailnet instead.
+- **`403` on `https://<UMAMI_DOMAIN>`** — expected for the dashboard paths (only the tracker is public). `curl -I https://<UMAMI_DOMAIN>/script.js` should still answer `200` — if it doesn't, the tracker paths lost their `handle` in the `UMAMI_DOMAIN` block. The dashboard itself is at `https://obelisk-stats.<tailnet>.ts.net`.
+- **Tailnet name doesn't resolve / times out** — a sidecar isn't registered or the viewing device isn't in the tailnet. Check `docker compose logs tailscale-dozzle tailscale-umami` (an empty or invalid `TS_AUTHKEY` loops on registration — see [Tailscale admin access](#tailscale-admin-access)), inspect with `docker compose exec tailscale-dozzle tailscale status`, and confirm the viewing device shows up in your tailnet's admin console.
 - **No pageviews in umami** — the frontend bundle has no tracker: `UMAMI_WEBSITE_ID` empty in `.env.docker` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
 - **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (each hostname needs its own A record, `umami` included). Cert progress is in `just docker-logs` (caddy).
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
