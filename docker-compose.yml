@@ -1,18 +1,12 @@
 # NOTE: whole self-hosted stack in one compose file (9 services), .env.prod-only —
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
-# published — frontend/backend/etl/dozzle are compose-internal, redis keeps
-# loopback so `just dev` can reach it; stop `just dev` before deploying so
-# dev/prod don't mix.
+# published — frontend/backend/etl/dozzle are compose-internal, redis and db keep
+# loopback so `just dev` can reach them (dev uses its own `obelisk_dev`
+# database, the app serves `obelisk`); stop `just dev` before deploying so
+# host ports don't clash.
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
 # .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
-
-# NOTE: json-file rotation so container logs can't fill the disk
-x-logging: &log-rotation
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "3"
 
 services:
   # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
@@ -23,7 +17,6 @@ services:
     image: caddy:2-alpine
     container_name: obelisk-caddy
     restart: unless-stopped
-    logging: *log-rotation
     ports:
       - "80:80"
       - "443:443"
@@ -72,7 +65,6 @@ services:
     image: obelisk-backend:latest
     container_name: obelisk-backend
     restart: unless-stopped
-    logging: *log-rotation
     # NOTE: no published ports — in-network only (caddy /api over edge, etl/redis over internal)
     environment:
       # NOTE: in-network addresses — .env.prod says "localhost", which inside a
@@ -80,14 +72,24 @@ services:
       # overrides an already-set var)
       REDIS_HOST: redis
       PYTHON_SERVER_URL: http://etl:8000
+      # NOTE: in-network Postgres — .env.prod still holds the old Neon URLs, but
+      # compose-injected vars win (dotenvx never overrides a set var), so the
+      # container always talks to the `db` service; DIRECT_URL is identical
+      # (no pooler to bypass — prisma.config.ts reads it for migrations)
+      DATABASE_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
+      DIRECT_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
       # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing — the public
       # https://<APP_DOMAIN> origin from .env.prod (caddy terminates TLS)
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
     depends_on:
-      - redis
-      - etl
+      redis:
+        condition: service_started
+      etl:
+        condition: service_started
+      db:
+        condition: service_healthy
     networks:
       - edge
       - internal
@@ -105,7 +107,6 @@ services:
     image: obelisk-frontend:latest
     container_name: obelisk-frontend
     restart: unless-stopped
-    logging: *log-rotation
     # NOTE: no published ports — served by caddy over the edge network
     # NOTE: API_INTERNAL_URL is baked as a build ARG and kept as an image ENV —
     # no runtime override; NEXT_PUBLIC_API_URL keeps its baked browser-facing value
@@ -124,7 +125,6 @@ services:
     image: obelisk-etl:latest
     container_name: obelisk-etl
     restart: unless-stopped
-    logging: *log-rotation
     # NOTE: no auth by design and no published ports — backend reaches
     # http://etl:8000 over the internal network only
     environment:
@@ -147,32 +147,39 @@ services:
     image: redis:alpine
     container_name: obelisk-redis
     restart: unless-stopped
-    logging: *log-rotation
     # WARN: no password — loopback only (`just dev` still reaches it via localhost:6379)
     ports:
       - "127.0.0.1:6379:6379"
     networks:
       - internal
 
-  # NOTE: DuckDNS dynamic-DNS updater — keeps the A records for APP_DOMAIN /
-  # DOZZLE_DOMAIN pointed at this server's public IP (updates every ~5 min).
-  # The subdomains are created on the duckdns.org dashboard; this only
-  # refreshes the IP, and SUBDOMAINS takes bare names (no .duckdns.org)
-  duckdns:
-    image: lscr.io/linuxserver/duckdns:latest
-    container_name: obelisk-duckdns
+  # NOTE: the app's datastore (Prisma/Postgres) — in-network for backend, but the
+  # loopback publish lets host-side `just dev` / db:migrate / tests reach it, the
+  # same split redis uses; schema via `just db-migrate` (dev) / `just docker-migrate`
+  db:
+    image: postgres:15-alpine
+    container_name: obelisk-db
     restart: unless-stopped
-    logging: *log-rotation
     environment:
-      # NOTE: injected by the dotenvx wrap in `just docker-deploy` (like
-      # caddy's APP_DOMAIN) — deliberately no guard: empty keys only make the
-      # updater log KO, they shouldn't block the whole stack from deploying
-      SUBDOMAINS: ${DUCKDNS_SUBDOMAINS:-}
-      TOKEN: ${DUCKDNS_TOKEN:-}
-      # NOTE: UPDATE_IP omitted on purpose — DuckDNS then detects the IP
-      # itself (IPv4); setting it routes detection through Cloudflare whoami
+      # NOTE: password from .env.docker through the dotenvx wrap in `just
+      # docker-deploy` / `just db-up` — must be URL-safe (letters/digits): it is
+      # interpolated straight into the backend's DATABASE_URL, where @ / : % break
+      # the connection. Empty = the postgres image refuses to init (fail fast).
+      POSTGRES_DB: obelisk
+      POSTGRES_USER: obelisk
+      POSTGRES_PASSWORD: ${OBELISK_DB_PASSWORD:-}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obelisk -d obelisk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      # NOTE: loopback only — never expose Postgres beyond the host
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # NOTE: data must survive recreates — otherwise every deploy drops the DB
+      - db-data:/var/lib/postgresql/data
     networks:
-      # NOTE: egress-only (update calls to duckdns.org) — caddy never proxies it
       - internal
 
   # NOTE: container log viewer at https://<DOZZLE_DOMAIN> — private by design:
@@ -182,7 +189,6 @@ services:
     image: amir20/dozzle:latest
     container_name: obelisk-dozzle
     restart: unless-stopped
-    logging: *log-rotation
     # WARN: docker.sock is root-equivalent on the host — the :ro bind only
     # freezes the file, the API still passes through; keep actions/shell off
     # TODO(hardening): front the socket with tecnativa/docker-socket-proxy if
@@ -201,7 +207,6 @@ services:
     image: ghcr.io/umami-software/umami:latest
     container_name: obelisk-umami
     restart: unless-stopped
-    logging: *log-rotation
     # NOTE: umami's own init (signal handling / zombie reaping), as in upstream's compose
     init: true
     # NOTE: no published ports — only caddy reaches it over edge
@@ -231,7 +236,6 @@ services:
     image: postgres:15-alpine
     container_name: obelisk-umami-db
     restart: unless-stopped
-    logging: *log-rotation
     environment:
       POSTGRES_DB: umami
       POSTGRES_USER: umami
@@ -255,6 +259,8 @@ volumes:
   caddy-config:
   # NOTE: dozzle settings (users/filters if auth is enabled later)
   dozzle-data:
+  # NOTE: app data (Prisma/Postgres)
+  db-data:
   # NOTE: umami analytics events (postgres)
   umami-db-data:
 

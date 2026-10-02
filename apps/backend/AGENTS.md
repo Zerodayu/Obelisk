@@ -1,7 +1,7 @@
 # Obelisk Backend — Agent Guide
 
 **Product:** Obelisk — Outcomes-Based Educational Learning and Intelligent System Kit for **Jose Maria College Foundation, Inc. (JMCFI)**.
-**Stack:** Bun runtime · Elysia (HTTP) · Prisma + PostgreSQL (Neon driver adapter) · better-auth · Zod validation.
+**Stack:** Bun runtime · Elysia (HTTP) · Prisma + PostgreSQL (pg driver adapter, Docker `db` service) · better-auth · Zod validation.
 
 This backend digitizes the JMCFI WIN-OBE **forms** (the paper/manual OBE assessment forms) as structured records with computed attainment fields, an approval workflow, audit trail, and program-level rollups.
 
@@ -117,9 +117,9 @@ action_taken              -> Action-Taken Record (At-Risk Students)
 7. ✅ `alumni_tracer`, `employer_satisfaction_survey`, `annual_program_report`, `systemic_gap_report`, `capa_plan`, `portfolio_roadmap`, `institutional_review` (periodic/escalation/institutional) — **DONE** (Phase 6; `annual_program_report` done in Phase 4)
 8. Graduation-cluster archival pipeline (after PEO attainment capture)
 
-Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on Neon reachability), with lint and typecheck green.
+Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on DB reachability), with lint and typecheck green.
 
-> ⚠️ `bun run test` runs `test/helpers/run-tests.ts`, which **wipes the target database before and after every run** — on this setup that is the dev DB (Neon). Re-run `bun run db:seed` (or `just db-seed`) afterwards or every seeded account and all reference data is gone.
+> ⚠️ `bun run test` runs `test/helpers/run-tests.ts`, which **wipes the target database before and after every run** — on this setup that is **`obelisk_dev`** (Docker Postgres, `just db-up`), never the deployed `obelisk` database. Re-run `bun run db:seed` (or `just db-seed`) afterwards or every seeded account and all reference data is gone.
 
 ## Phase 6 Modules
 

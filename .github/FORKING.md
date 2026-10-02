@@ -65,14 +65,13 @@ All of these live in the root env files ([`CONTRIBUTING.md` §2](CONTRIBUTING.md
 | `ORG_EMAIL_DOMAIN` | **Google sign-in is restricted to this hosted domain** (the `hd` claim is checked in `apps/backend/src/v1/auth/service.ts`) — set your institution's email domain or nobody can sign in |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Your own Google OAuth client (register your deployment's redirect URI in the Google Cloud console) |
 | `BETTER_AUTH_SECRET` | Generate a fresh long random string — never reuse upstream's |
-| `DATABASE_URL` / `DIRECT_URL` | Your Postgres/Neon database |
+| `DATABASE_URL` / `DIRECT_URL` | Your Postgres database — dev uses the compose `db` service (`just db-up`); in `.env.prod` leave placeholders, the compose file overrides both in-network |
 | `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_API_URL` | Your domains — localhost for dev, your public origin for prod |
 | `NEXT_PUBLIC_UMAMI_WEBSITE_ID` (`.env.prod`) | Optional — umami tracker website key; leave empty to ship no analytics script (see `DEPLOYMENT.md`) |
 | `OBELISK_ALLOWED_ORIGINS` | Your frontend origin(s), for the ETL CORS check |
 | `OBELISK_LLM_API_KEYS`, `OBELISK_WEBAPP_SHARED_SECRET` | Optional — your own keys, see `CONTRIBUTING.md` §2 |
 | `APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `ADMIN_IPS` (`.env.docker`) | Your deployment domain, log-viewer domain, analytics domain and admin IPs, see `DEPLOYMENT.md` |
-| `DUCKDNS_SUBDOMAINS`, `DUCKDNS_TOKEN` (`.env.docker`) | DuckDNS updater — bare subdomain names + dashboard token (or delete the `duckdns` service if you don't use DuckDNS), see `DEPLOYMENT.md` |
-| `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET` (`.env.docker`) | Self-hosted umami secrets — postgres password + signing secret (or delete the `umami`/`umami-db` services if you don't self-host analytics), see `DEPLOYMENT.md` |
+| `OBELISK_DB_PASSWORD`, `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET` (`.env.docker`) | Postgres passwords (`db` + `umami-db` — URL-safe, letters/digits) + umami's signing secret (or delete the `umami`/`umami-db` services if you don't self-host analytics), see `DEPLOYMENT.md` |
 
 ---
 

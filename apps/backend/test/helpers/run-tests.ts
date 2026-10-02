@@ -9,10 +9,10 @@ import { wipeTestDatabase } from "./wipe-db";
  */
 const args = process.argv.slice(2).filter((arg) => arg !== "--");
 
-// NOTE: integration tests run against remote Neon — round-trips routinely
-// exceed bun's 5s default, which fails tests and (worse) aborts `finally`
-// cleanup blocks, cascading FK/unique errors into later tests in the same
-// file. Give every test 60s here; an explicit per-test timeout still wins.
+// NOTE: integration tests run against the Docker Postgres (`just db-up`) —
+// keep the generous 60s budget as a margin for slow hosts; a failing round-trip
+// aborts `finally` cleanup blocks, cascading FK/unique errors into later tests
+// in the same file. An explicit per-test timeout still wins.
 if (
 	!args.includes("--timeout") &&
 	!args.some((a) => a.startsWith("--timeout="))

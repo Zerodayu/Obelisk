@@ -8,9 +8,9 @@ Development setup and workflow documentation. For a project overview, see the [R
 
 - [Bun](https://bun.sh) `>= 1.x` (runtime and package manager for the backend and frontend)
 - [uv](https://docs.astral.sh/uv/) — for running `python-server` locally (uv manages the Python interpreter and dependencies)
-- [Docker](https://www.docker.com) — optional; starts Redis for local ETL development (`just redis`). The full self-hosted stack also runs in Docker — see [DEPLOYMENT.md](DEPLOYMENT.md).
+- [Docker](https://www.docker.com) — runs Redis (`just redis`) and the app Postgres (`just db-up`) for local development. The full self-hosted stack also runs in Docker — see [DEPLOYMENT.md](DEPLOYMENT.md).
 - [just](https://github.com/casey/just) — optional, to use the root [`justfile`](../justfile) recipes (§4)
-- A **PostgreSQL** database. The backend uses the Neon serverless driver over a standard Postgres connection string, so both [Neon](https://neon.tech) and a local Postgres instance work.
+- A **PostgreSQL** database. The backend connects over a standard Postgres connection string (pg driver adapter); `just db-up` starts the compose `db` service on loopback `:5432`, and a separately managed local Postgres works too as long as `DATABASE_URL` / `DIRECT_URL` point at it.
 
 ---
 
@@ -29,7 +29,7 @@ The repo is a **Bun-workspaces monorepo**: `apps/backend/`, `apps/frontend/` and
 
 - **`.env.local`** — development; what every local script loads (`just dev`, and the per-package `dev` / `build` / `test` scripts).
 - **`.env.prod`** — production values; decrypted for production builds and runs (`bun run build:prod` / `bun run start:prod` inside each package — the Docker stack).
-- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `ADMIN_IPS`, `DUCKDNS_SUBDOMAINS`, `DUCKDNS_TOKEN`, `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET`, plus the `LOCAL_*` set for machine-local mode — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
+- **`.env.docker`** — deployment-only settings for the Docker stack (`APP_DOMAIN`, `DOZZLE_DOMAIN`, `UMAMI_DOMAIN`, `ADMIN_IPS`, `UMAMI_DB_PASSWORD`, `UMAMI_APP_SECRET`, plus the `LOCAL_*` set for machine-local mode — see [DEPLOYMENT.md](DEPLOYMENT.md)). Not needed for development.
 
 All three are **encrypted with [dotenvx](https://dotenvx.com)** (public-key headers `DOTENV_PUBLIC_KEY_LOCAL` / `DOTENV_PUBLIC_KEY_PROD` / `DOTENV_PUBLIC_KEY_DOCKER`); the private keys live in the gitignored root **`.env.keys`**, so a fresh clone cannot decrypt them out of the box.
 
@@ -56,9 +56,9 @@ dotenvx reads plaintext (unencrypted) env files fine. Create `.env.local` at the
 One root file covers all three services — server vars are validated by `@obelisk/env/server` (`packages/env/src/server.ts`, re-exported as `env` from `apps/backend/utils/env.ts`), frontend vars by `@obelisk/env/client` (`packages/env/src/client.ts`, re-exported from `apps/frontend/utils/env.ts`):
 
 ```env
-# backend
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/obelisk?sslmode=require"
-DIRECT_URL="postgresql://USER:PASSWORD@HOST:5432/obelisk?sslmode=require"
+# backend — dev uses its own database `obelisk_dev` on the Docker db service (just db-up); the deployed stack serves `obelisk`
+DATABASE_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk_dev"
+DIRECT_URL="postgresql://OBELISK_USER:PASSWORD@localhost:5432/obelisk_dev"
 BETTER_AUTH_SECRET="generate-a-long-random-secret"
 BETTER_AUTH_URL="http://localhost:3000"
 FRONTEND_URL="http://localhost:3000"
@@ -72,7 +72,7 @@ REDIS_PORT="6379"
 
 # frontend
 NEXT_PUBLIC_API_URL="http://localhost:8080"
-# NEXT_PUBLIC_UMAMI_DOMAIN="http://localhost:3001"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
+# NEXT_PUBLIC_UMAMI_DOMAIN="https://umami-jmc.localhost"  # optional — tracker origin (e.g. a `just deploy-local` umami); unset = no script
 # NEXT_PUBLIC_UMAMI_WEBSITE_ID=""                  # optional — umami website key; unset/empty = no script
 # DEVELOPMENT=true             # optional — disables the auth gate for quick local preview
 
@@ -108,7 +108,7 @@ uv sync
 uv run dev
 ```
 
-**Docker:** Redis for local ETL development comes from the root compose file — `just redis` (or `just install-etl`, which also runs `uv sync`). Running the **whole stack** in Docker is a deployment concern: see [DEPLOYMENT.md](DEPLOYMENT.md).
+**Docker:** Redis for local ETL development and the app Postgres come from the root compose file — `just redis` and `just db-up` (both also run by `just install`; `just install-etl` runs `uv sync` too). Running the **whole stack** in Docker is a deployment concern: see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 Verify: <http://localhost:8000/health>
 
@@ -156,8 +156,9 @@ The root [`justfile`](../justfile) wraps the common workflows — install, dev, 
 | `just env-encrypt` | Re-encrypt the root env files (private keys stay in the gitignored `.env.keys`) |
 | `just install-etl` | Start Redis (Docker Compose), then `uv sync` python-server deps |
 | `just redis` | Start Redis via Docker Compose (needed by the ETL service) |
+| `just db-up` | Start the app Postgres via Docker Compose (loopback `:5432`) |
 | `just db-generate` | Regenerate the Prisma client after a schema change |
-| `just db-migrate` | Apply pending Prisma migrations (from the root `.env.local`) |
+| `just db-migrate` | Apply pending Prisma migrations (from the root `.env.local`; needs `just db-up`) |
 | `just db-seed` | Seed dev data — one account per role, department, program, term, course, section (wipes previous seed rows; re-run after `just test`) |
 
 ### Dev
@@ -181,13 +182,13 @@ bun run start          # turbo-cached build + serve backend (:8080) and frontend
 bun run start:prod     # same, built and served with .env.prod — stop the dev stack first (same ports)
 ```
 
-Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks silently falls back to its `.env.local` value.
+Both go through turbo, which **builds each app first and caches per environment** — local and prod builds get separate cache fingerprints, so switching between the two never reuses the other's output. The per-package `start` / `start:prod` scripts don't build and can be run alone (`just _bun apps/backend start:prod`). `start:prod` exports `.env.prod` before anything else and dotenvx never overrides an existing variable, so **`.env.prod` must contain the complete key set** — any key it lacks is never loaded at all (dotenvx only reads the file it is given), so it stays unset instead of falling back to `.env.local`.
 
 The ETL service is not a turbo workspace; run it separately (`just dev-etl`).
 
 ### Docker & deploy (self-hosted stack)
 
-The whole stack (Caddy + backend + frontend + ETL + Redis) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, updates, migrations, and day-2 operations.
+The whole stack (Caddy, backend, frontend, ETL, Redis, Postgres, Dozzle and umami + umami-db — nine services) runs in Docker — that is a deployment concern, fully documented in **[DEPLOYMENT.md](DEPLOYMENT.md)**: one-time server setup, `just docker-deploy`, machine-local mode (`just deploy-local`), updates, migrations, and day-2 operations.
 
 ### Quality
 
@@ -241,7 +242,7 @@ Setting `DEVELOPMENT=true` in the root `.env.local` disables the auth gate so ev
 DEVELOPMENT=true
 ```
 
-To simulate a role, edit `DEV_ROLE` in `apps/frontend/server/api-client.ts` (default `system_admin`).
+To simulate a role, edit `DEV_ROLE` in `apps/frontend/server/api-client.ts` (default `faculty`).
 
 ### Testing with a real account (per role)
 
@@ -260,7 +261,7 @@ Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `get
 
 - **`[dotenvx] This is a private key. Please use the public key...`, `[DECRYPTION_FAILED]`, or other decryption errors** — you don't have the root `.env.keys`. Ask a maintainer for it and place it at the repo root, or replace `.env.local` with a plaintext file (Option B in §2).
 - **Backend fails to start with a missing-var error** — all required env vars are Zod-validated at startup in `packages/env/src/server.ts` (via `apps/backend/utils/env.ts`); fill in the missing ones in the root `.env.local`.
-- **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point to a reachable Postgres (Neon or local) and that the schema was applied (`bun run db:migrate`).
+- **Prisma connection errors** — confirm `DATABASE_URL` / `DIRECT_URL` point at a reachable Postgres (`just db-up`, then `docker compose ps db` — or your own instance) and that the schema was applied (`just db-migrate`).
 - **Port already in use** — the services expect `8080`, `3000`, and `8000`. Stop anything occupying those ports.
 - **Frontend can't reach the API** — ensure the backend is running and `NEXT_PUBLIC_API_URL` matches its origin (`http://localhost:8080`).
 - **python-server uploads fail** — the ETL service has no database and no auth; the backend must be reachable (`PYTHON_SERVER_URL`), and the upload endpoints require the backend to be running too.

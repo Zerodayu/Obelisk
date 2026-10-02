@@ -30,7 +30,7 @@ Production deploys are self-hosted Docker on a VPS behind Caddy — from the rep
 
 ### Development mode
 
-With `DEVELOPMENT=true` the frontend disables auth: `proxy.ts` and the server guards short-circuit to a dev user so every route is viewable without an account. Simulate a role by editing `DEV_ROLE` in `server/api-client.ts` (currently `dean`). Set `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` to `true` to enforce route gates like production (default `false` = open navigation). The backend still enforces auth.
+With `DEVELOPMENT=true` the frontend disables auth: `proxy.ts` and the server guards short-circuit to a dev user so every route is viewable without an account. Simulate a role by editing `DEV_ROLE` in `server/api-client.ts` (currently `faculty`). Set `DEV_ENFORCE_ROLE_ACCESS` in `lib/dev-mode.ts` to `true` to enforce route gates like production (default `false` = open navigation). The backend still enforces auth.
 
 ### Testing as a role (seeded accounts)
 
@@ -76,4 +76,4 @@ proxy.ts             # coarse session-cookie gate (Next 16 proxy)
 
 - **Routing & auth:** `proxy.ts` only redirects unauthenticated requests on `/dashboard`, `/forms`, `/archives`. Real session + role checks run in server layouts/pages (`server/auth.ts`, `lib/roles.ts`).
 - **Data:** browser reads go through `lib/api-client.ts`; all mutations are Server Actions in `server/actions/` calling `actionApi` (`server/api-client.ts`), which forwards cookies and relays backend `Set-Cookie` headers.
-- **Forms:** 20 built OBE form screens under `app/(app)/forms/`, keyed by the stable snake_case form codes (see `../backend/SYSTEM-DESIGN.md` for the catalog).
+- **Forms:** 21 built OBE form screens under `app/(app)/forms/`, keyed by the stable snake_case form codes (see `../backend/SYSTEM-DESIGN.md` for the catalog).

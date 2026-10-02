@@ -321,27 +321,20 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
   - At-risk action-taken workflow with transactional flag clearing (`src/v1/atrisk/` + `lib/forms/approval-effects.ts`).
 - **Pending Capabilities:**
   - Archival pipeline execution (Phase 7).
-  - Production guard on the database seeder (Section 7.1).
 
 ### 6.3 Database & Environment Separation
-- **Branch Topology:** Local dev environment and remote production use **separate Neon branches sharing identical schemas**.
-- **Test Database Wipe:** The integration test runner (`apps/backend/test/helpers/run-tests.ts`) executes a full truncate before and after each run via `wipe-db.ts` — an explicit list of **43 tables** covering all **50** mapped schema tables (plan child tables are pulled in by `TRUNCATE … CASCADE`). Harness-level tests now run with a **60 s timeout** (`run-tests.ts:12-21`, added for slow Neon runs). This isolates the dev branch safely without endangering production, but requires re-running `just db-seed` before browser testing.
+- **Branch Topology:** Local dev and production run on the same Dockerized Postgres server in **separate databases**: dev/tests use `obelisk_dev` (root `.env.local`), the deployed stack serves `obelisk` (compose-injected; `.env.prod` holds the loopback URL). Neon branches until 2026-10-02.
+- **Test Database Wipe:** The integration test runner (`apps/backend/test/helpers/run-tests.ts`) executes a full truncate before and after each run via `wipe-db.ts` — an explicit list of **43 tables** covering all **50** mapped schema tables (plan child tables are pulled in by `TRUNCATE … CASCADE`). Harness-level tests now run with a **60 s timeout** (`run-tests.ts:12-21`, added for slow Neon runs). This isolates the dev database (`obelisk_dev`) — production (`obelisk`) is a different database on the same server and is never wiped — but requires re-running `just db-seed` before browser testing.
 
 ---
 
 ## 7. Critical Code Discrepancies & Blocker Registry
 
-### 7.1 Blocker 1: Missing Production Guard in Database Seeder (CRITICAL) `[OPEN]`
-- **Source Location:** [`apps/backend/prisma/seed.ts:226-250`](../apps/backend/prisma/seed.ts) — `main()` at `:226`, destructive `deleteMany` block at `:232-250`.
-- **Defect:** `main()` executes destructive `deleteMany` calls across `atRiskFlag`, `cloAttainment`, `computationRun`, `student`, and institutional `user` rows without checking `NODE_ENV === "production"`. A grep for `NODE_ENV|process.env|production` in `seed.ts` returns **zero matches**.
-- **Impact:** Running `bun run db:seed` against production permanently wipes institutional academic records. The seeded accounts (`<role>@jmcfi.edu.ph`, shared default password) must never exist on an internet-facing instance.
-- **Remedy:** Add an immediate guard:
-  ```typescript
-  if (process.env.NODE_ENV === "production" || process.env.DATABASE_URL?.includes("prod")) {
-    throw new Error("FATAL: Seeding is blocked on production instances.");
-  }
-  ```
-- **Tracking:** `testing_results.md` 1.3 (❌) and §10 pre-deployment checklist.
+### 7.1 Blocker 1: Missing Production Guard in Database Seeder (CRITICAL) `[RESOLVED 2026-10-02]`
+- **Original Defect:** `main()` executed destructive `deleteMany` calls across `atRiskFlag`, `cloAttainment`, `computationRun`, `student`, and institutional `user` rows with no environment check (a grep for `NODE_ENV|process.env|production` in `seed.ts` returned **zero matches**), so `bun run db:seed` against production would permanently wipe institutional academic records.
+- **Fix Applied:** `main()` now refuses to run when `NODE_ENV === "production"` or `DATABASE_URL`/`DIRECT_URL` targets the in-network `db` host (`OBELISK_SEED_ALLOW_PROD=1` overrides for bootstrapping a fresh instance), and `bun run db:seed-prod` runs with `NODE_ENV=production` so the production script trips the guard by default.
+- **Verification:** 2026-10-02 — all three paths (`NODE_ENV=production`, a `@db:5432` URL, `bun run db:seed-prod`) exit 1 with `FATAL: refusing to seed a production database`, while a normal dev seed still completes. Residual (tracked, not part of the guard): the seeded `<role>@jmcfi.edu.ph` accounts still exist on the deployed `obelisk` DB — acceptable while the stack has no ACME cert (not publicly reachable), wipe before it goes public.
+- **Tracking:** `testing_results.md` 1.3 (⚠️) and §10 pre-deployment checklist.
 
 ### 7.2 Blocker 2: HTTP Method Mismatch on CAR Save (HIGH) `[RESOLVED 2026-10-01]`
 - **Original Defect:** Frontend Server Action called `actionApi.post('/car/${id}', parts)`, but the backend controller listens on `.put("/:id")` — `actionApi.post` really sends `POST`, with no verb translation → 404 "Save failed" (`testing_results.md` 6.3).
@@ -400,7 +393,7 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
 | :--- | :--- | :---: | :--- |
 | **Pipeline Bridge** | Empty `clo_plo_mapping` sent to python-server in F15 rollup. | **CRITICAL** | ✅ **RESOLVED 2026-09-29** — `loadCloPloMapping` injects DB `CloToPloMap` (rollup + AI paths); verified live with 5 `PloAttainment` rows. |
 | **Accreditation Workflow** | Missing At-Risk Student Action-Taken / Remediation workflow. | **HIGH** | ✅ **RESOLVED 2026-09-30** — `action_taken` form + `/api/v1/atrisk/*` + clear-on-final-approval effect; verified live (34 → 25 flags). |
-| **Database Safety** | `seed.ts` wipes database without environment check. | **CRITICAL** | ⬜ Open — wrap cleanup in `if (process.env.NODE_ENV === 'production') throw` (§7.1). |
+| **Database Safety** | `seed.ts` wipes database without environment check. | **CRITICAL** | ✅ Resolved 2026-10-02 — guard in `main()` (refuses `NODE_ENV=production` or the in-network `db` host, `OBELISK_SEED_ALLOW_PROD=1` override), `db:seed-prod` runs with `NODE_ENV=production` (§7.1); seeded accounts still on the deployed DB until it goes public |
 | **Frontend/Backend Sync** | CAR Save calls `POST /car/:id` instead of `PUT`. | **HIGH** | ✅ **RESOLVED 2026-10-01** — `actionApi.put` in `actions/car.ts`; save schema optionals made Nullable (round-trip nulls 422'd before); live PUT 200 / POST 404 (§7.2). |
 | **Frontend/Backend Sync** | Curriculum Map calls `POST /plan/curriculum-map/:id` instead of `PUT`. | **HIGH** | ✅ **RESOLVED 2026-10-01** — `actionApi.put` in `actions/plan.ts`; live PUT 200 (row persisted) / POST 404 (§7.3). |
 | **Academic Ledger** | CAR Part 1 `noEnrolled` counts unpopulated `Enrollment` table. | **HIGH** | ✅ **RESOLVED 2026-10-01** — ingest persist loop upserts `Enrollment` per student×section (30 live), plus ETL snapshot fallbacks for year level/faculty; `term` fallback still open (§7.6, `testing_results.md` §7). |

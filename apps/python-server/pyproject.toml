@@ -1,7 +1,7 @@
 [project]
 name = "obelisk-etl"
-version = "0.1.0"
-description = "Foundation ETL service for OBELISK - Outcomes-Based Education Management System (placeholder)"
+version = "0.2.0"
+description = "Outcomes-Based Educational Learning and Intelligent System Kit — ETL & analytics service for JMCFI"
 authors = [{ name = "Your Name", email = "you@example.com" }]
 requires-python = ">=3.13"
 dependencies = [
