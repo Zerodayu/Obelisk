@@ -17,7 +17,7 @@ _uv cmd:
 
 # install dependencies for all packages
 [group('setup')]
-install: install-bun install-etl
+install: install-bun install-etl db-up
 
 # install bun packages (single root workspace install; postinstall writes the backend runtime-env stub)
 [group('setup')]
@@ -46,7 +46,12 @@ redis:
 
 # --- database ---
 
-# apply pending Prisma migrations (DATABASE_URL read from the root .env.local)
+# start the app Postgres via docker compose (needed by the backend; root compose file, loopback :5432)
+[group('setup')]
+db-up:
+    bunx dotenvx run -f .env.docker -- docker compose up -d db
+
+# apply pending Prisma migrations (DATABASE_URL read from the root .env.local; needs `just db-up` first)
 [group('setup')]
 db-migrate:
     @just _bun apps/backend db:migrate

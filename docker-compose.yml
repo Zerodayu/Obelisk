@@ -1,9 +1,9 @@
-# NOTE: whole self-hosted stack in one compose file (8 services), .env.prod-only —
+# NOTE: whole self-hosted stack in one compose file (9 services), .env.prod-only —
 # fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
 # starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
-# published — frontend/backend/etl/dozzle are compose-internal, redis keeps
-# loopback so `just dev` can reach it; stop `just dev` before deploying so
-# dev/prod don't mix.
+# published — frontend/backend/etl/dozzle are compose-internal, redis and db keep
+# loopback so `just dev` can reach them; stop `just dev` before deploying so
+# dev/prod don't mix (WARN: same host = db's loopback port serves dev AND prod).
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
 # .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
 
@@ -71,14 +71,24 @@ services:
       # overrides an already-set var)
       REDIS_HOST: redis
       PYTHON_SERVER_URL: http://etl:8000
+      # NOTE: in-network Postgres — .env.prod still holds the old Neon URLs, but
+      # compose-injected vars win (dotenvx never overrides a set var), so the
+      # container always talks to the `db` service; DIRECT_URL is identical
+      # (no pooler to bypass — prisma.config.ts reads it for migrations)
+      DATABASE_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
+      DIRECT_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
       # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing — the public
       # https://<APP_DOMAIN> origin from .env.prod (caddy terminates TLS)
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
     depends_on:
-      - redis
-      - etl
+      redis:
+        condition: service_started
+      etl:
+        condition: service_started
+      db:
+        condition: service_healthy
     networks:
       - edge
       - internal
@@ -139,6 +149,35 @@ services:
     # WARN: no password — loopback only (`just dev` still reaches it via localhost:6379)
     ports:
       - "127.0.0.1:6379:6379"
+    networks:
+      - internal
+
+  # NOTE: the app's datastore (Prisma/Postgres) — in-network for backend, but the
+  # loopback publish lets host-side `just dev` / db:migrate / tests reach it, the
+  # same split redis uses; schema via `just db-migrate` (dev) / `just docker-migrate`
+  db:
+    image: postgres:15-alpine
+    container_name: obelisk-db
+    restart: unless-stopped
+    environment:
+      # NOTE: password from .env.docker through the dotenvx wrap in `just
+      # docker-deploy` / `just db-up` — must be URL-safe (letters/digits): it is
+      # interpolated straight into the backend's DATABASE_URL, where @ / : % break
+      # the connection. Empty = the postgres image refuses to init (fail fast).
+      POSTGRES_DB: obelisk
+      POSTGRES_USER: obelisk
+      POSTGRES_PASSWORD: ${OBELISK_DB_PASSWORD:-}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obelisk -d obelisk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      # NOTE: loopback only — never expose Postgres beyond the host
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # NOTE: data must survive recreates — otherwise every deploy drops the DB
+      - db-data:/var/lib/postgresql/data
     networks:
       - internal
 
@@ -219,6 +258,8 @@ volumes:
   caddy-config:
   # NOTE: dozzle settings (users/filters if auth is enabled later)
   dozzle-data:
+  # NOTE: app data (Prisma/Postgres)
+  db-data:
   # NOTE: umami analytics events (postgres)
   umami-db-data:
 
