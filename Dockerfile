@@ -1,17 +1,13 @@
 # syntax=docker/dockerfile:1
-# NOTE: one root Dockerfile, one stage per service — `docker compose build`
-# picks targets, `docker build --target backend .` builds a single image.
-# NOTE: .env.prod-only (fill it + `just env-encrypt` first): build gets the
-# gitignored .env.keys only as a BuildKit secret so no layer holds a key,
-# runtime gets .env.prod + .env.keys bind-mounted read-only and the per-package
-# `start:prod` scripts decrypt them with dotenvx.
+# NOTE: one Dockerfile, one stage per service — `docker compose build` picks targets
+# NOTE: .env.prod-only — .env.keys enters as a BuildKit secret, never a layer
+# NOTE: runtime bind-mounts .env.prod + .env.keys; start:prod decrypts them
 
-# --- shared bun workspace (manifests + install, cached across source edits) ---
+# NOTE: shared bun workspace stage — manifests + install cached across source edits
 FROM oven/bun:1.4.2 AS base
 WORKDIR /app
 
-# NOTE: manifests + the gen-runtime-env postinstall stub must exist before
-# install, so node_modules lands early and survives later source edits
+# NOTE: manifests + postinstall stub must exist before install
 COPY package.json bun.lock ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY apps/frontend/package.json apps/frontend/package.json
@@ -21,36 +17,29 @@ COPY packages/env/scripts/gen-runtime-env.ts packages/env/scripts/gen-runtime-en
 COPY packages/env/env-keys.ts packages/env/env-keys.ts
 RUN bun install --frozen-lockfile
 
-# NOTE: .dockerignore keeps node_modules, .next, secrets and the baked
-# runtime-env out of the context — no host dev values ship
+# NOTE: .dockerignore drops node_modules, .next and .env.keys; encrypted .env.* stay in context
 COPY . .
 
-# --- backend (Elysia, :8080) ------------------------------------------------
+# NOTE: backend stage (Elysia, :8080)
 FROM base AS backend
-# NOTE: build:prod = prisma generate + runtime-env bake under dotenvx over
-# .env.prod — hence the keys secret on this RUN
+# NOTE: build:prod = prisma generate + runtime-env bake under dotenvx — hence the keys secret
 WORKDIR /app/apps/backend
 RUN --mount=type=secret,id=envkeys,target=/app/.env.keys bun run build:prod
 EXPOSE 8080
 # NOTE: start:prod re-runs the same dotenvx over .env.prod
 CMD ["bun", "run", "start:prod"]
 
-# --- frontend (Next.js, :3000) ---------------------------------------------
+# NOTE: frontend stage (Next.js, :3000)
 FROM base AS frontend
-# NOTE: ARG fixes the baked routes-manifest (server fetches + the /api/v1/auth
-# rewrite must reach the backend over the compose network), ENV keeps a runtime
-# `next start` on that origin; the browser keeps the baked NEXT_PUBLIC_API_URL
+# NOTE: ARG fixes the baked routes-manifest rewrite; ENV keeps runtime `next start` on it
+# NOTE: the browser keeps the baked NEXT_PUBLIC_API_URL
 ARG API_INTERNAL_URL=http://backend:8080
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
-# NOTE: local mode (`just deploy-local` → docker-compose.local.yml) passes the *.localhost
-# origins here; public mode passes nothing — an unset ARG never enters the RUN env, so
-# build:prod keeps taking them from .env.prod (dotenvx never overrides a set var either way)
+# NOTE: local mode passes the *.localhost origins; public mode passes nothing → build:prod reads .env.prod
 ARG NEXT_PUBLIC_API_URL
 ARG BETTER_AUTH_URL
 ARG FRONTEND_URL
-# NOTE: umami tracker origin — public mode injects UMAMI_DOMAIN (compose build arg),
-# local mode injects LOCAL_UMAMI_DOMAIN; the website key always comes from .env.prod
-# (or LOCAL_UMAMI_WEBSITE_ID when set)
+# NOTE: tracker origin injected per mode; the website key always comes from .env.prod
 ARG NEXT_PUBLIC_UMAMI_DOMAIN
 ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID
 WORKDIR /app/apps/frontend
@@ -59,9 +48,8 @@ RUN --mount=type=secret,id=envkeys,target=/app/.env.keys bun run build:prod
 EXPOSE 3000
 CMD ["bun", "run", "start:prod"]
 
-# --- etl (python-server / uv, :8000) ---------------------------------------
-# NOTE: decrypted in-process by app/core/env.py from the bind-mounted
-# .env.prod + .env.keys (OBELISK_ENV=prod) — neither file is in this image
+# NOTE: etl stage (python-server / uv, :8000)
+# NOTE: decrypted in-process by app/core/env.py from the bind-mounted .env.prod + .env.keys
 FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS etl
 
 WORKDIR /app

@@ -25,7 +25,7 @@ Each service has its own README and agent guide with deeper details:
 | Doc | What it covers |
 | :--- | :--- |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Development — prerequisites, environment setup, running the services, justfile recipes, quality checks, dev mode, troubleshooting. |
-| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Deployment — self-hosted eight-service Docker stack behind Caddy (TLS, Dozzle / umami, machine-local mode, updates, migrations). |
+| [`DEPLOYMENT.md`](DEPLOYMENT.md) | Deployment — self-hosted nine-service Docker stack behind Caddy (TLS, Dozzle / umami, machine-local mode, updates, migrations). |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release notes — what changed in each version. |
 | [`FORKING.md`](FORKING.md) | Forking — starting your own instance for a different institution (fresh keys, env, branding). |
 | [`system-docs/`](../system-docs/README.md) | Project docs — roadmap, testing results, domain reference, architecture audits. |

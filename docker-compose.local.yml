@@ -1,8 +1,6 @@
-# NOTE: local-mode override — layered onto docker-compose.yml ONLY by `just deploy-local`
-# (`docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build`; the plain
-# `just docker-deploy` never loads this file). Later file wins per key: caddy's site addresses
-# swap to the LOCAL_* *.localhost names (loopback + Caddy internal CA — no ACME), and the local
-# origins reach the frontend at build time (ARGs) and backend/etl at runtime (environment).
+# NOTE: local-mode override — layered only by `just deploy-local`, later file wins per key
+# NOTE: LOCAL_* names are *.localhost on loopback with Caddy's internal CA (no ACME)
+# NOTE: local origins reach the frontend at build (ARGs) and backend/etl at runtime
 
 services:
   caddy:
@@ -16,8 +14,7 @@ services:
   frontend:
     build:
       args:
-        # NOTE: Dockerfile declares these as ARG, not ENV — public mode passes nothing, so
-        # build:prod falls back to .env.prod (dotenvx never overrides an already-set var)
+        # NOTE: ARG-only — public mode passes nothing, so build:prod reads .env.prod
         NEXT_PUBLIC_API_URL: ${LOCAL_API_URL:-}
         BETTER_AUTH_URL: ${LOCAL_FRONTEND_URL:-}
         FRONTEND_URL: ${LOCAL_FRONTEND_URL:-}

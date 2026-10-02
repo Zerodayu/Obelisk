@@ -1,18 +1,9 @@
-# NOTE: whole self-hosted stack in one compose file (9 services), .env.prod-only —
-# fill root .env.prod + `just env-encrypt` first; `just docker-deploy` builds and
-# starts, `just docker-logs` tails (or lazydocker). Only caddy (80/443) is
-# published — frontend/backend/etl/dozzle are compose-internal, redis and db keep
-# loopback so `just dev` can reach them (dev uses its own `obelisk_dev`
-# database, the app serves `obelisk`); stop `just dev` before deploying so
-# host ports don't clash.
-# TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL come from
-# .env.prod and are baked at build — rebuild (docker-deploy does) when they change.
+# NOTE: whole stack (9 services), .env.prod-only — fill .env.prod + `just env-encrypt` first
+# NOTE: only caddy publishes ports — stop `just dev` before deploying so host ports don't clash
+# TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL are baked — rebuild on change
 
 services:
-  # NOTE: the only public entrypoint — terminates TLS (automatic Let's Encrypt,
-  # HTTP-01 via :80) and splits traffic: /api/* → backend, everything else →
-  # frontend; second site blocks serve dozzle at DOZZLE_DOMAIN and umami at
-  # UMAMI_DOMAIN, both behind the ADMIN_IPS allow-list (see the Caddyfile).
+  # NOTE: only public entrypoint — TLS plus /api split, sites gated by ADMIN_IPS (see the Caddyfile)
   caddy:
     image: caddy:2-alpine
     container_name: obelisk-caddy
@@ -23,19 +14,14 @@ services:
       # NOTE: HTTP/3 — harmless to leave if the VPS firewall blocks UDP 443
       - "443:443/udp"
     environment:
-      # NOTE: injected by the dotenvx wrap in `just docker-deploy` through compose
-      # interpolation — env_file can't be used, it reads the file itself and
-      # would pass the encrypted .env.docker values through verbatim
+      # NOTE: injected by the dotenvx wrap — env_file would pass the ciphertext through
       APP_DOMAIN: ${APP_DOMAIN:-}
       # NOTE: admin log-viewer hostname (see the DOZZLE_DOMAIN site block)
       DOZZLE_DOMAIN: ${DOZZLE_DOMAIN:-}
       # NOTE: analytics hostname (see the UMAMI_DOMAIN site block)
       UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
       ADMIN_IPS: ${ADMIN_IPS:-}
-    # NOTE: refuse to boot without the dotenvx wrap — an empty APP_DOMAIN would
-    # otherwise start a hostless site with no certificate, and an empty
-    # DOZZLE_DOMAIN/UMAMI_DOMAIN/ADMIN_IPS breaks the Caddyfile parse (restart
-    # loop shows the message in `just docker-logs`)
+    # NOTE: refuse to boot without the dotenvx wrap — see `just docker-logs` for the restart loop
     command: >
       sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$DOZZLE_DOMAIN" || { echo "DOZZLE_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
@@ -44,8 +30,7 @@ services:
       exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      # NOTE: certs/config must survive recreates — re-issuing on every deploy
-      # would hit Let's Encrypt rate limits
+      # NOTE: certs must survive recreates — re-issuing would burn Let's Encrypt rate limits
       - caddy-data:/data
       - caddy-config:/config
     depends_on:
@@ -67,19 +52,14 @@ services:
     restart: unless-stopped
     # NOTE: no published ports — in-network only (caddy /api over edge, etl/redis over internal)
     environment:
-      # NOTE: in-network addresses — .env.prod says "localhost", which inside a
-      # container is the container itself; dotenvx won't touch these (it never
-      # overrides an already-set var)
+      # NOTE: in-network addresses — .env.prod's "localhost" means the container itself
       REDIS_HOST: redis
       PYTHON_SERVER_URL: http://etl:8000
-      # NOTE: in-network Postgres — .env.prod still holds the old Neon URLs, but
-      # compose-injected vars win (dotenvx never overrides a set var), so the
-      # container always talks to the `db` service; DIRECT_URL is identical
-      # (no pooler to bypass — prisma.config.ts reads it for migrations)
+      # NOTE: in-network Postgres — .env.prod's loopback URL would miss the db container
+      # NOTE: compose-injected vars win (dotenvx never overrides a set var)
       DATABASE_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
       DIRECT_URL: postgresql://obelisk:${OBELISK_DB_PASSWORD:-}@db:5432/obelisk
-      # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing — the public
-      # https://<APP_DOMAIN> origin from .env.prod (caddy terminates TLS)
+      # NOTE: BETTER_AUTH_URL / FRONTEND_URL stay browser-facing — the public https origin from .env.prod
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
@@ -99,8 +79,7 @@ services:
       context: .
       target: frontend
       args:
-        # NOTE: the tracker origin is baked into the client bundle at build —
-        # .env.prod only holds the website key (NEXT_PUBLIC_UMAMI_WEBSITE_ID)
+        # NOTE: tracker origin is baked at build — .env.prod holds only the website key
         NEXT_PUBLIC_UMAMI_DOMAIN: ${UMAMI_DOMAIN:-}
       secrets:
         - envkeys
@@ -108,8 +87,7 @@ services:
     container_name: obelisk-frontend
     restart: unless-stopped
     # NOTE: no published ports — served by caddy over the edge network
-    # NOTE: API_INTERNAL_URL is baked as a build ARG and kept as an image ENV —
-    # no runtime override; NEXT_PUBLIC_API_URL keeps its baked browser-facing value
+    # NOTE: API_INTERNAL_URL is baked as ARG + ENV; the browser keeps the baked NEXT_PUBLIC_API_URL
     volumes:
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
@@ -125,16 +103,14 @@ services:
     image: obelisk-etl:latest
     container_name: obelisk-etl
     restart: unless-stopped
-    # NOTE: no auth by design and no published ports — backend reaches
-    # http://etl:8000 over the internal network only
+    # NOTE: no auth by design and no ports — backend reaches http://etl:8000 over the internal network
     environment:
       OBELISK_ENV: prod
       # NOTE: in-network overrides — the root .env.prod says "localhost"
       OBELISK_REDIS_HOST: redis
       OBELISK_REDIS_PORT: "6379"
     volumes:
-      # NOTE: the service decrypts the root env file itself (app/core/env.py),
-      # so the encrypted file + keys are mounted read-only like backend/frontend
+      # NOTE: decrypts the root env file itself (app/core/env.py) — mounted read-only like backend
       - ./.env.prod:/app/.env.prod:ro
       - ./.env.keys:/app/.env.keys:ro
       - uploads:/app/uploads
@@ -153,18 +129,16 @@ services:
     networks:
       - internal
 
-  # NOTE: the app's datastore (Prisma/Postgres) — in-network for backend, but the
-  # loopback publish lets host-side `just dev` / db:migrate / tests reach it, the
-  # same split redis uses; schema via `just db-migrate` (dev) / `just docker-migrate`
+  # NOTE: app Postgres — loopback publish for host-side `just dev` / migrations / tests
+  # NOTE: dev and tests use obelisk_dev, the deployed app serves obelisk
+  # NOTE: schema via `just db-migrate` (dev) / `just docker-migrate` (containers)
   db:
     image: postgres:15-alpine
     container_name: obelisk-db
     restart: unless-stopped
     environment:
-      # NOTE: password from .env.docker through the dotenvx wrap in `just
-      # docker-deploy` / `just db-up` — must be URL-safe (letters/digits): it is
-      # interpolated straight into the backend's DATABASE_URL, where @ / : % break
-      # the connection. Empty = the postgres image refuses to init (fail fast).
+      # NOTE: password from .env.docker — must stay URL-safe for the backend's DATABASE_URL
+      # WARN: empty = the postgres image refuses to init (fail fast)
       POSTGRES_DB: obelisk
       POSTGRES_USER: obelisk
       POSTGRES_PASSWORD: ${OBELISK_DB_PASSWORD:-}
@@ -182,17 +156,13 @@ services:
     networks:
       - internal
 
-  # NOTE: container log viewer at https://<DOZZLE_DOMAIN> — private by design:
-  # no published port, only caddy reaches it over edge, and the Caddyfile
-  # answers every remote_ip outside ADMIN_IPS with 403 before proxying
+  # NOTE: log viewer at DOZZLE_DOMAIN — no published port, ADMIN_IPS-gated in the Caddyfile
   dozzle:
     image: amir20/dozzle:latest
     container_name: obelisk-dozzle
     restart: unless-stopped
-    # WARN: docker.sock is root-equivalent on the host — the :ro bind only
-    # freezes the file, the API still passes through; keep actions/shell off
-    # TODO(hardening): front the socket with tecnativa/docker-socket-proxy if
-    # dozzle ever needs to be reachable from a less trusted network
+    # WARN: docker.sock is root-equivalent — the :ro bind only freezes the file, keep actions/shell off
+    # TODO(hardening): front the socket with tecnativa/docker-socket-proxy
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # NOTE: /data keeps dozzle settings across recreates
@@ -200,9 +170,7 @@ services:
     networks:
       - edge
 
-  # NOTE: self-hosted analytics at https://<UMAMI_DOMAIN> — the Caddyfile lets
-  # the tracker endpoints (/script.js, /api/send) through for every visitor and
-  # answers every other path with 403 unless the peer is in ADMIN_IPS
+  # NOTE: analytics at UMAMI_DOMAIN — tracker paths public, everything else ADMIN_IPS-gated
   umami:
     image: ghcr.io/umami-software/umami:latest
     container_name: obelisk-umami
@@ -211,12 +179,10 @@ services:
     init: true
     # NOTE: no published ports — only caddy reaches it over edge
     environment:
-      # NOTE: injected by the dotenvx wrap in `just docker-deploy` (like
-      # ADMIN_IPS); the postgres password rides along inside the URL
+      # NOTE: injected by the dotenvx wrap — the postgres password rides inside the URL
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-}@umami-db:5432/umami
       APP_SECRET: ${UMAMI_APP_SECRET:-}
-      # TODO: add TWO_FACTOR_ENCRYPTION_KEY (`openssl rand -hex 32`, re-encrypt
-      # + redeploy) to unlock 2FA logins — without it 2FA setup answers 503
+      # TODO: TWO_FACTOR_ENCRYPTION_KEY (`openssl rand -hex 32`) — without it 2FA setup answers 503
     depends_on:
       umami-db:
         condition: service_healthy
@@ -230,8 +196,7 @@ services:
       - edge
       - internal
 
-  # NOTE: umami's datastore — in-network only, no published port; umami reaches
-  # it over umami-db:5432 on the internal network
+  # NOTE: umami's datastore — in-network only, no published port
   umami-db:
     image: postgres:15-alpine
     container_name: obelisk-umami-db
@@ -253,8 +218,7 @@ services:
 
 volumes:
   uploads:
-  # NOTE: caddy certs/config survive recreates — otherwise every deploy
-  # re-issues and burns Let's Encrypt rate limits
+  # NOTE: caddy certs survive recreates — otherwise every deploy burns Let's Encrypt rate limits
   caddy-data:
   caddy-config:
   # NOTE: dozzle settings (users/filters if auth is enabled later)
@@ -265,11 +229,9 @@ volumes:
   umami-db-data:
 
 networks:
-  # NOTE: caddy + the app tier — backend joins both (caddy proxies /api to it,
-  # and it must reach etl/redis); the frontend only ever talks to backend
+  # NOTE: caddy + app tier — backend joins both, frontend only talks to backend
   edge:
-  # NOTE: named "internal" but NOT `internal: true` — backend still needs
-  # egress from here (Google OAuth token exchange)
+  # NOTE: not `internal: true` — backend still needs egress for the Google OAuth token exchange
   internal:
 
 # NOTE: build-time decryption only — mounted per RUN, never baked into a layer

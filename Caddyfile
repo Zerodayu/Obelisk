@@ -1,15 +1,11 @@
-# NOTE: single public entrypoint for the stack — {$APP_DOMAIN} / {$DOZZLE_DOMAIN}
-# / {$UMAMI_DOMAIN} / {$ADMIN_IPS} are injected into compose by the dotenvx wrap
-# in `just docker-deploy` and substituted before parsing, so a space-separated
-# ADMIN_IPS expands to one remote_ip token per IP.
+# NOTE: single public entrypoint — hostnames injected by the dotenvx wrap in `just docker-deploy`
+# NOTE: space-separated ADMIN_IPS expands to one remote_ip token per IP
 
 {$APP_DOMAIN} {
 	encode zstd gzip
 
-	# NOTE: access log → stdout → docker json-file → Dozzle (obelisk-caddy) — the
-	# one hop that sees every request (next start logs nothing in production)
-	# NOTE: `log`'s first token is a logger NAME, not a matcher, so the static
-	# exclusion lives in `log_skip` — `log @loggable` would just rename the logger
+	# NOTE: access log → docker json-file → Dozzle — the one hop that sees every request
+	# NOTE: `log` names a logger, not a matcher — the exclusion lives in log_skip
 	@loggable not path /_next/* /images/* /favicon.ico
 	log {
 		output stdout
@@ -27,8 +23,7 @@
 		reverse_proxy frontend:3000
 	}
 
-	# NOTE: Caddy sets X-Forwarded-Proto/Host/For on both upstreams by default;
-	# HSTS only takes effect once the browser has seen the https response
+	# NOTE: HSTS only takes effect once the browser has seen the https response
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options nosniff
@@ -37,14 +32,11 @@
 	}
 }
 
-# NOTE: admin-only log viewer on its own hostname (no shared origin with the
-# app) — `remote_ip` is the whole privacy story here, so ADMIN_IPS must hold
-# the client IP as Caddy sees it (public egress, not a LAN address)
+# NOTE: admin-only log viewer — ADMIN_IPS must be the client IP as Caddy sees it
 {$DOZZLE_DOMAIN} {
 	encode zstd gzip
 
-	# NOTE: its own access log — a `log` block only covers the site it sits in, so
-	# without this the 403 peer IP (the ADMIN_IPS debugging path) logs nowhere
+	# NOTE: own log block — otherwise the 403 peer IP logs nowhere
 	log {
 		output stdout
 		format json
@@ -55,8 +47,7 @@
 	# NOTE: respond runs before reverse_proxy, so denied IPs never reach dozzle
 	respond @not_admin 403
 
-	# NOTE: flush_interval -1 disables response buffering — dozzle streams logs
-	# over SSE and buffered proxies would deliver them in bursts or never
+	# NOTE: flush_interval -1 — dozzle streams logs over SSE and would buffer
 	reverse_proxy dozzle:8080 {
 		flush_interval -1
 	}
@@ -69,23 +60,17 @@
 	}
 }
 
-# NOTE: admin-only analytics dashboard on its own hostname — same remote_ip
-# story as dozzle, but the tracker itself must stay reachable for every
-# visitor's browser or the frontend script records nothing
+# NOTE: admin-only analytics dashboard — tracker paths must stay public for every visitor
 {$UMAMI_DOMAIN} {
 	encode zstd gzip
 
-	# NOTE: public tracker endpoints (GET script, POST hit) — a matching handle
-	# is terminal and runs before the respond guard below, so visitors bypass
-	# the allow-list only for these two paths
+	# NOTE: public tracker paths — a matching handle is terminal and bypasses the allow-list
 	@umami_tracker path /script.js /api/send
 	handle @umami_tracker {
 		reverse_proxy umami:3000
 	}
 
-	# NOTE: its own access log, same as dozzle — a `log` block only covers the
-	# site it sits in, so the 403 peer IP would otherwise log nowhere; tracker
-	# hits are skipped so per-visitor noise doesn't drown the admin view
+	# NOTE: own log block — otherwise the 403 peer IP logs nowhere; tracker hits skipped as noise
 	log {
 		output stdout
 		format json
@@ -95,7 +80,6 @@
 	# NOTE: inline remote_ip — `not` can't reference a named matcher here
 	@not_admin not remote_ip {$ADMIN_IPS}
 	# NOTE: respond runs before reverse_proxy, so denied IPs never reach umami
-	# (dashboard, login and stats API all sit behind this)
 	respond @not_admin 403
 
 	reverse_proxy umami:3000

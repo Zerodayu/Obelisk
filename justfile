@@ -39,7 +39,7 @@ env-encrypt:
 install-etl: redis
     cd apps/python-server && uv sync
 
-# start redis via docker compose (needed by the ETL service; root compose file)
+# start redis via docker compose (needed by the backend and the ETL service; root compose file)
 [group('setup')]
 redis:
     docker compose up -d redis
@@ -98,14 +98,9 @@ _dev role="":
     #!/usr/bin/env bash
     set -euo pipefail
     role='{{role}}'
-    # NOTE: the dev-only /dev/session route answers 404 unless this is set, and
-    # next.config.ts refuses a production build while it is on — exporting it
-    # here (dotenvx/Next never override an existing var) keeps hand-run dev
-    # servers without the route. .env.local untouched.
+    # NOTE: /dev/session 404s without this and next.config.ts blocks prod builds — export here, .env.local untouched
     export DEV_SESSION_ENABLED=true
-    # NOTE: a per-role session is a real login, so the frontend has to run with
-    # dev mode off or getMe() returns DEV_USER and ignores the cookie. Exported
-    # here (dotenvx/Next never override an existing var) — .env.local untouched.
+    # NOTE: real session needs DEVELOPMENT=false or getMe() returns DEV_USER and ignores the cookie
     if [ -n "$role" ]; then
         export DEVELOPMENT=false
         echo "[dev] DEVELOPMENT=false (real session) — .env.local left unchanged"
@@ -148,9 +143,7 @@ _dev role="":
         session_url="$base_url/dev/session?role=$role"
     fi
 
-    # wait until the stack answers, then open it in the browser
-    # (linux/windows/wsl); with a role, probe the seeded account first so a
-    # missing one is reported here instead of failing in the browser
+    # NOTE: wait for the stack, then open the browser; with a role, probe the seeded account first
     (
         for _ in $(seq 1 30); do
             (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && { exec 3>&-; break; }
@@ -158,7 +151,7 @@ _dev role="":
         done
 
         if [ -n "$role" ]; then
-            # backend has to be up too — the probe signs in against it
+            # NOTE: backend has to be up too — the probe signs in against it
             for _ in $(seq 1 30); do
                 (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && { exec 3>&-; break; }
                 sleep 1
@@ -171,8 +164,7 @@ _dev role="":
         open_browser "$session_url"
     ) &
 
-    # each service runs in its own session (setsid); its PGID == PID recorded in .pid,
-    # so cleanup can kill the entire tree (uvicorn workers, next children, etc.)
+    # NOTE: setsid gives each service its own PGID==PID so cleanup can kill the whole tree
     setsid bash -c "echo \$\$ > $tmp/backend.pid; cd apps/backend && exec bun run dev" 2>&1 \
         | sed -u "s/^/${C_BACKEND}[backend]${R} /" &
     setsid bash -c "echo \$\$ > $tmp/frontend.pid; cd apps/frontend && exec bun run dev" 2>&1 \
@@ -244,7 +236,7 @@ check: lint typecheck test
 # --- deploy (docker self-hosted stack) ---
 
 # build + (re)start the whole stack in Docker with the root .env.prod (fill it + `just env-encrypt` first) — stop `just dev` first so dev/prod don't mix
-# NOTE: the dotenvx wrap injects APP_DOMAIN/DOZZLE_DOMAIN/UMAMI_DOMAIN/ADMIN_IPS/UMAMI_DB_PASSWORD/UMAMI_APP_SECRET from .env.docker for compose interpolation (the file stays encrypted — a bare `docker compose up` starts caddy without them and its guard refuses to boot)
+# NOTE: the dotenvx wrap injects APP_DOMAIN/DOZZLE_DOMAIN/UMAMI_DOMAIN/ADMIN_IPS/OBELISK_DB_PASSWORD/UMAMI_DB_PASSWORD/UMAMI_APP_SECRET from .env.docker for compose interpolation (a bare `docker compose up` skips them and caddy's guard refuses to boot)
 [group('deploy')]
 docker-deploy:
     bunx dotenvx run -f .env.docker -- docker compose up -d --build
