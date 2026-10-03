@@ -1,5 +1,3 @@
-import hashlib
-import json
 from collections import defaultdict
 from typing import Any, Literal, List, Dict, Set
 
@@ -250,13 +248,4 @@ class SimpleTransformer(Transformer):
 
     @staticmethod
     def _formula_version() -> str:
-        """Generates a deterministic hash representing the formulas used in this transformation."""
-        payload = {
-            etl_const.Transformation.FormulaKeys.ID: etl_const.Transformation.FORMULA_VERSION_ID,
-            etl_const.Transformation.FormulaKeys.INSTITUTIONAL_THRESHOLD: etl_const.Transformation.INSTITUTIONAL_THRESHOLD,
-            etl_const.Transformation.FormulaKeys.COMPLETENESS_THRESHOLD: etl_const.Transformation.COMPLETENESS_THRESHOLD,
-            etl_const.Transformation.FormulaKeys.DIRECT_WEIGHT: etl_const.Transformation.DIRECT_WEIGHT,
-            etl_const.Transformation.FormulaKeys.INDIRECT_WEIGHT: etl_const.Transformation.INDIRECT_WEIGHT,
-        }
-        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:etl_const.Transformation.FORMULA_VERSION_HASH_LENGTH]
+        return "70_30_v1"

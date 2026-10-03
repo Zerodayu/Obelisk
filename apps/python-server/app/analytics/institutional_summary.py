@@ -1,7 +1,12 @@
 from collections import defaultdict
 from typing import List, Dict, Any, cast
 
-from app.analytics.cqi_recommender import anonymize_students, call_llm_api
+from app.analytics.cqi_recommender import (
+    anonymize_students,
+    call_llm_api,
+    sanitize_prompt_data,
+    strip_code_fences,
+)
 from app.etl import etl_const
 from app.schemas.institutional_summary import InstitutionalSummaryPayload, CourseSubmission
 
@@ -148,27 +153,29 @@ def build_institutional_prompt(payload: InstitutionalSummaryPayload, summary: Di
     """Builds a text prompt for an LLM to generate an institution-wide CQI summary."""
     period_label = payload.period.label
     worst_performers = summary.get("worst_performing_clos", [])
-    prompt_lines = [
+    data_lines = [
         f"Institution-Wide Performance Summary for {period_label}",
         f"The institutional attainment threshold is {etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100:.0f}%.",
         "\nAnalysis of performance gaps has identified the following areas as the most critical challenges across all levels of the institution:",
     ]
     if not worst_performers:
-        prompt_lines.append("\nNo significant performance gaps were identified across the institution. Overall attainment is strong.")
+        data_lines.append("\nNo significant performance gaps were identified across the institution. Overall attainment is strong.")
     else:
         for item in worst_performers:
             rate = item['mean_attainment_pct'] * 100
-            prompt_lines.append(
+            data_lines.append(
                 f"- Level: {item['group_name']}, Name: {item['key']}, CLO: {item['clo_code']}. "
                 f"Mean Attainment: {rate:.1f}% ({item['record_count']} student records)."
             )
-    prompt_lines.extend([
-        "\nBased on this institution-wide data, please provide a high-level strategic summary for the Vice President for Academic Affairs (VPAA).",
-        "1. Identify 1-2 cross-cutting themes or patterns suggested by these performance gaps (e.g., 'Is CLO1 consistently low across multiple departments?').",
+    instructions = [
+        "Based on this institution-wide data, provide a high-level strategic summary for the Vice President for Academic Affairs (VPAA).",
+        "1. Identify 1-2 cross-cutting themes or patterns suggested by these performance gaps.",
         "2. Suggest 2-3 strategic, actionable interventions that could be implemented at the institutional, AVP, or departmental level.",
         "3. Frame the recommendations in a way that is suitable for executive review and strategic planning.",
-    ])
-    return "\n".join(prompt_lines)
+    ]
+    return "\n".join(instructions) + "\n\n<DATA>\n" + sanitize_prompt_data(
+        "\n".join(data_lines)
+    ) + "\n</DATA>"
 
 
 def compute_summary_only(payload: InstitutionalSummaryPayload) -> Dict[str, Any]:
@@ -206,7 +213,7 @@ async def generate_institutional_summary(payload: InstitutionalSummaryPayload) -
     """
     summary = compute_summary_only(payload)
     prompt = build_institutional_prompt(payload, summary)
-    llm_response = await call_llm_api(prompt)
+    llm_response = strip_code_fences(await call_llm_api(prompt))
 
     is_error = isinstance(llm_response, str) and llm_response.startswith("[LLM API ERROR")
     result = {

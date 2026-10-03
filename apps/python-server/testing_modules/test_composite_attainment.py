@@ -74,9 +74,11 @@ class TestCompositeAttainmentPureMath(unittest.TestCase):
 
 class TestAunObeRealWorkbookIntegration(unittest.IsolatedAsyncioTestCase):
     async def test_real_template_student_aa_attainment(self):
-        template_path = Path("classrecord_templates/JMCFI_Class_Record_Template_AUN-OBE.xlsx")
-        if not template_path.exists():
-            self.skipTest("Template workbook not found")
+        template_path = (
+            Path(__file__).resolve().parents[1]
+            / "classrecord_templates"
+            / "JMCFI_Class_Record_Template_AUN-OBE.xlsx"
+        )
 
         extractor = ExcelExtractor()
         transformer = SimpleTransformer()
@@ -95,7 +97,10 @@ class TestAunObeRealWorkbookIntegration(unittest.IsolatedAsyncioTestCase):
 
         # In template:
         # CLO1: Direct is 78/90 = 86.67%, Indirect is 3.0/5 = 60.0% -> composite = 0.70*86.6667 + 0.30*60.0 = 78.67%
+        self.assertAlmostEqual(student_aa_clo1.direct_clo_attainment_pct, 78 / 90)
+        self.assertEqual(student_aa_clo1.indirect_clo_attainment_pct, 60.0)
         self.assertEqual(student_aa_clo1.composite_clo_attainment_pct, 78.67)
+        self.assertEqual(student_aa_clo1.formula_version, "70_30_v1")
         self.assertTrue(student_aa_clo1.met_threshold)
         self.assertEqual(student_aa_clo1.clo_level, etl_const.AttainmentLevels.PROFICIENT)
 
