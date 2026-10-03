@@ -43,6 +43,8 @@ export interface AttainmentRecord {
 	student_id: string | null;
 	clo_code: string;
 	direct_clo_attainment_pct: number;
+	indirect_clo_attainment_pct?: number | null;
+	composite_clo_attainment_pct?: number | null;
 	met_threshold: boolean;
 	tla_pct?: number | null;
 	at_pct?: number | null;
@@ -52,6 +54,7 @@ export interface AttainmentRecord {
 
 export interface TypedEtlLoadedData extends EtlLoadedData {
 	attainments: AttainmentRecord[];
+	formula_version?: string;
 	section?: EtlSectionInfo;
 	section_extraction?: EtlSectionExtractionStatus;
 	setup?: EtlSetupInfo;
@@ -223,7 +226,7 @@ export class AttainmentService {
 			data: {
 				id: crypto.randomUUID(),
 				scope: classSectionId,
-				formulaVersion: "70_30_v1",
+				formulaVersion: etlLoadedData.formula_version ?? "70_30_v1",
 				directWeight: 0.7,
 				indirectWeight: 0.3,
 				etlSnapshotJson:
@@ -315,14 +318,17 @@ export class AttainmentService {
 			}
 
 			const directScore = record.direct_clo_attainment_pct * 100;
+			const indirectScore = record.indirect_clo_attainment_pct ?? null;
+			const compositeScore =
+				record.composite_clo_attainment_pct ?? directScore;
 			const isBelowThreshold = !record.met_threshold;
 
 			const newAttainment = await prisma.cloAttainment.create({
 				data: {
 					id: crypto.randomUUID(),
 					directScorePct: directScore,
-					indirectScorePct: null,
-					compositeScorePct: directScore,
+					indirectScorePct: indirectScore,
+					compositeScorePct: compositeScore,
 					examPct: asNullablePct(record.exam_pct),
 					atPct: asNullablePct(record.at_pct),
 					tlaPct: asNullablePct(record.tla_pct),
@@ -418,7 +424,7 @@ export class AttainmentService {
 				computationRunId: run.id,
 				id: { in: updates.map((u) => u.attainmentId) },
 			},
-			select: { id: true },
+			select: { id: true, indirectScorePct: true },
 		});
 		const existingIds = new Set(existing.map((row) => row.id));
 
@@ -431,11 +437,20 @@ export class AttainmentService {
 				continue;
 			}
 
-			const edited = computeEditedAttainment(update.directScorePct);
+			const existingAttainment = existing.find(
+				(row) => row.id === update.attainmentId,
+			);
+			const edited = computeEditedAttainment(
+				update.directScorePct,
+				existingAttainment?.indirectScorePct === null ||
+					existingAttainment?.indirectScorePct === undefined
+					? existingAttainment?.indirectScorePct
+					: Number(existingAttainment.indirectScorePct),
+			);
 			const attainment = await prisma.cloAttainment.update({
 				where: { id: update.attainmentId },
 				data: {
-					directScorePct: edited.compositeScorePct,
+					directScorePct: update.directScorePct,
 					compositeScorePct: edited.compositeScorePct,
 					isBelowThreshold: edited.isBelowThreshold,
 				},
@@ -582,7 +597,6 @@ export class AttainmentService {
 					continue;
 				}
 
-				const edited = computeEditedAttainment(raw);
 				const existing = await prisma.cloAttainment.findUnique({
 					where: {
 						classSectionId_cloId_studentId_computationRunId: {
@@ -594,6 +608,13 @@ export class AttainmentService {
 					},
 					include: { atRiskFlags: { select: { id: true } } },
 				});
+				const edited = computeEditedAttainment(
+					raw,
+					existing?.indirectScorePct === null ||
+						existing?.indirectScorePct === undefined
+						? existing?.indirectScorePct
+						: Number(existing.indirectScorePct),
+				);
 
 				let attainmentId: string;
 				if (existing) {
@@ -607,7 +628,7 @@ export class AttainmentService {
 							cloId: clo.id,
 							studentId: student.id,
 							computationRunId: run.id,
-							directScorePct: edited.compositeScorePct,
+							directScorePct: raw,
 							compositeScorePct: edited.compositeScorePct,
 							isBelowThreshold: edited.isBelowThreshold,
 						},
@@ -632,7 +653,7 @@ export class AttainmentService {
 					await prisma.cloAttainment.update({
 						where: { id: attainmentId },
 						data: {
-							directScorePct: edited.compositeScorePct,
+							directScorePct: raw,
 							compositeScorePct: edited.compositeScorePct,
 							isBelowThreshold: edited.isBelowThreshold,
 						},

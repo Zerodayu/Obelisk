@@ -28,8 +28,9 @@ export function assertMinAttainment(value: number): void {
 	}
 }
 
-export function compositeScorePct(direct: number, indirect = 0): number {
-	return round2(direct * DIRECT_WEIGHT + indirect * INDIRECT_WEIGHT);
+export function compositeScorePct(direct: number, indirect?: number | null): number {
+	const indirectScore = indirect ?? direct;
+	return round2(direct * DIRECT_WEIGHT + indirectScore * INDIRECT_WEIGHT);
 }
 
 export function round2(value: number): number {

@@ -1,23 +1,22 @@
-import { isBelowThreshold } from "@lib/validators/attainment";
+import {
+	compositeScorePct,
+	isBelowThreshold,
+} from "@lib/validators/attainment";
 
 export interface EditedAttainment {
 	compositeScorePct: number;
 	isBelowThreshold: boolean;
 }
 
-/**
- * Computes the derived fields for a per-student CLO score after a manual
- * edit or CSV re-import. The composite currently mirrors the direct score
- * because direct-instrument persistence has no indirect (30%) data yet —
- * the 70/30 formula is applied when indirect evidence exists.
- */
+/** Computes the derived fields after a manual edit or CSV re-import. */
 export function computeEditedAttainment(
 	directScorePct: number,
+	indirectScorePct?: number | null,
 ): EditedAttainment {
-	const compositeScorePct = Math.round(directScorePct * 100) / 100;
+	const composite = compositeScorePct(directScorePct, indirectScorePct);
 	return {
-		compositeScorePct,
-		isBelowThreshold: isBelowThreshold(compositeScorePct),
+		compositeScorePct: composite,
+		isBelowThreshold: isBelowThreshold(composite),
 	};
 }
 

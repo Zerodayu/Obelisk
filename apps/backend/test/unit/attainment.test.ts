@@ -41,16 +41,26 @@ describe("attainment validators", () => {
 		expect(compositeScorePct(70, 70)).toBe(70);
 	});
 
-	it("defaults indirect to 0 when omitted", () => {
-		expect(compositeScorePct(80)).toBe(56);
+	it("falls back to direct when indirect is omitted or null", () => {
+		expect(compositeScorePct(80)).toBe(80);
+		expect(compositeScorePct(80, null)).toBe(80);
+	});
+
+	it("preserves an indirect score of zero", () => {
+		expect(compositeScorePct(80, 0)).toBe(56);
 	});
 });
 
 describe("computeEditedAttainment (per-student score edits)", () => {
-	it("mirrors the direct score as the composite and flags below 70", () => {
+	it("uses the direct score when indirect is absent and flags below 70", () => {
 		const atRisk = computeEditedAttainment(55);
 		expect(atRisk.compositeScorePct).toBe(55);
 		expect(atRisk.isBelowThreshold).toBe(true);
+	});
+
+	it("preserves indirect data when computing an edited composite", () => {
+		expect(computeEditedAttainment(80, 62).compositeScorePct).toBe(74.6);
+		expect(computeEditedAttainment(80, 0).compositeScorePct).toBe(56);
 	});
 
 	it("clears the below-threshold flag at or above 70", () => {
