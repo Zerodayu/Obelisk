@@ -192,6 +192,23 @@ Run live on 2026-09-29 against the running stack (`just dev-as faculty`, freshly
 - [x] Section 9 run at least once end to end — done 2026-09-29: upload → mappings → PLO summary → gap analysis → AI → full approval chain, with the two blocker bugs fixed first (9.1, 9.4). 9.1–9.9 exercised through the backend API with real role sessions, 9.10 in the browser. Still open from it: the AI drawer UI and the approval stepper rendering were never observed on screen. **9.9 re-verified 2026-09-30 after the action-taken form was built** (see §8)
 - [x] Section 6 run at least once end to end — done 2026-10-01: fresh seed → template upload to `1A` → CAR generate/save/regenerate → CLO→PLO maps → CLO Attainment Summary, with the five fixes applied first (6.3, 6.4, 6.5, 6.6, 6.10). 6.1–6.10 exercised through the backend API with real role sessions (8 ✅, 1 ⚠️ policy, 1 ⏳). Still open from it: the browser interaction pass (§7) and the P1 `term` snapshot fallback
 
+### 10.1 70/30 composite CLO attainment follow-ups
+
+- Backend integration tests have **NOT** been run. They require a local
+  Postgres, which was not available. Only unit tests were run: backend
+  153 passing and Python 32 passing.
+- The database persistence path is **UNVERIFIED** for all of the following:
+  - ingest saves direct, indirect, and composite correctly;
+  - reimport preserves direct and indirect;
+  - an edit crossing 70% updates the At-Risk flag.
+- `formula_version` is **UNVERIFIED as a true Python-to-backend transfer**:
+  backend reads it from the top level of the ETL response, but Python
+  currently attaches it per student record. Until Python also sends it at the
+  top level, backend falls back to hardcoded `70_30_v1`. The value is the same
+  today, but it is not yet truly read from Python.
+- Existing rows with `indirectScorePct = null` need a backfill. Perform a dry
+  run first and never fill missing indirect values with zero.
+
 ## 11. Final UI & Browser Verification (Static Code Analysis Pass)
 Verified on 2026-10-02 via automated Static Code Analysis due to environment constraints.
 
