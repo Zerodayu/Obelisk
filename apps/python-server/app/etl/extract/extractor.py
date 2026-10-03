@@ -317,7 +317,7 @@ class ExcelExtractor(Extractor):
         raw_val = sheet[cell].value
         norm_val = self._normalize_text(raw_val)
         norm_exp = self._normalize_text(expected)
-        if norm_val != norm_exp:
+        if not norm_val.startswith(norm_exp):
             raise InvalidTemplate(
                 sheet_name=sheet.title,
                 cell=cell,

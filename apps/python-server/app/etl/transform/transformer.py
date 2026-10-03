@@ -5,6 +5,7 @@ from typing import Any, Literal, List, Dict, Set
 
 from app.core.exceptions import TransformationError
 from app.etl.abstracts import Transformer
+from app.etl.composite_attainment import compute_composite_clo, compute_clo_level
 from app.schemas.class_record import ClassRecordHeader, RawScoreRecord, StudentCLOAttainment
 from app.schemas.extracted import StudentRawCloData
 from .. import etl_const
@@ -14,7 +15,7 @@ class SimpleTransformer(Transformer):
     """
     Transforms extracted raw CLO data into a list of computed StudentCLOAttainment records,
     applying all institutional formulas, independent attainment recomputation,
-    and data completeness checks.
+    70/30 composite calculation, and data completeness checks.
     CLO-PLO mapping is permanently retired; excluded_reason is always None.
     """
 
@@ -60,14 +61,19 @@ class SimpleTransformer(Transformer):
             else:
                 indirect_clo_attainment_pct = None
 
-            met_threshold = (
-                (direct_clo_attainment_pct >= etl_const.Transformation.INSTITUTIONAL_THRESHOLD)
-                if direct_clo_attainment_pct is not None else None
+            # Compute 70/30 composite CLO attainment (rounded to 2 decimals on 0-100 scale)
+            composite_clo_attainment_pct = compute_composite_clo(
+                direct_fraction=direct_clo_attainment_pct,
+                indirect_pct=indirect_clo_attainment_pct,
             )
-            clo_level = (
-                self._compute_clo_level(direct_clo_attainment_pct)
-                if direct_clo_attainment_pct is not None else None
-            )
+
+            # Institutional threshold (70%) and 4-tier clo_level are evaluated on the composite
+            if composite_clo_attainment_pct is not None:
+                met_threshold = composite_clo_attainment_pct >= (etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100.0)
+                clo_level = compute_clo_level(composite_clo_attainment_pct)
+            else:
+                met_threshold = None
+                clo_level = None
 
             intermediate_results.append({
                 etl_const.Transformation.IntermediateKeys.STUDENT_ID: record.student_id,
@@ -76,7 +82,8 @@ class SimpleTransformer(Transformer):
                 etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON: None,
                 etl_const.Transformation.IntermediateKeys.IS_RECORD_COMPLETE: is_record_complete,
                 etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT: direct_clo_attainment_pct,
-                "indirect_clo_attainment_pct": indirect_clo_attainment_pct,
+                etl_const.Transformation.IntermediateKeys.INDIRECT_CLO_ATTAINMENT_PCT: indirect_clo_attainment_pct,
+                etl_const.Transformation.IntermediateKeys.COMPOSITE_CLO_ATTAINMENT_PCT: composite_clo_attainment_pct,
                 etl_const.Transformation.IntermediateKeys.MET_THRESHOLD: met_threshold,
                 etl_const.Transformation.IntermediateKeys.CLO_LEVEL: clo_level,
             })
@@ -103,7 +110,8 @@ class SimpleTransformer(Transformer):
                     exam_pct=None,
                     output_pct=None,
                     direct_clo_attainment_pct=res[etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT],
-                    indirect_clo_attainment_pct=res["indirect_clo_attainment_pct"],
+                    indirect_clo_attainment_pct=res[etl_const.Transformation.IntermediateKeys.INDIRECT_CLO_ATTAINMENT_PCT],
+                    composite_clo_attainment_pct=res[etl_const.Transformation.IntermediateKeys.COMPOSITE_CLO_ATTAINMENT_PCT],
                     met_threshold=res[etl_const.Transformation.IntermediateKeys.MET_THRESHOLD],
                     clo_level=res[etl_const.Transformation.IntermediateKeys.CLO_LEVEL],
                     formula_version=self._formula_version(),
@@ -123,8 +131,8 @@ class SimpleTransformer(Transformer):
                 raise TransformationError(
                     message=f"raw_score exceeds max_score for student={record.student_name}, clo={record.clo_code}",
                     details={
-                        etl_const.Transformation.IntermediateKeys.STUDENT_NAME: record.student_name,
-                        etl_const.Transformation.IntermediateKeys.CLO_CODE: record.clo_code,
+                        "student_name": record.student_name,
+                        "clo_code": record.clo_code,
                         "raw_score": record.raw_score,
                         "max_score": record.max_score,
                     }
@@ -135,6 +143,15 @@ class SimpleTransformer(Transformer):
         for (student_name, student_id, clo_code), group_records in student_clo_groups.items():
             is_record_complete = self._check_record_completeness(group_records)
             direct_clo_attainment_pct = self._compute_direct_clo_attainment(group_records)
+            composite_clo_attainment_pct = compute_composite_clo(direct_clo_attainment_pct, None)
+            
+            if composite_clo_attainment_pct is not None:
+                met_threshold = composite_clo_attainment_pct >= (etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100.0)
+                clo_level = compute_clo_level(composite_clo_attainment_pct)
+            else:
+                met_threshold = None
+                clo_level = None
+
             intermediate_results.append({
                 etl_const.Transformation.IntermediateKeys.STUDENT_ID: student_id,
                 etl_const.Transformation.IntermediateKeys.STUDENT_NAME: student_name,
@@ -142,9 +159,10 @@ class SimpleTransformer(Transformer):
                 etl_const.Transformation.IntermediateKeys.EXCLUDED_REASON: None,
                 etl_const.Transformation.IntermediateKeys.IS_RECORD_COMPLETE: is_record_complete,
                 etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT: direct_clo_attainment_pct,
-                "indirect_clo_attainment_pct": None,
-                etl_const.Transformation.IntermediateKeys.MET_THRESHOLD: direct_clo_attainment_pct >= etl_const.Transformation.INSTITUTIONAL_THRESHOLD if direct_clo_attainment_pct is not None else None,
-                etl_const.Transformation.IntermediateKeys.CLO_LEVEL: self._compute_clo_level(direct_clo_attainment_pct) if direct_clo_attainment_pct is not None else None,
+                etl_const.Transformation.IntermediateKeys.INDIRECT_CLO_ATTAINMENT_PCT: None,
+                etl_const.Transformation.IntermediateKeys.COMPOSITE_CLO_ATTAINMENT_PCT: composite_clo_attainment_pct,
+                etl_const.Transformation.IntermediateKeys.MET_THRESHOLD: met_threshold,
+                etl_const.Transformation.IntermediateKeys.CLO_LEVEL: clo_level,
                 etl_const.Transformation.IntermediateKeys.GROUP_RECORDS: group_records,
             })
 
@@ -169,6 +187,7 @@ class SimpleTransformer(Transformer):
                     output_pct=self._category_pct(group_records, etl_const.AssessmentCategory.OUTPUT) if hasattr(etl_const, "AssessmentCategory") else None,
                     direct_clo_attainment_pct=res[etl_const.Transformation.IntermediateKeys.DIRECT_CLO_ATTAINMENT_PCT],
                     indirect_clo_attainment_pct=None,
+                    composite_clo_attainment_pct=res[etl_const.Transformation.IntermediateKeys.COMPOSITE_CLO_ATTAINMENT_PCT],
                     met_threshold=res[etl_const.Transformation.IntermediateKeys.MET_THRESHOLD],
                     clo_level=res[etl_const.Transformation.IntermediateKeys.CLO_LEVEL],
                     formula_version=self._formula_version(),
@@ -230,25 +249,14 @@ class SimpleTransformer(Transformer):
         return total_raw_score / total_max_score
 
     @staticmethod
-    def _compute_clo_level(direct_clo_attainment_pct: float) -> Literal["Exceptional", "Proficient", "Basic", "Below Basic"]:
-        """
-        Computes the 4-tier descriptive CLO level based on the attainment percentage.
-        """
-        if direct_clo_attainment_pct >= etl_const.Transformation.CLO_LEVEL_EXCEPTIONAL_MIN:
-            return etl_const.Transformation.CloLevels.EXCEPTIONAL
-        if direct_clo_attainment_pct >= etl_const.Transformation.CLO_LEVEL_PROFICIENT_MIN:
-            return etl_const.Transformation.CloLevels.PROFICIENT
-        if direct_clo_attainment_pct >= etl_const.Transformation.CLO_LEVEL_BASIC_MIN:
-            return etl_const.Transformation.CloLevels.BASIC
-        return etl_const.Transformation.CloLevels.BELOW_BASIC
-
-    @staticmethod
     def _formula_version() -> str:
         """Generates a deterministic hash representing the formulas used in this transformation."""
         payload = {
             etl_const.Transformation.FormulaKeys.ID: etl_const.Transformation.FORMULA_VERSION_ID,
             etl_const.Transformation.FormulaKeys.INSTITUTIONAL_THRESHOLD: etl_const.Transformation.INSTITUTIONAL_THRESHOLD,
             etl_const.Transformation.FormulaKeys.COMPLETENESS_THRESHOLD: etl_const.Transformation.COMPLETENESS_THRESHOLD,
+            etl_const.Transformation.FormulaKeys.DIRECT_WEIGHT: etl_const.Transformation.DIRECT_WEIGHT,
+            etl_const.Transformation.FormulaKeys.INDIRECT_WEIGHT: etl_const.Transformation.INDIRECT_WEIGHT,
         }
         encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:etl_const.Transformation.FORMULA_VERSION_HASH_LENGTH]

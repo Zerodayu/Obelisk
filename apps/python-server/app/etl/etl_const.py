@@ -13,6 +13,8 @@ workbook as an outdated template and extract from Direct CLO / Indirect CLO
 regardless of what Dashboard contains.
 """
 
+from typing import Final
+
 
 class SheetNames:
     """Worksheet names in the AUN-OBE class record template."""
@@ -166,9 +168,15 @@ class StudentRosterDetection:
 class Transformation:
     INSTITUTIONAL_THRESHOLD = 0.70
     COMPLETENESS_THRESHOLD = 0.60
-    CLO_LEVEL_EXCEPTIONAL_MIN = 0.85
-    CLO_LEVEL_PROFICIENT_MIN = 0.70
-    CLO_LEVEL_BASIC_MIN = 0.60
+    CLO_LEVEL_EXCEPTIONAL_MIN = 85.0
+    CLO_LEVEL_PROFICIENT_MIN = 70.0
+    CLO_LEVEL_BASIC_MIN = 60.0
+
+    # 70/30 Institutional Weights
+    DIRECT_WEIGHT: Final[float] = 0.70
+    INDIRECT_WEIGHT: Final[float] = 0.30
+    FORMULA_VERSION: Final[str] = "70_30_v1"
+
     FORMULA_VERSION_ID = "direct_attainment_v2_aunobe"
     FORMULA_VERSION_HASH_LENGTH = 12
 
@@ -182,6 +190,8 @@ class Transformation:
         ID = "formula"
         INSTITUTIONAL_THRESHOLD = "institutional_threshold"
         COMPLETENESS_THRESHOLD = "completeness_threshold"
+        DIRECT_WEIGHT = "direct_weight"
+        INDIRECT_WEIGHT = "indirect_weight"
 
     class IntermediateKeys:
         STUDENT_ID = "student_id"
@@ -191,6 +201,7 @@ class Transformation:
         IS_RECORD_COMPLETE = "is_record_complete"
         DIRECT_CLO_ATTAINMENT_PCT = "direct_clo_attainment_pct"
         INDIRECT_CLO_ATTAINMENT_PCT = "indirect_clo_attainment_pct"
+        COMPOSITE_CLO_ATTAINMENT_PCT = "composite_clo_attainment_pct"
         # ^ NEW vs v1 — the old template had no per-student indirect data at
         # this granularity (F12 was course-level tabulation only). This
         # template gives per-student Likert ratings, so composite (70/30)
@@ -200,6 +211,9 @@ class Transformation:
         GROUP_RECORDS = "_group_records"
         SECTION_COMPLETENESS_PCT = "section_completeness_pct"
         RULE1_MET = "rule1_met"
+
+
+AttainmentLevels = Transformation.CloLevels
 
 
 # --- REMOVED from v1 — no longer applicable to this template ---

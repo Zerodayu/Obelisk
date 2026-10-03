@@ -8,15 +8,23 @@ from app.schemas.institutional_summary import InstitutionalSummaryPayload, Cours
 
 def _calculate_mean_attainment_pct(attainments: List[Dict[str, Any]]) -> float:
     """
-    Calculates the average of all individual direct_clo_attainment_pct values
-    for a given group of records. Implements Formula 2A.
+    Calculates the average of individual attainment values for a given group of records.
+    Implements Formula 2A: prefers composite_clo_attainment_pct (scaled to 0-1 fraction),
+    falling back to direct_clo_attainment_pct if composite is absent.
     """
-    valid_attainments = [a for a in attainments if a.get("direct_clo_attainment_pct") is not None]
-    if not valid_attainments:
+    valid_values = []
+    for a in attainments:
+        composite = a.get("composite_clo_attainment_pct")
+        if composite is not None:
+            # composite is on 0-100 scale; convert to 0-1 fraction for internal aggregation consistency
+            valid_values.append(composite / 100.0)
+        elif a.get("direct_clo_attainment_pct") is not None:
+            valid_values.append(a.get("direct_clo_attainment_pct"))
+
+    if not valid_values:
         return 0.0
-    
-    total_pct = sum(a.get("direct_clo_attainment_pct", 0.0) for a in valid_attainments)
-    return total_pct / len(valid_attainments)
+
+    return sum(valid_values) / len(valid_values)
 
 
 def compute_plo_attainment(clo_summary: Dict[str, Any], clo_plo_map: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -73,7 +81,7 @@ def _generic_aggregator(submissions: List[CourseSubmission], group_by_key: str, 
             continue
         summary[group_name]["submissions"].append(sub)
         for attainment in sub.attainments:
-            if attainment.excluded_reason is not None or attainment.direct_clo_attainment_pct is None:
+            if attainment.excluded_reason is not None or (attainment.composite_clo_attainment_pct is None and attainment.direct_clo_attainment_pct is None):
                 continue
             summary[group_name]["clo_data"][attainment.clo_code].append(attainment.model_dump())
 

@@ -1,20 +1,23 @@
+"""
+Core CQI Recommender logic: gap identification, anonymization, prompt assembly,
+and calling the LLM API to generate CQI recommendations.
+"""
+
 from collections import defaultdict
 from typing import List
 from google import genai
 from google.genai import types
 
-from app.core.logging import logger
-from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
-from app.etl import etl_const
 from app.core.config import settings
+from app.core.logging import logger
+from app.etl import etl_const
+from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
 
 # Manual toggle — set to False only once a real LLM API integration is implemented below.
 # True  = use the placeholder response (no real API call, safe for testing/demo)
 # False = attempt a real API call.
 IS_DEBUG_MODE: bool = True
 
-# --- LLM System Prompt ---
-# This defines the persona, constraints, and output format for the LLM.
 CQI_ADVISORY_SYSTEM_PROMPT = """
 ## Output format — STRICT Markdown, exact structure required
 
@@ -47,22 +50,48 @@ output raw Markdown directly.
 
 def identify_gaps(header: ClassRecordHeader, attainments: List[StudentCLOAttainment]) -> dict:
     """
-    Identifies CLOs where students fell below the attainment threshold.
+    Identifies CLOs where students fell below the institutional threshold (evaluated on composite score).
+    Extracts composite attainment percentages (0-100 scale) for failed students as primary value,
+    while retaining direct and indirect scores for contextual advisory.
     """
-    failures = [a for a in attainments if a.excluded_reason is None and a.direct_clo_attainment_pct is not None and a.met_threshold is False]
+    failures = [
+        a for a in attainments
+        if a.excluded_reason is None and a.met_threshold is False
+    ]
     grouped_failures = defaultdict(list)
     for f in failures:
         grouped_failures[f.clo_code].append(f)
 
     gap_summaries = []
     for clo_code, failed_attainments in grouped_failures.items():
-        all_students_for_clo = [a for a in attainments if a.clo_code == clo_code and a.excluded_reason is None and a.direct_clo_attainment_pct is not None]
+        all_students_for_clo = [
+            a for a in attainments
+            if a.clo_code == clo_code and a.excluded_reason is None
+        ]
+
+        composite_values = []
+        student_details = []
+        for f in failed_attainments:
+            comp = f.composite_clo_attainment_pct
+            if comp is None and f.direct_clo_attainment_pct is not None:
+                comp = round(f.direct_clo_attainment_pct * 100.0, 2)
+            if comp is not None:
+                composite_values.append(comp)
+
+            student_details.append({
+                "student_name": f.student_name,
+                "composite_pct": comp,
+                "direct_pct": round(f.direct_clo_attainment_pct * 100.0, 2) if f.direct_clo_attainment_pct is not None else None,
+                "indirect_pct": f.indirect_clo_attainment_pct,
+            })
+
         gap_summaries.append({
             "clo_code": clo_code,
             "num_students_below_threshold": len(failed_attainments),
             "total_students": len(all_students_for_clo),
-            "attainment_values": [f.direct_clo_attainment_pct for f in failed_attainments],
-            "threshold": etl_const.Transformation.INSTITUTIONAL_THRESHOLD, # Gaps are identified against the institutional threshold
+            "attainment_values": composite_values,
+            "student_details": student_details,
+            "threshold": etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100.0,
         })
 
     return {"course_code": header.course_code, "gaps": gap_summaries}
@@ -88,7 +117,7 @@ def anonymize_students(attainments: List[StudentCLOAttainment]) -> List[StudentC
 
 def build_prompt(header: ClassRecordHeader, gap_summary: dict) -> str:
     """
-    Builds a prompt for an LLM to generate CQI recommendations.
+    Builds a prompt for an LLM to generate CQI recommendations based on composite attainment gaps.
     """
     gaps = gap_summary.get("gaps", [])
     if not gaps:
@@ -103,15 +132,23 @@ def build_prompt(header: ClassRecordHeader, gap_summary: dict) -> str:
         f"Section: {header.section}",
         f"Instructor: {header.instructor_name}",
         f"The institutional attainment threshold for this course is {etl_const.Transformation.INSTITUTIONAL_THRESHOLD * 100:.0f}%. The course's own configured threshold was {header.threshold * 100:.0f}%.",
-        "\nThe following Course Learning Outcomes (CLOs) had students who did not meet the institutional threshold:",
+        "\nThe following Course Learning Outcomes (CLOs) had students who did not meet the institutional 70% composite threshold (70% direct exam + 30% indirect perception):",
     ])
 
     for gap in gaps:
         avg_attainment = sum(gap['attainment_values']) / len(gap['attainment_values']) if gap['attainment_values'] else 0
         prompt_lines.append(
             f"- {gap['clo_code']}: {gap['num_students_below_threshold']} of {gap['total_students']} students were below the threshold. "
-            f"The average attainment for these students was {avg_attainment * 100:.1f}%."
+            f"The average composite attainment for these students was {avg_attainment:.1f}%."
         )
+        if gap.get("student_details"):
+            # Provide breakdown context
+            breakdowns = []
+            for d in gap["student_details"][:5]:
+                breakdowns.append(
+                    f"{d['student_name']}: composite {d['composite_pct']}%, direct {d['direct_pct']}%, indirect {d['indirect_pct']}%"
+                )
+            prompt_lines.append(f"  Context sample: {'; '.join(breakdowns)}")
 
     return "\n".join(prompt_lines)
 
@@ -160,13 +197,14 @@ async def call_llm_api(prompt: str) -> str:
             logger.info(
                 "llm_real_call_success",
                 provider="google_gemini",
+                model=settings.LLM_MODEL,
                 key_index=idx,
                 total_keys=total_keys,
             )
             return response.text
+
         except Exception as e:
-            error_msg = f"Key #{idx} ({masked_key}) failed: {str(e)}"
-            errors.append(error_msg)
+            err_msg = f"Key #{idx} ({masked_key}) failed: {str(e)}"
             logger.warning(
                 "llm_key_failed",
                 provider="google_gemini",
@@ -174,6 +212,7 @@ async def call_llm_api(prompt: str) -> str:
                 total_keys=total_keys,
                 error=str(e),
             )
+            errors.append(err_msg)
 
     # All keys were tried and failed
     logger.error(

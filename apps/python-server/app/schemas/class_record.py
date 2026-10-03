@@ -79,6 +79,7 @@ class StudentCLOAttainment(BaseModel):
 
     # Indirect CLO attainment independently computed from raw rating: (rating / 5) * 100
     indirect_clo_attainment_pct: float | None = None
+    composite_clo_attainment_pct: float | None = None
 
     # Based on the fixed institutional threshold of 70%.
     met_threshold: bool | None
@@ -86,7 +87,7 @@ class StudentCLOAttainment(BaseModel):
     # The 4-tier descriptive level.
     clo_level: Literal["Exceptional", "Proficient", "Basic", "Below Basic"] | None
 
-    formula_version: str
+    formula_version: str = "70_30_v1"
 
     # Data completeness fields (Section 3.6)
     is_record_complete: bool | None
