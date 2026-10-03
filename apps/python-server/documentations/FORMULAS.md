@@ -30,19 +30,28 @@ These formulas are applied to extracted class records during the ETL process ini
     - OBELISK **never** reads the Excel sheet's formula column.
     - Emitted in `StudentCLOAttainment` as a percentage (e.g., `80.0` for a rating of 4). If no rating is recorded, emitted as `null`.
 
-### Institutional Threshold for `met_threshold`
+### Composite CLO Attainment and Institutional Threshold
 
--   **Purpose**: To determine if a student's direct CLO attainment meets the institutional standard for proficiency.
+-   **Purpose**: To combine direct and indirect attainment before threshold and level classification.
+-   **Formula**:
+    $$\text{composite} = (0.70 \times \text{direct\_pct}) + (0.30 \times \text{indirect\_pct})$$
+-   **Scales**: `direct_clo_attainment_pct` is a `0-1` fraction and is converted
+    to `0-100`; indirect attainment is already `0-100`.
+-   **Fallback**: When indirect is `null`, composite falls back to direct.
+    Indirect `0` is a real value.
+-   **Rounding**: Composite is rounded to two decimals before classification.
+
+-   **Purpose**: To determine if a student's composite CLO attainment meets the institutional standard for proficiency.
 -   **Source**: Functional Requirements FR-03, FR-12, FR-20
 -   **Formula**:
     ```
-    direct_clo_attainment_pct >= 0.70
+    composite_clo_attainment_pct >= 70.00
     ```
 -   **Implementation Notes**: The `met_threshold` boolean field is **always** calculated against the fixed institutional benchmark of 70% (ratio `0.70`).
 
 ### 4-Tier Performance Levels for `clo_level`
 
--   **Purpose**: To classify a student's direct attainment into a descriptive performance level.
+-   **Purpose**: To classify a student's composite attainment into a descriptive performance level.
 -   **Function**: `_compute_clo_level()`
 -   **Source**: WIN-OBE Assessment Plan, §3.1.1 ("CLO Attainment Levels")
 -   **Formula**:
@@ -79,9 +88,9 @@ These formulas are applied when the `POST /analytics/institutional-summary` or `
 
 ### Formula 2A: Section CLO Attainment (Mean)
 
--   **Purpose**: To calculate average direct attainment for a single CLO across all students in a group.
+-   **Purpose**: To calculate average composite attainment for a single CLO across all students in a group.
 -   **Formula**:
-    $$\text{Mean CLO Attainment} = \frac{\sum \text{direct\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
+    $$\text{Mean CLO Attainment} = \frac{\sum \text{composite\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
 
 ### Formula 7A: Per-PLO Attainment (Unweighted Average)
 

@@ -7,8 +7,8 @@ This document lists known limitations, design trade-offs, and deferred implement
     -   **Details**: The AI-powered recommendation features are wired to Google's Gemini API (`gemini-3.6-flash` in `app/analytics/cqi_recommender.py`) using the new `google-genai` SDK. By default, `IS_DEBUG_MODE` is set to `True` to provide deterministic mock responses without requiring an active API key or incurring external latency. To activate live LLM generation, set `IS_DEBUG_MODE = False` in `cqi_recommender.py` and supply a valid `OBELISK_LLM_API_KEY` in the root env file (`.env.local` / `.env.prod`).
 
 2.  **Indirect Attainment Ingestion (v2 AUN-OBE Template)**
-    -   **Status**: Implemented (Per-Student Direct Rating Recomputation)
-    -   **Details**: The AUN-OBE template includes an "Indirect CLO" tab with raw 1–5 Likert survey ratings per student per CLO. The ETL pipeline independently recomputes `indirect_clo_attainment_pct = (rating / 5.0) * 100.0`. Composite (70/30) attainment or survey question breakdown remains downstream in the webapp.
+    -   **Status**: Implemented (Per-Student Indirect Rating and 70/30 Composite Recomputation)
+    -   **Details**: The AUN-OBE template includes an "Indirect CLO" tab with raw 1–5 Likert survey ratings per student per CLO. The ETL pipeline independently recomputes `indirect_clo_attainment_pct = (rating / 5.0) * 100.0`, then computes and rounds the `composite_clo_attainment_pct` using the 70/30 formula. Survey question breakdown is not exposed by this service.
 
 3.  **CLO-PLO Correlation Mapping**
     -   **Status**: Retired from Python Server (Moved to Webapp Backend)
