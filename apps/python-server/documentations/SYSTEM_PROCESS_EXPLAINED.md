@@ -86,7 +86,7 @@ This is the background process triggered when an instructor uploads a completed 
 flowchart TD
     A["Instructor Uploads .xlsx in Webapp"] --> B["POST /upload"]
     B --> C["Upload Service: Save file atomically to /uploads"]
-    C --> D["Job Enqueued in Redis (obelisk:job_queue)"]
+    C --> D["Job Enqueued in Redis (obelisk:{profile}:job_queue)"]
     D --> E["API responds immediately: 202 Accepted { job_id }"]
     
     subgraph Background Worker Loop
@@ -94,7 +94,7 @@ flowchart TD
         F --> G["Extract Phase (openpyxl; Direct & Indirect sheets)"]
         G --> H["Transform Phase (Formulas 1A & 1B, Rule 1)"]
         H --> I["Load Phase (DummyLoader formats JSON)"]
-        I --> J["Save result to Redis (obelisk:job:job_id)"]
+        I --> J["Save result to Redis (obelisk:{profile}:job:job_id)"]
     end
     
     D -.-> F
@@ -111,7 +111,7 @@ flowchart TD
 2. Validates file size (default max: 10MB).
 3. Saves file chunk-by-chunk to the local `uploads/` directory with a unique UUID.
 4. Generates a new `job_id` and adds the job metadata to Redis with status `queued`.
-5. Pushes `job_id` into the Redis queue list (`obelisk:job_queue`).
+5. Pushes `job_id` into the Redis queue list (`obelisk:{profile}:job_queue` — profile is `OBELISK_ENV`, so dev and prod stacks sharing one Redis never consume each other's jobs).
 6. Returns `202 Accepted` with `{ "job_id": "...", "status": "queued" }`. The HTTP connection terminates here without waiting for processing.
 
 #### Step 2: Background Consumption (`app/workers/worker.py`)

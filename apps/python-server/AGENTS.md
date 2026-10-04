@@ -8,7 +8,7 @@
 
 This is a **pure compute engine** with two hard boundaries that must not be crossed without explicit product decision:
 
-- **No database access.** Never reads or writes a database. All input arrives via HTTP request body, all results return as JSON. The job queue is Redis-backed (`obelisk:job_queue`) and survives restarts; do not add a database.
+- **No database access.** Never reads or writes a database. All input arrives via HTTP request body, all results return as JSON. The job queue is Redis-backed (`obelisk:<OBELISK_ENV>:job_queue`) and survives restarts; do not add a database.
 - **No authentication/authorization.** Trusts every request. The Elysia webapp backend is responsible for all auth/RBAC *before* calling here (critical for `POST /analytics/institutional-summary`, which is VPAA-only).
 
 ## File Structure

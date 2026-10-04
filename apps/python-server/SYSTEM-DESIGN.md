@@ -26,9 +26,9 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
       └─ cqi_recommender.py (gap detection, prompt build, call_llm_api via google-genai multi-key pool)
 ```
 
-- **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts.
+- **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts. Queue list and job hash keys are namespaced as `obelisk:<OBELISK_ENV>:job_queue` / `obelisk:<OBELISK_ENV>:job:*` so a dev stack and a deployed stack sharing one Redis never consume each other's jobs (each side only has its own `UPLOAD_FOLDER` files).
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
-- **Config:** `app/core/config.py` reads `OBELISK_*` env vars from process env; `app/core/env.py` first decrypts the repo-root `.env.local` / `.env.prod` into it (`OBELISK_ENV` picks the file, `local` by default, `prod` in compose — there is no per-package `.env`): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**.
+- **Config:** `app/core/config.py` reads `OBELISK_*` env vars from process env; `app/core/env.py` first decrypts the repo-root `.env.local` / `.env.prod` into it (`OBELISK_ENV` picks the file, `local` by default, `prod` in compose — there is no per-package `.env`): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**, **`ENV`** (`OBELISK_ENV` profile, `local` default — namespaces the Redis job keys).
 - **CORS:** `OBELISK_ALLOWED_ORIGINS` from the root env files (comma-separated or JSON list); built-in fallback is `["*"]` with credentials enabled.
 - **Logging:** structlog key=value events (`configure_logging` in `app/core/logging.py`).
 

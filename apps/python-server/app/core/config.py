@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     JOB_WORKER_COUNT: int = 4
     JOB_QUEUE_MAXSIZE: int = 200
 
+    # NOTE: OBELISK_ENV profile (`local` for `just dev`, `prod` in compose) — namespaces the Redis job keys
+    ENV: str = "local"
+
     # --- Redis Settings ---
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
