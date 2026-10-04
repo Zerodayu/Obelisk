@@ -124,6 +124,7 @@ async function fetchSubmissionForGate(submissionId: string) {
 			status: true,
 			programId: true,
 			termId: true,
+			classSectionId: true,
 			formData: true,
 		},
 	});

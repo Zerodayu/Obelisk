@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { FormWorkflow } from "@/components/forms/form-workflow";
+import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
   FrameDescription,
@@ -124,18 +124,6 @@ export function StudentExitSurveyForm() {
     }
   }, [payload]);
 
-  const submissionId = payload?.id;
-  // NOTE: merge only `status` after a workflow action so unsaved edits survive.
-  const syncStatus = useCallback(async () => {
-    if (!submissionId) return;
-    const result = await getCheckForm<Payload>(FORM_CODE, submissionId);
-    if (result.ok) {
-      setPayload((prev) =>
-        prev ? { ...prev, status: result.data.status } : prev,
-      );
-    }
-  }, [submissionId]);
-
   const updateHeader = useCallback(
     (field: string, value: string | number | undefined) => {
       setPayload((prev) =>
@@ -210,7 +198,7 @@ export function StudentExitSurveyForm() {
 
   return (
     <div className="space-y-4">
-      <FormWorkflow submissionId={payload.id} onChanged={syncStatus} />
+      <SubmissionStatusCard submissionId={payload.id} />
       <Frame>
         <FrameHeader>
           <FrameTitle>Student Exit Survey</FrameTitle>

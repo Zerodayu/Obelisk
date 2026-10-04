@@ -46,6 +46,24 @@ export async function submitFormAction(
   }
 }
 
+/**
+ * Open (or reuse) the `clo_raw_data` draft for a class section — term and
+ * program are resolved server-side, so the client only picks the section.
+ */
+export async function initCloRawDataAction(
+  classSectionId: string,
+): Promise<WorkflowActionResult<{ formSubmissionId: string }>> {
+  try {
+    const data = await actionApi.post<{ formSubmissionId: string }>(
+      "/ingest/clo-raw-data/init",
+      { classSectionId },
+    );
+    return { ok: true, data };
+  } catch (err) {
+    return workflowFailure(err, "Failed to start the submission.");
+  }
+}
+
 /** Approve the pending step for `role` (must match the caller's role). */
 export async function approveFormAction(
   id: string,

@@ -13,6 +13,9 @@ export type SubmitGate = (submission: {
 	status: string;
 	programId: string | null;
 	termId: string;
+	// NOTE: null for section-less forms; the `clo_raw_data` gate needs it to
+	// check the captured roster of the bound class section.
+	classSectionId: string | null;
 	formData: Record<string, unknown>;
 }) => Promise<void>;
 

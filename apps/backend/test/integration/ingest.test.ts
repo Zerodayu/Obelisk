@@ -1,9 +1,11 @@
 import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
+import { submissionService } from "@v1/forms/service";
 import type { TypedEtlLoadedData } from "@v1/ingest/service";
 import {
 	attainmentService,
+	CLO_RAW_DATA_CODE,
 	ClassSectionNotFoundError,
 	ingestService,
 	SectionBindingMismatchError,
@@ -880,6 +882,218 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			await prisma.academicTerm.delete({ where: { id: ids.term } });
 			await prisma.program.delete({ where: { id: ids.program } });
 			await prisma.department.delete({ where: { id: ids.department } });
+		}
+	});
+
+	it("initSubmission creates/reuses the clo_raw_data draft and the submit gate blocks an empty section", async () => {
+		const ids = {
+			department: "it-sub-dept",
+			program: "it-sub-prog",
+			term: "it-sub-term",
+			course: "it-sub-course",
+			classSection: "it-sub-section",
+			user: "it-sub-user",
+			chair: "it-sub-chair",
+		};
+
+		// NOTE: only delete the form type when this test created it — another
+		// test file may own the `clo_raw_data` row (same rule as atrisk.test).
+		const preexistingType = await prisma.formType.findUnique({
+			where: { code: CLO_RAW_DATA_CODE },
+			select: { id: true },
+		});
+
+		try {
+			await prisma.department.create({
+				data: {
+					id: ids.department,
+					name: "Submission Test Dept",
+					code: "IT-SUB",
+				},
+			});
+			await prisma.program.create({
+				data: {
+					id: ids.program,
+					departmentId: ids.department,
+					name: "Submission Test Program",
+					code: "IT-SUB-PROG",
+				},
+			});
+			await prisma.academicTerm.create({
+				data: {
+					id: ids.term,
+					schoolYear: "2095-2096",
+					semester: "1st",
+					isActive: false,
+				},
+			});
+			await prisma.course.create({
+				data: {
+					id: ids.course,
+					programId: ids.program,
+					code: "IT-SUB-101",
+					title: "Submission Test Course",
+				},
+			});
+			await prisma.classSection.create({
+				data: {
+					id: ids.classSection,
+					courseId: ids.course,
+					termId: ids.term,
+					sectionCode: "S1",
+				},
+			});
+			await prisma.user.createMany({
+				data: [
+					{
+						id: ids.user,
+						name: "Submission Faculty",
+						email: "it-sub-faculty@obelisk.local",
+						role: "faculty",
+						isActive: true,
+					},
+					{
+						id: ids.chair,
+						name: "Submission Chair",
+						email: "it-sub-chair@obelisk.local",
+						role: "program_chair",
+						isActive: true,
+					},
+				],
+			});
+			await prisma.clo.create({
+				data: {
+					id: "it-sub-clo",
+					courseId: ids.course,
+					code: "CLO1",
+					description: "Submission CLO 1",
+				},
+			});
+
+			// Nothing captured and nothing submitted yet.
+			expect(await ingestService.getSubmission(ids.classSection)).toEqual({
+				formSubmissionId: null,
+			});
+
+			// --- init: draft with term/program resolved from the section --------
+			const first = await ingestService.initSubmission(
+				ids.classSection,
+				ids.user,
+			);
+			const created = await prisma.formSubmission.findUniqueOrThrow({
+				where: { id: first.formSubmissionId },
+				include: { formType: true },
+			});
+			expect(created.status).toBe("draft");
+			expect(created.formType.code).toBe(CLO_RAW_DATA_CODE);
+			expect(created.classSectionId).toBe(ids.classSection);
+			expect(created.termId).toBe(ids.term);
+			expect(created.programId).toBe(ids.program);
+			expect(created.submittedByUserId).toBe(ids.user);
+			expect(await ingestService.getSubmission(ids.classSection)).toEqual({
+				formSubmissionId: first.formSubmissionId,
+			});
+
+			// --- init is idempotent ----------------------------------------------
+			const second = await ingestService.initSubmission(
+				ids.classSection,
+				ids.user,
+			);
+			expect(second.formSubmissionId).toBe(first.formSubmissionId);
+
+			// --- gate: a section with no captured scores cannot be submitted ------
+			await expect(
+				submissionService.submit(first.formSubmissionId, ids.user, "faculty"),
+			).rejects.toThrow(/upload a class record for this section/);
+
+			// --- capture the class record → submit derives the [program_chair] chain
+			await attainmentService.persistAttainment(
+				{
+					header: {},
+					clo_plo_mapping: {},
+					attainments: [
+						{
+							student_name: "Cruz, Ana",
+							student_id: "IT-SUB-0001",
+							clo_code: "CLO1",
+							direct_clo_attainment_pct: 0.85,
+							met_threshold: true,
+						},
+					],
+				},
+				ids.classSection,
+				ids.user,
+			);
+			const submitted = await submissionService.submit(
+				first.formSubmissionId,
+				ids.user,
+				"faculty",
+			);
+			expect(submitted.status).toBe("submitted");
+			expect(submitted.currentApproverRole).toBe("program_chair");
+			expect(submitted.approvalSteps).toHaveLength(1);
+
+			// A submission in flight is reused, not duplicated.
+			expect(
+				(await ingestService.initSubmission(ids.classSection, ids.user))
+					.formSubmissionId,
+			).toBe(first.formSubmissionId);
+
+			// --- approved → the next init opens a fresh draft (re-upload path) ----
+			await submissionService.decide(
+				first.formSubmissionId,
+				"program_chair",
+				ids.chair,
+				"program_chair",
+				{ decision: "approved" },
+			);
+			const afterApproval = await ingestService.initSubmission(
+				ids.classSection,
+				ids.user,
+			);
+			expect(afterApproval.formSubmissionId).not.toBe(first.formSubmissionId);
+			expect(await ingestService.getSubmission(ids.classSection)).toEqual({
+				formSubmissionId: afterApproval.formSubmissionId,
+			});
+
+			// --- unknown section → 404-shaped error --------------------------------
+			await expect(
+				ingestService.getSubmission("it-sub-missing"),
+			).rejects.toThrow(ClassSectionNotFoundError);
+			await expect(
+				ingestService.initSubmission("it-sub-missing", ids.user),
+			).rejects.toThrow(ClassSectionNotFoundError);
+		} finally {
+			await prisma.formSubmission.deleteMany({
+				where: { classSectionId: ids.classSection },
+			});
+			await prisma.auditLog.deleteMany({
+				where: { userId: { in: [ids.user, ids.chair] } },
+			});
+			if (!preexistingType) {
+				await prisma.formType.deleteMany({
+					where: { code: CLO_RAW_DATA_CODE },
+				});
+			}
+			await prisma.atRiskFlag.deleteMany({
+				where: { student: { programId: ids.program } },
+			});
+			await prisma.cloAttainment.deleteMany({
+				where: { classSectionId: ids.classSection },
+			});
+			await prisma.computationRun.deleteMany({
+				where: { scope: ids.classSection },
+			});
+			await prisma.student.deleteMany({ where: { programId: ids.program } });
+			await prisma.clo.deleteMany({ where: { courseId: ids.course } });
+			await prisma.classSection.delete({ where: { id: ids.classSection } });
+			await prisma.course.delete({ where: { id: ids.course } });
+			await prisma.academicTerm.delete({ where: { id: ids.term } });
+			await prisma.program.delete({ where: { id: ids.program } });
+			await prisma.department.delete({ where: { id: ids.department } });
+			await prisma.user.deleteMany({
+				where: { id: { in: [ids.user, ids.chair] } },
+			});
 		}
 	});
 });

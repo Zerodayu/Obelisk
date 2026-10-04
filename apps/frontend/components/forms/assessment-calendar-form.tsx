@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { FormWorkflow } from "@/components/forms/form-workflow";
+import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -177,7 +177,7 @@ export function AssessmentCalendarForm() {
 
   return (
     <div className="space-y-4">
-      <FormWorkflow submissionId={payload.formSubmissionId} />
+      <SubmissionStatusCard submissionId={payload.formSubmissionId} />
       {SECTIONS.map((section) => {
         const sectionEvents = events.filter((e) => e.section === section.value);
         return (

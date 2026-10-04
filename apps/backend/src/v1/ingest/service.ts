@@ -1,3 +1,5 @@
+import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
+import { registerSubmitGate, SubmitGateError } from "@lib/forms/submit-gates";
 import { csvPercent, parseCsv } from "@lib/ingest/csv";
 import type {
 	ETLJob,
@@ -14,6 +16,7 @@ import {
 } from "@lib/ingest/score-edit";
 import { prisma } from "@lib/prisma";
 import type { Prisma } from "@prisma/generated/prisma/client";
+import { submissionService } from "@v1/forms/service";
 import {
 	compareSectionToWorkbook,
 	type SectionComparisonResult,
@@ -117,6 +120,48 @@ export type ReimportSummary = {
 	flagsRemoved: number;
 	skipped: { row: number; reason: string }[];
 };
+
+// --- Form type -----------------------------------------------------------------
+
+export const CLO_RAW_DATA_CODE = "clo_raw_data";
+
+const CLO_RAW_DATA_META = {
+	name: "Per-Student CLO Raw Data Sheet",
+	sequenceNo: 7,
+} as const;
+
+/**
+ * Race-safe `FormType` ensure (same pattern as `ensureActionTakenFormType`) —
+ * created lazily on the first init, never seeded.
+ */
+export async function ensureCloRawDataType(): Promise<string> {
+	const existing = await prisma.formType.findUnique({
+		where: { code: CLO_RAW_DATA_CODE },
+		select: { id: true },
+	});
+	if (existing) return existing.id;
+
+	try {
+		const created = await prisma.formType.create({
+			data: {
+				id: crypto.randomUUID(),
+				code: CLO_RAW_DATA_CODE,
+				name: CLO_RAW_DATA_META.name,
+				pdcaStage: "DO",
+				sequenceNo: CLO_RAW_DATA_META.sequenceNo,
+			},
+			select: { id: true },
+		});
+		return created.id;
+	} catch {
+		const retried = await prisma.formType.findUnique({
+			where: { code: CLO_RAW_DATA_CODE },
+			select: { id: true },
+		});
+		if (retried) return retried.id;
+		throw new Error(`Failed to ensure the ${CLO_RAW_DATA_CODE} form type`);
+	}
+}
 
 // --- Custom Errors ---
 
@@ -319,8 +364,7 @@ export class AttainmentService {
 
 			const directScore = record.direct_clo_attainment_pct * 100;
 			const indirectScore = record.indirect_clo_attainment_pct ?? null;
-			const compositeScore =
-				record.composite_clo_attainment_pct ?? directScore;
+			const compositeScore = record.composite_clo_attainment_pct ?? directScore;
 			const isBelowThreshold = !record.met_threshold;
 
 			const newAttainment = await prisma.cloAttainment.create({
@@ -938,6 +982,25 @@ function asSlug(value: string): string {
 		.slice(0, 16);
 }
 
+/**
+ * Human-readable text for `UploadRecord.error` — handles Error, the python
+ * server's StructuredError (`{ error_type, message }`) and plain strings.
+ * NOTE: without this the structured error stringifies to "[object Object]".
+ */
+function uploadErrorMessage(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	if (typeof error === "string") return error;
+	if (error && typeof error === "object") {
+		const { error_type: errorType, message } = error as {
+			error_type?: unknown;
+			message?: unknown;
+		};
+		if (typeof message === "string" && message) return message;
+		if (typeof errorType === "string" && errorType) return errorType;
+	}
+	return String(error);
+}
+
 export class IngestService {
 	/**
 	 * Starts the ETL process by uploading the file to the python-server.
@@ -982,6 +1045,80 @@ export class IngestService {
 		}
 	}
 
+	/**
+	 * `GET /ingest/clo-raw-data/submission` — newest `clo_raw_data` submission
+	 * for a class section, or `null`. NOTE: any status is returned so the strip
+	 * shows a submitted/approved record instead of prompting for a new draft;
+	 * the lookup never creates a FormType (a read stays a read).
+	 */
+	async getSubmission(
+		classSectionId: string,
+	): Promise<{ formSubmissionId: string | null }> {
+		const section = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			select: { id: true },
+		});
+		if (!section) {
+			throw new ClassSectionNotFoundError(classSectionId);
+		}
+
+		const formType = await prisma.formType.findUnique({
+			where: { code: CLO_RAW_DATA_CODE },
+			select: { id: true },
+		});
+		if (!formType) return { formSubmissionId: null };
+
+		const existing = await prisma.formSubmission.findFirst({
+			where: { formTypeId: formType.id, classSectionId },
+			orderBy: { createdAt: "desc" },
+			select: { id: true },
+		});
+		return { formSubmissionId: existing?.id ?? null };
+	}
+
+	/**
+	 * `POST /ingest/clo-raw-data/init` — open (or reuse) the `clo_raw_data`
+	 * draft for a class section; term/program resolved server-side so the
+	 * client only picks the section. Reuses draft/returned/submitted, fresh
+	 * draft after approved/archived — mirrors `atrisk.init`.
+	 */
+	async initSubmission(
+		classSectionId: string,
+		userId: string,
+	): Promise<{ formSubmissionId: string }> {
+		const section = await prisma.classSection.findUnique({
+			where: { id: classSectionId },
+			include: { course: { select: { programId: true } } },
+		});
+		if (!section) {
+			throw new ClassSectionNotFoundError(classSectionId);
+		}
+
+		const formTypeId = await ensureCloRawDataType();
+		const existing = await prisma.formSubmission.findFirst({
+			where: {
+				formTypeId,
+				classSectionId,
+				status: { in: [...EDITABLE_STATUSES, "submitted"] },
+			},
+			orderBy: { createdAt: "desc" },
+			select: { id: true },
+		});
+		if (existing) return { formSubmissionId: existing.id };
+
+		const created = await submissionService.create(
+			{
+				formTypeId,
+				classSectionId,
+				programId: section.course.programId,
+				termId: section.termId,
+				formData: {},
+			},
+			userId,
+		);
+		return { formSubmissionId: created.id };
+	}
+
 	/** Returns the upload history for a user, newest first. */
 	async listHistory(userId: string) {
 		return prisma.uploadRecord.findMany({
@@ -1008,7 +1145,7 @@ export class IngestService {
 		recordId: string,
 		error: unknown,
 	): Promise<void> {
-		const message = error instanceof Error ? error.message : String(error);
+		const message = uploadErrorMessage(error);
 		await prisma.uploadRecord.update({
 			where: { id: recordId },
 			data: { status: "failed", error: message },
@@ -1208,3 +1345,28 @@ export class IngestService {
 
 export const attainmentService = new AttainmentService();
 export const ingestService = new IngestService();
+
+// --- Submit gate ---------------------------------------------------------------
+
+/**
+ * NOTE: a `clo_raw_data` submission for a section with no captured scores has
+ * nothing to assess — block it before the approval chain starts (same idea as
+ * the `action_taken` gate).
+ */
+registerSubmitGate(CLO_RAW_DATA_CODE, async (submission) => {
+	if (!submission.classSectionId) {
+		throw new SubmitGateError(
+			CLO_RAW_DATA_CODE,
+			"Per-Student CLO Raw Data blocked: the submission is not bound to a class section.",
+		);
+	}
+	const count = await prisma.cloAttainment.count({
+		where: { classSectionId: submission.classSectionId },
+	});
+	if (count === 0) {
+		throw new SubmitGateError(
+			CLO_RAW_DATA_CODE,
+			"Per-Student CLO Raw Data blocked: upload a class record for this section first.",
+		);
+	}
+});

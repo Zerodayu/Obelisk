@@ -13,6 +13,7 @@ import {
 } from "./model";
 import {
 	NoPendingApprovalError,
+	SubmissionForbiddenError,
 	SubmissionNotFoundError,
 	scopeWhere,
 	submissionService,
@@ -41,7 +42,8 @@ function mapFormsError(
 	}
 	if (
 		error instanceof ApprovalForbiddenError ||
-		error instanceof NotOwnerError
+		error instanceof NotOwnerError ||
+		error instanceof SubmissionForbiddenError
 	) {
 		set.status = 403;
 		return { error: error.message };
@@ -130,26 +132,57 @@ export const formsPlugin = new Elysia({
 	)
 	.get(
 		"/:id",
-		async ({ params, set }) => {
+		async ({ params, user, set }) => {
 			// Uncached: the stepper must reflect the latest decision right after
 			// an approve/return.
-			const submission = await submissionService.findById(params.id);
-			if (!submission) {
-				set.status = 404;
-				return { error: "Submission not found" };
+			try {
+				return await submissionService.getForViewer(params.id, {
+					id: user.id,
+					role: callerRole(user),
+				});
+			} catch (error) {
+				return mapFormsError(error, set);
 			}
-			return submission;
 		},
 		{
 			auth: true,
 			detail: {
 				summary: "Get a form submission by id",
 				description:
-					"Includes the ordered approval steps, the form type (code/name/pdcaStage), and the submitter.",
+					"Includes the ordered approval steps, the form type (code/name/pdcaStage), and the submitter. Visible to the owner, system_admin, and any role in the form's registered approval chain.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Form submission" },
 					401: { description: "Unauthorized" },
+					403: { description: "Caller may not view this submission" },
+					404: { description: "Not found" },
+				},
+			},
+		},
+	)
+	.get(
+		"/:id/evidence",
+		async ({ params, user, set }) => {
+			try {
+				return await submissionService.evidence(params.id, {
+					id: user.id,
+					role: callerRole(user),
+				});
+			} catch (error) {
+				return mapFormsError(error, set);
+			}
+		},
+		{
+			auth: true,
+			detail: {
+				summary: "Submission evidence for the approval screen",
+				description:
+					"The stored formData plus the bound class section and its capture summary (attainment rows, distinct students, below-threshold rows, at-risk students, latest computation run). Same visibility rule as GET /forms/:id; counts only, never raw scores.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Submission evidence" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller may not view this submission" },
 					404: { description: "Not found" },
 				},
 			},

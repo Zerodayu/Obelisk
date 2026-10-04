@@ -62,3 +62,21 @@ export const ReimportScoresSchema = t.Object({
 });
 
 export type ReimportScores = typeof ReimportScoresSchema.static;
+
+/** `GET /ingest/clo-raw-data/submission` query. */
+export const CloRawDataSubmissionSchema = t.Object({
+	classSectionId: t.String({
+		description: "ClassSection whose clo_raw_data submission to look up",
+	}),
+});
+
+export type CloRawDataSubmission = typeof CloRawDataSubmissionSchema.static;
+
+/** `POST /ingest/clo-raw-data/init` body. */
+export const InitCloRawDataSchema = t.Object({
+	classSectionId: t.String({
+		description: "ClassSection to bind the submission draft to",
+	}),
+});
+
+export type InitCloRawData = typeof InitCloRawDataSchema.static;

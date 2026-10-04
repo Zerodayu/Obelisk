@@ -200,6 +200,30 @@ async function forwardSetCookies(res: Response): Promise<void> {
   }
 }
 
+/**
+ * Append a query map to an API-relative path (`/forms?scope=mine`).
+ *
+ * NOTE: both `.get` helpers used to build `new URL(\`${API_ROOT}${path}\`)` and
+ * hand `url.pathname` back to `serverFetch`/`actionFetch` — which prepend
+ * `API_ROOT` again — so every server-side GET went to `/api/v1/api/v1/…` and
+ * 404'd. The fetch helpers take API-relative paths (see `getMe()`); keep them
+ * that way and only append the query here.
+ */
+function withQuery(
+  path: string,
+  query?: Record<string, string | number | boolean | null | undefined>,
+): string {
+  if (!query) return path;
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    params.set(key, String(value));
+  }
+  const search = params.toString();
+  if (!search) return path;
+  return `${path}${path.includes("?") ? "&" : "?"}${search}`;
+}
+
 async function actionFetch<T>(
   path: string,
   init: RequestInit = {},
@@ -250,16 +274,7 @@ export const actionApi = {
   get: <T>(
     path: string,
     query?: Record<string, string | number | boolean | null | undefined>,
-  ) => {
-    const url = new URL(`${API_ROOT}${path}`);
-    if (query) {
-      for (const [key, value] of Object.entries(query)) {
-        if (value === undefined || value === null) continue;
-        url.searchParams.set(key, String(value));
-      }
-    }
-    return actionFetch<T>(url.pathname + url.search);
-  },
+  ) => actionFetch<T>(withQuery(path, query)),
   post: <T>(path: string, body?: unknown) =>
     actionFetch<T>(path, {
       method: "POST",
@@ -290,16 +305,7 @@ export const serverApi = {
   get: <T>(
     path: string,
     query?: Record<string, string | number | boolean | null | undefined>,
-  ) => {
-    const url = new URL(`${API_ROOT}${path}`);
-    if (query) {
-      for (const [key, value] of Object.entries(query)) {
-        if (value === undefined || value === null) continue;
-        url.searchParams.set(key, String(value));
-      }
-    }
-    return serverFetch<T>(url.pathname + url.search);
-  },
+  ) => serverFetch<T>(withQuery(path, query)),
   post: <T>(path: string, body?: unknown) =>
     serverFetch<T>(path, {
       method: "POST",

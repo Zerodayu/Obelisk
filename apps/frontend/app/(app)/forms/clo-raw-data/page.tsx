@@ -1,7 +1,7 @@
 import { ScoreBandBars } from "@/components/charts/attainment-charts";
 import { AtRiskDonut } from "@/components/charts/governance-charts";
 import { ClassRecordUpload } from "@/components/forms/class-record-upload";
-import { FormWorkflow } from "@/components/forms/form-workflow";
+import { CloRawDataWorkflow } from "@/components/forms/clo-raw-data-workflow";
 import { UploadHistoryTable } from "@/components/forms/upload-history-table";
 import {
   Frame,
@@ -32,7 +32,9 @@ export default async function CloRawDataPage() {
           flags are computed server-side (any CLO &lt; 70%).
         </p>
       </div>
-      <FormWorkflow submissionId={null} />
+      {/* Approval strip — placeholder until a submission is started for the
+          class section selected in the upload panel below. */}
+      <CloRawDataWorkflow />
       <ClassRecordUpload />
       <UploadHistoryTable />
       <div className="grid gap-4 sm:grid-cols-2">

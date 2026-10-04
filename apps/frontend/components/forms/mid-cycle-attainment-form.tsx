@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState } from "react";
-import { FormWorkflow } from "@/components/forms/form-workflow";
+import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
   FrameDescription,
@@ -118,18 +118,6 @@ export default function MidCycleAttainmentForm() {
     }
   }, [payload]);
 
-  const submissionId = payload?.id;
-  // NOTE: merge only `status` after a workflow action so unsaved edits survive.
-  const syncStatus = useCallback(async () => {
-    if (!submissionId) return;
-    const result = await getCheckForm<Payload>(FORM_CODE, submissionId);
-    if (result.ok) {
-      setPayload((prev) =>
-        prev ? { ...prev, status: result.data.status } : prev,
-      );
-    }
-  }, [submissionId]);
-
   function updateHeader(field: string, value: string | number | undefined) {
     setPayload((prev) =>
       prev ? { ...prev, header: { ...prev.header, [field]: value } } : prev,
@@ -217,7 +205,7 @@ export default function MidCycleAttainmentForm() {
 
   return (
     <div className="space-y-6">
-      <FormWorkflow submissionId={payload.id} onChanged={syncStatus} />
+      <SubmissionStatusCard submissionId={payload.id} />
       <Frame>
         <FrameHeader>
           <FrameTitle>Course Information</FrameTitle>

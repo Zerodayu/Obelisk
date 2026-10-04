@@ -5,7 +5,12 @@ import {
 } from "@lib/forms/approval-routes";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
-import { scopeWhere, submissionService } from "@v1/forms/service";
+import {
+	SubmissionForbiddenError,
+	SubmissionNotFoundError,
+	scopeWhere,
+	submissionService,
+} from "@v1/forms/service";
 
 const db = await isDbReachable();
 
@@ -22,8 +27,19 @@ const IDS = {
 	term: "it-forms-term",
 	owner: "it-forms-owner",
 	other: "it-forms-other",
+	chair: "it-forms-chair",
 	rawType: "it-forms-type-raw",
 	carType: "it-forms-type-car",
+	// Section fixtures — the `clo_raw_data` submit gate needs a class section
+	// with at least one captured attainment row.
+	department: "it-forms-dept",
+	program: "it-forms-prog",
+	course: "it-forms-course",
+	classSection: "it-forms-section",
+	clo: "it-forms-clo",
+	student: "it-forms-student",
+	computationRun: "it-forms-run",
+	attainment: "it-forms-attainment",
 };
 
 async function seed() {
@@ -33,6 +49,64 @@ async function seed() {
 			schoolYear: "2099-2100",
 			semester: "1st",
 			isActive: false,
+		},
+	});
+	await prisma.department.create({
+		data: { id: IDS.department, name: "Forms Dept", code: "IT-FORMS" },
+	});
+	await prisma.program.create({
+		data: {
+			id: IDS.program,
+			departmentId: IDS.department,
+			name: "Forms Program",
+			code: "IT-FORMS-PROG",
+		},
+	});
+	await prisma.course.create({
+		data: {
+			id: IDS.course,
+			programId: IDS.program,
+			code: "IT-FORMS-101",
+			title: "Forms Course",
+		},
+	});
+	await prisma.classSection.create({
+		data: {
+			id: IDS.classSection,
+			courseId: IDS.course,
+			termId: IDS.term,
+			sectionCode: "F1",
+		},
+	});
+	await prisma.clo.create({
+		data: {
+			id: IDS.clo,
+			courseId: IDS.course,
+			code: "CLO1",
+			description: "Forms CLO 1",
+		},
+	});
+	await prisma.student.create({
+		data: {
+			id: IDS.student,
+			studentNumber: "IT-FORMS-0001",
+			programId: IDS.program,
+			firstName: "Forms",
+			lastName: "Student",
+			anonymizedId: "it-forms-anon",
+		},
+	});
+	await prisma.computationRun.create({
+		data: { id: IDS.computationRun, scope: IDS.classSection },
+	});
+	await prisma.cloAttainment.create({
+		data: {
+			id: IDS.attainment,
+			classSectionId: IDS.classSection,
+			cloId: IDS.clo,
+			studentId: IDS.student,
+			compositeScorePct: 85,
+			computationRunId: IDS.computationRun,
 		},
 	});
 	await prisma.user.createMany({
@@ -49,6 +123,13 @@ async function seed() {
 				name: "Forms Other",
 				email: "forms-other@obelisk.local",
 				role: "faculty",
+				isActive: true,
+			},
+			{
+				id: IDS.chair,
+				name: "Forms Chair",
+				email: "forms-chair@obelisk.local",
+				role: "program_chair",
 				isActive: true,
 			},
 		],
@@ -80,8 +161,16 @@ async function cleanup() {
 	await prisma.formType.deleteMany({
 		where: { id: { in: [IDS.rawType, IDS.carType] } },
 	});
+	// Section fixtures — deleting the section cascades the attainment row.
+	await prisma.classSection.deleteMany({ where: { id: IDS.classSection } });
+	await prisma.computationRun.deleteMany({ where: { id: IDS.computationRun } });
+	await prisma.clo.deleteMany({ where: { id: IDS.clo } });
+	await prisma.student.deleteMany({ where: { id: IDS.student } });
+	await prisma.course.deleteMany({ where: { id: IDS.course } });
+	await prisma.program.deleteMany({ where: { id: IDS.program } });
+	await prisma.department.deleteMany({ where: { id: IDS.department } });
 	await prisma.user.deleteMany({
-		where: { id: { in: [IDS.owner, IDS.other] } },
+		where: { id: { in: [IDS.owner, IDS.other, IDS.chair] } },
 	});
 	await prisma.academicTerm.delete({ where: { id: IDS.term } });
 }
@@ -95,6 +184,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				{
 					formTypeId: IDS.rawType,
 					termId: IDS.term,
+					classSectionId: IDS.classSection,
 					formData: { note: "seed" },
 				},
 				IDS.owner,
@@ -275,6 +365,95 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(
 				resubmitted.approvalSteps.every((s) => s.decision === "pending"),
 			).toBe(true);
+		} finally {
+			await cleanup();
+		}
+	});
+
+	it("scopes submission reads by visibility and returns section evidence", async () => {
+		await seed();
+		try {
+			const draft = await submissionService.create(
+				{
+					formTypeId: IDS.rawType,
+					termId: IDS.term,
+					classSectionId: IDS.classSection,
+					formData: { note: "seed" },
+				},
+				IDS.owner,
+			);
+
+			// Owner and a chain role read it; an unrelated faculty member does not.
+			expect(
+				(
+					await submissionService.getForViewer(draft.id, {
+						id: IDS.owner,
+						role: "faculty",
+					})
+				).id,
+			).toBe(draft.id);
+			expect(
+				(
+					await submissionService.getForViewer(draft.id, {
+						id: IDS.chair,
+						role: "program_chair",
+					})
+				).id,
+			).toBe(draft.id);
+			await expect(
+				submissionService.getForViewer(draft.id, {
+					id: IDS.other,
+					role: "faculty",
+				}),
+			).rejects.toThrow(SubmissionForbiddenError);
+			// system_admin bypasses the visibility check.
+			expect(
+				(
+					await submissionService.getForViewer(draft.id, {
+						id: IDS.other,
+						role: "system_admin",
+					})
+				).id,
+			).toBe(draft.id);
+			await expect(
+				submissionService.getForViewer("it-forms-missing", {
+					id: IDS.owner,
+					role: "faculty",
+				}),
+			).rejects.toThrow(SubmissionNotFoundError);
+
+			// Evidence carries the bound section and its capture summary.
+			const evidence = await submissionService.evidence(draft.id, {
+				id: IDS.chair,
+				role: "program_chair",
+			});
+			expect(evidence.code).toBe(RAW_DATA_CODE);
+			expect(evidence.classSection).toMatchObject({
+				id: IDS.classSection,
+				sectionCode: "F1",
+				course: { code: "IT-FORMS-101" },
+			});
+			expect(evidence.capture).toMatchObject({
+				attainmentRows: 1,
+				students: 1,
+				belowThresholdRows: 0,
+				atRiskStudents: 0,
+				computationRunId: IDS.computationRun,
+			});
+			expect(evidence.formData).toEqual({ note: "seed" });
+
+			// A section-less submission has nothing to summarize.
+			const bare = await submissionService.create(
+				{ formTypeId: IDS.carType, termId: IDS.term, formData: { a: 1 } },
+				IDS.owner,
+			);
+			const bareEvidence = await submissionService.evidence(bare.id, {
+				id: IDS.owner,
+				role: "faculty",
+			});
+			expect(bareEvidence.code).toBe(CAR_CODE);
+			expect(bareEvidence.classSection).toBeNull();
+			expect(bareEvidence.capture).toBeNull();
 		} finally {
 			await cleanup();
 		}

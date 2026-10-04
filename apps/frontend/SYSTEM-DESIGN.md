@@ -1,6 +1,6 @@
 # Obelisk Frontend — System Design
 
-> **Status:** Foundation plus **20 built OBE form screens** (13 Phase 0–5 + 7 CHECK), all wired to backend plugin routes through Server Actions. The role-scoped routed architecture is in place: a single adaptive `/dashboard`, a registry-driven role-gated app shell, an API client layer, the shared approval-workflow bar, two submission inboxes, and dean-only PLO management. Remaining gaps: the 7 Periodic/ACT screens, PDF/export, archives content, and dashboard atom wiring (see §7).
+> **Status:** Foundation plus **20 built OBE form screens** (13 Phase 0–5 + 7 CHECK), all wired to backend plugin routes through Server Actions. The role-scoped routed architecture is in place: a single adaptive `/dashboard`, a registry-driven role-gated app shell, an API client layer, the shared approval workflow (a dedicated `/submissions/[id]` screen), two submission inboxes, and dean-only PLO management. Remaining gaps: the 7 Periodic/ACT screens, PDF/export, archives content, and dashboard atom wiring (see §7).
 
 **Stack:** Next.js 16 (App Router, server components by default — proxy renamed from middleware) · React 19 · TypeScript · Tailwind CSS v4 · shadcn/ui · react-hook-form + Zod (auth screens only) · @tanstack/react-table · evilcharts · echarts · base-ui/react · dnd-kit · motion · Jotai (client state). Backend: Elysia at `api/v1` (see `../backend/SYSTEM-DESIGN.md`).
 
@@ -23,6 +23,7 @@
 | `/forms/plan/{curriculum-map,assessment-calendar,target-setting-matrix,assessment-budget}` | `app/(app)/forms/plan/…` | PLAN-phase setup forms | `(app)` shell |
 | `/forms/check/{mid-cycle-attainment,peer-observation,exhibition-feedback,clo-perception-survey,student-exit-survey,portfolio-assessment,capstone-panel}` | `app/(app)/forms/check/…` | 7 CHECK-stage supporting instruments | `(app)` shell |
 | `/submissions` | `app/(app)/submissions/page.tsx` | "My Submissions" inbox (`GET /forms?scope=mine`) | `requireUser` in page |
+| `/submissions/[id]` | `app/(app)/submissions/[id]/page.tsx` | **Dedicated approval screen** for any submission: identity header, `FormWorkflow` (`layout="page"`), evidence panel | `requireUser` in page + backend visibility gate (`404` unknown / `403` invisible) |
 | `/approvals` | `app/(app)/approvals/page.tsx` | "Pending Approvals" inbox (`GET /forms?scope=pending`) | `requireRole(APPROVER_ROLES)` in page |
 | `/plo-management` | `app/(app)/plo-management/` | PLO entity CRUD (auto-sequenced codes) | `layout.tsx` → `requireRole(PLO_MANAGEMENT_ROLES)` (dean) |
 | `/archives` | `app/(app)/archives/page.tsx` | Cluster list (read-only, placeholder content) | `layout.tsx` → `requireRole(ARCHIVE_ROLES)` |
@@ -42,7 +43,7 @@ The 7 Periodic/ACT screens (`resource_monitoring`, `alumni_tracer`, `employer_sa
 - `app/(app)/` — authenticated area behind a layout that checks the session and renders the app shell (sidebar + header). Accounts with `role === "user"` are **redirected to `/onboarding`** — they never see the shell.
   - `dashboard` — **single adaptive route** rendering the authenticated role's dashboard via a registry (`app/(app)/dashboard/role-dashboard.tsx`).
   - `forms/...` — one route group per form, keyed by **stable form code** (see below); grouped by PDCA phase (Data Capture / Attainment / CQI / PLAN / CHECK).
-  - `submissions`, `approvals` — the two inboxes.
+  - `submissions`, `approvals` — the two inboxes; `submissions/[id]` is the shared approval screen (workflow + evidence) every inbox row and form screen links to.
   - `plo-management` — dean-only PLO CRUD.
   - `archives` — read-only **graduation-cluster archives**, gated to `aqau`/`vpaa`/`dean`/`system_admin`.
 
@@ -72,13 +73,13 @@ Single source of truth (a plain `.ts` module — icons are referenced as compone
 - `navSectionsFor(role)` — role-filtered forms catalog for the sidebar/forms index.
 - `workspaceNav(role)` — top-level workspace links: Dashboard, **PLO Management** (dean), **My Submissions** (all), **Pending Approvals** (`APPROVER_ROLES`), Archives (`aqau`/`vpaa`/`dean`/`system_admin`).
 - `INSTITUTION_NAV` — secondary group (currently only the Faculty Directory entry).
-- `formPathByCode` — stable code → screen path, used by the inboxes to deep-link a record back to its form screen.
+- `formPathByCode` — stable code → screen path, used by the approval screen's "Open form screen" link (inbox rows link to `/submissions/[id]` instead).
 - `itemVisible(item, role)`, `titleForPathname(pathname)`.
 
 ### 2.5 API client layer
 
 - **`lib/api-client.ts`** — browser client: typed `api.get/post/put/patch/delete`, cookie credentials, `NEXT_PUBLIC_API_URL`, error handling (`ApiError`), and the `MeResponse`/`ApiUser` types. All data flows through it — no inline fetch in pages. Use for reads/actions that don't need server-side auth forwarding.
-- **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`). **`actionApi`** is the Server Action variant: it forwards the browser's cookies **and** relays the backend's `Set-Cookie` headers onto the outgoing response so better-auth session cookies land on the frontend origin (matching the `proxy.ts` cookie check); failures throw `ApiError`.
+- **`server/api-client.ts`** — `server-only` variant that forwards request cookies to the backend for Server Component data fetching (`getMe`, `serverApi`). **`actionApi`** is the Server Action variant: it forwards the browser's cookies **and** relays the backend's `Set-Cookie` headers onto the outgoing response so better-auth session cookies land on the frontend origin (matching the `proxy.ts` cookie check); failures throw `ApiError`. Path convention: every helper takes **API-relative paths** (`/forms/:id`) — the fetch helpers prepend `API_ROOT` themselves, so `.get` must build its query string with `withQuery(path, query)` instead of round-tripping `new URL(API_ROOT + path).pathname` (that round-trip sent every server-side GET to `/api/v1/api/v1/…` → 404).
 - **`server/auth.ts`** — server guards (`currentUser`, `requireUser`, `requireGuest`, `requireRole`, `requireRoleOrNotFound`).
 - **`server/actions/`** — all `"use server"` Server Actions, one file per domain: `auth.ts`, `car.ts`, `rollup.ts`, `cqi.ts`, `plan.ts`, `check.ts`, `academic.ts`, `forms.ts`, `ai.ts` (AI CQI recommendation: `getLatestAiRecommendationAction` / `generateAiRecommendationAction` → `/ai/recommendation/*`; generation posts an explicit `{}` body because the route's `t.Object` body is required — posting nothing is a 422 — and is role-gated to `generateAiInsights`). They are the frontend's mutation/read layer: each action authenticates/authorizes, calls `actionApi`, and returns a serializable `ActionResult` (`{ ok: true, data } | { ok: false, error }`); success navigations use `redirect()`. Client components import these actions — mutations never call `api.post` directly.
 
@@ -112,7 +113,7 @@ The intended `components/obe/` package was never built; the shared primitives th
 - **`components/ui/form-select.tsx`**, **`ui/program-select.tsx`**, **`ui/term-select.tsx`**, **`ui/class-section-select.tsx`** — shared selects; the academic ones are populated by `server/actions/academic.ts` (`/academic/programs|terms|class-sections`).
 - **`components/ui/field.tsx`**, **`ui/attachment.tsx`**, **`ui/toast.tsx`**, **`ui/drawer.tsx`**, **`ui/spinner.tsx`** — field wrappers, upload display, notifications, drawers, loading.
 - **`lib/constants/obe.ts`** — the shared `ROOT_CAUSES` (6-category) constant; add new cross-form OBE constants here.
-- **`components/forms/form-workflow.tsx`** — the shared approval bar (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive), embedded on **all 20 wired screens** (the 13 Phase 0–5 screens incl. `/forms/clo-raw-data`, plus the 7 CHECK screens — which pass `payload.id`, the `FormSubmission` id returned by CHECK `init`, and re-sync only `status` through `onChanged` so unsaved edits survive; their Save button locks outside `draft`/`returned`).
+- **`components/forms/form-workflow.tsx`** — the approval workflow itself (status badge, approval stepper with comments, Submit / Approve / Return-with-comment / Archive). It renders in two layouts: `layout="page"` on **`/submissions/[id]`** (full-size card + vertical timeline, the one screen where those actions live), and the compact strip is no longer embedded on form screens — those carry **`components/forms/submission-status-card.tsx`** instead (status badge + waiting-on role + "Open approval screen" link, fed by `payload.id`/`submissionId`, `null` rendering the "no submission record yet" placeholder).
 - **`components/forms/form-placeholder.tsx`** — titled scaffold wrapper (title + stable code + PDCA stage) that renders `children`, falling back to a "pending" panel when a screen has no content yet.
 
 Still missing (tracked in `../../system-docs/roadmap.md`): dedicated `status-badge`/`ipd-selector`/`cohort-selector`/`root-cause-selector`/`blooms-selector`/`rubric-scale`/`likert-scale`/`loop-status-badge`/`row-editor-table`/`form-header`/`computed-cell` primitives — screens currently inline these.
@@ -180,9 +181,11 @@ User edits form ──> controlled component state / Jotai draft atom
 
 Workflow state changes are a separate path — `server/actions/forms.ts` posts to
 `/forms/:id/submit`, `/forms/:id/approve/:role`, `/forms/:id/return`,
-`/forms/:id/archive`. The backend derives the approval chain from the form's
-stable code (`apps/backend/lib/forms/approval-routes.ts`) and enforces ownership +
-role match; the client never sends steps or RBAC decisions.
+`/forms/:id/archive`, fired from the approval screen (`/submissions/[id]`), the
+only surface that renders those buttons. The backend derives the approval chain
+from the form's stable code (`apps/backend/lib/forms/approval-routes.ts`) and
+enforces ownership + role match; the client never sends steps or RBAC
+decisions.
 
 ### 5.2 Class-record import (clo_raw_data)
 
@@ -208,8 +211,9 @@ Chart/table data comes from backend rollup endpoints (`server/actions/rollup.ts`
 - `components/layout/` — `app-shell`, `app-sidebar`, `site-header`, `nav-workspace` (registry-driven SidebarNav), `nav-secondary`, `nav-user`.
 - `components/auth/` — `login-form`, `register-form`, `google-sign-in-button`, `sign-out-button`, `select-role`, `onboarding-form`, `role-requests-panel`, `page-notice`.
 - `components/dashboard/` — `role-dashboard-shell` (`DashboardShell`, `StatCard`, `PendingSection`), `ai-suggestions-drawer` (fetches the latest persisted AI recommendation via `server/actions/ai.ts` on first open; role-gated generate/regenerate, Markdown rendered with the `typeset` classes — no markdown library), plus the per-role dashboards under `app/(app)/dashboard/`.
-- `components/forms/` — `form-workflow`, `form-placeholder`, `class-record-upload` (the `/forms/clo-raw-data` screen), `upload-history-table`, `clo-plo-map-panel`, `curriculum-coverage-grid`, `cohort-tracking-grid`, plus the 19 form-screen components (`car-form`, `clo-summary-form`, `plo-summary-form`, `cohort-tracking-form`, `plo-gap-analysis-form`, `cqi-action-plan-form`, `ctl-form`, `apar-form`, `curriculum-map-form`, `assessment-calendar-form`, `target-setting-matrix-form`, `assessment-budget-form`, and the 7 CHECK forms) covering the 20 screens in §1.
-- `components/inbox/` — `submission-inbox` (shared by `/submissions` and `/approvals`, dev-preview sample rows).
+- `components/forms/` — `form-workflow`, `submission-status-card`, `form-placeholder`, `class-record-upload` (the `/forms/clo-raw-data` screen), `upload-history-table`, `clo-plo-map-panel`, `curriculum-coverage-grid`, `cohort-tracking-grid`, plus the 19 form-screen components (`car-form`, `clo-summary-form`, `plo-summary-form`, `cohort-tracking-form`, `plo-gap-analysis-form`, `cqi-action-plan-form`, `ctl-form`, `apar-form`, `curriculum-map-form`, `assessment-calendar-form`, `target-setting-matrix-form`, `assessment-budget-form`, and the 7 CHECK forms) covering the 20 screens in §1.
+- `components/inbox/` — `submission-inbox` (shared by `/submissions` and `/approvals`, dev-preview sample rows; each row's "Open" goes to `/submissions/[id]`).
+- `components/submissions/` — `submission-approval-screen` (identity header + `FormWorkflow layout="page"` + evidence), `submission-evidence` (reads `GET /forms/:id/evidence`: bound section, capture counts, stored `formData`).
 - `components/outcomes/` — `plo-management-panel` (dean-only PLO CRUD).
 - `components/charts/` — `attainment-charts`, `cqi-charts`, `governance-charts`, `ingest-charts`, `plan-charts`, `chart-card`, `pie-donut-layout`, `obe-sample-data`.
 - `components/evilcharts/` — ECharts wrappers (`ECharts*Chart`), the preferred chart engine.
@@ -222,7 +226,7 @@ Removed: old demo `nav-main`, `nav-documents`, `section-cards`, `chart-area-inte
 
 ## 7. Current State & Next Work
 
-Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), approval workflow bar on all 20 screens + inboxes, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling, dashboard chart atoms wired to the endpoints that exist (`/rollup/*`, `/cqi/*`, `/plan/*`, `/forms`, `/ingest/history`) with empty states where nothing is submitted.
+Done: auth-gated app shell, API client layer, role-scoped routing, adaptive dashboards, 20 wired form screens (13 Phase 0–5 + 7 CHECK), status card on every form screen + a shared `/submissions/[id]` approval screen reached from the inboxes and the form screens, dean-only PLO management, CLO↔PLO connection panel, class-record upload with ETL polling, dashboard chart atoms wired to the endpoints that exist (`/rollup/*`, `/cqi/*`, `/plan/*`, `/forms`, `/ingest/history`) with empty states where nothing is submitted.
 
 Remaining, in rough priority:
 

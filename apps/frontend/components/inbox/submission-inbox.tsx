@@ -12,7 +12,6 @@ import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Status } from "@/components/ui/status";
-import { formPathByCode } from "@/config/navigation";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import type { AsyncState } from "@/lib/store/async-atom";
 import {
@@ -154,7 +153,6 @@ export function SubmissionInbox({
         <ul className="mt-4 divide-y divide-border">
           {submissions.map((submission) => {
             const code = submission.formType?.code;
-            const path = code ? formPathByCode[code] : undefined;
             return (
               <li
                 className="flex flex-wrap items-center gap-3 py-3"
@@ -188,14 +186,12 @@ export function SubmissionInbox({
                   </Badge>
                 ) : null}
 
-                {path ? (
-                  <Link
-                    className="inline-flex h-7 items-center gap-1.5 rounded-2xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                    href={path}
-                  >
-                    Open <ArrowRightIcon className="size-3.5" />
-                  </Link>
-                ) : null}
+                <Link
+                  className="inline-flex h-7 items-center gap-1.5 rounded-2xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  href={`/submissions/${submission.id}`}
+                >
+                  Open <ArrowRightIcon className="size-3.5" />
+                </Link>
               </li>
             );
           })}

@@ -86,6 +86,54 @@ export class SubmissionNotFoundError extends Error {
 	}
 }
 
+/** 403 — caller may read neither this submission nor its evidence. */
+export class SubmissionForbiddenError extends Error {
+	constructor() {
+		super("You may not view this submission");
+		this.name = "SubmissionForbiddenError";
+	}
+}
+
+/**
+ * What a submission is *about*, for the approval screen: the stored payload
+ * plus the bound class section and its captured class-record summary. Counts
+ * only — a reviewer outside the capture roles must still be able to read it.
+ */
+export interface SubmissionEvidence {
+	code: string;
+	classSectionId: string | null;
+	formData: Record<string, unknown>;
+	classSection: {
+		id: string;
+		sectionCode: string;
+		course: { code: string; title: string };
+		term: { schoolYear: string; semester: string };
+	} | null;
+	capture: {
+		attainmentRows: number;
+		students: number;
+		belowThresholdRows: number;
+		atRiskStudents: number;
+		computationRunId: string | null;
+		runAt: string | null;
+	} | null;
+}
+
+/**
+ * May `caller` read this submission? The owner, a `system_admin`, or a role in
+ * the form's server-derived chain — chain-derived rather than status-derived so
+ * a shared draft still opens for the approvers who will see it.
+ */
+function canViewSubmission(
+	submission: Pick<FormSubmissionWithSteps, "submittedByUserId" | "formType">,
+	caller: { id: string; role: string },
+): boolean {
+	if (submission.submittedByUserId === caller.id) return true;
+	if (caller.role === "system_admin") return true;
+	const route = approvalRouteFor(submission.formType.code);
+	return (route.chain as readonly string[]).includes(caller.role);
+}
+
 export class SubmissionService {
 	async findById(id: string): Promise<FormSubmissionWithSteps | null> {
 		return prisma.formSubmission.findUnique({
@@ -102,6 +150,92 @@ export class SubmissionService {
 			orderBy: { createdAt: "desc" },
 			...APPROVAL_STEP_INCLUDE,
 		});
+	}
+
+	/**
+	 * `GET /forms/:id` — visibility-checked read used by the approval screen.
+	 * Throws `SubmissionNotFoundError` (unknown id) or
+	 * `SubmissionForbiddenError` (no rights) instead of leaking the record.
+	 */
+	async getForViewer(
+		id: string,
+		caller: { id: string; role: string },
+	): Promise<FormSubmissionWithSteps> {
+		const submission = await this.findById(id);
+		if (!submission) throw new SubmissionNotFoundError();
+		if (!canViewSubmission(submission, caller)) {
+			throw new SubmissionForbiddenError();
+		}
+		return submission;
+	}
+
+	/**
+	 * `GET /forms/:id/evidence` — the submission's payload plus the bound class
+	 * section and its capture summary (attainment rows, distinct students,
+	 * below-threshold rows, at-risk students, latest run).
+	 */
+	async evidence(
+		id: string,
+		caller: { id: string; role: string },
+	): Promise<SubmissionEvidence> {
+		const submission = await this.getForViewer(id, caller);
+		const classSectionId = submission.classSectionId;
+
+		let classSection: SubmissionEvidence["classSection"] = null;
+		let capture: SubmissionEvidence["capture"] = null;
+
+		if (classSectionId) {
+			classSection = await prisma.classSection.findUnique({
+				where: { id: classSectionId },
+				select: {
+					id: true,
+					sectionCode: true,
+					course: { select: { code: true, title: true } },
+					term: { select: { schoolYear: true, semester: true } },
+				},
+			});
+			const [
+				attainmentRows,
+				students,
+				belowThresholdRows,
+				atRiskStudents,
+				run,
+			] = await Promise.all([
+				prisma.cloAttainment.count({ where: { classSectionId } }),
+				// groupBy().length — `count({ distinct })` types collapse to never
+				// on this Prisma version.
+				prisma.cloAttainment
+					.groupBy({ by: ["studentId"], where: { classSectionId } })
+					.then((rows) => rows.length),
+				prisma.cloAttainment.count({
+					where: { classSectionId, isBelowThreshold: true },
+				}),
+				prisma.atRiskFlag.count({
+					where: { cloAttainment: { classSectionId } },
+				}),
+				prisma.computationRun.findFirst({
+					where: { scope: classSectionId },
+					orderBy: { runAt: "desc" },
+					select: { id: true, runAt: true },
+				}),
+			]);
+			capture = {
+				attainmentRows,
+				students,
+				belowThresholdRows,
+				atRiskStudents,
+				computationRunId: run?.id ?? null,
+				runAt: run?.runAt.toISOString() ?? null,
+			};
+		}
+
+		return {
+			code: submission.formType.code,
+			classSectionId,
+			formData: (submission.formData ?? {}) as Record<string, unknown>,
+			classSection,
+			capture,
+		};
 	}
 
 	async create(
@@ -182,6 +316,7 @@ export class SubmissionService {
 			status: existing.status,
 			programId: existing.programId,
 			termId: existing.termId,
+			classSectionId: existing.classSectionId,
 			formData: (existing.formData ?? {}) as Record<string, unknown>,
 		});
 

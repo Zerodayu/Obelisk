@@ -2,7 +2,7 @@
 
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
-import { FormWorkflow } from "@/components/forms/form-workflow";
+import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
   Frame,
@@ -874,7 +874,7 @@ export function CarForm() {
       {/* Payload Loaded View */}
       {payload && (
         <div className="space-y-4">
-          <FormWorkflow submissionId={payload.formSubmissionId} />
+          <SubmissionStatusCard submissionId={payload.formSubmissionId} />
 
           {/* Header bar */}
           <div className="flex items-center justify-between">

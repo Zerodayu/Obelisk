@@ -66,6 +66,13 @@ export interface UploadHistoryRecord {
 
 export const ingestStatusAtom = atom<IngestStatus>("idle");
 
+/**
+ * Target class section chosen in the upload panel — shared with the
+ * `clo_raw_data` workflow strip, which binds its submission draft to the same
+ * section (`GET/POST /ingest/clo-raw-data/*`).
+ */
+export const selectedClassSectionIdAtom = atom<string>("");
+
 export const ingestJobIdAtom = atom<string | null>(null);
 
 export const persistenceSummaryAtom = atom<PersistenceSummary | null>(null);

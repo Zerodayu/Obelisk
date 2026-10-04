@@ -7,6 +7,8 @@ import {
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
+	CloRawDataSubmissionSchema,
+	InitCloRawDataSchema,
 	ListAttainmentsSchema,
 	ReimportScoresSchema,
 	UpdateAttainmentsSchema,
@@ -81,6 +83,52 @@ export const ingestPlugin = new Elysia({
 					403: { description: "Caller's role may not capture class records" },
 					404: { description: "ClassSection not found" },
 					500: { description: "Python server failure on job creation." },
+				},
+			},
+		},
+	)
+	.get(
+		"/clo-raw-data/submission",
+		async ({ query, user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
+			return ingestService.getSubmission(query.classSectionId);
+		},
+		{
+			auth: true,
+			query: CloRawDataSubmissionSchema,
+			detail: {
+				summary: "Look up the clo_raw_data submission for a class section",
+				description:
+					"Returns the newest submission bound to the section (any status), or null when none exists yet — drives the approval-workflow strip on /forms/clo-raw-data.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "{ formSubmissionId: string | null }" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/clo-raw-data/init",
+		async ({ body, user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
+			return ingestService.initSubmission(body.classSectionId, user.id);
+		},
+		{
+			auth: true,
+			body: InitCloRawDataSchema,
+			detail: {
+				summary: "Open (or reuse) the clo_raw_data submission draft",
+				description:
+					"Creates a draft bound to the class section (term and program resolved server-side) or returns the existing draft/returned/submitted one. An approved/archived submission is left alone and a fresh draft is created.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					201: { description: "{ formSubmissionId: string }" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
 				},
 			},
 		},

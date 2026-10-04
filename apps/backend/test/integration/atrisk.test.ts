@@ -486,9 +486,12 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 			const rawTypeId = await ensureRawFormType();
 			// Payload even names every flagged student — the effect must stay
 			// keyed to `action_taken` and do nothing for `clo_raw_data`.
+			// Bound to a section with captured attainments so the clo_raw_data
+			// submit gate (≥1 CloAttainment) lets the draft through.
 			const draft = await submissionService.create(
 				{
 					formTypeId: rawTypeId,
+					classSectionId: IDS.sectionA,
 					programId: IDS.program,
 					termId: IDS.term,
 					formData: { studentIds: [IDS.s1, IDS.s2, IDS.s3] },

@@ -71,21 +71,27 @@ const DECISION_TONES: Record<
 type BusyAction = "submit" | "approve" | "return" | "archive" | null;
 
 /**
- * Shared approval-workflow bar for every form screen: status badge, ordered
- * approval stepper (role, decision, comment, decided-at), and the
- * Submit / Approve / Return (with required comment) / Archive actions.
+ * Shared approval workflow: status badge, ordered approval stepper (role,
+ * decision, comment, decided-at), and the Submit / Approve / Return (with
+ * required comment) / Archive actions.
  *
  * Pass the screen's `submissionId` (from its payload) — `null` renders the
  * "no submission record yet" placeholder. After any action it refetches the
  * submission, refreshes both inbox atoms + the dashboard donut, and notifies
  * the host via `onChanged` so the screen can reload its payload.
+ *
+ * `layout="bar"` (default) is the compact strip embedded in form screens;
+ * `layout="page"` is the full-size card with a vertical approval timeline,
+ * used by the dedicated approval screen (`/submissions/[id]`).
  */
 export function FormWorkflow({
   submissionId,
   onChanged,
+  layout = "bar",
 }: {
   submissionId: string | null | undefined;
   onChanged?: () => void;
+  layout?: "bar" | "page";
 }) {
   const user = useAtomValue(userAtom);
   const refreshMine = useSetAtom(refreshMySubmissionsAtom);
@@ -166,6 +172,7 @@ export function FormWorkflow({
 
   if (!submission) return null;
 
+  const isPage = layout === "page";
   const status = submission.status;
   const steps = submission.approvalSteps ?? [];
   const pendingStep = steps.find((step) => step.decision === "pending");
@@ -190,10 +197,22 @@ export function FormWorkflow({
       : null;
 
   return (
-    <section className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+    <section
+      className={
+        isPage
+          ? "space-y-4 rounded-xl border bg-card p-5 shadow-sm sm:p-6"
+          : "space-y-3 rounded-xl border bg-card p-4 shadow-sm"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold">Approval workflow</span>
+          <span
+            className={
+              isPage ? "text-base font-semibold" : "text-sm font-semibold"
+            }
+          >
+            Approval workflow
+          </span>
           <Badge variant={FORM_STATUS_TONES[status]}>
             {FORM_STATUS_LABELS[status]}
           </Badge>
@@ -361,30 +380,53 @@ export function FormWorkflow({
       </div>
 
       {steps.length > 0 ? (
-        <ol className="flex flex-wrap gap-2">
+        <ol className={isPage ? "space-y-3" : "flex flex-wrap gap-2"}>
           {steps.map((step) => (
             <li
-              className="min-w-40 flex-1 rounded-lg border bg-muted/30 px-3 py-2"
+              className={
+                isPage
+                  ? "flex gap-3 rounded-lg border bg-muted/30 px-4 py-3"
+                  : "min-w-40 flex-1 rounded-lg border bg-muted/30 px-3 py-2"
+              }
               key={step.id}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-medium">
-                  {step.sequenceNo}. {roleLabel(step.approverRole as UserRole)}
-                </span>
-                <Badge radius="full" variant={DECISION_TONES[step.decision]}>
-                  {DECISION_LABELS[step.decision]}
-                </Badge>
+              {isPage ? (
+                <span
+                  aria-hidden
+                  className="mt-2 size-2 shrink-0 rounded-full bg-primary/60"
+                />
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={
+                      isPage ? "text-sm font-medium" : "text-xs font-medium"
+                    }
+                  >
+                    {step.sequenceNo}.{" "}
+                    {roleLabel(step.approverRole as UserRole)}
+                  </span>
+                  <Badge radius="full" variant={DECISION_TONES[step.decision]}>
+                    {DECISION_LABELS[step.decision]}
+                  </Badge>
+                </div>
+                {step.comment ? (
+                  <p
+                    className={
+                      isPage
+                        ? "mt-1.5 text-sm text-muted-foreground italic"
+                        : "mt-1 text-xs text-muted-foreground italic"
+                    }
+                  >
+                    “{step.comment}”
+                  </p>
+                ) : null}
+                {step.decidedAt ? (
+                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
+                    {new Date(step.decidedAt).toLocaleString()}
+                  </p>
+                ) : null}
               </div>
-              {step.comment ? (
-                <p className="mt-1 text-xs text-muted-foreground italic">
-                  “{step.comment}”
-                </p>
-              ) : null}
-              {step.decidedAt ? (
-                <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
-                  {new Date(step.decidedAt).toLocaleString()}
-                </p>
-              ) : null}
             </li>
           ))}
         </ol>

@@ -28,6 +28,7 @@ import {
   refreshUploadHistoryAtom,
   resetIngestAtom,
   type SectionComparisonResult,
+  selectedClassSectionIdAtom,
   startUploadAtom,
 } from "@/lib/store/atoms/ingest";
 
@@ -69,7 +70,10 @@ interface StatusResponse {
 
 export function ClassRecordUpload() {
   const [items, setItems] = useState<FileUploadItem[]>([]);
-  const [classSectionId, setClassSectionId] = useState<string>("");
+  // NOTE: the section lives in an atom so the approval-workflow strip above
+  // can bind its `clo_raw_data` draft to the same class section.
+  const classSectionId = useAtomValue(selectedClassSectionIdAtom);
+  const setClassSectionId = useSetAtom(selectedClassSectionIdAtom);
   const [isMounted, setIsMounted] = useState(false);
 
   // Verification outcome state for persistent contextual notices
@@ -116,7 +120,7 @@ export function ClassRecordUpload() {
         patchItem({ status: "queued", error: undefined, progress: 0 });
       }
     },
-    [isWorking, items, patchItem, setResetIngest],
+    [isWorking, items, patchItem, setClassSectionId, setResetIngest],
   );
 
   // Resets the uploaded file so user can pick a different workbook
