@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogFooter,
   DialogHeader,
@@ -298,13 +299,15 @@ export function FormWorkflow({
                     description="Send the submission back to its owner with a comment. The owner can edit and resubmit."
                     title="Return to preparer"
                   />
-                  <Textarea
-                    autoFocus
-                    onChange={(event) => setReturnComment(event.target.value)}
-                    placeholder="What needs to be corrected?"
-                    value={returnComment}
-                    className="flex"
-                  />
+                  <DialogBody className="my-2">
+                    <Textarea
+                      autoFocus
+                      onChange={(event) => setReturnComment(event.target.value)}
+                      placeholder="What needs to be corrected?"
+                      value={returnComment}
+                      className="inline-flex"
+                    />
+                  </DialogBody>
                   <DialogFooter>
                     <Button
                       disabled={returnComment.trim().length === 0}
