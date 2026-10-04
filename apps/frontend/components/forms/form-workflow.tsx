@@ -293,7 +293,7 @@ export function FormWorkflow({
                   <CornerUpLeftIcon />
                   Return
                 </Button>
-                <DialogContent>
+                <DialogContent className="">
                   <DialogHeader
                     description="Send the submission back to its owner with a comment. The owner can edit and resubmit."
                     title="Return to preparer"
@@ -303,6 +303,7 @@ export function FormWorkflow({
                     onChange={(event) => setReturnComment(event.target.value)}
                     placeholder="What needs to be corrected?"
                     value={returnComment}
+                    className="flex"
                   />
                   <DialogFooter>
                     <Button
