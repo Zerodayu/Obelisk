@@ -76,11 +76,40 @@ describe("approval routes registry", () => {
 			for (const role of route.preparerRoles) {
 				expect(VALID_USER_ROLES).toContain(role);
 			}
-			// Chains must ascend the canonical order (skipping allowed).
+			// Chains must ascend the canonical order.
 			expect(() => validateApprovalChain(chainSteps(route.chain))).not.toThrow(
 				`${code} chain must be ascending`,
 			);
 		}
+	});
+
+	it("ends every chain at the VPAA (contiguous ladder from its entry role)", () => {
+		for (const [code, route] of Object.entries(APPROVAL_ROUTES)) {
+			const entry = APPROVAL_CHAIN.indexOf(route.chain[0]);
+			expect(
+				entry,
+				`${code} must start on the canonical ladder`,
+			).toBeGreaterThan(-1);
+			// Contiguous: the chain is exactly the canonical tail from its entry
+			// role, so no rung between the entry point and the VPAA is skipped.
+			expect(route.chain, `${code} must climb to vpaa without gaps`).toEqual(
+				APPROVAL_CHAIN.slice(entry),
+			);
+			expect(route.chain.at(-1)).toBe("vpaa");
+		}
+		expect(DEFAULT_APPROVAL_ROUTE.chain).toEqual(APPROVAL_CHAIN);
+	});
+
+	it("never lets the VPAA prepare a submission", () => {
+		for (const [code, route] of Object.entries(APPROVAL_ROUTES)) {
+			expect(route.preparerRoles, `${code} preparers`).not.toContain("vpaa");
+		}
+		expect(DEFAULT_APPROVAL_ROUTE.preparerRoles).not.toContain("vpaa");
+		// The two manual lines that name the VPAA as a preparer drop it.
+		expect(approvalRouteFor("capa_plan").preparerRoles).toEqual(["dean"]);
+		expect(approvalRouteFor("institutional_review").preparerRoles).toEqual([
+			"aqau",
+		]);
 	});
 
 	it("falls back to the full canonical chain for unknown codes", () => {
@@ -96,20 +125,32 @@ describe("approval routes registry", () => {
 		]);
 	});
 
-	it("uses the manual's chain for representative forms", () => {
-		// "Faculty → Program Chair"
-		expect(approvalRouteFor("clo_raw_data").chain).toEqual(["program_chair"]);
-		// "Faculty → Program Chair → AQAU"
+	it("keeps the manual's entry point and climbs to the VPAA", () => {
+		// "Faculty → Program Chair" → chair enters, ladder runs to the VPAA.
+		expect(approvalRouteFor("clo_raw_data").chain).toEqual([
+			"program_chair",
+			"dean",
+			"aqau",
+			"vpaa",
+		]);
+		// "Faculty → Program Chair → AQAU" + the VPAA's final review.
 		expect(approvalRouteFor("course_assessment_report").chain).toEqual([
 			"program_chair",
 			"dean",
 			"aqau",
+			"vpaa",
 		]);
 		// "Dean → VPAA (copy AQAU)" — AQAU is copied only, not a step.
 		expect(approvalRouteFor("assessment_budget").chain).toEqual(["vpaa"]);
-		// "Program Chair → Dean → VPAA"
+		// "Program Chair → Dean → VPAA" — AQAU reviews in between.
 		expect(approvalRouteFor("annual_program_report").chain).toEqual([
 			"dean",
+			"aqau",
+			"vpaa",
+		]);
+		// "Program Chair → AQAU" — dean reviews in between.
+		expect(approvalRouteFor("closing_the_loop").chain).toEqual([
+			"aqau",
 			"vpaa",
 		]);
 	});
@@ -143,6 +184,15 @@ describe("workflow authorization", () => {
 				{ id: "u1", role: "dean" },
 				{ submittedByUserId: "u1" },
 				route,
+			),
+		).toThrow(ApprovalForbiddenError);
+
+		// The VPAA never prepares, even on a form its approval closes out.
+		expect(() =>
+			assertCanSubmit(
+				{ id: "u1", role: "vpaa" },
+				{ submittedByUserId: "u1" },
+				approvalRouteFor("capa_plan"),
 			),
 		).toThrow(ApprovalForbiddenError);
 

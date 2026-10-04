@@ -45,10 +45,25 @@ const IDS = {
 	faculty: "it-ar-faculty",
 	other: "it-ar-other",
 	chair: "it-ar-chair",
+	// Remaining approvers — every action_taken chain climbs
+	// chair → dean → aqau → vpaa, and only the VPAA's approval clears flags.
+	dean: "it-ar-dean",
+	aqau: "it-ar-aqau",
+	vpaa: "it-ar-vpaa",
 	// Only deleted when THIS file created it (clo_raw_data may be owned by
 	// another test file — never delete a FormType row we did not create).
 	rawType: "it-ar-type-raw",
 };
+
+/** Every user id this file creates (seed/reset cleanup scope). */
+const USER_IDS = [
+	IDS.faculty,
+	IDS.other,
+	IDS.chair,
+	IDS.dean,
+	IDS.aqau,
+	IDS.vpaa,
+];
 
 const FLAG_IDS = [IDS.flag1, IDS.flag2, IDS.flag3, IDS.flag4];
 
@@ -57,9 +72,29 @@ function flagCount(): Promise<number> {
 	return prisma.atRiskFlag.count({ where: { id: { in: FLAG_IDS } } });
 }
 
+/**
+ * The `action_taken` approval ladder with the seeded user for each rung —
+ * every chain climbs to the VPAA, and the flag-clearing effect runs only when
+ * the LAST rung lands (`lib/forms/approval-effects.ts`).
+ */
+const LADDER = [
+	{ role: "program_chair", userId: IDS.chair },
+	{ role: "dean", userId: IDS.dean },
+	{ role: "aqau", userId: IDS.aqau },
+	{ role: "vpaa", userId: IDS.vpaa },
+] as const;
+
+/** Approve rung `index` (0-based) of the ladder for submission `id`. */
+function approveRung(id: string, index: number) {
+	const rung = LADDER[index];
+	return submissionService.decide(id, rung.role, rung.userId, rung.role, {
+		decision: "approved",
+	});
+}
+
 async function reset(): Promise<void> {
 	await prisma.auditLog.deleteMany({
-		where: { userId: { in: [IDS.faculty, IDS.other, IDS.chair] } },
+		where: { userId: { in: USER_IDS } },
 	});
 	// Submissions first — FormType deletion is Restrict-ed while referenced.
 	await prisma.formSubmission.deleteMany({
@@ -83,7 +118,7 @@ async function reset(): Promise<void> {
 		where: { id: { in: [IDS.s1, IDS.s2, IDS.s3] } },
 	});
 	await prisma.user.deleteMany({
-		where: { id: { in: [IDS.faculty, IDS.other, IDS.chair] } },
+		where: { id: { in: USER_IDS } },
 	});
 	await prisma.academicTerm.deleteMany({ where: { id: IDS.term } });
 	await prisma.program.deleteMany({ where: { id: IDS.program } });
@@ -270,6 +305,27 @@ async function seed(): Promise<void> {
 				role: "program_chair",
 				isActive: true,
 			},
+			{
+				id: IDS.dean,
+				name: "At-Risk Dean",
+				email: "atrisk-dean@obelisktest.local",
+				role: "dean",
+				isActive: true,
+			},
+			{
+				id: IDS.aqau,
+				name: "At-Risk AQAU",
+				email: "atrisk-aqau@obelisktest.local",
+				role: "aqau",
+				isActive: true,
+			},
+			{
+				id: IDS.vpaa,
+				name: "At-Risk VPAA",
+				email: "atrisk-vpaa@obelisktest.local",
+				role: "vpaa",
+				isActive: true,
+			},
 		],
 	});
 }
@@ -396,7 +452,10 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 			);
 			expect(submitted.status).toBe("submitted");
 			expect(submitted.currentApproverRole).toBe("program_chair");
-			expect(submitted.approvalSteps).toHaveLength(1);
+			expect(submitted.approvalSteps).toHaveLength(LADDER.length);
+			expect(submitted.approvalSteps.map((s) => s.approverRole)).toEqual(
+				LADDER.map((r) => r.role),
+			);
 
 			// 9.9: the flag stays after submission — nothing cleared yet.
 			expect(await flagCount()).toBe(4);
@@ -434,14 +493,15 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 			});
 			await submissionService.submit(id, IDS.faculty, "faculty");
 
-			// --- final approval → flags cleared --------------------------------
-			const approved = await submissionService.decide(
-				id,
-				"program_chair",
-				IDS.chair,
-				"program_chair",
-				{ decision: "approved" },
-			);
+			// --- ladder: chair → dean → aqau leave the flags alone ---------------
+			for (const index of [0, 1, 2]) {
+				const rung = await approveRung(id, index);
+				expect(rung.status).toBe("submitted");
+				expect(await flagCount()).toBe(4);
+			}
+
+			// --- final approval (VPAA) → flags cleared --------------------------
+			const approved = await approveRung(id, LADDER.length - 1);
 			expect(approved.status).toBe("approved");
 			expect(approved.currentApproverRole).toBeNull();
 
@@ -455,13 +515,20 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 				[IDS.flag3, IDS.flag4].sort(),
 			);
 
-			// The clear count lands in the approval audit entry.
-			const audit = await prisma.auditLog.findFirst({
+			// The clear count lands in the FINAL approval's audit entry; the
+			// earlier rungs log an approval with no effect details.
+			const approvals = await prisma.auditLog.findMany({
 				where: { targetRecordId: id, action: "form_submission.approved" },
+				orderBy: { createdAt: "asc" },
 			});
-			expect(audit).not.toBeNull();
-			const details = audit?.details as { flagsCleared?: number };
-			expect(details.flagsCleared).toBe(2);
+			expect(approvals).toHaveLength(LADDER.length);
+			const flagged = approvals.map(
+				(entry) => (entry.details as { flagsCleared?: number }).flagsCleared,
+			);
+			expect(flagged.slice(0, -1).every((count) => count === undefined)).toBe(
+				true,
+			);
+			expect(flagged.at(-1)).toBe(2);
 
 			// Locked after approval — the payload cannot be rewritten.
 			await expect(
@@ -499,14 +566,12 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 				IDS.faculty,
 			);
 			await submissionService.submit(draft.id, IDS.faculty, "faculty");
-			const approved = await submissionService.decide(
-				draft.id,
-				"program_chair",
-				IDS.chair,
-				"program_chair",
-				{ decision: "approved" },
-			);
-			expect(approved.status).toBe("approved");
+			for (const index of LADDER.keys()) {
+				const rung = await approveRung(draft.id, index);
+				expect(rung.status).toBe(
+					index === LADDER.length - 1 ? "approved" : "submitted",
+				);
+			}
 			expect(await flagCount()).toBe(4);
 
 			// Reading the action-taken endpoints against a foreign submission 404s.

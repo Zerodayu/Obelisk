@@ -17,8 +17,10 @@ const db = await isDbReachable();
 /**
  * Uses two registered form codes so the approval chain is derived from
  * `lib/forms/approval-routes.ts`:
- *  - `clo_raw_data`            → preparers [faculty], chain [program_chair]
- *  - `course_assessment_report` → preparers [faculty], chain [program_chair, dean, aqau]
+ *  - `clo_raw_data`            → preparers [faculty], chain [program_chair → dean → aqau → vpaa]
+ *  - `course_assessment_report` → preparers [faculty], chain [program_chair → dean → aqau → vpaa]
+ * Both enter the ladder at the program chair; every registered chain now
+ * climbs to the VPAA (the final review before archive).
  */
 const RAW_DATA_CODE = "clo_raw_data";
 const CAR_CODE = "course_assessment_report";
@@ -208,9 +210,15 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			);
 			expect(submitted.status).toBe("submitted");
 			expect(submitted.currentApproverRole).toBe("program_chair");
-			// Derived from the registry — one step for clo_raw_data.
+			// Derived from the registry — the ladder runs chair → dean → aqau → vpaa.
 			expect(submitted.formType.code).toBe(RAW_DATA_CODE);
-			expect(submitted.approvalSteps).toHaveLength(1);
+			expect(submitted.approvalSteps).toHaveLength(4);
+			expect(submitted.approvalSteps.map((s) => s.approverRole)).toEqual([
+				"program_chair",
+				"dean",
+				"aqau",
+				"vpaa",
+			]);
 			expect(submitted.approvalSteps[0].approverRole).toBe("program_chair");
 			expect(submitted.approvalSteps[0].sequenceNo).toBe(1);
 
@@ -259,17 +267,69 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				),
 			).rejects.toThrow(ApprovalForbiddenError);
 
-			const approved = await submissionService.decide(
+			const chairApproved = await submissionService.decide(
 				draft.id,
 				"program_chair",
 				IDS.other,
 				"system_admin",
 				{ decision: "approved", comment: "looks good" },
 			);
-			// Single-step chain → approved immediately.
+			// Chair signs first (admin override) → the submission keeps descending.
+			expect(chairApproved.status).toBe("submitted");
+			expect(chairApproved.currentApproverRole).toBe("dean");
+			expect(chairApproved.approvalSteps[0].decision).toBe("approved");
+			expect(chairApproved.approvalSteps[0].comment).toBe("looks good");
+			// Only the current step's role sees it as pending now.
+			expect(
+				(
+					await submissionService.list(
+						scopeWhere("pending", { id: "any", role: "program_chair" }),
+					)
+				).map((s) => s.id),
+			).not.toContain(draft.id);
+			expect(
+				(
+					await submissionService.list(
+						scopeWhere("pending", { id: "any", role: "dean" }),
+					)
+				).map((s) => s.id),
+			).toContain(draft.id);
+
+			// dean → aqau → vpaa each sign their own step; the VPAA closes it.
+			const deanApproved = await submissionService.decide(
+				draft.id,
+				"dean",
+				IDS.other,
+				"dean",
+				{ decision: "approved" },
+			);
+			expect(deanApproved.status).toBe("submitted");
+			expect(deanApproved.currentApproverRole).toBe("aqau");
+
+			const aqauApproved = await submissionService.decide(
+				draft.id,
+				"aqau",
+				IDS.other,
+				"aqau",
+				{ decision: "approved" },
+			);
+			expect(aqauApproved.status).toBe("submitted");
+			expect(aqauApproved.currentApproverRole).toBe("vpaa");
+
+			const approved = await submissionService.decide(
+				draft.id,
+				"vpaa",
+				IDS.other,
+				"vpaa",
+				{ decision: "approved" },
+			);
+			// Final step (top of the hierarchy) → approved.
 			expect(approved.status).toBe("approved");
-			expect(approved.approvalSteps[0].decision).toBe("approved");
-			expect(approved.approvalSteps[0].comment).toBe("looks good");
+			expect(approved.currentApproverRole).toBeNull();
+			expect(approved.approvalSteps).toHaveLength(4);
+			expect(
+				approved.approvalSteps.every((s) => s.decision === "approved"),
+			).toBe(true);
 
 			// --- archive: role-gated (vpaa/system_admin only) ---------------------
 			await expect(
@@ -293,7 +353,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 	it("advances a multi-step chain and supports return → resubmit", async () => {
 		await seed();
 		try {
-			// --- multi-step chain advance (CAR: chair → dean → aqau) --------------
+			// --- multi-step chain advance (CAR: chair → dean → aqau → vpaa) ------
 			const car = await submissionService.create(
 				{ formTypeId: IDS.carType, termId: IDS.term, formData: {} },
 				IDS.owner,
@@ -307,6 +367,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				"program_chair",
 				"dean",
 				"aqau",
+				"vpaa",
 			]);
 			expect(submitted.currentApproverRole).toBe("program_chair");
 
@@ -361,7 +422,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(resubmitted.status).toBe("submitted");
 			expect(resubmitted.currentApproverRole).toBe("program_chair");
 			// Old steps are replaced, not appended.
-			expect(resubmitted.approvalSteps).toHaveLength(3);
+			expect(resubmitted.approvalSteps).toHaveLength(4);
 			expect(
 				resubmitted.approvalSteps.every((s) => s.decision === "pending"),
 			).toBe(true);

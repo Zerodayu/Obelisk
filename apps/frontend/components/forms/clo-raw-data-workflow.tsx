@@ -15,7 +15,8 @@ import { initCloRawDataAction } from "@/server/actions/forms";
  * submission" prompt until a `clo_raw_data` draft exists for the selected class
  * section (`POST /ingest/clo-raw-data/init`, idempotent), then the shared
  * `FormWorkflow` bar, whose Submit derives the chain from
- * `backend/lib/forms/approval-routes.ts` (`clo_raw_data` → program_chair).
+ * `backend/lib/forms/approval-routes.ts` (`clo_raw_data` enters at
+ * program_chair and ascends to vpaa).
  */
 export function CloRawDataWorkflow() {
   const classSectionId = useAtomValue(selectedClassSectionIdAtom);

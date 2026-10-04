@@ -894,7 +894,13 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			classSection: "it-sub-section",
 			user: "it-sub-user",
 			chair: "it-sub-chair",
+			// Remaining approvers on the clo_raw_data ladder (chair → dean →
+			// aqau → vpaa) — every chain climbs to the VPAA.
+			dean: "it-sub-dean",
+			aqau: "it-sub-aqau",
+			vpaa: "it-sub-vpaa",
 		};
+		const approverIds = [ids.chair, ids.dean, ids.aqau, ids.vpaa];
 
 		// NOTE: only delete the form type when this test created it — another
 		// test file may own the `clo_raw_data` row (same rule as atrisk.test).
@@ -959,6 +965,27 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 						role: "program_chair",
 						isActive: true,
 					},
+					{
+						id: ids.dean,
+						name: "Submission Dean",
+						email: "it-sub-dean@obelisk.local",
+						role: "dean",
+						isActive: true,
+					},
+					{
+						id: ids.aqau,
+						name: "Submission AQAU",
+						email: "it-sub-aqau@obelisk.local",
+						role: "aqau",
+						isActive: true,
+					},
+					{
+						id: ids.vpaa,
+						name: "Submission VPAA",
+						email: "it-sub-vpaa@obelisk.local",
+						role: "vpaa",
+						isActive: true,
+					},
 				],
 			});
 			await prisma.clo.create({
@@ -1006,7 +1033,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				submissionService.submit(first.formSubmissionId, ids.user, "faculty"),
 			).rejects.toThrow(/upload a class record for this section/);
 
-			// --- capture the class record → submit derives the [program_chair] chain
+			// --- capture the class record → submit derives the full ladder -------
 			await attainmentService.persistAttainment(
 				{
 					header: {},
@@ -1031,7 +1058,12 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			);
 			expect(submitted.status).toBe("submitted");
 			expect(submitted.currentApproverRole).toBe("program_chair");
-			expect(submitted.approvalSteps).toHaveLength(1);
+			expect(submitted.approvalSteps.map((s) => s.approverRole)).toEqual([
+				"program_chair",
+				"dean",
+				"aqau",
+				"vpaa",
+			]);
 
 			// A submission in flight is reused, not duplicated.
 			expect(
@@ -1040,13 +1072,27 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			).toBe(first.formSubmissionId);
 
 			// --- approved → the next init opens a fresh draft (re-upload path) ----
-			await submissionService.decide(
-				first.formSubmissionId,
-				"program_chair",
-				ids.chair,
-				"program_chair",
-				{ decision: "approved" },
-			);
+			// Walk the whole ladder: chair → dean → aqau → vpaa (last rung closes).
+			const ladder = [
+				{ role: "program_chair", userId: ids.chair },
+				{ role: "dean", userId: ids.dean },
+				{ role: "aqau", userId: ids.aqau },
+				{ role: "vpaa", userId: ids.vpaa },
+			] as const;
+			for (const [index, step] of ladder.entries()) {
+				const decided = await submissionService.decide(
+					first.formSubmissionId,
+					step.role,
+					step.userId,
+					step.role,
+					{ decision: "approved" },
+				);
+				const isLast = index === ladder.length - 1;
+				expect(decided.status).toBe(isLast ? "approved" : "submitted");
+				expect(decided.currentApproverRole).toBe(
+					isLast ? null : ladder[index + 1].role,
+				);
+			}
 			const afterApproval = await ingestService.initSubmission(
 				ids.classSection,
 				ids.user,
@@ -1068,7 +1114,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				where: { classSectionId: ids.classSection },
 			});
 			await prisma.auditLog.deleteMany({
-				where: { userId: { in: [ids.user, ids.chair] } },
+				where: { userId: { in: [ids.user, ...approverIds] } },
 			});
 			if (!preexistingType) {
 				await prisma.formType.deleteMany({
@@ -1092,7 +1138,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			await prisma.program.delete({ where: { id: ids.program } });
 			await prisma.department.delete({ where: { id: ids.department } });
 			await prisma.user.deleteMany({
-				where: { id: { in: [ids.user, ids.chair] } },
+				where: { id: { in: [ids.user, ...approverIds] } },
 			});
 		}
 	});

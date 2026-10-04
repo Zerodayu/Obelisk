@@ -586,7 +586,7 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 			await annualProgramReportService.save(apar.id, IDS.user, {
 				attachments: { cohort_tracking: true, closing_the_loop: true },
 			});
-			// Chain derived from the route registry: dean → vpaa.
+			// Chain derived from the route registry: dean → aqau → vpaa.
 			const submitted = await submissionService.submit(
 				apar.id,
 				IDS.user,
@@ -598,7 +598,11 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 			const steps = await prisma.approvalStep.findMany({
 				where: { formSubmissionId: apar.id },
 			});
-			expect(steps).toHaveLength(2);
+			expect(steps.map((s) => s.approverRole)).toEqual([
+				"dean",
+				"aqau",
+				"vpaa",
+			]);
 		} finally {
 			await cleanup([...draftIds, cohortSubmissionId]);
 		}

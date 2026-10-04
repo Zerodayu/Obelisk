@@ -39,35 +39,37 @@ Below is the complete inventory of the 28 manual forms plus the client-mandated 
 
 | Form ID | Official Form Title | Codebase Key | PDCA Phase | Retention | Preparer Roles | Canonical Approver Chain | Operational Role & Summary |
 | :--- | :--- | :--- | :---: | :---: | :--- | :--- | :--- |
-| **F01** | CLO-PLO Curriculum Map | `curriculum_map` | PLAN | Permanent | `program_chair`, `faculty` | `['aqau']` | Maps courses to PLOs with I-P-D levels; auto-checks 'D' coverage. |
-| **F02** | Portfolio Roadmap & Rubric Standards | `portfolio_roadmap` | PLAN | Permanent | `program_chair`, `faculty` | `['dean', 'aqau']` | 4-year cumulative portfolio milestones, rubrics, and calibration. |
-| **F03** | Assessment Calendar with Cohort Milestones | `assessment_calendar` | PLAN | 5 Years | `program_chair` | `['dean', 'aqau']` | Pre-seeded with 17 non-deletable institutional milestones. |
-| **F04** | Target-Setting Matrix (Cohort Benchmarks) | `target_setting_matrix` | PLAN | 5 Years | `program_chair`, `dean` | `['aqau']` | Sets target % per PLO/CLO; strictly enforces $\ge 70.0\%$ floor. |
-| **F05** | Stakeholder Consultation Records | `stakeholder_consultation` | PLAN | 5 Years | `program_chair`, `faculty`, `dean` | `['program_chair']` | Gathers advisory input from PAC, employers, alumni, students. |
+| **F01** | CLO-PLO Curriculum Map | `curriculum_map` | PLAN | Permanent | `program_chair`, `faculty` | `['aqau', 'vpaa']` | Maps courses to PLOs with I-P-D levels; auto-checks 'D' coverage. |
+| **F02** | Portfolio Roadmap & Rubric Standards | `portfolio_roadmap` | PLAN | Permanent | `program_chair`, `faculty` | `['dean', 'aqau', 'vpaa']` | 4-year cumulative portfolio milestones, rubrics, and calibration. |
+| **F03** | Assessment Calendar with Cohort Milestones | `assessment_calendar` | PLAN | 5 Years | `program_chair` | `['dean', 'aqau', 'vpaa']` | Pre-seeded with 17 non-deletable institutional milestones. |
+| **F04** | Target-Setting Matrix (Cohort Benchmarks) | `target_setting_matrix` | PLAN | 5 Years | `program_chair`, `dean` | `['aqau', 'vpaa']` | Sets target % per PLO/CLO; strictly enforces $\ge 70.0\%$ floor. |
+| **F05** | Stakeholder Consultation Records | `stakeholder_consultation` | PLAN | 5 Years | `program_chair`, `faculty`, `dean` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Gathers advisory input from PAC, employers, alumni, students. |
 | **F06** | Approved Assessment Budget | `assessment_budget` | PLAN | 5 Years | `dean` | `['vpaa']` | 12 fixed PDCA budget line items; submitted by Dean to VPAA. |
-| **F07** | Per-Student CLO Raw Data Sheet | `clo_raw_data` | DO | 5 Years | `faculty`, `program_chair` | `['program_chair']` | Primary gradebook ETL ingest; Formula 1A/1B; auto-flags at-risk. |
-| **F08** | Mid-Cycle CLO Attainment Summary | `mid_cycle_attainment` | DO/CHECK | 5 Years | `faculty` | `['program_chair']` | Formative & midterm CLO snapshot; mid-term at-risk watchlist. |
+| **F07** | Per-Student CLO Raw Data Sheet | `clo_raw_data` | DO | 5 Years | `faculty`, `program_chair` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Primary gradebook ETL ingest; Formula 1A/1B; auto-flags at-risk. |
+| **F08** | Mid-Cycle CLO Attainment Summary | `mid_cycle_attainment` | DO/CHECK | 5 Years | `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Formative & midterm CLO snapshot; mid-term at-risk watchlist. |
 | **F09** | Resource Acquisition & CQI Monitoring | `resource_monitoring` | DO | 5 Years | `dean`, `program_chair` | `['vpaa']` | Tracks F06 budget expenditure and F23 CQI implementation. |
-| **F10** | Peer Observation Record | `peer_observation` | DO | 5 Years | `program_chair`, `faculty` | `['program_chair']` | 7-dimension OBE syllabus and pedagogy classroom observation. |
-| **F11** | Portfolio Exhibition Industry Feedback | `exhibition_feedback` | DO/CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair']` | External industry practitioner scoring (10-point scale) at Y4 expo. |
-| **F12** | CLO Achievement Perception Survey | `clo_perception_survey` | DO/CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair']` | Student indirect Likert survey; flags divergence $\ge 20$ pts vs direct. |
-| **F13** | Course Assessment Report (CAR) | `course_assessment_report` | CHECK | 5 Years | `faculty` | `['program_chair', 'dean', 'aqau']` | Central 7-part operational hub combining exams, rubrics, tasks, CQI. |
-| **F14** | CLO Attainment Summary (Full Term) | `clo_attainment_summary` | CHECK | 5 Years | `faculty` | `['program_chair']` | Consolidates section-level CLO performance by year cohort. |
-| **F15** | PLO Attainment Summary (Program Level) | `plo_attainment_summary` | CHECK | 5 Years | `program_chair` | `['dean', 'aqau']` | Formula 7A rollup linking database CLO-PLO mappings. |
-| **F16** | Cohort CLO/PLO Attainment Tracking Sheet | `cohort_tracking` | CHECK | Permanent | `program_chair` | `['aqau']` | Longitudinal 4-year cohort matrix with automated trend arrows. |
-| **F17** | Student Exit Survey Tabulation | `student_exit_survey` | CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair']` | End-of-term student indirect rating across all PLOs by cohort. |
-| **F18** | Portfolio Assessment Record | `portfolio_assessment_record` | CHECK | 5 Years | `faculty`, `program_chair` | `['aqau']` | Faculty + Industry panel scoring for Y1–Y4 portfolio milestones. |
-| **F19** | Capstone Panel Evaluation Sheet | `capstone_panel_evaluation` | CHECK | 5 Years | `faculty`, `program_chair` | `['program_chair', 'aqau']` | Primary Y4 culminating evidence; min 2 faculty + 1 industry panelist. |
-| **F20** | Alumni Tracer Study Report | `alumni_tracer` | CHECK | Permanent | `program_chair`, `faculty` | `['program_chair', 'dean']` | Biennial post-grad employment & PEO sufficiency tracking. |
-| **F21** | Employer Satisfaction Survey Report | `employer_satisfaction_survey` | CHECK | Permanent | `program_chair`, `faculty` | `['program_chair', 'dean']` | Biennial industry feedback on graduate competence in workplace. |
-| **F22** | PLO Attainment Report with Gap Analysis | `plo_gap_analysis` | ACT | 5 Years | `program_chair` | `['dean']` | Identifies $< 70\%$ PLO-cohort combinations; assigns 6 root causes. |
-| **F23** | CQI Action Plan | `cqi_action_plan` | ACT | 5 Years | `program_chair` | `['dean', 'aqau']` | 2-phase living record: planned interventions $\to$ tracked outcomes. |
-| **F24** | Annual Program Assessment Report (APAR)| `annual_program_report` | ACT | Permanent | `program_chair` | `['dean', 'vpaa']` | 11-KPI dashboard; due June 30; gated strictly on approved F16. |
-| **F25** | Closing-the-Loop (CTL) Report | `closing_the_loop` | ACT | Permanent | `program_chair` | `['aqau']` | Verifies 5 mandatory conditions; computes hard `closed` status. |
+| **F10** | Peer Observation Record | `peer_observation` | DO | 5 Years | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | 7-dimension OBE syllabus and pedagogy classroom observation. |
+| **F11** | Portfolio Exhibition Industry Feedback | `exhibition_feedback` | DO/CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | External industry practitioner scoring (10-point scale) at Y4 expo. |
+| **F12** | CLO Achievement Perception Survey | `clo_perception_survey` | DO/CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Student indirect Likert survey; flags divergence $\ge 20$ pts vs direct. |
+| **F13** | Course Assessment Report (CAR) | `course_assessment_report` | CHECK | 5 Years | `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Central 7-part operational hub combining exams, rubrics, tasks, CQI. |
+| **F14** | CLO Attainment Summary (Full Term) | `clo_attainment_summary` | CHECK | 5 Years | `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Consolidates section-level CLO performance by year cohort. |
+| **F15** | PLO Attainment Summary (Program Level) | `plo_attainment_summary` | CHECK | 5 Years | `program_chair` | `['dean', 'aqau', 'vpaa']` | Formula 7A rollup linking database CLO-PLO mappings. |
+| **F16** | Cohort CLO/PLO Attainment Tracking Sheet | `cohort_tracking` | CHECK | Permanent | `program_chair` | `['aqau', 'vpaa']` | Longitudinal 4-year cohort matrix with automated trend arrows. |
+| **F17** | Student Exit Survey Tabulation | `student_exit_survey` | CHECK | 5 Years | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | End-of-term student indirect rating across all PLOs by cohort. |
+| **F18** | Portfolio Assessment Record | `portfolio_assessment_record` | CHECK | 5 Years | `faculty`, `program_chair` | `['aqau', 'vpaa']` | Faculty + Industry panel scoring for Y1–Y4 portfolio milestones. |
+| **F19** | Capstone Panel Evaluation Sheet | `capstone_panel_evaluation` | CHECK | 5 Years | `faculty`, `program_chair` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Primary Y4 culminating evidence; min 2 faculty + 1 industry panelist. |
+| **F20** | Alumni Tracer Study Report | `alumni_tracer` | CHECK | Permanent | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Biennial post-grad employment & PEO sufficiency tracking. |
+| **F21** | Employer Satisfaction Survey Report | `employer_satisfaction_survey` | CHECK | Permanent | `program_chair`, `faculty` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Biennial industry feedback on graduate competence in workplace. |
+| **F22** | PLO Attainment Report with Gap Analysis | `plo_gap_analysis` | ACT | 5 Years | `program_chair` | `['dean', 'aqau', 'vpaa']` | Identifies $< 70\%$ PLO-cohort combinations; assigns 6 root causes. |
+| **F23** | CQI Action Plan | `cqi_action_plan` | ACT | 5 Years | `program_chair` | `['dean', 'aqau', 'vpaa']` | 2-phase living record: planned interventions $\to$ tracked outcomes. |
+| **F24** | Annual Program Assessment Report (APAR)| `annual_program_report` | ACT | Permanent | `program_chair` | `['dean', 'aqau', 'vpaa']` | 11-KPI dashboard; due June 30; gated strictly on approved F16. |
+| **F25** | Closing-the-Loop (CTL) Report | `closing_the_loop` | ACT | Permanent | `program_chair` | `['aqau', 'vpaa']` | Verifies 5 mandatory conditions; computes hard `closed` status. |
 | **F26** | Systemic Gap Report | `systemic_gap_report` | ACT | Permanent | `dean` | `['vpaa']` | Triggered by 3 consecutive cycle failures; due in 30 days. |
-| **F27** | Corrective & Preventive Action (CAPA) | `capa_plan` | ACT | Permanent | `dean`, `vpaa` | `['aqau']` | Executive structural interventions approved by VPAA, monitored by AQAU. |
-| **F28** | Institutional Management Review Records | `institutional_review` | ACT | Permanent | `aqau`, `vpaa` | `['vpaa']` | Annual executive review (July 15) presided by VPAA with President. |
-| **Seq 35**| Action-Taken Record (At-Risk Remediation) | `action_taken` | ACT | 5 Years | `faculty`, `program_chair` | `['program_chair']` | Intervention log for $< 70\%$ students; approval deletes AtRiskFlags. |
+| **F27** | Corrective & Preventive Action (CAPA) | `capa_plan` | ACT | Permanent | `dean` | `['aqau', 'vpaa']` | Executive structural interventions approved by VPAA, monitored by AQAU. (VPAA no longer prepares it — review-only top role.) |
+| **F28** | Institutional Management Review Records | `institutional_review` | ACT | Permanent | `aqau` | `['vpaa']` | Annual executive review (July 15) presided by VPAA with President. (AQAU prepares; VPAA reviews and archives.) |
+| **Seq 35**| Action-Taken Record (At-Risk Remediation) | `action_taken` | ACT | 5 Years | `faculty`, `program_chair` | `['program_chair', 'dean', 'aqau', 'vpaa']` | Intervention log for $< 70\%$ students; approval deletes AtRiskFlags. |
+
+> **Chain construction (since 2026-10-05):** the *Canonical Approver Chain* column shows the full ladder every submission actually walks. `ascendToVpaa(entry)` in [`approval-routes.ts`](../apps/backend/lib/forms/approval-routes.ts) keeps the manual's **entry** rung and fills every rung above it, so **all 29 chains end at `vpaa`** — the VPAA gives the final review before archiving. Complementary rule: **the VPAA never appears in *Preparer Roles*** (top of the hierarchy — it reviews, generates the AI report, and archives; it does not originate submissions), which is why `capa_plan` (F27) is prepared by `dean` alone and `institutional_review` (F28) by `aqau` alone. The mermaid flow below and §4 keep the manual's labels and show entry points only.
 
 ### 2.2 Unspecified / Placeholder Forms in the WIN-OBE Manual
 The manual references additional schedules that do not have standardized field structures defined:
@@ -198,11 +200,11 @@ flowchart TD
    - Part 3: Year-level cohort CLO attainment summaries.
    - Part 4: At-risk student watchlist populated directly from database flags.
    - Part 5–7: Root cause analysis, instructional strategies, and CQI proposals.
-   - **Approval Routing:** Submitted by **Faculty $\to$ Program Chair $\to$ Dean $\to$ AQAU**.
+   - **Approval Routing:** Submitted by **Faculty $\to$ Program Chair $\to$ Dean $\to$ AQAU $\to$ VPAA** (final review).
 2. **At-Risk Student Remediation (Action-Taken Record / Seq 35):**
    - For every student on the F13 Part 4 watchlist, the instructor files an Action-Taken Record documenting tutoring, re-assessment, or academic advising.
-   - **Approval & Flag Clearance:** Submitted to the **Program Chair**. Upon final approval, an atomic PostgreSQL transaction triggers `approval-effects.ts`, deleting the `AtRiskFlag` records for the remediated students.
-3. **Full-Term CLO Summary (F14):** Faculty consolidate final section-level attainments. Submitted to **Program Chair**.
+   - **Approval & Flag Clearance:** Entered at the **Program Chair** and ascends **Chair $\to$ Dean $\to$ AQAU $\to$ VPAA**. Only when the **final (VPAA)** step lands does an atomic PostgreSQL transaction trigger `approval-effects.ts`, deleting the `AtRiskFlag` records for the remediated students — the flags stay on the watchlist through every intermediate review.
+3. **Full-Term CLO Summary (F14):** Faculty consolidate final section-level attainments. Entered at **Program Chair**, then **Dean $\to$ AQAU $\to$ VPAA**.
 
 ---
 
@@ -211,10 +213,10 @@ flowchart TD
    - OBELISK queries `prisma.cloToPloMap` for all active course sections and transmits attainment snapshots to the Python analytics engine.
    - **Formula 7A:** Aggregates mapped CLO averages into Program Learning Outcomes:
      $$\text{PLO Attainment} = \frac{\sum_{\text{mapped CLOs}} \text{Mean Attainment}}{\text{Total Mapped CLOs}}$$
-   - **Approval Routing:** Prepared by **Program Chair $\to$ Dean $\to$ AQAU**.
+   - **Approval Routing:** Prepared by **Program Chair $\to$ Dean $\to$ AQAU $\to$ VPAA**.
 2. **Cohort Tracking Sheet (F16):**
    - Longitudinal tracking across 4 academic years. Pure function `buildCohortLines` computes trend indicators ($\uparrow, \downarrow, \rightarrow$) and triggers CQI alerts for declining cohorts.
-   - **Permanent retention record.** Submitted by **Program Chair $\to$ AQAU**.
+   - **Permanent retention record.** Entered at **Program Chair**, then **AQAU $\to$ VPAA**.
 3. **Indirect Instruments Consolidation (F17, F18, F19, F20, F21):**
    - Graduating classes complete exit surveys (**F17**).
    - Portfolios (**F18**) and Capstones (**F19**) are evaluated by multi-member panels with required industry practitioner participation.

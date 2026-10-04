@@ -102,44 +102,48 @@
 The institutional manual specifies a 5-tier institutional hierarchy:
 $$\text{Faculty (Preparer)} \longrightarrow \text{Program Chair} \longrightarrow \text{Dean} \longrightarrow \text{AQAU} \longrightarrow \text{VPAA}$$
 
-The codebase establishes approval routing via [`apps/backend/lib/forms/approval-routes.ts`](../apps/backend/lib/forms/approval-routes.ts) and [`state-machine.ts`](../apps/backend/lib/forms/state-machine.ts). The registry now holds **29 form codes**; PDCA stage and sequence numbers are assigned separately by each module's `ensure*FormType` (not by the registry). Cross-examination against the manual:
+The codebase establishes approval routing via [`apps/backend/lib/forms/approval-routes.ts`](../apps/backend/lib/forms/approval-routes.ts) and [`state-machine.ts`](../apps/backend/lib/forms/state-machine.ts). The registry now holds **29 form codes**; PDCA stage and sequence numbers are assigned separately by each module's `ensure*FormType` (not by the registry).
+
+> **Chain construction (since 2026-10-05):** the manual's per-form line decides only **where a chain enters**; `ascendToVpaa(entry)` then fills every rung above it, so **every registered chain ends at `vpaa`** (institutional rule 1) and **the VPAA never appears in `preparerRoles`** (institutional rule 2 — it reviews the final step, generates the AI report, and archives; it never originates a submission). The *Discrepancy* column below therefore compares **entry rungs** with the manual.
+
+Cross-examination against the manual:
 
 | Form Code & Title | Documented Approval Chain | Codebase Registered Chain (`approval-routes.ts`) | Preparer Roles in Code | Discrepancy Analysis |
 | :--- | :--- | :--- | :--- | :--- |
-| `curriculum_map` (F01) | Chair $\to$ Comm $\to$ AQAU | `['aqau']` | `program_chair`, `faculty` | Skips Dean; Committee omitted (offline). |
-| `portfolio_roadmap` (F02) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau']` | `program_chair`, `faculty` | Synchronized. |
-| `assessment_calendar` (F03) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau']` | `program_chair` | Synchronized. |
-| `target_setting_matrix` (F04) | Chair/Dean $\to$ AQAU | `['aqau']` | `program_chair`, `dean` | Synchronized. |
-| `stakeholder_consultation` (F05) | Chair $\to$ Dean | `['program_chair']` | `program_chair`, `faculty`, `dean` | Registry-only: no FormType, no service, no UI. |
+| `curriculum_map` (F01) | Chair $\to$ Comm $\to$ AQAU | `['aqau', 'vpaa']` | `program_chair`, `faculty` | Skips Dean; Committee omitted (offline). |
+| `portfolio_roadmap` (F02) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Synchronized entry. |
+| `assessment_calendar` (F03) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
+| `target_setting_matrix` (F04) | Chair/Dean $\to$ AQAU | `['aqau', 'vpaa']` | `program_chair`, `dean` | Synchronized entry. |
+| `stakeholder_consultation` (F05) | Chair $\to$ Dean | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty`, `dean` | Registry-only: no FormType, no service, no UI. |
 | `assessment_budget` (F06) | Dean $\to$ VPAA (copy AQAU) | `['vpaa']` | `dean` | AQAU informational copy collapsed out. |
-| `clo_raw_data` (F07) | Faculty $\to$ Chair | `['program_chair']` | `faculty`, `program_chair` | Chair permitted to prepare on behalf of program; no FormType row created in production code. |
-| `mid_cycle_attainment` (F08)| Faculty $\to$ Chair | `['program_chair']` | `faculty` | Synchronized. |
-| `resource_monitoring` (F09) | Dean/Chair $\to$ VPAA | `['vpaa']` | `dean`, `program_chair` | Synchronized. |
-| `peer_observation` (F10) | Chair $\to$ Chair (self) | `['program_chair']` | `program_chair`, `faculty` | Same-role chain; no self-approval rule enforced. |
-| `exhibition_feedback` (F11) | Chair $\to$ Chair | `['program_chair']` | `program_chair`, `faculty` | Synchronized. |
-| `clo_perception_survey` (F12) | Chair $\to$ Chair | `['program_chair']` | `program_chair`, `faculty` | Synchronized. |
-| `course_assessment_report` (CAR)| Faculty $\to$ Chair $\to$ AQAU | `['program_chair', 'dean', 'aqau']` | `faculty` | Injects `dean` step not specified in F13 header. |
-| `clo_attainment_summary` (F14)| Faculty $\to$ Chair | `['program_chair']` | `faculty` | Synchronized. |
-| `plo_attainment_summary` (F15)| Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau']` | `program_chair` | Synchronized. |
-| `cohort_tracking` (F16) | Chair $\to$ AQAU | `['aqau']` | `program_chair` | Synchronized. |
-| `student_exit_survey` (F17) | Chair $\to$ Chair | `['program_chair']` | `program_chair`, `faculty` | Synchronized. |
-| `portfolio_assessment_record` (F18)| Chair $\to$ AQAU | `['aqau']` | `faculty`, `program_chair` | Synchronized. |
-| `capstone_panel_evaluation` (F19)| Chair $\to$ AQAU | `['program_chair', 'aqau']` | `faculty`, `program_chair` | Synchronized. |
-| `alumni_tracer` (F20) | Chair $\to$ Dean | `['program_chair', 'dean']` | `program_chair`, `faculty` | Synchronized (code: `alumni_tracer`). |
-| `employer_satisfaction_survey` (F21) | Chair $\to$ Dean | `['program_chair', 'dean']` | `program_chair`, `faculty` | Synchronized (code is **not** `employer_survey`). |
-| `plo_gap_analysis` (F22) | Chair $\to$ Dean | `['dean']` | `program_chair` | Synchronized. |
-| `cqi_action_plan` (F23) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau']` | `program_chair` | Synchronized. |
-| `annual_program_report` (F24) | Chair $\to$ Dean $\to$ VPAA | `['dean', 'vpaa']` | `program_chair` | Synchronized (Due June 30). |
-| `closing_the_loop` (F25) | Chair $\to$ AQAU | `['aqau']` | `program_chair` | Synchronized. |
+| `clo_raw_data` (F07) | Faculty $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty`, `program_chair` | Chair permitted to prepare on behalf of program; no FormType row created in production code. |
+| `mid_cycle_attainment` (F08)| Faculty $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty` | Synchronized entry. |
+| `resource_monitoring` (F09) | Dean/Chair $\to$ VPAA | `['vpaa']` | `dean`, `program_chair` | Synchronized entry. |
+| `peer_observation` (F10) | Chair $\to$ Chair (self) | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Same-role first rung (chair may prepare + approve); no self-approval rule enforced. |
+| `exhibition_feedback` (F11) | Chair $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Same-role first rung; no self-approval rule enforced. |
+| `clo_perception_survey` (F12) | Chair $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Same-role first rung; no self-approval rule enforced. |
+| `course_assessment_report` (CAR)| Faculty $\to$ Chair $\to$ AQAU | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty` | Injects `dean` step not specified in F13 header. |
+| `clo_attainment_summary` (F14)| Faculty $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty` | Synchronized entry. |
+| `plo_attainment_summary` (F15)| Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
+| `cohort_tracking` (F16) | Chair $\to$ AQAU | `['aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
+| `student_exit_survey` (F17) | Chair $\to$ Chair | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Same-role first rung; no self-approval rule enforced. |
+| `portfolio_assessment_record` (F18)| Chair $\to$ AQAU | `['aqau', 'vpaa']` | `faculty`, `program_chair` | Synchronized entry. |
+| `capstone_panel_evaluation` (F19)| Chair $\to$ AQAU | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty`, `program_chair` | `dean` rung inserted between chair and AQAU. |
+| `alumni_tracer` (F20) | Chair $\to$ Dean | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Synchronized entry (code: `alumni_tracer`). |
+| `employer_satisfaction_survey` (F21) | Chair $\to$ Dean | `['program_chair', 'dean', 'aqau', 'vpaa']` | `program_chair`, `faculty` | Synchronized entry (code is **not** `employer_survey`). |
+| `plo_gap_analysis` (F22) | Chair $\to$ Dean | `['dean', 'aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
+| `cqi_action_plan` (F23) | Chair $\to$ Dean $\to$ AQAU | `['dean', 'aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
+| `annual_program_report` (F24) | Chair $\to$ Dean $\to$ VPAA | `['dean', 'aqau', 'vpaa']` | `program_chair` | `aqau` rung inserted before VPAA (Due June 30). |
+| `closing_the_loop` (F25) | Chair $\to$ AQAU | `['aqau', 'vpaa']` | `program_chair` | Synchronized entry. |
 | `systemic_gap_report` (F26) | Dean $\to$ PAC + VPAA | `['vpaa']` | `dean` | PAC omitted (offline body); AQAU copy collapsed. |
-| `capa_plan` (F27) | Dean/VPAA $\to$ AQAU | `['aqau']` | `dean`, `vpaa` | Synchronized. |
-| `institutional_review` (F28) | VPAA/QA $\to$ President | `['vpaa']` | `aqau`, `vpaa` | President role mapped to VPAA in code. |
-| `action_taken` (seq 35) | *Not in manual* (client requirement) | `['program_chair']` | `faculty`, `program_chair` | New: at-risk intervention record (§3.2). |
+| `capa_plan` (F27) | Dean/VPAA $\to$ AQAU | `['aqau', 'vpaa']` | `dean` | **VPAA dropped from the preparers** (rule 2) — the manual lets the VPAA originate it. |
+| `institutional_review` (F28) | VPAA/QA $\to$ President | `['vpaa']` | `aqau` | President role mapped to VPAA in code; **VPAA dropped from the preparers** (rule 2). |
+| `action_taken` (seq 35) | *Not in manual* (client requirement) | `['program_chair', 'dean', 'aqau', 'vpaa']` | `faculty`, `program_chair` | New: at-risk intervention record (§3.2); flags clear on the **final** (VPAA) approval. |
 
 - **Critical Hierarchy Reality:**
   1. **Faculty is Never an Approver:** In code, `faculty` is categorized strictly as a preparer. No workflow route permits faculty to approve any document.
-  2. **Zero Forms Implement the Full 4-Step Approver Chain:** Not a single institutional form routes through all 4 approver roles (`program_chair` $\to$ `dean` $\to$ `aqau` $\to$ `vpaa`). The longest registered chain is 3 steps (`course_assessment_report`: chair $\to$ dean $\to$ aqau); several forms terminate at `vpaa` but never traverse the full path. The full chain exists solely as an uninvoked `DEFAULT_APPROVAL_ROUTE` fallback (`approval-routes.ts:224-227`). Live-verified in `testing_results.md` 9.6.
-  3. **VPAA Archive Monopoly:** Archiving approved forms is restricted to `vpaa` and `system_admin` (`FEATURE_ACCESS.archive`, [`apps/backend/lib/role-access.ts:21`](../apps/backend/lib/role-access.ts)). AQAU can approve institutional quality filings but cannot archive them.
+  2. **Every Form Reaches the VPAA (resolved 2026-10-05):** all 29 registered chains now run from their entry rung, gap-free, to `vpaa` — built by `ascendToVpaa()` in `approval-routes.ts` and pinned by `test/unit/approval-routes.test.ts` ("ends every chain at the VPAA", "never lets the VPAA prepare a submission"). Nine forms previously terminated at the program chair and several at dean/AQAU; the full chain used to exist only as the uninvoked `DEFAULT_APPROVAL_ROUTE` fallback. Live-verified before the change in `testing_results.md` 9.6; re-verification pending.
+  3. **VPAA Archive Monopoly:** Archiving approved forms is restricted to `vpaa` and `system_admin` (`FEATURE_ACCESS.archive`, [`apps/backend/lib/role-access.ts:21`](../apps/backend/lib/role-access.ts)). AQAU can approve institutional quality filings but cannot archive them. The VPAA's verbs on a submission are exactly: final approve/return, AI report generation, archive — it never prepares one (rule 2).
 
 ### 3.2 At-Risk Remediation / Action-Taken Workflow `[IMPLEMENTED 2026-09-30]`
 - **Institutional Requirement:** Manual §3.5.8 mandates that any student failing to meet the 70% CLO threshold must be placed on an At-Risk Watchlist, requiring the course instructor to submit an official **Action-Taken / Remediation Record** detailing tutoring, re-assessment, or academic counseling before the flag can be resolved.
@@ -155,7 +159,7 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
   ```
   Instead, remediation state lives in `FormSubmission.formData`, and resolution = flag **deletion inside the approval transaction**.
 - **Implementation:**
-  - **Form type:** `action_taken` — "Action-Taken Record (At-Risk Students)", PDCA stage ACT, sequence 35, registered in `APPROVAL_ROUTES` (preparers `faculty`/`program_chair`, chain `['program_chair']`) and mirrored in the frontend `FORM_ACCESS` (drift-guarded by `test/unit/role-access-sync.test.ts`).
+  - **Form type:** `action_taken` — "Action-Taken Record (At-Risk Students)", PDCA stage ACT, sequence 35, registered in `APPROVAL_ROUTES` (preparers `faculty`/`program_chair`, chain `['program_chair', 'dean', 'aqau', 'vpaa']`) and mirrored in the frontend `FORM_ACCESS` (drift-guarded by `test/unit/role-access-sync.test.ts`); the `AtRiskFlag` clear runs on the **final** (VPAA) approval.
   - **Endpoints** ([`src/v1/atrisk/controller.ts`](../apps/backend/src/v1/atrisk/controller.ts), mounted at `/api/v1/atrisk`): `GET /flags` (watchlist, optionally scoped by `classSectionId`, role-gated by `assertCanCaptureClassRecords`, deliberately **not** `cached()` — the 60s TTL served a stale watchlist during the live run); `POST /action/init` (opens/reuses a draft, term/program resolved server-side); `GET /action/:id`; `PUT /action/:id` (owner + draft/returned only).
   - **Submit gate** (registered from [`src/v1/atrisk/service.ts:206-222`](../apps/backend/src/v1/atrisk/service.ts)): rejects empty `studentIds` and blank/whitespace `actionTaken`.
   - **Clear-on-final-approval effect** ([`lib/forms/approval-effects.ts`](../apps/backend/lib/forms/approval-effects.ts)): runs **inside the same transaction** that flips the submission to `approved` (invoked from `src/v1/forms/service.ts:272-285`), deleting `AtRiskFlag` rows for the selected students scoped to the form's `classSectionId`; returns `{ flagsCleared }` merged into the audit entry. A crash can never leave a "cleared without approval" or "approved but not cleared" state.
@@ -246,35 +250,35 @@ The codebase establishes approval routing via [`apps/backend/lib/forms/approval-
 
 | Form ID | Official Form Title | PDCA Phase | Backend Service & Route | Frontend Route & Status | Approval Chain | Actual Status |
 | :--- | :--- | :---: | :--- | :--- | :---: | :--- |
-| **F01** | CLO-PLO Curriculum Map | PLAN | `CurriculumMapService`<br>`/api/v1/plan/curriculum-map` | `/forms/plan/curriculum-map` | `['aqau']` | **Partially Blocked** (Save POST/PUT bug) |
-| **F02** | Portfolio Roadmap & Rubric | PLAN | `PortfolioRoadmapService`<br>`/api/v1/periodic/portfolio-roadmap` | **MISSING** (No UI route) | `['dean', 'aqau']` | **Backend-Only** |
-| **F03** | Assessment Calendar | PLAN | `AssessmentCalendarService`<br>`/api/v1/plan/assessment-calendar` | `/forms/plan/assessment-calendar` | `['dean', 'aqau']` | **Fully Implemented** |
-| **F04** | Target-Setting Matrix | PLAN | `TargetSettingMatrixService`<br>`/api/v1/plan/target-setting-matrix` | `/forms/plan/target-setting-matrix` | `['aqau']` | **Fully Implemented** |
-| **F05** | Stakeholder Consultation | PLAN | None (registry entry `stakeholder_consultation` only) | **MISSING** (No UI route) | `['program_chair']` | **Registry-Only** (no FormType, service, or store) |
+| **F01** | CLO-PLO Curriculum Map | PLAN | `CurriculumMapService`<br>`/api/v1/plan/curriculum-map` | `/forms/plan/curriculum-map` | `['aqau', 'vpaa']` | **Partially Blocked** (Save POST/PUT bug) |
+| **F02** | Portfolio Roadmap & Rubric | PLAN | `PortfolioRoadmapService`<br>`/api/v1/periodic/portfolio-roadmap` | **MISSING** (No UI route) | `['dean', 'aqau', 'vpaa']` | **Backend-Only** |
+| **F03** | Assessment Calendar | PLAN | `AssessmentCalendarService`<br>`/api/v1/plan/assessment-calendar` | `/forms/plan/assessment-calendar` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F04** | Target-Setting Matrix | PLAN | `TargetSettingMatrixService`<br>`/api/v1/plan/target-setting-matrix` | `/forms/plan/target-setting-matrix` | `['aqau', 'vpaa']` | **Fully Implemented** |
+| **F05** | Stakeholder Consultation | PLAN | None (registry entry `stakeholder_consultation` only) | **MISSING** (No UI route) | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Registry-Only** (no FormType, service, or store) |
 | **F06** | Approved Assessment Budget | PLAN | `AssessmentBudgetService`<br>`/api/v1/plan/assessment-budget` | `/forms/plan/assessment-budget` | `['vpaa']` | **Fully Implemented** |
-| **F07** | Per-Student CLO Raw Data Sheet | DO | `IngestService`<br>`/api/v1/ingest/upload` | `/forms/clo-raw-data` | `['program_chair']` | **Fully Implemented** (no FormType row; data-capture route) |
-| **F08** | Mid-Cycle CLO Attainment | DO | `MidCycleAttainmentService`<br>`/api/v1/check/mid-cycle-attainment` | `/forms/check/mid-cycle-attainment` | `['program_chair']` | **Fully Implemented** |
+| **F07** | Per-Student CLO Raw Data Sheet | DO | `IngestService`<br>`/api/v1/ingest/upload` | `/forms/clo-raw-data` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** (no FormType row; data-capture route) |
+| **F08** | Mid-Cycle CLO Attainment | DO | `MidCycleAttainmentService`<br>`/api/v1/check/mid-cycle-attainment` | `/forms/check/mid-cycle-attainment` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
 | **F09** | Resource Monitoring | DO | `ResourceMonitoringService`<br>`/api/v1/periodic/resource-monitoring` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
-| **F10** | Peer Observation Record | DO | `PeerObservationService`<br>`/api/v1/check/peer-observation` | `/forms/check/peer-observation` | `['program_chair']` | **Fully Implemented** |
-| **F11** | Exhibition Industry Feedback | DO | `ExhibitionFeedbackService`<br>`/api/v1/check/exhibition-feedback` | `/forms/check/exhibition-feedback` | `['program_chair']` | **Fully Implemented** |
-| **F12** | CLO Perception Survey | DO | `CloPerceptionSurveyService`<br>`/api/v1/check/clo-perception-survey` | `/forms/check/clo-perception-survey` | `['program_chair']` | **Fully Implemented** |
-| **F13** | Course Assessment Report (CAR) | CHECK | `CarService`<br>`/api/v1/car` | `/forms/course-assessment-report` | `['program_chair', 'dean', 'aqau']` | **Partially Blocked** (Save verb, Enrolled=0; P2 dashes for this template) |
-| **F14** | CLO Attainment Summary | CHECK | `CloSummaryService`<br>`/api/v1/rollup/clo-attainment-summary` | `/forms/attainment/clo-attainment-summary` | `['program_chair']` | **Fully Implemented** |
-| **F15** | PLO Attainment Summary | CHECK | `PloSummaryService`<br>`/api/v1/rollup/plo-attainment-summary` | `/forms/attainment/plo-attainment-summary` | `['dean', 'aqau']` | **Fully Implemented** (mapping bridge fixed 2026-09-29, live-verified) |
-| **F16** | Cohort Tracking Sheet | CHECK | `CohortTrackingService`<br>`/api/v1/rollup/cohort-tracking` | `/forms/attainment/cohort-tracking` | `['aqau']` | **Fully Implemented** |
-| **F17** | Student Exit Survey Tabulation | CHECK | `StudentExitSurveyService`<br>`/api/v1/check/student-exit-survey` | `/forms/check/student-exit-survey` | `['program_chair']` | **Fully Implemented** |
-| **F18** | Portfolio Assessment Record | CHECK | `PortfolioAssessmentService`<br>`/api/v1/check/portfolio-assessment` | `/forms/check/portfolio-assessment` | `['aqau']` | **Fully Implemented** (code: `portfolio_assessment_record`) |
-| **F19** | Capstone Panel Evaluation | CHECK | `CapstonePanelEvaluationService`<br>`/api/v1/check/capstone-panel` | `/forms/check/capstone-panel` | `['program_chair', 'aqau']` | **Fully Implemented** |
-| **F20** | Alumni Tracer Study Report | CHECK | `AlumniTracerService`<br>`/api/v1/periodic/alumni-tracer` | **MISSING** (No UI route) | `['program_chair', 'dean']` | **Deferred per Scope** |
-| **F21** | Employer Satisfaction Survey | CHECK | `EmployerSurveyService`<br>`/api/v1/periodic/employer-survey` | **MISSING** (No UI route) | `['program_chair', 'dean']` | **Deferred per Scope** (code: `employer_satisfaction_survey`) |
-| **F22** | PLO Gap Analysis Report | ACT | `PloGapAnalysisService`<br>`/api/v1/cqi/plo-gap-analysis` | `/forms/cqi/plo-gap-analysis` | `['dean']` | **Fully Implemented** |
-| **F23** | CQI Action Plan | ACT | `CqiActionPlanService`<br>`/api/v1/cqi/cqi-action-plan` | `/forms/cqi/cqi-action-plan` | `['dean', 'aqau']` | **Fully Implemented** |
-| **F24** | Annual Program Report (APAR) | ACT | `AnnualProgramReportService`<br>`/api/v1/cqi/annual-program-report` | `/forms/cqi/annual-program-report` | `['dean', 'vpaa']` | **Fully Implemented** |
-| **F25** | Closing-the-Loop (CTL) Report | ACT | `ClosingTheLoopService`<br>`/api/v1/cqi/closing-the-loop` | `/forms/cqi/closing-the-loop` | `['aqau']` | **Fully Implemented** |
+| **F10** | Peer Observation Record | DO | `PeerObservationService`<br>`/api/v1/check/peer-observation` | `/forms/check/peer-observation` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F11** | Exhibition Industry Feedback | DO | `ExhibitionFeedbackService`<br>`/api/v1/check/exhibition-feedback` | `/forms/check/exhibition-feedback` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F12** | CLO Perception Survey | DO | `CloPerceptionSurveyService`<br>`/api/v1/check/clo-perception-survey` | `/forms/check/clo-perception-survey` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F13** | Course Assessment Report (CAR) | CHECK | `CarService`<br>`/api/v1/car` | `/forms/course-assessment-report` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Partially Blocked** (Save verb, Enrolled=0; P2 dashes for this template) |
+| **F14** | CLO Attainment Summary | CHECK | `CloSummaryService`<br>`/api/v1/rollup/clo-attainment-summary` | `/forms/attainment/clo-attainment-summary` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F15** | PLO Attainment Summary | CHECK | `PloSummaryService`<br>`/api/v1/rollup/plo-attainment-summary` | `/forms/attainment/plo-attainment-summary` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** (mapping bridge fixed 2026-09-29, live-verified) |
+| **F16** | Cohort Tracking Sheet | CHECK | `CohortTrackingService`<br>`/api/v1/rollup/cohort-tracking` | `/forms/attainment/cohort-tracking` | `['aqau', 'vpaa']` | **Fully Implemented** |
+| **F17** | Student Exit Survey Tabulation | CHECK | `StudentExitSurveyService`<br>`/api/v1/check/student-exit-survey` | `/forms/check/student-exit-survey` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F18** | Portfolio Assessment Record | CHECK | `PortfolioAssessmentService`<br>`/api/v1/check/portfolio-assessment` | `/forms/check/portfolio-assessment` | `['aqau', 'vpaa']` | **Fully Implemented** (code: `portfolio_assessment_record`) |
+| **F19** | Capstone Panel Evaluation | CHECK | `CapstonePanelEvaluationService`<br>`/api/v1/check/capstone-panel` | `/forms/check/capstone-panel` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F20** | Alumni Tracer Study Report | CHECK | `AlumniTracerService`<br>`/api/v1/periodic/alumni-tracer` | **MISSING** (No UI route) | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Deferred per Scope** |
+| **F21** | Employer Satisfaction Survey | CHECK | `EmployerSurveyService`<br>`/api/v1/periodic/employer-survey` | **MISSING** (No UI route) | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Deferred per Scope** (code: `employer_satisfaction_survey`) |
+| **F22** | PLO Gap Analysis Report | ACT | `PloGapAnalysisService`<br>`/api/v1/cqi/plo-gap-analysis` | `/forms/cqi/plo-gap-analysis` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F23** | CQI Action Plan | ACT | `CqiActionPlanService`<br>`/api/v1/cqi/cqi-action-plan` | `/forms/cqi/cqi-action-plan` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F24** | Annual Program Report (APAR) | ACT | `AnnualProgramReportService`<br>`/api/v1/cqi/annual-program-report` | `/forms/cqi/annual-program-report` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
+| **F25** | Closing-the-Loop (CTL) Report | ACT | `ClosingTheLoopService`<br>`/api/v1/cqi/closing-the-loop` | `/forms/cqi/closing-the-loop` | `['aqau', 'vpaa']` | **Fully Implemented** |
 | **F26** | Systemic Gap Report | ACT | `SystemicGapReportService`<br>`/api/v1/periodic/systemic-gap-report` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
-| **F27** | CAPA Plan | ACT | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | **MISSING** (No UI route) | `['aqau']` | **Backend-Only** |
+| **F27** | CAPA Plan | ACT | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | **MISSING** (No UI route) | `['aqau', 'vpaa']` | **Backend-Only** |
 | **F28** | Institutional Review | ACT | `InstitutionalReviewService`<br>`/api/v1/periodic/institutional-review` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
-| **Seq 35** | Action-Taken Record (At-Risk) | ACT | `AtRiskService`<br>`/api/v1/atrisk/*` | `/forms/cqi/action-taken` | `['program_chair']` | **Fully Implemented** (client requirement, not in manual) |
+| **Seq 35** | Action-Taken Record (At-Risk) | ACT | `AtRiskService`<br>`/api/v1/atrisk/*` | `/forms/cqi/action-taken` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** (client requirement, not in manual) |
 | **F29–F37, F41** | Specialty & Consolidation Schedules | VARIOUS | None (Undefined in manual) | None | None | **Unspecified / Future Scope** |
 
 ---

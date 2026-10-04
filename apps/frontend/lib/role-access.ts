@@ -93,9 +93,16 @@ export const PLO_MANAGEMENT_ROLES: readonly UserRole[] =
   FEATURE_ACCESS.managePlos;
 
 export interface FormAccessRoute {
-  /** Roles allowed to prepare/submit this form. */
+  /**
+   * Roles allowed to prepare/submit this form. Never contains `vpaa` — the
+   * top role only reviews (final approval), generates the AI report, and
+   * archives.
+   */
   preparers: readonly UserRole[];
-  /** Ordered approval chain (ascending canonical order, may skip roles). */
+  /**
+   * Ordered approval chain — ascending canonical order, contiguous from its
+   * entry role through `vpaa` (every chain reaches the VPAA).
+   */
   chain: readonly UserRole[];
 }
 
@@ -109,23 +116,23 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
   // --- PLAN-phase setup ---
   curriculum_map: {
     preparers: ["program_chair", "faculty"],
-    chain: ["aqau"],
+    chain: ["aqau", "vpaa"],
   },
   portfolio_roadmap: {
     preparers: ["program_chair", "faculty"],
-    chain: ["dean", "aqau"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   assessment_calendar: {
     preparers: ["program_chair"],
-    chain: ["dean", "aqau"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   target_setting_matrix: {
     preparers: ["program_chair", "dean"],
-    chain: ["aqau"],
+    chain: ["aqau", "vpaa"],
   },
   stakeholder_consultation: {
     preparers: ["program_chair", "faculty", "dean"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   assessment_budget: {
     preparers: ["dean"],
@@ -135,11 +142,11 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
   // --- DO / data capture ---
   clo_raw_data: {
     preparers: ["faculty", "program_chair"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   mid_cycle_attainment: {
     preparers: ["faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   resource_monitoring: {
     preparers: ["dean", "program_chair"],
@@ -147,89 +154,89 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
   },
   peer_observation: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   exhibition_feedback: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   clo_perception_survey: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
 
   // --- CHECK / roll-up chain ---
   course_assessment_report: {
     preparers: ["faculty"],
-    chain: ["program_chair", "dean", "aqau"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   clo_attainment_summary: {
     preparers: ["faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   plo_attainment_summary: {
     preparers: ["program_chair"],
-    chain: ["dean", "aqau"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   cohort_tracking: {
     preparers: ["program_chair"],
-    chain: ["aqau"],
+    chain: ["aqau", "vpaa"],
   },
   student_exit_survey: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   portfolio_assessment_record: {
     preparers: ["faculty", "program_chair"],
-    chain: ["aqau"],
+    chain: ["aqau", "vpaa"],
   },
   capstone_panel_evaluation: {
     preparers: ["faculty", "program_chair"],
-    chain: ["program_chair", "aqau"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   alumni_tracer: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair", "dean"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
   employer_satisfaction_survey: {
     preparers: ["program_chair", "faculty"],
-    chain: ["program_chair", "dean"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
 
   // --- ACT / CQI loop ---
   plo_gap_analysis: {
     preparers: ["program_chair"],
-    chain: ["dean"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   cqi_action_plan: {
     preparers: ["program_chair"],
-    chain: ["dean", "aqau"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   annual_program_report: {
     preparers: ["program_chair"],
-    chain: ["dean", "vpaa"],
+    chain: ["dean", "aqau", "vpaa"],
   },
   closing_the_loop: {
     preparers: ["program_chair"],
-    chain: ["aqau"],
+    chain: ["aqau", "vpaa"],
   },
   systemic_gap_report: {
     preparers: ["dean"],
     chain: ["vpaa"],
   },
   capa_plan: {
-    preparers: ["dean", "vpaa"],
-    chain: ["aqau"],
+    preparers: ["dean"],
+    chain: ["aqau", "vpaa"],
   },
   institutional_review: {
-    preparers: ["aqau", "vpaa"],
+    preparers: ["aqau"],
     chain: ["vpaa"],
   },
 
   // --- ACT / at-risk intervention (client requirement, see system-docs/roadmap.md) ---
   action_taken: {
     preparers: ["faculty", "program_chair"],
-    chain: ["program_chair"],
+    chain: ["program_chair", "dean", "aqau", "vpaa"],
   },
 };
 
