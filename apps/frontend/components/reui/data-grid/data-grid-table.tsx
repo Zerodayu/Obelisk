@@ -24,6 +24,7 @@ import type {
   DataGridTableInstance,
 } from "@/components/reui/data-grid/data-grid";
 import { useDataGrid } from "@/components/reui/data-grid/data-grid";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -1525,8 +1526,10 @@ function DataGridTableRowPin<TData extends object>({
   const isPinned = row.getIsPinned();
 
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon-sm"
       aria-label={isPinned ? "Unpin row" : "Pin row"}
       onClick={(event) => {
         // Pinning must not bubble into the row's onRowClick handler.
@@ -1539,6 +1542,9 @@ function DataGridTableRowPin<TData extends object>({
         }
       }}
       className={cn(
+        // Drop the ghost variant's border and hover fill: this is an inline
+        // affordance that only tints its icon.
+        "border-0 hover:bg-transparent",
         "text-muted-foreground hover:text-foreground rounded-full inline-flex size-7 items-center justify-center transition-colors",
         isPinned && "text-primary hover:text-primary/80",
       )}
@@ -1570,7 +1576,7 @@ function DataGridTableRowPin<TData extends object>({
           <path d="M5 17h14v-1.76a2 2 0 00-1.11-1.79l-1.78-.9A2 2 0 0115 10.76V6h1a2 2 0 000-4H8a2 2 0 000 4h1v4.76a2 2 0 01-1.11 1.79l-1.78.9A2 2 0 005 15.24z" />
         </svg>
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -1679,8 +1685,10 @@ function DataGridTableRowExpand<TData extends object>({
       )}
     >
       {row.getCanExpand() ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="icon-sm"
           aria-expanded={isExpanded}
           aria-label={isExpanded ? "Collapse row" : "Expand row"}
           onClick={(event) => {
@@ -1689,6 +1697,9 @@ function DataGridTableRowExpand<TData extends object>({
             row.toggleExpanded();
           }}
           className={cn(
+            // Same as the pin control: no border or hover fill, and controlSize
+            // (size-6/size-7) wins over the icon size Button ships with.
+            "border-0 hover:bg-transparent",
             "text-muted-foreground hover:text-foreground rounded-full inline-flex items-center justify-center transition-colors",
             controlSize,
           )}
@@ -1710,7 +1721,7 @@ function DataGridTableRowExpand<TData extends object>({
               <path d="m6 9 6 6 6-6" />
             </svg>
           )}
-        </button>
+        </Button>
       ) : (
         // Leaf spacer: compact by design so leaf content sits near the
         // parent label instead of a full toggle width deeper.

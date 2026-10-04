@@ -912,17 +912,20 @@ export function CarForm() {
           {/* Tab navigation */}
           <div className="flex gap-1 overflow-x-auto border-b">
             {TABS.map((tab) => (
-              <button
+              <Button
                 key={tab.key}
+                variant="ghost"
                 onClick={() => setActiveTab(tab.key)}
-                className={`whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors border-b-2 ${
+                // Neutralise Button's default box (h-8, pill corners, hover
+                // fill, full border) so the underline-tab strip is unchanged.
+                className={`h-auto rounded-none border-0 border-b-2 hover:bg-transparent whitespace-nowrap px-3 py-2 text-xs font-medium transition-colors ${
                   activeTab === tab.key
-                    ? "border-primary text-foreground"
+                    ? "border-primary text-foreground hover:text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab.label}
-              </button>
+              </Button>
             ))}
           </div>
 

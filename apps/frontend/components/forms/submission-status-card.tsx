@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/reui/badge";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api-client";
 import { roleLabel, type UserRole } from "@/lib/roles";
@@ -104,12 +105,11 @@ export function SubmissionStatusCard({
         ) : null}
       </div>
 
-      <Link
-        className="inline-flex h-7 items-center gap-1.5 rounded-2xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-        href={`/submissions/${submission.id}`}
-      >
-        Open approval screen <ArrowRightIcon className="size-3.5" />
-      </Link>
+      <Button asChild size="sm" variant="ghost">
+        <Link href={`/submissions/${submission.id}`}>
+          Open approval screen <ArrowRightIcon />
+        </Link>
+      </Button>
     </section>
   );
 }

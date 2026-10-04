@@ -25,6 +25,7 @@ import {
   AttachmentMedia,
   AttachmentTitle,
 } from "@/components/ui/attachment";
+import { Button } from "@/components/ui/button";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -415,8 +416,9 @@ export function FileUpload({
         }}
       />
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
         disabled={disabled || maxReached}
         data-dragging={dragging}
         onClick={() => inputRef.current?.click()}
@@ -450,6 +452,10 @@ export function FileUpload({
           "hover:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           "data-[dragging=true]:border-foreground",
           "disabled:pointer-events-none disabled:opacity-55",
+          // Neutralise Button's md box (h-8 + px-3/py-2 — the dropzone's own
+          // p-7/p-5 below absorb the padding) and the ghost hover chrome, so
+          // the dropzone keeps its full-bleed sizing and colours.
+          "h-auto justify-start whitespace-normal font-normal hover:bg-background hover:text-foreground focus-visible:border-border",
           centered
             ? "min-h-56 flex-col items-center justify-center gap-3 p-7 text-center"
             : "items-center gap-4 p-5 text-left",
@@ -505,7 +511,7 @@ export function FileUpload({
         >
           {browseLabel}
         </span>
-      </button>
+      </Button>
 
       <ul className={cn("space-y-2", classNames?.queue)}>
         <AnimatePresence initial={false}>

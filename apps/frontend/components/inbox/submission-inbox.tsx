@@ -186,12 +186,11 @@ export function SubmissionInbox({
                   </Badge>
                 ) : null}
 
-                <Link
-                  className="inline-flex h-7 items-center gap-1.5 rounded-2xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  href={`/submissions/${submission.id}`}
-                >
-                  Open <ArrowRightIcon className="size-3.5" />
-                </Link>
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={`/submissions/${submission.id}`}>
+                    Open <ArrowRightIcon />
+                  </Link>
+                </Button>
               </li>
             );
           })}

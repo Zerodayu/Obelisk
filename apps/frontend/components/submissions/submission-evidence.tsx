@@ -3,6 +3,7 @@
 import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formPathByCode } from "@/config/navigation";
 import { api } from "@/lib/api-client";
@@ -109,12 +110,11 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
           ) : null}
         </div>
         {formPath ? (
-          <Link
-            className="inline-flex h-7 items-center gap-1.5 rounded-2xl px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            href={formPath}
-          >
-            Open form screen <ArrowUpRightIcon className="size-3.5" />
-          </Link>
+          <Button asChild size="sm" variant="ghost">
+            <Link href={formPath}>
+              Open form screen <ArrowUpRightIcon />
+            </Link>
+          </Button>
         ) : null}
       </div>
 

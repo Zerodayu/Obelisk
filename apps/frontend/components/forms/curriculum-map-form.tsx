@@ -263,7 +263,8 @@ export function CurriculumMapForm() {
                       const stage = cell?.stage ?? null;
                       return (
                         <td key={ploCode} className="py-2 pr-2 text-center">
-                          <button
+                          <Button
+                            variant="ghost"
                             onClick={() => {
                               const next =
                                 stage === "i"
@@ -275,18 +276,20 @@ export function CurriculumMapForm() {
                                       : "i";
                               updateCell(cIdx, ploCode, next);
                             }}
-                            className={`w-10 h-8 rounded border text-xs font-medium transition-colors ${
+                            // The stage colours own the cell's fill/border/text,
+                            // so the ghost variant's hover chrome is overridden.
+                            className={`w-10 h-8 rounded border text-xs font-medium transition-colors hover:bg-transparent ${
                               stage === "d"
-                                ? "bg-success/20 border-success text-success"
+                                ? "bg-success/20 border-success text-success hover:text-success"
                                 : stage === "p"
-                                  ? "bg-info/20 border-info text-info"
+                                  ? "bg-info/20 border-info text-info hover:text-info"
                                   : stage === "i"
-                                    ? "bg-warning/20 border-warning text-warning"
-                                    : "bg-background border-input text-muted-foreground hover:bg-muted"
+                                    ? "bg-warning/20 border-warning text-warning hover:text-warning"
+                                    : "bg-background border-input text-muted-foreground hover:bg-muted hover:text-muted-foreground"
                             }`}
                           >
                             {stage ? stage.toUpperCase() : "—"}
-                          </button>
+                          </Button>
                         </td>
                       );
                     })}
