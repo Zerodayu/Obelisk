@@ -217,3 +217,95 @@ Verified on 2026-10-02 via automated Static Code Analysis due to environment con
 | 11.1 | Class Record Upload Validation (Test Case 1-9) | Intercepts mismatch, UI displays red alert. | Frontend code (`class-record-upload.tsx`) explicitly parses `SectionMismatchError` and structurally renders a destructive alert block containing the backend's mismatch strings. | ✅ | UI structurally verified. |
 | 11.2 | Closing-the-Loop Report F25 (Test Case 1-10) | Status shifts to CLOSED when conditions are met. | Frontend (`ctl-form.tsx`) is explicitly wired to render `OPEN`/`CLOSED` state badges based on the backend payload. (Note: 5-condition boolean validation is correctly delegated to backend recomputation). | ✅ | UI structurally verified. |
 | 11.3 | Cohort Tracking Sheet F16 (Test Case 1-11) | Displays 4-year blocks, trend arrows, CQI flags. | Frontend (`cohort-tracking-form.tsx`) successfully maps API payload to `UP`/`DOWN`/`FLAT` trend arrows and renders destructive `CQI` badges dynamically based on the backend triggers. | ✅ | UI structurally verified. |
+
+
+
+## 12. UI/UX Fixes and Consultant Findings
+
+## 1. Form 14 Table Header Mix-up (CLOs vs. Years)
+
+**The Issue:** On the Course-Level CLO Attainment Summary view (F14), the table headers are incorrectly displaying longitudinal tracking columns (Year 1, Year 2, Year 3, Year 4).
+
+**The Fix:** This is a UI component mix-up. Please swap the table headers on this specific course view to display the CLOs (CLO 1, CLO 2, CLO 3, CLO 4, CLO 5) aligning with the actual data for that subject. The Year 1-4 headers should only be used on Form 16 (Cohort Tracking).
+
+**Checklist:**
+- [ ] Locate the F14 Course-Level CLO Attainment Summary view component.
+- [ ] Identify the table header rendering logic for F14.
+- [ ] Replace Year 1–4 headers with CLO 1–CLO 5 headers on F14.
+- [ ] Verify headers dynamically match the actual CLOs for the subject.
+- [ ] Confirm Year 1–4 headers remain correctly used only on Form 16 (Cohort Tracking).
+- [ ] Test with multiple courses to ensure headers align with each subject's CLO data.
+- [ ] Cross-check against the WIN-OBE manual for header conventions.
+
+---
+
+## 2. Missing Approval Context (Bloom's Taxonomy, IPD, Assessment Evidence)
+
+**The Issue:** When a Program Chair or Dean opens the Approval Queue to review a pending form (like the CAR or Curriculum Map), the UI only shows basic numbers and an Approve/Reject button. The WIN-OBE manual requires approvers to verify the pedagogical alignment (Bloom's Taxonomy, IPD stage, and Assessment Evidence) before signing off.
+
+**The Fix:** The backend is already successfully saving and returning `bloomsLevel` and `ipdStage` in the JSON payload. You just need to "un-hide" these fields on the frontend. When an approver clicks a pending form, ensure the UI modal displays the Bloom's Taxonomy, IPD level, and Assessment Event as read-only text so they have the justification needed to approve it.
+
+**Checklist:**
+- [ ] Confirm `bloomsLevel` is present in the backend JSON payload.
+- [ ] Confirm `ipdStage` is present in the backend JSON payload.
+- [ ] Identify the Approval Queue modal component.
+- [ ] Add read-only display for Bloom's Taxonomy in the modal.
+- [ ] Add read-only display for IPD stage in the modal.
+- [ ] Add read-only display for Assessment Event in the modal.
+- [ ] Verify fields render correctly for both CAR and Curriculum Map forms.
+- [ ] Test approver flow: open pending form → see pedagogical context → approve/reject.
+- [ ] Validate display against WIN-OBE manual requirements.
+
+---
+
+## 3. Dashboard User Segregation & "Verified" States
+
+**The Issue:** The consultant noted that the dashboard doesn't clearly visually segregate data when different users with different courses log in, and lacks a clear "Verified/Approved" segregation view for forms.
+
+**The Fix:** Ensure the dashboard UI clearly filters and labels which class records belong to the currently logged-in faculty member. For the approval inboxes, make sure there is a distinct visual segregation (like tabs or status badges) separating "Pending Review" forms from fully "Verified/Approved" forms.
+
+**Checklist:**
+- [ ] Ensure dashboard filters class records by the logged-in faculty member.
+- [ ] Add clear labeling indicating which records belong to the current user.
+- [ ] Add tabs or status badges for approval inboxes.
+- [ ] Create distinct "Pending Review" view.
+- [ ] Create distinct "Verified/Approved" view.
+- [ ] Verify visual segregation is obvious at a glance.
+- [ ] Test with multiple user accounts and courses.
+- [ ] Confirm no data leakage between users.
+
+---
+
+## 4. AI Drawer Placeholder Text
+
+**The Issue:** The AI Recommendations drawer currently displays `[PLACEHOLDER RESPONSE]` instead of real text.
+
+**The Fix:** This is happening because the Python server is still running with `IS_DEBUG_MODE=True`. I will handle flipping the environment variable to False and adding the API keys, but please ensure the frontend loading state (spinners/skeletons) looks clean, as the real Gemini API call will take a few seconds to load compared to the instant placeholder.
+
+**Checklist:**
+- [ ] Confirm `[PLACEHOLDER RESPONSE]` appears in the AI Recommendations drawer.
+- [ ] Frontend: design and implement a clean loading spinner/skeleton state.
+- [ ] Frontend: ensure loading state displays during the Gemini API call.
+- [ ] Frontend: verify smooth transition from loading → real AI response.
+- [ ] Backend: flip `IS_DEBUG_MODE` from `True` to `False`.
+- [ ] Backend: add valid API keys for Gemini.
+- [ ] Test end-to-end: drawer opens → loading state → real AI response renders.
+- [ ] Confirm no placeholder text remains in production mode.
+
+---
+
+## 5. Visualizing CLO-to-PLO Mapping (Formula 7A Rollup)
+
+**The Issue:** The consultant needs to see the exact evidence of how a Program Learning Outcome (PLO) is calculated. If the UI hides the mapping, the PLO score looks like a random average rather than a targeted grouping of specific Course Learning Outcomes (CLOs) from various subjects.
+
+**The Fix:** The backend already perfectly calculates this by matching specific CLOs to their parent PLOs using the `CloToPloMap` database rows. On the frontend (specifically on the F14 and F15 summary screens), ensure the PLO Mapped column is clearly visible next to each CLO. When displaying the final PLO attainment, visually group or list the specific CLOs that contributed to that PLO's score so the user can see the exact mathematical alignment.
+
+**Checklist:**
+- [ ] Confirm `CloToPloMap` database rows are returned in the backend response.
+- [ ] F14: make the PLO Mapped column clearly visible next to each CLO.
+- [ ] F15: make the PLO Mapped column clearly visible next to each CLO.
+- [ ] F14/F15: visually group or list contributing CLOs under each PLO.
+- [ ] Ensure PLO attainment score is traceable to its contributing CLOs.
+- [ ] Verify the mapping display matches Formula 7A rollup logic.
+- [ ] Test with multiple PLOs spanning different courses/cohorts.
+- [ ] Confirm the UI no longer makes PLO scores look like random averages.
