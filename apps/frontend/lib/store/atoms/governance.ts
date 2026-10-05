@@ -3,10 +3,12 @@
  *
  * `approvalFlowDataAtom` and `formStatusCountsAtom` are derived from the real
  * `GET /forms` fetch (see `atoms/forms.ts`), so they reflect live database
- * counts. The remaining charts have no backend endpoint yet (audit log,
- * graduation clusters, report exports, platform-wide user/role counts, the
- * at-risk flag reasons, and the AI recommendation list), so they are seeded
- * with `[]` and render an empty state instead of fabricated numbers.
+ * counts. The audit trail reads the real `GET /audit/logs` (scoped server-side
+ * to the caller), and `auditActivityDataAtom` is derived from it. The remaining
+ * charts have no backend endpoint yet (graduation clusters, report exports,
+ * platform-wide user/role counts, the at-risk flag reasons, and the AI
+ * recommendation list), so they are seeded with `[]` and render an empty state
+ * instead of fabricated numbers.
  */
 
 import { atom } from "jotai";
@@ -22,7 +24,8 @@ import type {
   RecommendationStatusDatum,
   UserRoleDatum,
 } from "@/components/charts/obe-sample-data";
-import { atomWithMockData } from "@/lib/store/async-atom";
+import { api } from "@/lib/api-client";
+import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 import {
   formStatusCountsAtom,
   formSubmissionsDataAtom,
@@ -66,12 +69,64 @@ export const refreshApprovalFlowAtom = refreshFormSubmissionsAtom;
 export const { dataAtom: atRiskDataAtom, refreshAtom: refreshAtRiskAtom } =
   atomWithMockData<AtRiskDatum[]>([]);
 
-// TODO(audit): `AuditLog` is written across the backend but never read by a route.
-/** Audit-trial activity grouped by module (`AuditLog`). */
+/** Actor snapshot joined at read time from `user` (`GET /audit/logs`). */
+export interface AuditActor {
+  id: string;
+  name: string;
+  email: string;
+  /** The user's CURRENT role — audit rows do not snapshot it at write time. */
+  role: string | null;
+}
+
+/** One `AuditLog` row as served by `GET /audit/logs`. */
+export interface AuditLogEntry {
+  id: string;
+  action: string;
+  moduleAffected: string;
+  targetRecordId: string | null;
+  details: unknown;
+  createdAt: string;
+  /** `null` when the actor's user row was deleted (`userId` SET NULL). */
+  actor: AuditActor | null;
+}
+
+/** Scoped page from `GET /audit/logs`: `all` for vpaa/system_admin, else `self`. */
+export interface AuditLogPage {
+  entries: AuditLogEntry[];
+  viewer: { scope: "all" | "self" };
+  hasMore: boolean;
+}
+
+const EMPTY_AUDIT_PAGE: AuditLogPage = {
+  entries: [],
+  viewer: { scope: "self" },
+  hasMore: false,
+};
+
+/**
+ * The caller's audit trail — server-scoped: vpaa/system_admin get every
+ * role's rows (the full waterfall), everyone else gets only their own.
+ * NOTE: deliberately uncached upstream (freshness + per-user scope).
+ */
 export const {
-  dataAtom: auditActivityDataAtom,
+  dataAtom: auditLogsDataAtom,
+  stateAtom: auditLogsStateAtom,
   refreshAtom: refreshAuditActivityAtom,
-} = atomWithMockData<AuditActivityDatum[]>([]);
+} = atomWithAsyncData<AuditLogPage>(EMPTY_AUDIT_PAGE, (_get, signal) =>
+  api.get<AuditLogPage>("/audit/logs", { signal }),
+);
+
+/** Audit-trail activity grouped by module (`AuditLog.moduleAffected`). */
+export const auditActivityDataAtom = atom<AuditActivityDatum[]>((get) => {
+  const counts = new Map<string, number>();
+  for (const entry of get(auditLogsDataAtom).entries) {
+    counts.set(
+      entry.moduleAffected,
+      (counts.get(entry.moduleAffected) ?? 0) + 1,
+    );
+  }
+  return [...counts].map(([module, count]) => ({ module, count }));
+});
 
 // TODO(ai-status): `GET /ai/recommendation/latest` returns a single record, not
 // a status distribution — a list route is needed for this donut.

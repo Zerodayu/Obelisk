@@ -266,7 +266,8 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 - [x] `formStatusCountsAtom` — wired to `GET /forms`
 - [x] `uploadsHistoryDataAtom` — wired to `GET /ingest/history`
-- [ ] Wire remaining ~18 atoms to real backend endpoints (attainment trends, cohort trends, PEO attainment, budget data, approval flows, audit activity, etc.)
+- [x] **Audit-log waterfall (read side)** — `AuditLog` was written across the backend but never read by a route (dashboard chart stayed mock). — **Done (2026-10-05):** `GET /audit/logs` (`apps/backend/src/v1/audit/`) with server-enforced scoping — `vpaa`/`system_admin` get every role's rows (`viewAllAuditLogs` in `FEATURE_ACCESS` + frontend mirror, drift-tested), all other roles get only their own and a foreign `?userId=` answers **403**; newest-first keyset paging (`limit`/`before`), actor joined from `user` (current role; `null` = deleted user, full view only), deliberately uncached. Frontend: `/audit-logs` page (nav entry, all roles) rendering a **role-hierarchy waterfall** — VPAA → system_admin → AQAU → Dean → Program Chair → Faculty cascade, each tier its own cohort-tracking-style `DataGrid` (client-side Filters: module/action/record/actor + sort + pagination, details dialog with the raw `details` JSON; `forms` record ids deep-link to `/submissions/:id`); non-privileged callers render only their own tier. `auditActivityDataAtom` now derives the dashboard per-module chart from the real fetch. Tests: `test/integration/audit.test.ts` (self scoping, 403 on foreign userId, full view + orphans, limit/cursor, bad cursor)
+- [ ] Wire remaining ~17 atoms to real backend endpoints (attainment trends, cohort trends, PEO attainment, budget data, approval flows, etc.)
 - [ ] Populate stat cards on all 6 role dashboards (currently empty `stats: []`) — browser-confirmed 2026-09-29: chart cards below render live numbers, the header row stays blank (`role-dashboard.tsx:87`)
 
 ---

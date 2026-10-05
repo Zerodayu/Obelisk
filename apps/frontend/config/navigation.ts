@@ -28,6 +28,7 @@ import {
   ListChecksIcon,
   type LucideIcon,
   RefreshCwIcon,
+  ScrollTextIcon,
   StarIcon,
   TargetIcon,
   UsersIcon,
@@ -299,6 +300,9 @@ export function workspaceNav(role: UserRole): NavItem[] {
     });
   if (hasAccess(role, ARCHIVE_ROLES))
     items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
+  // NOTE: visible to every role — the backend serves self-scoped rows only,
+  // vpaa/system_admin get the full waterfall (viewAllAuditLogs).
+  items.push({ title: "Audit Logs", url: "/audit-logs", icon: ScrollTextIcon });
   return items;
 }
 
@@ -328,6 +332,7 @@ function workspaceRootLinks() {
     { title: "My Submissions", url: "/submissions" },
     { title: "Pending Approvals", url: "/approvals" },
     { title: "Archives", url: "/archives" },
+    { title: "Audit Logs", url: "/audit-logs" },
   ];
 }
 

@@ -36,6 +36,11 @@ export const FEATURE_ACCESS = {
 	 * Viewing the latest persisted recommendation stays open to every role.
 	 */
 	generateAiInsights: ["vpaa", "system_admin"],
+	/**
+	 * Read every user's audit trail (`GET /audit/logs` full waterfall).
+	 * Self-scoped reads (own entries only) stay open to every role.
+	 */
+	viewAllAuditLogs: ["vpaa", "system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type FeatureKey = keyof typeof FEATURE_ACCESS;
@@ -84,6 +89,10 @@ export function assertCanCaptureClassRecords(role: string | undefined): void {
 /** Roles allowed to trigger an AI CQI recommendation (LLM call). */
 export const AI_INSIGHT_GENERATION_ROLES: readonly string[] =
 	FEATURE_ACCESS.generateAiInsights;
+
+/** Roles that may read every user's audit-log entries (full waterfall). */
+export const VIEW_ALL_AUDIT_ROLES: readonly string[] =
+	FEATURE_ACCESS.viewAllAuditLogs;
 
 /** May `role` trigger an AI recommendation generation? */
 export function assertCanGenerateAiInsights(role: string | undefined): void {

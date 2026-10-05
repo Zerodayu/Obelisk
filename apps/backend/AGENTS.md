@@ -16,6 +16,7 @@ src/
 └── v1/
     ├── academic/         # Academic reference data (programs, terms, class sections)
     ├── atrisk/           # At-risk watchlist + Action-Taken Record (clears flags on final approval)
+    ├── audit/            # Audit-trail reads (GET /audit/logs — server-scoped waterfall)
     ├── auth/             # Auth (better-auth config, session guard macro, role requests)
     ├── car/              # Course Assessment Report (F13)
     ├── cqi/              # CQI/ACT loop (F22, F23, F25, F24 APAR)
