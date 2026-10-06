@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import { carService } from "@v1/car/service";
+import { submissionService } from "@v1/forms/service";
 import { attainmentService } from "@v1/ingest/service";
 
 const db = await isDbReachable();
@@ -328,6 +329,31 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 			);
 			expect(savedRow?.ipdStage).toBe("d");
 			expect(savedRow?.weightInGradePct).toBe(45);
+
+			// The approval screen's justification reuses that same assembled
+			// Part 1/2 — Bloom's / I-P-D / assessment evidence as prose
+			// (testing_results §2), not the raw formData.
+			const carEvidence = await submissionService.evidence(draft.id, {
+				id: ids.user,
+				role: "faculty",
+			});
+			expect(carEvidence.justification?.kind).toBe("car");
+			const jrow = carEvidence.justification?.rows.find(
+				(r) => r.cloCode === "CLO1",
+			);
+			expect(jrow).toMatchObject({
+				ipdStage: "d",
+				weightInGradePct: 45,
+			});
+			expect(
+				carEvidence.justification?.notes.some((n) =>
+					n.includes("Demonstration (D)"),
+				),
+			).toBe(true);
+			// Part 2 is flattened into one row per CLO × assessment type.
+			expect(
+				carEvidence.justification?.assessmentEvidence.length,
+			).toBeGreaterThan(0);
 
 			// Section2: all-null breakdowns → empty P2 + snapshot-only P1 fields.
 			const summary2 = await attainmentService.persistAttainment(

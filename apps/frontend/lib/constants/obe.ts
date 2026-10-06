@@ -17,3 +17,27 @@ export const BLOOMS_LEVELS = [
   "Evaluate",
   "Create",
 ] as const;
+
+/**
+ * I-P-D stage letters → the manual's spelled-out names. Mirrors the selector
+ * in `clo-plo-map-panel.tsx` and the backend's `IPD_STAGE_LABELS`
+ * (`apps/backend/lib/forms/justification.ts`).
+ */
+export const IPD_STAGES: Record<string, { letter: string; label: string }> = {
+  i: { letter: "I", label: "Introduction" },
+  p: { letter: "P", label: "Proficiency" },
+  d: { letter: "D", label: "Demonstration" },
+};
+
+/**
+ * CAR P1 "Assessment Types" column — the instruments a CLO is evidenced by.
+ * Mirrors `ASSESSMENT_GROUP_LABELS` in the backend's
+ * `apps/backend/lib/forms/justification.ts`; keep the two in sync so the
+ * approval card renders exactly what the CAR form recorded.
+ */
+export const ASSESSMENT_TYPES = [
+  "Exam",
+  "Rubric",
+  "Perf.Task",
+  "Portfolio",
+] as const;

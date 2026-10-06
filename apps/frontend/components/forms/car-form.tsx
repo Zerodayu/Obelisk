@@ -19,7 +19,11 @@ import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
-import { BLOOMS_LEVELS, ROOT_CAUSES } from "@/lib/constants/obe";
+import {
+  ASSESSMENT_TYPES,
+  BLOOMS_LEVELS,
+  ROOT_CAUSES,
+} from "@/lib/constants/obe";
 import {
   type AssessmentTypeRow,
   type CarPart1,
@@ -34,6 +38,7 @@ import {
   carDirtyAtom,
   carPayloadAtom,
 } from "@/lib/store/atoms/car";
+import { cn } from "@/lib/utils";
 import { generateCar, saveCar } from "@/server/actions/car";
 
 // ---------------------------------------------------------------------------
@@ -91,7 +96,8 @@ function Part1({
       ? `${part1.courseCode} — ${part1.courseTitle}`
       : part1.courseCode || part1.courseTitle || "—";
 
-  // NOTE: only Bloom's and weight are editable here — no other source fills them (testing_results 6.4)
+  // NOTE: only Bloom's, weight and assessment types are editable here — no
+  // other source fills them (testing_results 6.4)
   const updateMapping = (cloCode: string, patch: Partial<CloPloMappingRow>) => {
     if (!onChange) return;
     onChange({
@@ -100,6 +106,17 @@ function Part1({
         row.cloCode === cloCode ? { ...row, ...patch } : row,
       ),
     });
+  };
+
+  /** Toggle one assessment type, keeping the manual's canonical column order. */
+  const toggleAssessmentType = (
+    current: string[] | null | undefined,
+    type: (typeof ASSESSMENT_TYPES)[number],
+  ): string[] => {
+    const next = new Set(current ?? []);
+    if (next.has(type)) next.delete(type);
+    else next.add(type);
+    return ASSESSMENT_TYPES.filter((candidate) => next.has(candidate));
   };
 
   return (
@@ -176,7 +193,37 @@ function Part1({
                     </Badge>
                   </td>
                   <td className="py-2 pr-4">
-                    {row.assessmentTypes?.join(", ") || "—"}
+                    <div className="flex flex-wrap gap-1">
+                      {ASSESSMENT_TYPES.map((type) => {
+                        const selected =
+                          row.assessmentTypes?.includes(type) ?? false;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            aria-pressed={selected}
+                            disabled={!onChange}
+                            onClick={() =>
+                              updateMapping(row.cloCode, {
+                                assessmentTypes: toggleAssessmentType(
+                                  row.assessmentTypes,
+                                  type,
+                                ),
+                              })
+                            }
+                            className={cn(
+                              "h-5 rounded-4xl border px-1.25 py-0.5 text-xs leading-none outline-hidden",
+                              "disabled:cursor-not-allowed disabled:opacity-60",
+                              selected
+                                ? "border-primary/10 bg-primary/10 text-primary dark:border-primary/25 dark:bg-primary/15 dark:text-primary"
+                                : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                            )}
+                          >
+                            {type}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </td>
                   <td className="py-2 pr-4 text-right">
                     <Input

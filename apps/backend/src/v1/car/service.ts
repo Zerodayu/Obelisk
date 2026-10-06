@@ -1,7 +1,14 @@
+import {
+	carJustification,
+	type JustificationContext,
+	registerJustification,
+	type SubmissionJustification,
+} from "@lib/forms/justification";
 import { prisma } from "@lib/prisma";
 import { isRootCauseCategory } from "@lib/validators/root-cause";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
+import { CLO_RAW_DATA_CODE } from "@v1/ingest/service";
 import {
 	aggregateClo,
 	type CloRowLike,
@@ -39,6 +46,20 @@ export class CarInvalidEditError extends Error {
 			"CAR parts may only be edited while the submission is draft or returned.",
 		);
 		this.name = "CarInvalidEditError";
+	}
+}
+
+/**
+ * A class section with no `ComputationRun` yet — the normal state before any
+ * class record has been uploaded. Distinct from a lookup failure so callers can
+ * tell "no data captured yet" apart from "something is broken".
+ */
+export class ComputationRunNotFoundError extends Error {
+	constructor(classSectionId: string) {
+		super(
+			`No computation run found for class section '${classSectionId}'. Upload a class record first.`,
+		);
+		this.name = "ComputationRunNotFoundError";
 	}
 }
 
@@ -108,11 +129,7 @@ export class CarService {
 		computationRunId?: string,
 	): Promise<import("./model").CarPayload> {
 		const run = await this.resolveRun(classSectionId, computationRunId);
-		if (!run) {
-			throw new Error(
-				`No computation run found for class section '${classSectionId}'. Upload a class record first.`,
-			);
-		}
+		if (!run) throw new ComputationRunNotFoundError(classSectionId);
 
 		const section = await this.loadSection(classSectionId);
 		if (!section) {
@@ -508,7 +525,7 @@ export class CarService {
 		const byClo = groupByCode(rows);
 
 		const toRows = (
-			field: "examPct" | "atPct" | "tlaPct" | "outputPct",
+			field: "examPct" | "atPct" | "tlaPct" | "outputPct" | "compositeScorePct",
 		): AssessmentTypeRow[] =>
 			// NOTE: null-pct rows are dropped so an all-null section renders the frontend's empty state (testing_results 6.6)
 			[...byClo.entries()]
@@ -524,6 +541,10 @@ export class CarService {
 				.filter((row) => row.attainmentPct !== null);
 
 		return {
+			// NOTE: the four instrument columns are always null on the v2
+			// template (python-server KNOWN_LIMITATIONS #4), so `composite` is
+			// the only group that reliably carries data for the approver.
+			composite: toRows("compositeScorePct"),
 			exams: toRows("examPct"),
 			rubric: toRows("atPct"),
 			perfTasks: toRows("tlaPct"),
@@ -763,3 +784,44 @@ function bestAssessmentType(means: {
 }
 
 export const carService = new CarService();
+
+/* NOTE: justification reuses `generate()` so the approver reads the same
+ * assembled Part 1/2 the form screen shows; `formData` alone is empty until
+ * Part 1 has been saved once. Any other throw degrades to the generic empty
+ * state via `resolveJustification`. */
+const sectionJustification = async (ctx: JustificationContext) => {
+	if (!ctx.classSectionId) return null;
+	// NOTE: `clo_raw_data` carries no `computationRunId` in formData (its
+	// scores live in DB rows), so `generate` falls back to the section's
+	// latest run — the same one the CAR would roll up.
+	const runId = (ctx.formData as { computationRunId?: string })
+		.computationRunId;
+	try {
+		const payload = await carService.generate(ctx.classSectionId, runId);
+		return carJustification(payload);
+	} catch (error) {
+		// NOTE: "no class records yet" is a normal state, not a failure — say
+		// so instead of letting the card fall back to the generic "no
+		// justification recorded" line, which reads like no resolver exists.
+		if (error instanceof ComputationRunNotFoundError) {
+			return {
+				kind: "car",
+				rows: [],
+				assessmentEvidence: [],
+				coverage: null,
+				uncoveredPlos: [],
+				// TODO: surface the section code once `JustificationContext`
+				// carries it — the sentence reads better with "for section F1".
+				notes: [
+					"No class records captured for this section yet — upload a class record so attainment can be computed.",
+				],
+			} satisfies SubmissionJustification;
+		}
+		throw error;
+	}
+};
+
+registerJustification(CAR_FORM_TYPE_CODE, sectionJustification);
+// NOTE: `clo_raw_data` holds the same section's raw scores the CAR rolls up,
+// so an approver reviewing the raw sheet reads the same justification.
+registerJustification(CLO_RAW_DATA_CODE, sectionJustification);

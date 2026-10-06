@@ -159,6 +159,12 @@ export type AssessmentTypeRow = {
 };
 
 export type CarPart2 = {
+	/**
+	 * Per-CLO composite attainment (`Direct ×70% + Indirect ×30%`) — the one
+	 * Part 2 figure the v2 class-record template actually populates. Listed
+	 * first so the approval screen leads with the benchmark comparison.
+	 */
+	composite: AssessmentTypeRow[];
 	exams: AssessmentTypeRow[];
 	rubric: AssessmentTypeRow[];
 	perfTasks: AssessmentTypeRow[];
