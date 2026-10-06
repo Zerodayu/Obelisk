@@ -31,6 +31,8 @@ export interface ApprovalStepRecord {
   approverUserId: string | null;
   comment: string | null;
   decidedAt: string | null;
+  /** Printed name for the signature row. Null until this step is decided. */
+  approver?: { id: string; name: string; role: string } | null;
 }
 
 /** Form-type identity joined by `GET /forms` / `GET /forms/:id`. */
@@ -45,6 +47,20 @@ export interface SubmissionUserRef {
   id: string;
   name: string;
   role: string;
+}
+
+/**
+ * Standard-header metadata joined by `GET /forms/:id` only
+ * (`apps/backend/lib/forms/form-meta.ts`). Role *codes* — `ROLE_LABELS` owns
+ * the display labels. `deadline` is absent when the manual states none.
+ */
+export interface FormMetaRef {
+  retention: string;
+  responsibleParty: {
+    preparers: string[];
+    chain: string[];
+  };
+  deadline?: string;
 }
 
 /** Mirrors the backend `FormSubmission` JSON contract. */
@@ -63,6 +79,9 @@ export interface FormSubmissionRecord {
   approvalSteps?: ApprovalStepRecord[];
   formType?: FormTypeRef;
   submittedBy?: SubmissionUserRef | null;
+  /** Audit-trail submit time; null while the chain has never run (draft). */
+  submittedAt?: string | null;
+  formMeta?: FormMetaRef | null;
 }
 
 /** Display labels + badge tones for each submission status. */

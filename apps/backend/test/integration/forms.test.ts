@@ -38,6 +38,8 @@ const IDS = {
 	program: "it-forms-prog",
 	course: "it-forms-course",
 	classSection: "it-forms-section",
+	/** Same course, but no `ComputationRun` — pre-upload state. */
+	sectionNoRun: "it-forms-section-norun",
 	clo: "it-forms-clo",
 	student: "it-forms-student",
 	computationRun: "it-forms-run",
@@ -78,6 +80,14 @@ async function seed() {
 			courseId: IDS.course,
 			termId: IDS.term,
 			sectionCode: "F1",
+		},
+	});
+	await prisma.classSection.create({
+		data: {
+			id: IDS.sectionNoRun,
+			courseId: IDS.course,
+			termId: IDS.term,
+			sectionCode: "F2",
 		},
 	});
 	await prisma.clo.create({
@@ -164,7 +174,9 @@ async function cleanup() {
 		where: { id: { in: [IDS.rawType, IDS.carType] } },
 	});
 	// Section fixtures — deleting the section cascades the attainment row.
-	await prisma.classSection.deleteMany({ where: { id: IDS.classSection } });
+	await prisma.classSection.deleteMany({
+		where: { id: { in: [IDS.classSection, IDS.sectionNoRun] } },
+	});
 	await prisma.computationRun.deleteMany({ where: { id: IDS.computationRun } });
 	await prisma.clo.deleteMany({ where: { id: IDS.clo } });
 	await prisma.student.deleteMany({ where: { id: IDS.student } });
@@ -203,6 +215,9 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				submissionService.submit(draft.id, IDS.owner, "dean"),
 			).rejects.toThrow(ApprovalForbiddenError);
 
+			// Never submitted yet → no audit row, so no signature date.
+			expect(await submissionService.submittedAt(draft.id)).toBeNull();
+
 			const submitted = await submissionService.submit(
 				draft.id,
 				IDS.owner,
@@ -221,6 +236,14 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			]);
 			expect(submitted.approvalSteps[0].approverRole).toBe("program_chair");
 			expect(submitted.approvalSteps[0].sequenceNo).toBe(1);
+			// No one has signed yet → the signature row has no printed name.
+			expect(submitted.approvalSteps[0].approver).toBeNull();
+			// The "Prepared by — date" row reads the audit trail, not `updatedAt`.
+			const submittedAt = await submissionService.submittedAt(draft.id);
+			expect(submittedAt).not.toBeNull();
+			expect(
+				Date.now() - new Date(submittedAt as string).getTime(),
+			).toBeLessThan(60_000);
 
 			// --- inbox scopes -----------------------------------------------------
 			const mine = await submissionService.list(
@@ -279,6 +302,14 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(chairApproved.currentApproverRole).toBe("dean");
 			expect(chairApproved.approvalSteps[0].decision).toBe("approved");
 			expect(chairApproved.approvalSteps[0].comment).toBe("looks good");
+			// The signature block needs the printed name, not just `approverUserId`.
+			expect(chairApproved.approvalSteps[0].approver).toEqual({
+				id: IDS.other,
+				name: "Forms Other",
+				role: "faculty",
+			});
+			// Later rungs are still unsigned → no approver joined yet.
+			expect(chairApproved.approvalSteps[1].approver).toBeNull();
 			// Only the current step's role sees it as pending now.
 			expect(
 				(
@@ -502,6 +533,10 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				computationRunId: IDS.computationRun,
 			});
 			expect(evidence.formData).toEqual({ note: "seed" });
+			// `clo_raw_data` resolves the same section justification as the CAR
+			// (widened scope) — the resolver ran against the bound section.
+			expect(evidence.justification).not.toBeNull();
+			expect(evidence.justification?.kind).toBe("car");
 
 			// A section-less submission has nothing to summarize.
 			const bare = await submissionService.create(
@@ -515,6 +550,38 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(bareEvidence.code).toBe(CAR_CODE);
 			expect(bareEvidence.classSection).toBeNull();
 			expect(bareEvidence.capture).toBeNull();
+			// Registered code, but a CAR resolver needs a bound section.
+			expect(bareEvidence.justification).toBeNull();
+
+			// Bound to a section with no run yet: the resolver explains the
+			// missing capture instead of degrading to the generic empty state.
+			const noRun = await submissionService.create(
+				{
+					formTypeId: IDS.rawType,
+					termId: IDS.term,
+					classSectionId: IDS.sectionNoRun,
+					formData: {},
+				},
+				IDS.owner,
+			);
+			const noRunEvidence = await submissionService.evidence(noRun.id, {
+				id: IDS.owner,
+				role: "faculty",
+			});
+			expect(noRunEvidence.capture).toMatchObject({
+				attainmentRows: 0,
+				computationRunId: null,
+			});
+			expect(noRunEvidence.justification).toMatchObject({
+				kind: "car",
+				rows: [],
+				assessmentEvidence: [],
+				coverage: null,
+				uncoveredPlos: [],
+			});
+			expect(noRunEvidence.justification?.notes[0]).toContain(
+				"No class records captured for this section yet",
+			);
 		} finally {
 			await cleanup();
 		}

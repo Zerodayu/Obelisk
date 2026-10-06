@@ -2,6 +2,7 @@ import {
 	ApprovalForbiddenError,
 	NotOwnerError,
 } from "@lib/forms/approval-routes";
+import { formMetaFor } from "@lib/forms/form-meta";
 import { InvalidTransitionError } from "@lib/forms/state-machine";
 import { SubmitGateError } from "@lib/forms/submit-gates";
 import { authPlugin } from "@v1/auth/controller";
@@ -136,10 +137,19 @@ export const formsPlugin = new Elysia({
 			// Uncached: the stepper must reflect the latest decision right after
 			// an approve/return.
 			try {
-				return await submissionService.getForViewer(params.id, {
+				const submission = await submissionService.getForViewer(params.id, {
 					id: user.id,
 					role: callerRole(user),
 				});
+				// Response-only composition — keeps `getForViewer`'s Prisma
+				// return type (and `evidence()`, which shares it) untouched.
+				// `submittedAt: null` means the chain has never run (draft).
+				const submittedAt = await submissionService.submittedAt(submission.id);
+				return {
+					...submission,
+					submittedAt,
+					formMeta: formMetaFor(submission.formType.code),
+				};
 			} catch (error) {
 				return mapFormsError(error, set);
 			}
@@ -149,7 +159,7 @@ export const formsPlugin = new Elysia({
 			detail: {
 				summary: "Get a form submission by id",
 				description:
-					"Includes the ordered approval steps, the form type (code/name/pdcaStage), and the submitter. Visible to the owner, system_admin, and any role in the form's registered approval chain.",
+					"Includes the ordered approval steps (each with its approver's id/name/role), the form type (code/name/pdcaStage), the submitter, the `submittedAt` timestamp from the audit trail (null while still a draft), and the standard-header `formMeta` (retention class, responsible-party roles, manual deadline when the form states one — `lib/forms/form-meta.ts`). Visible to the owner, system_admin, and any role in the form's registered approval chain.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Form submission" },
@@ -177,7 +187,7 @@ export const formsPlugin = new Elysia({
 			detail: {
 				summary: "Submission evidence for the approval screen",
 				description:
-					"The stored formData plus the bound class section and its capture summary (attainment rows, distinct students, below-threshold rows, at-risk students, latest computation run). Same visibility rule as GET /forms/:id; counts only, never raw scores.",
+					"The stored formData plus the bound class section, its capture summary (attainment rows, distinct students, below-threshold rows, at-risk students, latest computation run), and the form's pedagogical justification (Bloom's Taxonomy, I-P-D stage, assessment evidence as read-only text). Same visibility rule as GET /forms/:id; counts only, never raw scores.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Submission evidence" },

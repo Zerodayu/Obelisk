@@ -33,7 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { api } from "@/lib/api-client";
-import { ARCHIVE_ROLES } from "@/lib/role-access";
+import { ARCHIVE_ROLES, FORM_ACCESS } from "@/lib/role-access";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
   type ApprovalStepRecord,
@@ -72,18 +72,37 @@ const DECISION_TONES: Record<
 type BusyAction = "submit" | "approve" | "return" | "archive" | null;
 
 /**
- * Shared approval workflow: status badge, ordered approval stepper (role,
- * decision, comment, decided-at), and the Submit / Approve / Return (with
- * required comment) / Archive actions.
+ * Page-layout signature text for one approval step, in the manual's footer
+ * wording ("Approved by <Printed Name> · <role>"). A pending step names who
+ * is expected to sign instead; `approver` is null until the step is decided.
+ */
+function signatureLine(step: ApprovalStepRecord): string {
+  const role = roleLabel(step.approverRole as UserRole);
+  if (step.decision === "pending") {
+    return `${step.sequenceNo}. Awaiting ${role}`;
+  }
+  const verb = step.decision === "approved" ? "Approved" : "Returned";
+  return step.approver?.name
+    ? `${step.sequenceNo}. ${verb} by ${step.approver.name} · ${role}`
+    : `${step.sequenceNo}. ${verb} by ${role}`;
+}
+
+/**
+ * Shared approval workflow: status badge, PDCA stage, step progress, the
+ * standard-header metadata block (retention / deadline / responsible party),
+ * and the ordered approval list rendered as the manual's signature block —
+ * "Prepared by …" then "Approved by <Printed Name> · <role>" per step, plus
+ * the Submit / Approve / Return (with required comment) / Archive actions.
  *
  * Pass the screen's `submissionId` (from its payload) — `null` renders the
  * "no submission record yet" placeholder. After any action it refetches the
  * submission, refreshes both inbox atoms + the dashboard donut, and notifies
  * the host via `onChanged` so the screen can reload its payload.
  *
- * `layout="bar"` (default) is the compact strip embedded in form screens;
- * `layout="page"` is the full-size card with a vertical approval timeline,
- * used by the dedicated approval screen (`/submissions/[id]`).
+ * `layout="bar"` (default) is the compact strip embedded in form screens and
+ * keeps the original role/decision chips; `layout="page"` is the full-size
+ * card used by the dedicated approval screen (`/submissions/[id]`) and is the
+ * only layout that renders the signature block, metadata, or route preview.
  */
 export function FormWorkflow({
   submissionId,
@@ -180,6 +199,80 @@ export function FormWorkflow({
   const isOwner = user?.id != null && submission.submittedByUserId === user.id;
   const isAdmin = user?.role === "system_admin";
 
+  const label = (role: string) => roleLabel(role as UserRole);
+
+  const formMeta = submission.formMeta ?? null;
+  // Route preview: `ApprovalStep` rows are only materialized on submit, so a
+  // draft/returned submission derives the route from the mirrored registry.
+  const previewChain: readonly UserRole[] =
+    isPage &&
+    steps.length === 0 &&
+    (status === "draft" || status === "returned")
+      ? (FORM_ACCESS[submission.formType?.code ?? ""]?.chain ?? [])
+      : [];
+
+  const responsiblePartyLine = formMeta
+    ? [
+        ...formMeta.responsibleParty.preparers.map(label),
+        ...formMeta.responsibleParty.chain.map(label),
+      ].join(" → ")
+    : null;
+
+  const totalSteps = steps.length > 0 ? steps.length : previewChain.length;
+  const signedSteps = steps.filter(
+    (step) => step.decision !== "pending",
+  ).length;
+  const progressLabel =
+    totalSteps === 0
+      ? ""
+      : status === "approved"
+        ? `All ${totalSteps} approved`
+        : `Step ${Math.min(signedSteps + 1, totalSteps)} of ${totalSteps}`;
+
+  // The signature block's "Prepared by … — date" row: the audit-trail submit
+  // time, falling back to the draft's creation date (never submitted).
+  const preparedAt = submission.submittedAt ?? submission.createdAt;
+
+  const metaItems: { label: string; value: string; wide?: boolean }[] = isPage
+    ? [
+        { label: "PDCA phase", value: submission.formType?.pdcaStage ?? "" },
+        { label: "Retention", value: formMeta?.retention ?? "" },
+        ...(formMeta?.deadline
+          ? [{ label: "Deadline", value: formMeta.deadline }]
+          : []),
+        ...(responsiblePartyLine
+          ? [
+              {
+                label: "Responsible party",
+                value: responsiblePartyLine,
+                wide: true,
+              },
+            ]
+          : []),
+      ].filter((item) => item.value.length > 0)
+    : [];
+
+  // The manual's footer opens with "Prepared by … — Date"; rendered once as
+  // the first row of the page-layout signature list.
+  const preparedRow =
+    isPage && submission.submittedBy ? (
+      <li className="flex gap-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3">
+        <span
+          aria-hidden
+          className="mt-2 size-2 shrink-0 rounded-full bg-muted-foreground/50"
+        />
+        <div className="min-w-0 flex-1">
+          <span className="text-sm font-medium">
+            Prepared by {submission.submittedBy.name} ·{" "}
+            {label(submission.submittedBy.role)}
+          </span>
+          <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
+            {new Date(preparedAt).toLocaleString()}
+          </p>
+        </div>
+      </li>
+    ) : null;
+
   const canSubmit =
     (status === "draft" || status === "returned") &&
     user != null &&
@@ -193,7 +286,7 @@ export function FormWorkflow({
     status === "approved" && user != null && ARCHIVE_ROLES.includes(user.role);
 
   const submitterLine =
-    submission.submittedBy && submission.submittedBy.id !== user?.id
+    !isPage && submission.submittedBy && submission.submittedBy.id !== user?.id
       ? `Submitted by ${submission.submittedBy.name}`
       : null;
 
@@ -217,6 +310,16 @@ export function FormWorkflow({
           <Badge variant={FORM_STATUS_TONES[status]}>
             {FORM_STATUS_LABELS[status]}
           </Badge>
+          {isPage && submission.formType?.pdcaStage ? (
+            <Badge radius="full" variant="outline">
+              {submission.formType.pdcaStage}
+            </Badge>
+          ) : null}
+          {isPage && progressLabel ? (
+            <Badge radius="full" variant="secondary">
+              {progressLabel}
+            </Badge>
+          ) : null}
           {status === "submitted" && pendingStep ? (
             <Badge variant="outline">
               Waiting on {roleLabel(pendingStep.approverRole as UserRole)}
@@ -383,8 +486,25 @@ export function FormWorkflow({
         </div>
       </div>
 
+      {metaItems.length > 0 ? (
+        <dl className="grid gap-x-6 gap-y-2 rounded-lg border bg-muted/30 px-4 py-3 sm:grid-cols-3">
+          {metaItems.map((item) => (
+            <div
+              className={item.wide ? "sm:col-span-3" : undefined}
+              key={item.label}
+            >
+              <dt className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
+                {item.label}
+              </dt>
+              <dd className="text-sm break-words">{item.value}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
       {steps.length > 0 ? (
         <ol className={isPage ? "space-y-3" : "flex flex-wrap gap-2"}>
+          {preparedRow}
           {steps.map((step) => (
             <li
               className={
@@ -407,8 +527,12 @@ export function FormWorkflow({
                       isPage ? "text-sm font-medium" : "text-xs font-medium"
                     }
                   >
-                    {step.sequenceNo}.{" "}
-                    {roleLabel(step.approverRole as UserRole)}
+                    {isPage ? signatureLine(step) : null}
+                    {!isPage ? (
+                      <>
+                        {step.sequenceNo}. {label(step.approverRole)}
+                      </>
+                    ) : null}
                   </span>
                   <Badge radius="full" variant={DECISION_TONES[step.decision]}>
                     {DECISION_LABELS[step.decision]}
@@ -434,6 +558,36 @@ export function FormWorkflow({
             </li>
           ))}
         </ol>
+      ) : previewChain.length > 0 ? (
+        <div className="space-y-3">
+          <ol className="space-y-3">
+            {preparedRow}
+            {previewChain.map((role, index) => (
+              <li
+                className="flex gap-3 rounded-lg border border-dashed bg-muted/30 px-4 py-3"
+                key={role}
+              >
+                <span
+                  aria-hidden
+                  className="mt-2 size-2 shrink-0 rounded-full bg-muted-foreground/40"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {index + 1}. Awaiting {label(role)}
+                    </span>
+                    <Badge radius="full" variant="secondary">
+                      Pending
+                    </Badge>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <p className="text-xs text-muted-foreground">
+            Route preview — the chain is materialized when you submit.
+          </p>
+        </div>
       ) : status === "draft" || status === "returned" ? (
         <p className="text-xs text-muted-foreground">
           No approval steps yet — the chain is created from this form's
