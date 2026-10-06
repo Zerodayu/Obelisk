@@ -245,15 +245,27 @@ Verified on 2026-10-02 via automated Static Code Analysis due to environment con
 
 **The Fix:** The backend is already successfully saving and returning `bloomsLevel` and `ipdStage` in the JSON payload. You just need to "un-hide" these fields on the frontend. When an approver clicks a pending form, ensure the UI modal displays the Bloom's Taxonomy, IPD level, and Assessment Event as read-only text so they have the justification needed to approve it.
 
+**Implemented:** a read-only **"Pedagogical justification"** card now sits between the workflow and the evidence panel on `/submissions/[id]` (`components/submissions/submission-justification.tsx`, fed by a new `justification` block on `GET /forms/:id/evidence`). The block is produced by a per-form-code resolver registry (`apps/backend/lib/forms/justification.ts`, same registration pattern as submit-gates) — `course_assessment_report` **and `clo_raw_data`** (same section; registered in `car/service.ts`) re-run `carService.generate()` so approvers read the assembled Part 1/2 (saved P1 → DB `CloToPloMap` → null), `curriculum_map` reshapes `CurriculumMapService.get()` into I-P-D coverage + uncovered PLOs. Every other form code has no resolver and renders the card's empty state by design. The same context is threaded into the AI layer as `alignmentContext` on the persisted `ai_recommendation`, rendered as a "Pedagogical context" table in the dashboard AI drawer and injected into both python-server prompts. **Display only — Approve is not gated.**
+
+**Follow-up (blank card):** the card was *not* broken — it was reporting genuinely empty data, from three independent causes:
+
+1. **Bloom's / assessment types** have no DB column anywhere; they live only in the CAR's saved Part 1 `formData`. The card now says so explicitly, and CAR Part 1 gained the missing **Assessment types** chip-toggle input (`car-form.tsx`, already accepted by `SaveCarPartsSchema`), so the field is finally reachable from the UI.
+2. **I-P-D stage / PLO / weight** fall back to `CloToPloMap`, which is written by the **CLO-PLO Connections** panel on the curriculum map (`POST /plan/clo-plo-map`) — the note points there.
+3. **The assessment-evidence table** was empty because `exam_pct`/`at_pct`/`tla_pct`/`output_pct` are *always* null on the v2 class-record template (python-server `KNOWN_LIMITATIONS` #4). `CarPart2` now carries a **`composite`** group (`Direct ×70% + Indirect ×30%`, computed from `compositeScorePct`, which the template does populate) and `carJustification` leads `assessmentEvidence` with `Composite (70/30)` rows, so the approver sees the ≥70% benchmark comparison instead of the empty state.
+
 **Checklist:**
-- [ ] Confirm `bloomsLevel` is present in the backend JSON payload.
-- [ ] Confirm `ipdStage` is present in the backend JSON payload.
-- [ ] Identify the Approval Queue modal component.
-- [ ] Add read-only display for Bloom's Taxonomy in the modal.
-- [ ] Add read-only display for IPD stage in the modal.
-- [ ] Add read-only display for Assessment Event in the modal.
+- [x] Confirm `bloomsLevel` is present in the backend JSON payload.
+- [x] Confirm `ipdStage` is present in the backend JSON payload.
+- [x] Identify the Approval Queue modal component.
+- [x] Add read-only display for Bloom's Taxonomy in the modal.
+- [x] Add read-only display for IPD stage in the modal.
+- [x] Add read-only display for Assessment Event in the modal.
 - [ ] Verify fields render correctly for both CAR and Curriculum Map forms.
+  - Data verified end-to-end for both: CAR via `test/integration/car.test.ts` (saved `ipdStage: "d"` + `weightInGradePct` flow into the justification, Part 2 flattened to `assessmentEvidence`), curriculum map via a live `GET /forms/:id/evidence` as the AQAU approver (coverage `{i:1, p:0, d:1, unstaged:0, courses:2}`, `uncoveredPlos: ["PLO2"]`, both prose notes). Frontend wiring and SSR route verified; **pixel-level render not yet confirmed — no browser available in this environment.**
+  - Re-verified live after the blank-card follow-up: `clo_raw_data` on section `1A` (150 attainment rows) now returns `Composite (70/30)` rows for CLO1–CLO5 with `attainmentPct` + `belowBenchmark` (CLO6/CLO7 have no attainment and are dropped), and the prose note reads *"CLO1 · assessed at Analyze level · Proficiency (P) stage · evidence: Exam, Rubric · 45% of course grade."* once CAR Part 1 is saved and a CLO-PLO connection exists — the same three fields render their guidance copy (*"…not yet recorded (set it in CAR Part 1)"* / *"…(set it on a CLO-PLO connection)"*) while still empty.
 - [ ] Test approver flow: open pending form → see pedagogical context → approve/reject.
+  - Live fixtures (re-created after `bun run test:integration` + `db:seed`, 2026-10-06): `a31c6c18-5b94-4a0f-8e5d-907b8397e606` (**course_assessment_report**, submitted → `program_chair`, 4-step chain) and `657d9bca-307b-4218-9712-dad96e0e89a8` (**curriculum_map**, submitted → `aqau`) and `472ccc72-78ef-4cec-ad99-4e446907e600` (**clo_raw_data**, draft, section `1A`, 150 attainment rows). The CAR fixture carries **both** card states in one view — CLO1 fully recorded (saved Part 1 + a CLO-PLO connection) and CLO2–CLO7 showing the guidance copy — plus 5 `Composite (70/30)` evidence rows. **The Approve click and the visible card still need a manual pass.** ⚠️ `bun run test:integration` wipes `obelisk_dev` before and after — re-create the fixtures after any test run.
+  - `clo_raw_data` on a section with no upload returns an explanatory note (*"No class records captured for this section yet — upload a class record so attainment can be computed."*) instead of the generic empty state — verified live via `POST /ingest/clo-raw-data/init` + `GET /forms/:id/evidence`.
 - [ ] Validate display against WIN-OBE manual requirements.
 
 ---
