@@ -16,7 +16,6 @@ import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { ROOT_CAUSES } from "@/lib/constants/obe";
 import {
@@ -24,17 +23,49 @@ import {
   savePloGapAnalysis,
 } from "@/server/actions/cqi";
 
+/**
+ * Display-only mirror of the backend's ≥70% hard floor
+ * (`MIN_ATTAINMENT_PCT` in `apps/backend/lib/validators/attainment.ts`).
+ * The backend stays authoritative — it derives NOT-MET gap rows and the
+ * `PloStatus` badge against this floor, so the Target/Gap columns and the red
+ * highlight must use the same number to agree with the server.
+ */
+const INSTITUTIONAL_FLOOR_PCT = 70;
+
+/** `PloCohortSummary.cohorts` entry (backend `src/v1/cqi/compute.ts`). */
+interface CohortAttainment {
+  cohortYearLevel: number | null;
+  attainmentPct: number;
+}
+
+/** `PloCohortSummary` (backend `src/v1/cqi/compute.ts`). */
+interface PloSummary {
+  ploId: string;
+  ploCode: string;
+  ploDescription: string;
+  cohorts: CohortAttainment[];
+  programAvgPct: number | null;
+  /** `PloStatus` enum — `all_met` | `partial` | `not_met`. */
+  status: string;
+  notMetCohorts: number;
+}
+
+/** `GapRowDto` (backend `src/v1/cqi/model.ts`) — root-cause fields are nullable until filled in. */
 interface GapRow {
   id: string;
   ploCode: string;
-  cohortYear: number;
-  attainedPct: number | null;
-  targetPct: number;
-  gap: number | null;
-  rootCauseCategory: string;
-  rootCauseAnalysis: string;
-  namedOwner: string;
+  ploDescription: string;
+  /** `0` (and `null` on older payloads) = cohort year level unknown. */
+  cohortYearLevel: number | null;
+  attainmentPct: number;
+  rootCauseCategory: string | null;
+  rootCauseAnalysis: string | null;
+  namedOwner: string | null;
+  cqiActionPlanEntryId: string | null;
 }
+
+/** The only `GapRow` fields this form edits — everything else is server-owned. */
+type GapEditField = "rootCauseCategory" | "rootCauseAnalysis" | "namedOwner";
 
 interface PloGapPayload {
   programId: string;
@@ -43,17 +74,7 @@ interface PloGapPayload {
   generatedAt: string;
   program: { code: string; name: string };
   term: { schoolYear: string; semester: string };
-  plos: {
-    ploCode: string;
-    programAvgPct: number | null;
-    status: string;
-    cohorts: {
-      yearLevel: number;
-      attainedPct: number | null;
-      targetPct: number;
-      achieved: boolean;
-    }[];
-  }[];
+  plos: PloSummary[];
   gapRows: GapRow[];
   programChairSummary: string | null;
 }
@@ -98,9 +119,13 @@ export function PloGapAnalysisForm() {
       const result = await savePloGapAnalysis(payload.formSubmissionId, {
         gapRows: gapRows.map((r) => ({
           id: r.id,
-          rootCauseCategory: r.rootCauseCategory,
-          rootCauseAnalysis: r.rootCauseAnalysis,
-          namedOwner: r.namedOwner,
+          // An untouched (null) category must be omitted — the backend validates
+          // the 6-category enum and rejects "" outright.
+          ...(r.rootCauseCategory
+            ? { rootCauseCategory: r.rootCauseCategory }
+            : {}),
+          rootCauseAnalysis: r.rootCauseAnalysis ?? undefined,
+          namedOwner: r.namedOwner ?? undefined,
         })),
       });
       if (result.ok) {
@@ -117,7 +142,7 @@ export function PloGapAnalysisForm() {
     }
   }, [payload, gapRows]);
 
-  const updateGapRow = (idx: number, field: string, value: string) => {
+  const updateGapRow = (idx: number, field: GapEditField, value: string) => {
     const next = [...gapRows];
     next[idx] = { ...next[idx], [field]: value };
     setGapRows(next);
@@ -157,6 +182,14 @@ export function PloGapAnalysisForm() {
     );
   }
 
+  // Cohort columns = union across every PLO, so rows stay aligned even when
+  // PLOs observed different cohorts (backend sorts year-asc, null last).
+  const cohortYears = [
+    ...new Set(
+      payload.plos.flatMap((plo) => plo.cohorts.map((c) => c.cohortYearLevel)),
+    ),
+  ].sort((a, b) => (a ?? 99) - (b ?? 99));
+
   return (
     <div className="space-y-4">
       <SubmissionStatusCard submissionId={payload.formSubmissionId} />
@@ -177,9 +210,9 @@ export function PloGapAnalysisForm() {
                   <th className="py-2 pr-4">PLO</th>
                   <th className="py-2 pr-4 text-right">Program Avg</th>
                   <th className="py-2 pr-4">Status</th>
-                  {payload.plos[0]?.cohorts.map((c) => (
-                    <th key={c.yearLevel} className="py-2 pr-4 text-right">
-                      Y{c.yearLevel}
+                  {cohortYears.map((year) => (
+                    <th key={String(year)} className="py-2 pr-4 text-right">
+                      {year === null ? "—" : `Y${year}`}
                     </th>
                   ))}
                 </tr>
@@ -189,7 +222,7 @@ export function PloGapAnalysisForm() {
                   <tr key={plo.ploCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{plo.ploCode}</td>
                     <td className="py-2 pr-4 text-right">
-                      {plo.programAvgPct !== null
+                      {typeof plo.programAvgPct === "number"
                         ? `${plo.programAvgPct.toFixed(1)}%`
                         : "—"}
                     </td>
@@ -210,21 +243,33 @@ export function PloGapAnalysisForm() {
                             : "NOT MET"}
                       </Badge>
                     </td>
-                    {plo.cohorts.map((c) => (
-                      <td key={c.yearLevel} className="py-2 pr-4 text-right">
-                        {c.attainedPct !== null ? (
+                    {cohortYears.map((year) => {
+                      const attained = plo.cohorts.find(
+                        (c) => c.cohortYearLevel === year,
+                      )?.attainmentPct;
+                      if (typeof attained !== "number") {
+                        return (
+                          <td
+                            key={String(year)}
+                            className="py-2 pr-4 text-right"
+                          >
+                            —
+                          </td>
+                        );
+                      }
+                      const achieved = attained >= INSTITUTIONAL_FLOOR_PCT;
+                      return (
+                        <td key={String(year)} className="py-2 pr-4 text-right">
                           <span
                             className={
-                              c.achieved ? "" : "text-destructive font-medium"
+                              achieved ? "" : "text-destructive font-medium"
                             }
                           >
-                            {c.attainedPct.toFixed(1)}%
+                            {attained.toFixed(1)}%
                           </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    ))}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -265,19 +310,25 @@ export function PloGapAnalysisForm() {
                   {gapRows.map((row, idx) => (
                     <tr key={row.id} className="border-b last:border-0">
                       <td className="py-1 pr-2 font-medium">{row.ploCode}</td>
-                      <td className="py-1 pr-2">Y{row.cohortYear}</td>
+                      <td className="py-1 pr-2">
+                        {row.cohortYearLevel ? `Y${row.cohortYearLevel}` : "—"}
+                      </td>
                       <td className="py-1 pr-2 text-right text-destructive">
-                        {row.attainedPct !== null
-                          ? `${row.attainedPct.toFixed(1)}%`
+                        {Number.isFinite(row.attainmentPct)
+                          ? `${row.attainmentPct.toFixed(1)}%`
                           : "—"}
                       </td>
-                      <td className="py-1 pr-2 text-right">{row.targetPct}%</td>
+                      <td className="py-1 pr-2 text-right">
+                        {INSTITUTIONAL_FLOOR_PCT}%
+                      </td>
                       <td className="py-1 pr-2 text-right font-medium text-destructive">
-                        {row.gap !== null ? `+${row.gap.toFixed(1)}%` : "—"}
+                        {Number.isFinite(row.attainmentPct)
+                          ? `+${(INSTITUTIONAL_FLOOR_PCT - row.attainmentPct).toFixed(1)}%`
+                          : "—"}
                       </td>
                       <td className="py-1 pr-2">
                         <FormSelect
-                          value={row.rootCauseCategory}
+                          value={row.rootCauseCategory ?? ""}
                           onValueChange={(v) =>
                             updateGapRow(idx, "rootCauseCategory", v)
                           }
@@ -290,7 +341,7 @@ export function PloGapAnalysisForm() {
                       </td>
                       <td className="py-1 pr-2">
                         <Input
-                          value={row.rootCauseAnalysis}
+                          value={row.rootCauseAnalysis ?? ""}
                           onChange={(e) =>
                             updateGapRow(
                               idx,
@@ -304,7 +355,7 @@ export function PloGapAnalysisForm() {
                       </td>
                       <td className="py-1 pr-2">
                         <Input
-                          value={row.namedOwner}
+                          value={row.namedOwner ?? ""}
                           onChange={(e) =>
                             updateGapRow(idx, "namedOwner", e.target.value)
                           }
