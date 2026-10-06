@@ -26,6 +26,7 @@
 | `/submissions/[id]` | `app/(app)/submissions/[id]/page.tsx` | **Dedicated approval screen** for any submission: identity header, `FormWorkflow` (`layout="page"`), evidence panel | `requireUser` in page + backend visibility gate (`404` unknown / `403` invisible) |
 | `/approvals` | `app/(app)/approvals/page.tsx` | "Pending Approvals" inbox (`GET /forms?scope=pending`) | `requireRole(APPROVER_ROLES)` in page |
 | `/plo-management` | `app/(app)/plo-management/` | PLO entity CRUD (auto-sequenced codes) | `layout.tsx` → `requireRole(PLO_MANAGEMENT_ROLES)` (dean) |
+| `/plo-management/connections` | `app/(app)/plo-management/connections/` | CLO × PLO connection matrix (weight, I-P-D stage, coverage gaps) | inherits `plo-management` layout (dean) |
 | `/archives` | `app/(app)/archives/page.tsx` | Cluster list (read-only, placeholder content) | `layout.tsx` → `requireRole(ARCHIVE_ROLES)` |
 | `/archives/[clusterId]` | `app/(app)/archives/[clusterId]/page.tsx` | Read-only per-student snapshot (placeholder content) | inherits archives layout |
 | `/audit-logs` | `app/(app)/audit-logs/page.tsx` | Role-hierarchy audit waterfall (`GET /audit/logs`; self-scoped rows below vpaa/system_admin) | `requireUser` in page + backend scoping |
@@ -45,7 +46,7 @@ The 7 Periodic/ACT screens (`resource_monitoring`, `alumni_tracer`, `employer_sa
   - `dashboard` — **single adaptive route** rendering the authenticated role's dashboard via a registry (`app/(app)/dashboard/role-dashboard.tsx`).
   - `forms/...` — one route group per form, keyed by **stable form code** (see below); grouped by PDCA phase (Data Capture / Attainment / CQI / PLAN / CHECK).
   - `submissions`, `approvals` — the two inboxes; `submissions/[id]` is the shared approval screen (workflow + evidence) every inbox row and form screen links to.
-  - `plo-management` — dean-only PLO CRUD.
+  - `plo-management` — dean-only PLO CRUD; `plo-management/connections` — the CLO × PLO matrix view.
   - `archives` — read-only **graduation-cluster archives**, gated to `aqau`/`vpaa`/`dean`/`system_admin`.
 
 Form routes key off the stable snake_case codes (see `../backend/SYSTEM-DESIGN.md` §5). The manual's `F##` numbers are provisional — do not use them in URLs or UI.
@@ -216,7 +217,7 @@ Chart/table data comes from backend rollup endpoints (`server/actions/rollup.ts`
 - `components/inbox/` — `submission-inbox` (shared by `/submissions` and `/approvals`, dev-preview sample rows; each row's "Open" goes to `/submissions/[id]`).
 - `components/audit/` — `audit-waterfall` (role-hierarchy cascade: VPAA → system_admin → AQAU → Dean → Program Chair → Faculty, tier visibility from the server's `viewer.scope`), `audit-log-grid` (per-tier cohort-tracking-style DataGrid: grouped Filters, sort, pageSize-10 pagination, raw-`details` dialog, `forms` record ids deep-link to `/submissions/[id]`).
 - `components/submissions/` — `submission-approval-screen` (identity header + `FormWorkflow layout="page"` + **`SubmissionJustification`** + evidence), `submission-evidence` (reads `GET /forms/:id/evidence`: bound section, capture counts, stored `formData` — the JSON payload demoted behind a "Stored payload" toggle since the justification card above carries what an approver reads), `submission-justification` (same endpoint's `justification` block — registered for `course_assessment_report`, `clo_raw_data` and `curriculum_map`; anything else renders the empty state: CAR/raw-data → per-CLO alignment table (CLO/PLO/Bloom's/I-P-D/assessment types/weight) + Part 2 assessment-evidence table led by the `Composite (70/30)` rows (the four instrument groups are null on the v2 class-record template, so composite is what actually carries the ≥70% comparison); prose notes name *where* each null field is recorded ("set it in CAR Part 1" / "set it on a CLO-PLO connection") instead of just saying "not recorded"; curriculum map → I-P-D coverage tiles + uncovered-PLO note; prose notes above both, explicit empty state, **display only — never gates Approve**).
-- `components/outcomes/` — `plo-management-panel` (dean-only PLO CRUD).
+- `components/outcomes/` — `plo-management-panel` (dean-only PLO CRUD), `clo-plo-matrix-panel` (CLO × PLO connection matrix with inline create/edit/delete), `plo-management-nav` (segmented sub-nav between the two `/plo-management` views).
 - `components/charts/` — `attainment-charts`, `cqi-charts`, `governance-charts`, `ingest-charts`, `plan-charts`, `chart-card`, `pie-donut-layout`, `obe-sample-data`.
 - `components/evilcharts/` — ECharts wrappers (`ECharts*Chart`), the preferred chart engine.
 - `components/reui/` — `frame`, `badge`, `filters`, `data-grid/*` (TanStack Table grids).
