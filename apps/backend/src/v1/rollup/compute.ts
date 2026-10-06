@@ -17,11 +17,20 @@ export type CohortCloRow = {
 	status: "MET" | "NOT MET";
 };
 
+/** Per-cohort PLO rollup — derived from CLO rows through the CLO→PLO map. */
+export type CohortPloRow = {
+	ploCode: string;
+	ploDescription: string;
+	attainmentPct: number;
+	achieved: boolean;
+};
+
 export type CohortTerm = {
 	termId: string;
 	schoolYear: string;
 	semester: string;
 	rows: CohortCloRow[];
+	plos: CohortPloRow[];
 	averagePct: number | null;
 };
 
@@ -40,6 +49,21 @@ export type CohortEntryInput = {
 	semester: string;
 	row: CohortCloRow;
 };
+
+/**
+ * Flat per-term/per-PLO input attached to an existing cohort term — carries no
+ * schoolYear/semester because it rides on the CLO-built term skeleton.
+ */
+export type CohortPloEntryInput = {
+	yearLevel: number | null;
+	termId: string;
+	row: CohortPloRow;
+};
+
+/** Orders codes numerically so CLO2/PLO2 precede CLO10/PLO10. */
+function codeOrder(a: string, b: string): number {
+	return a.localeCompare(b, undefined, { numeric: true });
+}
 
 /** Mean attainment across a term's CLO rows (null when none present). */
 export function cohortMeanPct(rows: CohortCloRow[]): number | null {
@@ -78,8 +102,14 @@ export function attainmentStatus(attainmentPct: number): "MET" | "NOT MET" {
  * Groups flat per-term/per-CLO entries into per-year-level cohort lines whose
  * terms are chronologically ordered; each line's trend spans its last two
  * terms and `cqiTriggered` reflects the latest term.
+ *
+ * `ploEntries` are attached to the matching year/term after the CLO skeleton is
+ * built — a PLO for a cohort/term with no CLO rows is dropped, not synthesized.
  */
-export function buildCohortLines(entries: CohortEntryInput[]): CohortLine[] {
+export function buildCohortLines(
+	entries: CohortEntryInput[],
+	ploEntries: CohortPloEntryInput[] = [],
+): CohortLine[] {
 	const byYear = new Map<number | null, Map<string, CohortTerm>>();
 	for (const entry of entries) {
 		let byTerm = byYear.get(entry.yearLevel);
@@ -94,6 +124,7 @@ export function buildCohortLines(entries: CohortEntryInput[]): CohortLine[] {
 				schoolYear: entry.schoolYear,
 				semester: entry.semester,
 				rows: [],
+				plos: [],
 				averagePct: null,
 			};
 			byTerm.set(entry.termId, term);
@@ -101,11 +132,18 @@ export function buildCohortLines(entries: CohortEntryInput[]): CohortLine[] {
 		term.rows.push(entry.row);
 	}
 
+	for (const entry of ploEntries) {
+		const term = byYear.get(entry.yearLevel)?.get(entry.termId);
+		if (!term) continue;
+		term.plos.push(entry.row);
+	}
+
 	const lines: CohortLine[] = [];
 	for (const [yearLevel, termsMap] of byYear) {
 		const terms = [...termsMap.values()].sort((a, b) => termOrder(a, b));
 		for (const term of terms) {
-			term.rows.sort((a, b) => a.cloCode.localeCompare(b.cloCode));
+			term.rows.sort((a, b) => codeOrder(a.cloCode, b.cloCode));
+			term.plos.sort((a, b) => codeOrder(a.ploCode, b.ploCode));
 			term.averagePct = cohortMeanPct(term.rows);
 		}
 

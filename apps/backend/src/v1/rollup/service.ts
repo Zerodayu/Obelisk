@@ -13,6 +13,7 @@ import {
 	attainmentStatus,
 	buildCohortLines,
 	type CohortEntryInput,
+	type CohortPloEntryInput,
 } from "./compute";
 import type {
 	CloSectionSummary,
@@ -65,6 +66,23 @@ type AttainmentRow = Prisma.CloAttainmentGetPayload<{
 				};
 			};
 		};
+	};
+}>;
+
+/** CLO rows as loaded for the cohort grid: student cohort + section term + CLO→PLO map. */
+type CohortAttainmentRow = Prisma.CloAttainmentGetPayload<{
+	include: {
+		clo: {
+			select: {
+				code: true;
+				description: true;
+				cloToPloMaps: {
+					select: { plo: { select: { code: true; description: true } } };
+				};
+			};
+		};
+		student: { select: { yearLevel: true } };
+		classSection: { select: { termId: true } };
 	};
 }>;
 
@@ -669,7 +687,16 @@ export class CohortTrackingService {
 			prisma.cloAttainment.findMany({
 				where: { classSectionId: { in: sectionsForTerm.map((s) => s.id) } },
 				include: {
-					clo: { select: { code: true, description: true } },
+					clo: {
+						select: {
+							code: true,
+							description: true,
+							// NOTE: the CLO→PLO map feeds the per-cohort PLO columns.
+							cloToPloMaps: {
+								select: { plo: { select: { code: true, description: true } } },
+							},
+						},
+					},
 					student: { select: { yearLevel: true } },
 					classSection: { select: { termId: true } },
 				},
@@ -686,8 +713,9 @@ export class CohortTrackingService {
 
 		const termById = new Map(terms.map((term) => [term.id, term]));
 		const entries = buildCohortEntries(attainments, termById);
+		const ploEntries = buildCohortPloEntries(attainments, termById);
 
-		const lines = buildCohortLines(entries);
+		const lines = buildCohortLines(entries, ploEntries);
 
 		const submission = await this.findProgramSubmission(programId, termId);
 		const existingFormData = (submission?.formData ?? {}) as {
@@ -972,13 +1000,7 @@ function buildCloRows(attainments: AttainmentRow[]): CloSummaryRow[] {
 
 /** Flattens per-student CLO rows into per-term/per-year-level cohort inputs. */
 function buildCohortEntries(
-	attainments: Prisma.CloAttainmentGetPayload<{
-		include: {
-			clo: { select: { code: true; description: true } };
-			student: { select: { yearLevel: true } };
-			classSection: { select: { termId: true } };
-		};
-	}>[],
+	attainments: CohortAttainmentRow[],
 	termById: Map<string, { id: string; schoolYear: string; semester: string }>,
 ): CohortEntryInput[] {
 	const groups = new Map<
@@ -1029,6 +1051,67 @@ function buildCohortEntries(
 				cloDescription: group.cloDescription,
 				attainmentPct: attainment,
 				status: attainmentStatus(attainment),
+			},
+		});
+	}
+	return entries;
+}
+
+/**
+ * Flattens the same per-student CLO rows into per-term/per-year-level PLO
+ * inputs through the CLO→PLO map — one CLO composite feeds every PLO it maps
+ * to, the same rule `cqi/service.ts` uses for the gap matrix.
+ */
+function buildCohortPloEntries(
+	attainments: CohortAttainmentRow[],
+	termById: Map<string, { id: string; schoolYear: string; semester: string }>,
+): CohortPloEntryInput[] {
+	const groups = new Map<
+		string,
+		{
+			yearLevel: number | null;
+			termId: string;
+			ploCode: string;
+			ploDescription: string;
+			composites: number[];
+		}
+	>();
+	for (const row of attainments) {
+		if (!termById.has(row.classSection.termId)) continue;
+		const pct = toNumber(row.compositeScorePct);
+		if (pct === null) continue;
+
+		const yearLevel = row.student.yearLevel ?? null;
+		for (const mapped of row.clo.cloToPloMaps) {
+			const key = `${row.classSection.termId}|${yearLevel ?? "null"}|${mapped.plo.code}`;
+			let group = groups.get(key);
+			if (!group) {
+				group = {
+					yearLevel,
+					termId: row.classSection.termId,
+					ploCode: mapped.plo.code,
+					ploDescription: mapped.plo.description,
+					composites: [],
+				};
+				groups.set(key, group);
+			}
+			group.composites.push(pct);
+		}
+	}
+
+	const entries: CohortPloEntryInput[] = [];
+	for (const group of groups.values()) {
+		const attainment = meanPct(group.composites);
+		if (attainment === null) continue;
+		entries.push({
+			yearLevel: group.yearLevel,
+			termId: group.termId,
+			row: {
+				ploCode: group.ploCode,
+				ploDescription: group.ploDescription,
+				attainmentPct: attainment,
+				// NOTE: same >=70% floor as the program-level `plos` payload.
+				achieved: attainmentStatus(attainment) === "MET",
 			},
 		});
 	}

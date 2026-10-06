@@ -440,6 +440,21 @@ describe.skipIf(!db)("roll-up chain generation (integration)", () => {
 				status: "NOT MET",
 			});
 
+			// NOTE: both CLOs map to PLO1, so the per-cohort PLO is the mean of
+			// that cohort's composites (Y1: 85/90, Y2: 95/40).
+			expect(yearOne?.terms[0].plos).toHaveLength(1);
+			expect(yearOne?.terms[0].plos[0]).toMatchObject({
+				ploCode: "PLO1",
+				attainmentPct: 87.5,
+				achieved: true,
+			});
+			expect(yearTwo?.terms[0].plos).toHaveLength(1);
+			expect(yearTwo?.terms[0].plos[0]).toMatchObject({
+				ploCode: "PLO1",
+				attainmentPct: 67.5,
+				achieved: false,
+			});
+
 			expect(payload.plos).toHaveLength(1);
 			expect(payload.plos[0]).toMatchObject({
 				ploCode: "PLO1",

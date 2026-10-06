@@ -3,6 +3,7 @@ import {
 	attainmentStatus,
 	buildCohortLines,
 	type CohortEntryInput,
+	type CohortPloEntryInput,
 	cohortCqiTriggered,
 	cohortMeanPct,
 	trendBetween,
@@ -154,5 +155,81 @@ describe("buildCohortLines", () => {
 		]);
 		expect(lines[0].yearLevel).toBeNull();
 		expect(lines[1].yearLevel).toBe(2);
+	});
+
+	describe("per-cohort PLO rows", () => {
+		function ploEntry(
+			yearLevel: number | null,
+			termId: string,
+			ploCode: string,
+			attainmentPct: number,
+		): CohortPloEntryInput {
+			return {
+				yearLevel,
+				termId,
+				row: {
+					ploCode,
+					ploDescription: `Description of ${ploCode}`,
+					attainmentPct,
+					achieved: attainmentStatus(attainmentPct) === "MET",
+				},
+			};
+		}
+
+		it("leaves terms with an empty plos list when none are passed", () => {
+			const lines = buildCohortLines(
+				entry(1, "t1", "SY 2025", "1st", [
+					{ cloCode: "CLO1", attainmentPct: 80 },
+				]),
+			);
+			expect(lines[0].terms[0].plos).toEqual([]);
+		});
+
+		it("attaches PLO rows to the matching year/term and sorts them numerically", () => {
+			const lines = buildCohortLines(
+				[
+					...entry(1, "t1", "SY 2025", "1st", [
+						{ cloCode: "CLO1", attainmentPct: 80 },
+					]),
+					...entry(2, "t1", "SY 2025", "1st", [
+						{ cloCode: "CLO1", attainmentPct: 60 },
+					]),
+				],
+				[
+					ploEntry(2, "t1", "PLO2", 60),
+					ploEntry(1, "t1", "PLO10", 90),
+					ploEntry(1, "t1", "PLO2", 80),
+				],
+			);
+
+			const yearOne = lines.find((l) => l.yearLevel === 1);
+			expect(yearOne?.terms[0].plos.map((p) => p.ploCode)).toEqual([
+				"PLO2",
+				"PLO10",
+			]);
+			expect(yearOne?.terms[0].plos[0]).toMatchObject({
+				attainmentPct: 80,
+				achieved: true,
+			});
+
+			const yearTwo = lines.find((l) => l.yearLevel === 2);
+			expect(yearTwo?.terms[0].plos).toHaveLength(1);
+			expect(yearTwo?.terms[0].plos[0]).toMatchObject({
+				ploCode: "PLO2",
+				attainmentPct: 60,
+				achieved: false,
+			});
+		});
+
+		it("drops PLO rows for a cohort/term that has no CLO rows", () => {
+			const lines = buildCohortLines(
+				entry(1, "t1", "SY 2025", "1st", [
+					{ cloCode: "CLO1", attainmentPct: 80 },
+				]),
+				[ploEntry(1, "other-term", "PLO1", 80), ploEntry(4, "t1", "PLO1", 80)],
+			);
+			expect(lines).toHaveLength(1);
+			expect(lines[0].terms[0].plos).toEqual([]);
+		});
 	});
 });
