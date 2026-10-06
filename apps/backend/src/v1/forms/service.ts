@@ -19,6 +19,7 @@ import {
 } from "@lib/forms/state-machine";
 import { assertSubmitGate } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import { ARCHIVE_ROLES } from "@lib/role-access";
 import type { ApproverRole, Prisma } from "@prisma/generated/prisma/client";
 import type {
 	CreateFormSubmission,
@@ -49,18 +50,28 @@ export type FormSubmissionWithSteps = Prisma.FormSubmissionGetPayload<{
 const APPROVAL_STEP_INCLUDE = { include: SUBMISSION_INCLUDE } as const;
 
 /** Who a user-scoped list query is for — resolved server-side, never spoofable. */
-export type ListScope = "mine" | "pending";
+export type ListScope = "mine" | "pending" | "all";
 
 /**
  * Translate an inbox scope into a Prisma where-clause for the caller.
  * `mine` → the caller's own submissions; `pending` → submitted records waiting
- * on the caller's role (a `system_admin` sees every pending step).
+ * on the caller's role (a `system_admin` sees every pending step); `all` →
+ * every submission, for the archive roles only (vpaa/system_admin).
  */
 export function scopeWhere(
 	scope: ListScope | undefined,
 	caller: { id: string; role: string },
 ): Prisma.FormSubmissionWhereInput {
 	if (scope === "mine") return { submittedByUserId: caller.id };
+	if (scope === "all") {
+		// NOTE: the institution-wide list backs the VPAA archive screen — a
+		// spoofed `scope=all` from any other role matches nothing instead of
+		// leaking other users' submissions.
+		if (!ARCHIVE_ROLES.includes(caller.role)) {
+			return { id: { in: [] } };
+		}
+		return {};
+	}
 	if (scope === "pending") {
 		if (caller.role === "system_admin") return { status: "submitted" };
 		// Non-approvers have no pending inbox — match nothing rather than feed
@@ -77,6 +88,8 @@ export function scopeWhere(
 			currentApproverRole: caller.role as ApproverRole,
 		};
 	}
+	// NOTE: no scope = unscoped read; still open to any authenticated role
+	// (the dashboard status donut depends on it). Harden separately.
 	return {};
 }
 

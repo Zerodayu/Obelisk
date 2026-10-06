@@ -277,6 +277,23 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			);
 			expect(pendingFaculty).toHaveLength(0);
 
+			// Institution-wide `all` scope — the VPAA archive screen's list.
+			const allVpaa = await submissionService.list(
+				scopeWhere("all", { id: "any", role: "vpaa" }),
+			);
+			expect(allVpaa.map((s) => s.id)).toContain(draft.id);
+
+			const allAdmin = await submissionService.list(
+				scopeWhere("all", { id: "any", role: "system_admin" }),
+			);
+			expect(allAdmin.map((s) => s.id)).toContain(draft.id);
+
+			// NOTE: a spoofed `scope=all` from any other role matches nothing.
+			const allFaculty = await submissionService.list(
+				scopeWhere("all", { id: IDS.owner, role: "faculty" }),
+			);
+			expect(allFaculty).toHaveLength(0);
+
 			// --- decide: role match + admin override ------------------------------
 			await expect(
 				submissionService.decide(

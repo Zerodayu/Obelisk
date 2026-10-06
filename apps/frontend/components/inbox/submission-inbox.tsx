@@ -2,28 +2,49 @@
 
 import type { Atom, WritableAtom } from "jotai";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { ArrowRightIcon, RefreshCwIcon } from "lucide-react";
+import { ArchiveIcon, ArrowRightIcon, RefreshCwIcon } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 import {
   SAMPLE_MY_SUBMISSIONS,
   SAMPLE_PENDING_APPROVALS,
 } from "@/components/charts/obe-sample-data";
 import { Badge } from "@/components/reui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogClose,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Status } from "@/components/ui/status";
-import { roleLabel, type UserRole } from "@/lib/roles";
+import { toast, toastError } from "@/components/ui/toast";
+import { ARCHIVE_ROLES, roleLabel, type UserRole } from "@/lib/roles";
 import type { AsyncState } from "@/lib/store/async-atom";
 import {
+  allSubmissionsDataAtom,
+  allSubmissionsStateAtom,
   FORM_STATUS_LABELS,
   type FormSubmissionRecord,
+  type FormSubmissionStatus,
   mySubmissionsDataAtom,
   mySubmissionsStateAtom,
   pendingApprovalsDataAtom,
   pendingApprovalsStateAtom,
+  refreshAllSubmissionsAtom,
+  refreshFormSubmissionsAtom,
   refreshMySubmissionsAtom,
   refreshPendingApprovalsAtom,
 } from "@/lib/store/atoms/forms";
+import { userAtom } from "@/lib/store/atoms/user";
+import { archiveFormAction } from "@/server/actions/forms";
 
 interface InboxAtoms {
   data: Atom<FormSubmissionRecord[]>;
@@ -31,7 +52,9 @@ interface InboxAtoms {
   refresh: WritableAtom<null, [], void>;
 }
 
-const INBOX_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
+type InboxScope = "mine" | "pending" | "all";
+
+const INBOX_ATOMS: Record<InboxScope, InboxAtoms> = {
   mine: {
     data: mySubmissionsDataAtom,
     state: mySubmissionsStateAtom,
@@ -41,6 +64,11 @@ const INBOX_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
     data: pendingApprovalsDataAtom,
     state: pendingApprovalsStateAtom,
     refresh: refreshPendingApprovalsAtom,
+  },
+  all: {
+    data: allSubmissionsDataAtom,
+    state: allSubmissionsStateAtom,
+    refresh: refreshAllSubmissionsAtom,
   },
 };
 
@@ -57,9 +85,12 @@ function previewInboxAtoms(data: FormSubmissionRecord[]): InboxAtoms {
   };
 }
 
-const PREVIEW_ATOMS: Record<"mine" | "pending", InboxAtoms> = {
+const PREVIEW_ATOMS: Record<InboxScope, InboxAtoms> = {
   mine: previewInboxAtoms(SAMPLE_MY_SUBMISSIONS),
   pending: previewInboxAtoms(SAMPLE_PENDING_APPROVALS),
+  // NOTE: the canned rows span every status, so the approved-filtered default
+  // still renders populated in dev preview.
+  all: previewInboxAtoms(SAMPLE_MY_SUBMISSIONS),
 };
 
 /**
@@ -90,10 +121,38 @@ const STATUS_DOT_CLASS: Record<FormSubmissionRecord["status"], string> = {
   archived: "bg-zinc-500",
 };
 
+/** Status chips for the all-submissions filter (`null` = no filter). */
+const STATUS_FILTERS: (FormSubmissionStatus | null)[] = [
+  null,
+  "draft",
+  "submitted",
+  "returned",
+  "approved",
+  "archived",
+];
+
+const SCOPE_COPY: Record<InboxScope, { header: string; empty: string }> = {
+  mine: {
+    header: "Every form you have submitted, with its live approval status.",
+    empty: "You haven't submitted any forms yet.",
+  },
+  pending: {
+    header: "Submitted forms waiting for your decision.",
+    empty: "Nothing is waiting on your role right now.",
+  },
+  all: {
+    header:
+      "Every submission across the institution. Approved forms can be archived from this list.",
+    empty: "No submissions found.",
+  },
+};
+
 /**
- * Submission inbox table shared by `/submissions` (own records) and
- * `/approvals` (records waiting on the caller's role). Data comes from the
- * scoped atoms — the backend resolves the scope from the session. With
+ * Submission inbox table shared by `/submissions` (own records),
+ * `/approvals` (records waiting on the caller's role), and
+ * `/all-submissions` (institution-wide, archive roles — with a status filter
+ * defaulting to `approved` and a one-click Archive action). Data comes from
+ * the scoped atoms — the backend resolves the scope from the session. With
  * `devPreview` (DEVELOPMENT=true) the canned rows render instead, so the UI
  * can be reviewed without a backend session.
  */
@@ -101,7 +160,7 @@ export function SubmissionInbox({
   scope,
   devPreview = false,
 }: {
-  scope: "mine" | "pending";
+  scope: InboxScope;
   /** True when `DEVELOPMENT=true` — render the canned rows, skip the API. */
   devPreview?: boolean;
 }) {
@@ -109,19 +168,49 @@ export function SubmissionInbox({
   const submissions = useAtomValue(atoms.data);
   const state = useAtomValue(atoms.state);
   const refresh = useSetAtom(atoms.refresh);
+  const refreshDashboard = useSetAtom(refreshFormSubmissionsAtom);
+  const user = useAtomValue(userAtom);
+
+  // NOTE: the institution-wide list opens on the approved forms — the VPAA's
+  // archive queue — with chips to widen to any other status.
+  const [statusFilter, setStatusFilter] = useState<FormSubmissionStatus | null>(
+    scope === "all" ? "approved" : null,
+  );
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+
+  const rows = statusFilter
+    ? submissions.filter((submission) => submission.status === statusFilter)
+    : submissions;
+  const canArchive = user != null && ARCHIVE_ROLES.includes(user.role);
+
+  async function archive(id: string) {
+    setArchivingId(id);
+    const result = await archiveFormAction(id);
+    if (!result.ok) {
+      toastError({
+        title: "Archive failed",
+        description: result.error,
+        status: result.status,
+        scope: "inbox:archive",
+      });
+    } else {
+      toast.success({ title: "Submission archived" });
+      refresh();
+      refreshDashboard();
+    }
+    setArchivingId(null);
+  }
 
   const emptyCopy =
-    scope === "mine"
-      ? "You haven't submitted any forms yet."
-      : "Nothing is waiting on your role right now.";
+    scope === "all" && statusFilter
+      ? `No ${FORM_STATUS_LABELS[statusFilter].toLowerCase()} submissions.`
+      : SCOPE_COPY[scope].empty;
 
   return (
     <section className="rounded-xl border bg-card p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          {scope === "mine"
-            ? "Every form you have submitted, with its live approval status."
-            : "Submitted forms waiting for your decision."}
+          {SCOPE_COPY[scope].header}
         </p>
         <Button
           disabled={state.status === "loading"}
@@ -134,7 +223,28 @@ export function SubmissionInbox({
         </Button>
       </div>
 
-      {state.status === "loading" && submissions.length === 0 ? (
+      {scope === "all" ? (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {STATUS_FILTERS.map((filter) => {
+            const active = statusFilter === filter;
+            return (
+              <Button
+                aria-pressed={active}
+                className={active ? undefined : "text-muted-foreground"}
+                key={filter ?? "all"}
+                onClick={() => setStatusFilter(filter)}
+                size="sm"
+                type="button"
+                variant={active ? "default" : "ghost"}
+              >
+                {filter ? FORM_STATUS_LABELS[filter] : "All"}
+              </Button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {state.status === "loading" && rows.length === 0 ? (
         <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner className="size-4" /> Loading submissions…
         </div>
@@ -147,11 +257,11 @@ export function SubmissionInbox({
             Retry
           </Button>
         </div>
-      ) : submissions.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">{emptyCopy}</p>
       ) : (
         <ul className="mt-4 divide-y divide-border">
-          {submissions.map((submission) => {
+          {rows.map((submission) => {
             const code = submission.formType?.code;
             return (
               <li
@@ -166,7 +276,7 @@ export function SubmissionInbox({
                     {code ? <span className="font-mono">{code}</span> : null}
                     {code ? " · " : null}
                     Updated {new Date(submission.updatedAt).toLocaleString()}
-                    {scope === "pending" && submission.submittedBy
+                    {scope !== "mine" && submission.submittedBy
                       ? ` · from ${submission.submittedBy.name}`
                       : null}
                   </p>
@@ -184,6 +294,51 @@ export function SubmissionInbox({
                   <Badge variant="outline">
                     {roleLabel(submission.currentApproverRole as UserRole)}
                   </Badge>
+                ) : null}
+
+                {/* NOTE: one-click archive from the list — the confirm dialog
+                    mirrors the permanence warning on the detail screen. */}
+                {scope === "all" &&
+                submission.status === "approved" &&
+                canArchive ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        disabled={archivingId != null}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        <ArchiveIcon />
+                        {archivingId === submission.id
+                          ? "Archiving…"
+                          : "Archive"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Archive this submission?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Archiving is permanent — an archived submission can no
+                          longer be edited or reactivated.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogClose asChild>
+                          <AlertDialogAction
+                            onClick={() => void archive(submission.id)}
+                            variant="destructive"
+                          >
+                            <ArchiveIcon />
+                            Archive
+                          </AlertDialogAction>
+                        </AlertDialogClose>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 ) : null}
 
                 <Button asChild size="sm" variant="ghost">

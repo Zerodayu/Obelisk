@@ -22,8 +22,9 @@
 | `/forms/cqi/{plo-gap-analysis,cqi-action-plan,closing-the-loop,annual-program-report}` | `app/(app)/forms/cqi/…` | CQI / ACT loop | `(app)` shell |
 | `/forms/plan/{curriculum-map,assessment-calendar,target-setting-matrix,assessment-budget}` | `app/(app)/forms/plan/…` | PLAN-phase setup forms | `(app)` shell |
 | `/forms/check/{mid-cycle-attainment,peer-observation,exhibition-feedback,clo-perception-survey,student-exit-survey,portfolio-assessment,capstone-panel}` | `app/(app)/forms/check/…` | 7 CHECK-stage supporting instruments | `(app)` shell |
-| `/submissions` | `app/(app)/submissions/page.tsx` | "My Submissions" inbox (`GET /forms?scope=mine`) | `requireUser` in page |
+| `/submissions` | `app/(app)/submissions/page.tsx` | "My Submissions" inbox (`GET /forms?scope=mine`) | `requireRole(MY_SUBMISSIONS_ROLES)` in page (every role but `vpaa`, which never prepares submissions) |
 | `/submissions/[id]` | `app/(app)/submissions/[id]/page.tsx` | **Dedicated approval screen** for any submission: identity header, `FormWorkflow` (`layout="page"`), evidence panel | `requireUser` in page + backend visibility gate (`404` unknown / `403` invisible) |
+| `/all-submissions` | `app/(app)/all-submissions/page.tsx` | "Submissions" — institution-wide inbox (`GET /forms?scope=all`), status filter defaulting to **approved** + inline Archive action (the VPAA's archive queue) | `requireRole(ARCHIVE_ROLES)` in page |
 | `/approvals` | `app/(app)/approvals/page.tsx` | "Pending Approvals" inbox (`GET /forms?scope=pending`) | `requireRole(APPROVER_ROLES)` in page |
 | `/plo-management` | `app/(app)/plo-management/` | PLO entity CRUD (auto-sequenced codes) | `layout.tsx` → `requireRole(PLO_MANAGEMENT_ROLES)` (dean) |
 | `/plo-management/connections` | `app/(app)/plo-management/connections/` | CLO × PLO connection matrix (weight, I-P-D stage, coverage gaps) | inherits `plo-management` layout (dean) |
@@ -55,7 +56,7 @@ Form routes key off the stable snake_case codes (see `../backend/SYSTEM-DESIGN.m
 
 The frontend uses **both** layers, each doing what it does best — the backend remains the source of truth for enforcement (the client only hides/navigates):
 
-- **`proxy.ts`** (Next 16 `proxy`, formerly middleware) — the **coarse** gate. It only covers `/dashboard`, `/forms`, `/archives` (`PROTECTED_PREFIXES` + `matcher`): it checks for the better-auth session cookie prefix (`obelisk-app.session`) and redirects unauthenticated requests to `/login?next=…`. It never authorizes — reading a cookie is all it does. The newer routes (`/submissions`, `/approvals`, `/plo-management`, `/onboarding`, `/audit-logs`) are **not** in the proxy matcher; they rely entirely on `requireUser`/`requireRole` below.
+- **`proxy.ts`** (Next 16 `proxy`, formerly middleware) — the **coarse** gate. It only covers `/dashboard`, `/forms`, `/archives` (`PROTECTED_PREFIXES` + `matcher`): it checks for the better-auth session cookie prefix (`obelisk-app.session`) and redirects unauthenticated requests to `/login?next=…`. It never authorizes — reading a cookie is all it does. The newer routes (`/submissions`, `/all-submissions`, `/approvals`, `/plo-management`, `/onboarding`, `/audit-logs`) are **not** in the proxy matcher; they rely entirely on `requireUser`/`requireRole` below.
 - **`app/(app)/layout.tsx`** (Server Component) — real session validation via `server/auth.requireUser()` → `GET /auth/me`; redirects to `/login` when invalid, and to `/onboarding` for role-less `user` accounts.
 - **Role-restricted routes** call `requireRole([...])` — either in a nested `layout.tsx` (`forms/clo-raw-data`, `archives`, `plo-management`) or directly in the **page** (`approvals`). Unauthorized roles are redirected to `/dashboard`.
 - **`lib/role-access.ts`** — **central role → feature/form access map**: `USER_ROLES`, `FEATURE_ACCESS` (allow-lists: `captureClassRecords`, `archive`, `viewArchives`, `approveForms`, `managePlos`, `manageRoleRequests`, `confirmClusterCompile`, `generateAiInsights`, `viewAllAuditLogs`), `FORM_ACCESS` (per-form preparers + chain), helpers `formRoles`/`featureRoles`/`canAccess`. Pure data (no imports); mirrors `apps/backend/lib/role-access.ts` + `apps/backend/lib/forms/approval-routes.ts`, drift-guarded by `apps/backend/test/unit/role-access-sync.test.ts`.
@@ -73,7 +74,7 @@ Single source of truth (a plain `.ts` module — icons are referenced as compone
 
 - `FORM_SECTIONS` (internal) — the forms catalog grouped by PDCA phase; each item carries `url`, `roles?` (allow-list, empty = any authenticated role) and the stable `code` used by the inboxes.
 - `navSectionsFor(role)` — role-filtered forms catalog for the sidebar/forms index.
-- `workspaceNav(role)` — top-level workspace links: Dashboard, **PLO Management** (dean), **My Submissions** (all), **Pending Approvals** (`APPROVER_ROLES`), Archives (`aqau`/`vpaa`/`dean`/`system_admin`).
+- `workspaceNav(role)` — top-level workspace links: Dashboard, **PLO Management** (dean), **My Submissions** (all but `vpaa`), **Submissions** (`ARCHIVE_ROLES` → `/all-submissions`), **Pending Approvals** (`APPROVER_ROLES`), Archives (`aqau`/`vpaa`/`dean`/`system_admin`).
 - `INSTITUTION_NAV` — secondary group (currently only the Faculty Directory entry).
 - `formPathByCode` — stable code → screen path, used by the approval screen's "Open form screen" link (inbox rows link to `/submissions/[id]` instead).
 - `itemVisible(item, role)`, `titleForPathname(pathname)`.
@@ -97,11 +98,11 @@ Backend status quo from `../backend/SYSTEM-DESIGN.md` §3; the frontend maps eac
 | `program_chair` | own `Program`: attainment, targets, approvals, gap/CQI | academic forms + roll-ups (broader); `/submissions`, `/approvals` |
 | `dean` | own `Department`: endorsements, budgets, sign-offs | academic + archives + **`/plo-management`** + `/approvals` + `/submissions` |
 | `aqau` | institution-wide QA: filings, cohort tracking, cluster confirm | archives + everything + `/approvals` + `/submissions` |
-| `vpaa` | institution-wide: CAPA/budget, institutional decisions | archives + everything + `/approvals` + `/submissions` |
-| `system_admin` | everything + admin | everything + archives + `/approvals` + `/submissions` |
+| `vpaa` | institution-wide: CAPA/budget, institutional decisions | archives + everything + `/approvals` + `/all-submissions` |
+| `system_admin` | everything + admin | everything + archives + `/approvals` + `/submissions` + `/all-submissions` |
 | `user` | never rendered — the `(app)` layout redirects to `/onboarding` (role picker / request status) | none |
 
-`/submissions` is open to **every** authenticated role; `/approvals` is limited to `APPROVER_ROLES` (program_chair, dean, aqau, vpaa, system_admin) and the backend re-checks the per-step role match on every decision.
+`/submissions` is open to every authenticated role **except `vpaa`** (it never prepares submissions — the VPAA reads the institution-wide `/all-submissions` instead); `/all-submissions` is limited to `ARCHIVE_ROLES` (vpaa, system_admin) and the backend enforces the same set on `?scope=all`; `/approvals` is limited to `APPROVER_ROLES` (program_chair, dean, aqau, vpaa, system_admin) and the backend re-checks the per-step role match on every decision.
 
 ## 4. Component Architecture
 
@@ -183,8 +184,10 @@ User edits form ──> controlled component state / Jotai draft atom
 
 Workflow state changes are a separate path — `server/actions/forms.ts` posts to
 `/forms/:id/submit`, `/forms/:id/approve/:role`, `/forms/:id/return`,
-`/forms/:id/archive`, fired from the approval screen (`/submissions/[id]`), the
-only surface that renders those buttons. The backend derives the approval chain
+`/forms/:id/archive`, fired from the approval screen (`/submissions/[id]`) —
+the surface for submit/approve/return — plus the inline Archive action on the
+`/all-submissions` inbox rows (approved forms, `ARCHIVE_ROLES` only). The
+backend derives the approval chain
 from the form's stable code (`apps/backend/lib/forms/approval-routes.ts`) and
 enforces ownership + role match; the client never sends steps or RBAC
 decisions.
@@ -214,7 +217,7 @@ Chart/table data comes from backend rollup endpoints (`server/actions/rollup.ts`
 - `components/auth/` — `login-form`, `register-form`, `google-sign-in-button`, `sign-out-button`, `select-role`, `onboarding-form`, `role-requests-panel`, `page-notice`.
 - `components/dashboard/` — `role-dashboard-shell` (`DashboardShell`, `StatCard`, `PendingSection`), `ai-suggestions-drawer` (fetches the latest persisted AI recommendation via `server/actions/ai.ts` on first open; role-gated generate/regenerate, Markdown rendered with the `typeset` classes — no markdown library; the **"Key gaps"** and **"Pedagogical context"** tables are computed data rendered from `worstPerformingClos` / `alignmentContext`, the latter capped at 50 visible rows with an explicit "showing N of M" note), plus the per-role dashboards under `app/(app)/dashboard/`.
 - `components/forms/` — `form-workflow`, `submission-status-card`, `form-placeholder`, `class-record-upload` (the `/forms/clo-raw-data` screen), `upload-history-table`, `clo-plo-map-panel`, `curriculum-coverage-grid`, `cohort-tracking-grid`, plus the 19 form-screen components (`car-form`, `clo-summary-form`, `plo-summary-form`, `cohort-tracking-form`, `plo-gap-analysis-form`, `cqi-action-plan-form`, `ctl-form`, `apar-form`, `curriculum-map-form`, `assessment-calendar-form`, `target-setting-matrix-form`, `assessment-budget-form`, and the 7 CHECK forms) covering the 20 screens in §1. `car-form`'s P1 CLO table edits exactly three columns — **Bloom's**, **weight** and **Assessment types** (a chip-toggle set over `ASSESSMENT_TYPES` in `lib/constants/obe.ts`, mirroring the backend's `ASSESSMENT_GROUP_LABELS`) — everything else there is read-only and comes from `CloToPloMap`/`ploForClo`.
-- `components/inbox/` — `submission-inbox` (shared by `/submissions` and `/approvals`, dev-preview sample rows; each row's "Open" goes to `/submissions/[id]`).
+- `components/inbox/` — `submission-inbox` (shared by `/submissions`, `/approvals` and `/all-submissions` — the last with a status filter defaulting to **approved** and a per-row Archive action behind a permanence confirm dialog; dev-preview sample rows; each row's "Open" goes to `/submissions/[id]`).
 - `components/audit/` — `audit-waterfall` (role-hierarchy cascade: VPAA → system_admin → AQAU → Dean → Program Chair → Faculty, tier visibility from the server's `viewer.scope`), `audit-log-grid` (per-tier cohort-tracking-style DataGrid: grouped Filters, sort, pageSize-10 pagination, raw-`details` dialog, `forms` record ids deep-link to `/submissions/[id]`).
 - `components/submissions/` — `submission-approval-screen` (identity header + `FormWorkflow layout="page"` + **`SubmissionJustification`** + evidence), `submission-evidence` (reads `GET /forms/:id/evidence`: bound section, capture counts, stored `formData` — the JSON payload demoted behind a "Stored payload" toggle since the justification card above carries what an approver reads), `submission-justification` (same endpoint's `justification` block — registered for `course_assessment_report`, `clo_raw_data` and `curriculum_map`; anything else renders the empty state: CAR/raw-data → per-CLO alignment table (CLO/PLO/Bloom's/I-P-D/assessment types/weight) + Part 2 assessment-evidence table led by the `Composite (70/30)` rows (the four instrument groups are null on the v2 class-record template, so composite is what actually carries the ≥70% comparison); prose notes name *where* each null field is recorded ("set it in CAR Part 1" / "set it on a CLO-PLO connection") instead of just saying "not recorded"; curriculum map → I-P-D coverage tiles + uncovered-PLO note; prose notes above both, explicit empty state, **display only — never gates Approve**).
 - `components/outcomes/` — `plo-management-panel` (dean-only PLO CRUD), `clo-plo-matrix-panel` (CLO × PLO connection matrix with inline create/edit/delete), `plo-management-nav` (segmented sub-nav between the two `/plo-management` views).

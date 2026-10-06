@@ -179,3 +179,19 @@ export const {
     signal,
   }),
 );
+
+/**
+ * "Submissions" inbox — the institution-wide list for the archive roles
+ * (`GET /forms?scope=all`; the backend matches nothing for any other role).
+ * Backs the VPAA's approved-forms/archive screen at `/all-submissions`.
+ */
+export const {
+  dataAtom: allSubmissionsDataAtom,
+  stateAtom: allSubmissionsStateAtom,
+  refreshAtom: refreshAllSubmissionsAtom,
+} = atomWithAsyncData<FormSubmissionRecord[]>([], (_get, signal) =>
+  api.get<FormSubmissionRecord[]>("/forms", {
+    query: { scope: "all" },
+    signal,
+  }),
+);

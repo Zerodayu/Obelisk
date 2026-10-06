@@ -14,7 +14,7 @@
  * the source of truth** for enforcement. We only hide/navigate client-side.
  */
 
-import { USER_ROLES, type UserRole } from "./role-access";
+import { ALL_ROLES, USER_ROLES, type UserRole } from "./role-access";
 
 export {
   ACADEMIC_ROLES,
@@ -35,6 +35,15 @@ export {
   USER_ROLES,
   type UserRole,
 } from "./role-access";
+
+/**
+ * Roles that may open `/submissions` (their own submissions). Every role but
+ * `vpaa` — it never appears in any `preparerRoles`, so the page is empty for
+ * it; the VPAA reads the institution-wide list at `/all-submissions` instead.
+ */
+export const MY_SUBMISSIONS_ROLES: readonly UserRole[] = ALL_ROLES.filter(
+  (role) => role !== "vpaa",
+);
 
 export function isUserRole(value: unknown): value is UserRole {
   return (

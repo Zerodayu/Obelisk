@@ -287,11 +287,21 @@ export function workspaceNav(role: UserRole): NavItem[] {
       url: "/plo-management",
       icon: ListChecksIcon,
     });
-  items.push({
-    title: "My Submissions",
-    url: "/submissions",
-    icon: FileTextIcon,
-  });
+  // NOTE: vpaa never prepares submissions (preparerRoles excludes it) — it
+  // gets the institution-wide list behind the archive gate instead.
+  if (role !== "vpaa") {
+    items.push({
+      title: "My Submissions",
+      url: "/submissions",
+      icon: FileTextIcon,
+    });
+  }
+  if (hasAccess(role, ARCHIVE_ROLES))
+    items.push({
+      title: "Submissions",
+      url: "/all-submissions",
+      icon: FileTextIcon,
+    });
   if (hasAccess(role, APPROVER_ROLES))
     items.push({
       title: "Pending Approvals",
@@ -330,6 +340,7 @@ function workspaceRootLinks() {
     { title: "Dashboard", url: "/dashboard" },
     { title: "PLO Management", url: "/plo-management" },
     { title: "My Submissions", url: "/submissions" },
+    { title: "Submissions", url: "/all-submissions" },
     { title: "Pending Approvals", url: "/approvals" },
     { title: "Archives", url: "/archives" },
     { title: "Audit Logs", url: "/audit-logs" },
