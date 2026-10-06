@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
+import { FormSelect } from "@/components/ui/form-select";
 import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,15 +22,34 @@ import {
   saveCohortAnnotations,
 } from "@/server/actions/rollup";
 
+// NOTE: types mirror `apps/backend/src/v1/rollup/compute.ts` + `model.ts` —
+// one CLO/PLO column per code, one row per year-level cohort, one term at a time.
+interface CohortCloRow {
+  cloCode: string;
+  cloDescription: string;
+  attainmentPct: number;
+  status: "MET" | "NOT MET";
+}
+
+interface CohortPloRow {
+  ploCode: string;
+  ploDescription: string;
+  attainmentPct: number;
+  achieved: boolean;
+}
+
+interface CohortTerm {
+  termId: string;
+  schoolYear: string;
+  semester: string;
+  rows: CohortCloRow[];
+  plos: CohortPloRow[];
+  averagePct: number | null;
+}
+
 interface CohortLine {
-  yearLevel: number;
-  terms: {
-    termId: string;
-    cloAttainmentPct: number | null;
-    ploAttainmentPct: number | null;
-    level: string | null;
-    status: string;
-  }[];
+  yearLevel: number | null;
+  terms: CohortTerm[];
   trend: "UP" | "DOWN" | "FLAT";
   cqiTriggered: boolean;
 }
@@ -49,6 +69,8 @@ interface CohortPayload {
   program: { code: string; name: string };
   lines: CohortLine[];
   annotations: CohortAnnotation[];
+  // NOTE: program-level rollup kept on the payload for dashboards — the table
+  // reads the per-cohort `terms[].plos` instead.
   plos: {
     termId: string;
     ploCode: string;
@@ -58,12 +80,16 @@ interface CohortPayload {
   }[];
 }
 
-function levelBadge(level: string | null) {
-  if (!level) return <Badge variant="secondary">N/A</Badge>;
-  if (level === "Exceptional") return <Badge variant="success">{level}</Badge>;
-  if (level === "Proficient") return <Badge variant="info">{level}</Badge>;
-  if (level === "Basic") return <Badge variant="warning">{level}</Badge>;
-  return <Badge variant="destructive">{level}</Badge>;
+/** `"2092-2093" + "1st"` → `"2092-2093 1st"`; a numeric semester keeps its dash. */
+function termLabel(term: CohortTerm): string {
+  return /^[12]$/.test(term.semester)
+    ? `${term.schoolYear}-${term.semester}`
+    : `${term.schoolYear} ${term.semester}`;
+}
+
+// NOTE: numeric order so CLO2/PLO2 precede CLO10/PLO10 — mirrors the backend sort.
+function codeOrder(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true });
 }
 
 function trendIcon(trend: string) {
@@ -72,13 +98,71 @@ function trendIcon(trend: string) {
   return <span className="text-muted-foreground">→</span>;
 }
 
+function AttainmentCell({ pct, met }: { pct: number; met: boolean }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <Badge variant={met ? "success-outline" : "warning-outline"}>
+        {met ? "MET" : "NOT MET"}
+      </Badge>
+      <span className="text-muted-foreground font-mono text-xs tabular-nums">
+        {pct.toFixed(1)}%
+      </span>
+    </div>
+  );
+}
+
 export function CohortTrackingForm() {
   const [payload, setPayload] = useState<CohortPayload | null>(null);
   const [annotations, setAnnotations] = useState<CohortAnnotation[]>([]);
   const [programId, setProgramId] = useState("");
   const [termId, setTermId] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // NOTE: terms differ per cohort line (a year may have no data yet), so the
+  // selector options are the union across lines, chronologically ordered.
+  const terms = useMemo(() => {
+    if (!payload) return [];
+    const byId = new Map<string, CohortTerm>();
+    for (const line of payload.lines) {
+      for (const term of line.terms) {
+        if (!byId.has(term.termId)) byId.set(term.termId, term);
+      }
+    }
+    return [...byId.values()].sort(
+      (a, b) =>
+        a.schoolYear.localeCompare(b.schoolYear) ||
+        a.semester.localeCompare(b.semester),
+    );
+  }, [payload]);
+
+  const activeTermId =
+    selectedTermId && terms.some((term) => term.termId === selectedTermId)
+      ? selectedTermId
+      : (terms[terms.length - 1]?.termId ?? null);
+
+  const termOf = useCallback(
+    (line: CohortLine) =>
+      line.terms.find((term) => term.termId === activeTermId) ?? null,
+    [activeTermId],
+  );
+
+  const cloCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const line of payload?.lines ?? []) {
+      for (const row of termOf(line)?.rows ?? []) codes.add(row.cloCode);
+    }
+    return [...codes].sort(codeOrder);
+  }, [payload, termOf]);
+
+  const ploCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const line of payload?.lines ?? []) {
+      for (const row of termOf(line)?.plos ?? []) codes.add(row.ploCode);
+    }
+    return [...codes].sort(codeOrder);
+  }, [payload, termOf]);
 
   const handleGenerate = useCallback(async () => {
     if (!programId.trim()) return;
@@ -92,6 +176,8 @@ export function CohortTrackingForm() {
         const p = result.data.payload as unknown as CohortPayload;
         setPayload(p);
         setAnnotations(p.annotations || []);
+        // NOTE: fall back to the newest term of the fresh payload.
+        setSelectedTermId(null);
         toast.create({ title: "Cohort tracking generated", type: "success" });
       } else {
         toastError({
@@ -171,6 +257,8 @@ export function CohortTrackingForm() {
     );
   }
 
+  const hasRows = payload.lines.length > 0 && terms.length > 0;
+
   return (
     <div className="space-y-4">
       <SubmissionStatusCard submissionId={payload.formSubmissionId} />
@@ -183,68 +271,138 @@ export function CohortTrackingForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="py-2 pr-4">Year</th>
-                  {payload.lines[0]?.terms.map((t) => (
-                    <th
-                      key={t.termId}
-                      className="py-2 pr-4 text-center"
-                      colSpan={3}
-                    >
-                      {t.termId}
-                    </th>
-                  ))}
-                  <th className="py-2 pr-4 text-center">Trend</th>
-                  <th className="py-2 pr-4 text-center">CQI</th>
-                </tr>
-                <tr className="border-b text-left text-muted-foreground text-xs">
-                  <th />
-                  {payload.lines[0]?.terms.map((t) => (
-                    <React.Fragment key={t.termId}>
-                      <th className="py-1 pr-2 text-right">CLO%</th>
-                      <th className="py-1 pr-2 text-right">PLO%</th>
-                      <th className="py-1 pr-2">Status</th>
-                    </React.Fragment>
-                  ))}
-                  <th />
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {payload.lines.map((line) => (
-                  <tr key={line.yearLevel} className="border-b last:border-0">
-                    <td className="py-2 pr-4 font-medium">Y{line.yearLevel}</td>
-                    {line.terms.map((t) => (
-                      <React.Fragment key={t.termId}>
-                        <td className="py-2 pr-2 text-right">
-                          {t.cloAttainmentPct !== null
-                            ? `${t.cloAttainmentPct.toFixed(1)}%`
-                            : "—"}
-                        </td>
-                        <td className="py-2 pr-2 text-right">
-                          {t.ploAttainmentPct !== null
-                            ? `${t.ploAttainmentPct.toFixed(1)}%`
-                            : "—"}
-                        </td>
-                        <td className="py-2 pr-2">{levelBadge(t.level)}</td>
-                      </React.Fragment>
-                    ))}
-                    <td className="py-2 pr-2 text-center">
-                      {trendIcon(line.trend)}
-                    </td>
-                    <td className="py-2 pr-2 text-center">
-                      {line.cqiTriggered && (
-                        <Badge variant="destructive">CQI</Badge>
+          {hasRows ? (
+            <>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground text-xs">
+                  One row per cohort · one column per CLO/PLO code · term
+                  attainment ≥ 70% is MET.
+                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Term</span>
+                  <FormSelect
+                    value={activeTermId ?? undefined}
+                    onValueChange={setSelectedTermId}
+                    options={terms.map((term) => ({
+                      value: term.termId,
+                      label: termLabel(term),
+                    }))}
+                    className="w-[200px]"
+                  />
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="py-2 pr-4">Cohort</th>
+                      {cloCodes.length > 0 && (
+                        <th
+                          className="py-2 pr-4 text-center"
+                          colSpan={cloCodes.length}
+                        >
+                          CLO
+                        </th>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      {ploCodes.length > 0 && (
+                        <th
+                          className="py-2 pr-4 text-center"
+                          colSpan={ploCodes.length}
+                        >
+                          PLO
+                        </th>
+                      )}
+                      <th className="py-2 pr-4 text-center">Trend</th>
+                      <th className="py-2 pr-4 text-center">CQI</th>
+                    </tr>
+                    <tr className="border-b text-left text-muted-foreground text-xs">
+                      <th />
+                      {cloCodes.map((code) => (
+                        <th key={code} className="py-1 pr-2 text-center">
+                          {code}
+                        </th>
+                      ))}
+                      {ploCodes.map((code) => (
+                        <th key={code} className="py-1 pr-2 text-center">
+                          {code}
+                        </th>
+                      ))}
+                      <th />
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payload.lines.map((line) => {
+                      const term = termOf(line);
+                      return (
+                        <tr
+                          key={line.yearLevel ?? "unassigned"}
+                          className="border-b last:border-0"
+                        >
+                          <td className="py-2 pr-4 font-medium">
+                            {/* NOTE: an unattributed cohort has no year label. */}
+                            {line.yearLevel !== null
+                              ? `Y${line.yearLevel}`
+                              : "—"}
+                          </td>
+                          {cloCodes.map((code) => {
+                            const row = term?.rows.find(
+                              (r) => r.cloCode === code,
+                            );
+                            return (
+                              <td key={code} className="px-2 py-2 text-center">
+                                {row ? (
+                                  <AttainmentCell
+                                    pct={row.attainmentPct}
+                                    met={row.status === "MET"}
+                                  />
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          {ploCodes.map((code) => {
+                            const row = term?.plos.find(
+                              (r) => r.ploCode === code,
+                            );
+                            return (
+                              <td key={code} className="px-2 py-2 text-center">
+                                {row ? (
+                                  <AttainmentCell
+                                    pct={row.attainmentPct}
+                                    met={row.achieved}
+                                  />
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td className="py-2 pr-2 text-center">
+                            {trendIcon(line.trend)}
+                          </td>
+                          <td className="py-2 pr-2 text-center">
+                            {line.cqiTriggered && (
+                              <Badge variant="destructive">CQI</Badge>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No cohort data for this program yet — ingest a class record first.
+            </p>
+          )}
         </FramePanel>
       </Frame>
 
@@ -267,7 +425,7 @@ export function CohortTrackingForm() {
                   <div className="text-sm font-medium pt-2">
                     {ann.yearLevel ? `Y${ann.yearLevel}` : "All"}
                   </div>
-                  <div className="text-sm text-muted-foreground pt-2">
+                  <div className="text-muted-foreground text-sm pt-2">
                     {ann.termId}
                   </div>
                   <div className="text-sm font-medium pt-2">{ann.cloCode}</div>
@@ -303,6 +461,7 @@ export function CohortTrackingForm() {
           onClick={() => {
             setPayload(null);
             setAnnotations([]);
+            setSelectedTermId(null);
           }}
         >
           Generate Another
@@ -316,6 +475,3 @@ export function CohortTrackingForm() {
     </div>
   );
 }
-
-// Need React for Fragment usage
-import React from "react";
