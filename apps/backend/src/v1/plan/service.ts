@@ -1,3 +1,7 @@
+import {
+	curriculumJustification,
+	registerJustification,
+} from "@lib/forms/justification";
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { prisma } from "@lib/prisma";
 import type { Prisma } from "@prisma/generated/prisma/client";
@@ -1364,3 +1368,20 @@ export const targetSettingMatrixService = new TargetSettingMatrixService();
 export const assessmentBudgetService = new AssessmentBudgetService();
 export const ploService = new PloService();
 export const cloToPloMapService = new CloToPloMapService();
+
+/* NOTE: cells live in CurriculumCourseRow/CurriculumMapCell, not formData —
+ * `get()` is the one place that already reassembles them alongside the
+ * Coverage Check, so the resolver just reshapes its payload. */
+registerJustification(CURRICULUM_MAP_CODE, async (ctx) => {
+	const payload = await curriculumMapService.get(ctx.submissionId);
+	return curriculumJustification({
+		courses: payload.courseRows.map((row) => ({
+			courseCode: row.courseCode,
+			cells: row.cells.map((cell) => ({
+				ploCode: cell.ploCode,
+				stage: cell.stage,
+			})),
+		})),
+		coverageCheck: payload.coverageCheck,
+	});
+});

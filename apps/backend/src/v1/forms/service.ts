@@ -8,6 +8,10 @@ import {
 	NotOwnerError,
 } from "@lib/forms/approval-routes";
 import {
+	resolveJustification,
+	type SubmissionJustification,
+} from "@lib/forms/justification";
+import {
 	assertEditable,
 	assertTransition,
 	firstPendingRole,
@@ -25,7 +29,15 @@ import type {
 export type { InvalidTransitionError, NotOwnerError };
 
 const SUBMISSION_INCLUDE = {
-	approvalSteps: { orderBy: { sequenceNo: "asc" as const } },
+	// The approver is joined so the approval screen can render the manual's
+	// signature block ("Approved by <Printed Name> · <role> — date"). Step rows
+	// carry only `approverUserId` before this join; `decide()` already writes it.
+	approvalSteps: {
+		orderBy: { sequenceNo: "asc" as const },
+		include: {
+			approver: { select: { id: true, name: true, role: true } },
+		},
+	},
 	formType: { select: { code: true, name: true, pdcaStage: true } },
 	submittedBy: { select: { id: true, name: true, role: true } },
 } as const;
@@ -103,6 +115,12 @@ export interface SubmissionEvidence {
 	code: string;
 	classSectionId: string | null;
 	formData: Record<string, unknown>;
+	/**
+	 * Bloom's / I-P-D / assessment evidence as read-only text, resolved by the
+	 * form code's registered resolver (`lib/forms/justification.ts`). Null when
+	 * the code carries no pedagogical data.
+	 */
+	justification: SubmissionJustification | null;
 	classSection: {
 		id: string;
 		sectionCode: string;
@@ -170,9 +188,29 @@ export class SubmissionService {
 	}
 
 	/**
+	 * When this submission was last submitted for approval — the date the
+	 * approval screen's "Prepared by … — <date>" signature row prints.
+	 *
+	 * Read from the audit trail (`form_submission.submitted`) rather than
+	 * `FormSubmission.updatedAt`, which every later approve/return bumps.
+	 * `null` for a submission that has never entered the chain (draft), so the
+	 * caller falls back to `createdAt`.
+	 */
+	async submittedAt(id: string): Promise<string | null> {
+		const row = await prisma.auditLog.findFirst({
+			where: { action: "form_submission.submitted", targetRecordId: id },
+			orderBy: { createdAt: "desc" },
+			select: { createdAt: true },
+		});
+		return row?.createdAt.toISOString() ?? null;
+	}
+
+	/**
 	 * `GET /forms/:id/evidence` — the submission's payload plus the bound class
-	 * section and its capture summary (attainment rows, distinct students,
-	 * below-threshold rows, at-risk students, latest run).
+	 * section, its capture summary (attainment rows, distinct students,
+	 * below-threshold rows, at-risk students, latest run), and the form code's
+	 * registered pedagogical justification (Bloom's / I-P-D / assessment
+	 * evidence — `lib/forms/justification.ts`).
 	 */
 	async evidence(
 		id: string,
@@ -180,6 +218,14 @@ export class SubmissionService {
 	): Promise<SubmissionEvidence> {
 		const submission = await this.getForViewer(id, caller);
 		const classSectionId = submission.classSectionId;
+		const formData = (submission.formData ?? {}) as Record<string, unknown>;
+
+		// NOTE: started before the capture counts — the CAR resolver
+		// re-assembles the form, which is the slow half of this read.
+		const justificationPromise = resolveJustification(
+			submission.formType.code,
+			{ submissionId: submission.id, classSectionId, formData },
+		);
 
 		let classSection: SubmissionEvidence["classSection"] = null;
 		let capture: SubmissionEvidence["capture"] = null;
@@ -232,7 +278,8 @@ export class SubmissionService {
 		return {
 			code: submission.formType.code,
 			classSectionId,
-			formData: (submission.formData ?? {}) as Record<string, unknown>,
+			formData,
+			justification: await justificationPromise,
 			classSection,
 			capture,
 		};

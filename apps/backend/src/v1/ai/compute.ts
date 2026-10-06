@@ -59,6 +59,154 @@ export function hasAnalyzableSnapshot(
 	);
 }
 
+// --- Pedagogical alignment (Bloom's / I-P-D / assessments) ----------------
+
+/** Per-CLO alignment read from the section's latest CAR Part 1. */
+export interface CloAlignment {
+	bloomsLevel: string | null;
+	ipdStage: string | null;
+	assessmentTypes: string[];
+}
+
+/** One section's alignment keyed by CLO code, plus the identity it needs. */
+export interface SectionAlignment {
+	courseCode: string;
+	section: string;
+	clos: Record<string, CloAlignment>;
+}
+
+/** One alignment row — the drawer block and the prompt's context share it. */
+export interface AlignmentContextRow extends CloAlignment {
+	courseCode: string;
+	section: string;
+	cloCode: string;
+}
+
+/**
+ * Fold a section's alignment into the CLO→PLO entries python receives
+ * (`blooms_level` / `ipd_stage` / `assessment_types`) and return the same
+ * rows as drawer-ready context.
+ *
+ * NOTE: alignment is per section, never global — `_generic_aggregator` merges
+ * CLOs by bare code across every course in a group, so a shared map would
+ * attribute one course's Bloom's level to another's CLO.
+ *
+ * NOTE: CLOs with alignment but no PLO mapping are emitted as context rows
+ * only — adding them to `clo_plo_mapping` without a `plo_code` would KeyError
+ * python's `compute_plo_attainment`.
+ */
+export function withAlignment(
+	mapping: Record<string, unknown>[],
+	alignment: SectionAlignment | undefined | null,
+): { mapping: Record<string, unknown>[]; rows: AlignmentContextRow[] } {
+	if (!alignment) return { mapping, rows: [] };
+
+	const rows: AlignmentContextRow[] = [];
+	const covered = new Set<string>();
+	const aligned = mapping.map((entry) => {
+		const cloCode = typeof entry.clo_code === "string" ? entry.clo_code : "";
+		const clos = alignment.clos[cloCode];
+		if (!clos) return entry;
+		covered.add(cloCode);
+		rows.push({
+			courseCode: alignment.courseCode,
+			section: alignment.section,
+			cloCode,
+			...clos,
+		});
+		return {
+			...entry,
+			blooms_level: clos.bloomsLevel,
+			ipd_stage: clos.ipdStage,
+			assessment_types: clos.assessmentTypes,
+		};
+	});
+
+	for (const [cloCode, clos] of Object.entries(alignment.clos)) {
+		if (covered.has(cloCode)) continue;
+		rows.push({
+			courseCode: alignment.courseCode,
+			section: alignment.section,
+			cloCode,
+			...clos,
+		});
+	}
+
+	return { mapping: aligned, rows };
+}
+
+/**
+ * Assemble one section's alignment: `CloToPloMap.stage` is the floor (it
+ * exists even when faculty never saved Part 1), the saved CAR Part 1 then
+ * overlays Bloom's / I-P-D / assessment types on top.
+ *
+ * NOTE: entries carrying no signal at all are dropped — an empty "not
+ * recorded" row tells neither the approver nor the LLM anything.
+ */
+export function buildSectionAlignment(input: {
+	courseCode: string;
+	section: string;
+	carFormData: unknown;
+	stageRows: Array<{ cloCode: string; stage: string | null }>;
+}): SectionAlignment {
+	const clos: Record<string, CloAlignment> = {};
+	for (const row of input.stageRows) {
+		if (!row.stage) continue;
+		clos[row.cloCode] = {
+			bloomsLevel: null,
+			ipdStage: row.stage,
+			assessmentTypes: [],
+		};
+	}
+
+	const part1 = (
+		input.carFormData as { part1?: { cloPloMapping?: unknown } } | null
+	)?.part1;
+	const saved = Array.isArray(part1?.cloPloMapping) ? part1.cloPloMapping : [];
+	for (const raw of saved) {
+		if (raw == null || typeof raw !== "object") continue;
+		const entry = raw as {
+			cloCode?: unknown;
+			bloomsLevel?: unknown;
+			ipdStage?: unknown;
+			assessmentTypes?: unknown;
+		};
+		if (typeof entry.cloCode !== "string") continue;
+		const base = clos[entry.cloCode] ?? {
+			bloomsLevel: null,
+			ipdStage: null,
+			assessmentTypes: [],
+		};
+		clos[entry.cloCode] = {
+			bloomsLevel:
+				typeof entry.bloomsLevel === "string" && entry.bloomsLevel
+					? entry.bloomsLevel
+					: base.bloomsLevel,
+			ipdStage:
+				typeof entry.ipdStage === "string" && entry.ipdStage
+					? entry.ipdStage
+					: base.ipdStage,
+			assessmentTypes: Array.isArray(entry.assessmentTypes)
+				? entry.assessmentTypes.filter(
+						(type): type is string => typeof type === "string",
+					)
+				: base.assessmentTypes,
+		};
+	}
+
+	for (const [code, alignment] of Object.entries(clos)) {
+		if (
+			!alignment.bloomsLevel &&
+			!alignment.ipdStage &&
+			alignment.assessmentTypes.length === 0
+		) {
+			delete clos[code];
+		}
+	}
+
+	return { courseCode: input.courseCode, section: input.section, clos };
+}
+
 // --- Worst-performing CLO mapping (pure) -----------------------------------
 
 /** One critical CLO row rendered in the drawer's "key gaps" block. */
@@ -150,6 +298,12 @@ export interface AiRecommendationPayload {
 	recommendationText: string;
 	/** Critical CLOs from the pure-data rollup — real numbers, no LLM needed. */
 	worstPerformingClos: WorstPerformingClo[];
+	/**
+	 * Per-course CLO alignment (Bloom's / I-P-D / assessment types) behind the
+	 * recommendation, so the drawer can justify the numbers. Empty for rows
+	 * generated before this field existed.
+	 */
+	alignmentContext: AlignmentContextRow[];
 }
 
 /** Structural shape of the Prisma row this mapper consumes. */
@@ -174,6 +328,22 @@ function periodFromSnapshot(snapshot: unknown): {
 	return { type: typeof type === "string" ? type : "semester", label };
 }
 
+/** Read the alignment block back out of the stored `sourceDataSnapshot`. */
+export function alignmentFromStoredSnapshot(
+	snapshot: unknown,
+): AlignmentContextRow[] {
+	const raw = (snapshot as { alignmentContext?: unknown } | null)
+		?.alignmentContext;
+	if (!Array.isArray(raw)) return [];
+	return raw.filter(
+		(row): row is AlignmentContextRow =>
+			row != null &&
+			typeof row === "object" &&
+			typeof (row as AlignmentContextRow).cloCode === "string" &&
+			typeof (row as AlignmentContextRow).courseCode === "string",
+	);
+}
+
 export function toRecommendationPayload(
 	row: StoredRecommendation,
 ): AiRecommendationPayload {
@@ -188,5 +358,6 @@ export function toRecommendationPayload(
 		term: row.term,
 		recommendationText: row.recommendationText,
 		worstPerformingClos: worstFromStoredSummary(row.summary),
+		alignmentContext: alignmentFromStoredSnapshot(row.sourceDataSnapshot),
 	};
 }

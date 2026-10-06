@@ -56,7 +56,7 @@ export const aiPlugin = new Elysia({
 			detail: {
 				summary: "Get the latest persisted AI CQI recommendation",
 				description:
-					"Returns the newest `AiRecommendation` (markdown text + worst-performing CLOs + period) or null when none has been generated yet. Open to every authenticated role — only generation is gated.",
+					"Returns the newest `AiRecommendation` (markdown text + worst-performing CLOs + period + the per-course alignment context behind it: Bloom's level, I-P-D stage, assessment types) or null when none has been generated yet. Open to every authenticated role — only generation is gated.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Latest recommendation or null" },
@@ -88,7 +88,7 @@ export const aiPlugin = new Elysia({
 			detail: {
 				summary: "Generate and persist an AI CQI recommendation",
 				description:
-					"Replays stored ETL snapshots for the target term (default: newest term with class records) into python-server /analytics/institutional-summary — a pure rollup plus an LLM call — and stores the result as an AiRecommendation (status pending_review).",
+					"Replays stored ETL snapshots for the target term (default: newest term with class records) into python-server /analytics/institutional-summary — a pure rollup plus an LLM call, carrying each section's pedagogical alignment (Bloom's / I-P-D / assessment types from its latest CAR) into the prompt — and stores the result as an AiRecommendation (status pending_review).",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Persisted recommendation" },

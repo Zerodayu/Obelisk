@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
 from app.services import job_queue
 from app.analytics.cqi_recommender import generate_cqi_recommendation
-from app.analytics.institutional_summary import generate_institutional_summary, compute_summary_only
+from app.analytics.institutional_summary import (
+    generate_institutional_summary,
+    compute_summary_only,
+)
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
 from app.schemas.institutional_summary import InstitutionalSummaryPayload
 from app.core.logging import logger
@@ -10,17 +13,21 @@ from app.core.logging import logger
 router = APIRouter(tags=["analytics"])
 
 
-@router.get("/jobs/{job_id}/recommendation", summary="Get Per-Course CQI Recommendation")
+@router.get(
+    "/jobs/{job_id}/recommendation", summary="Get Per-Course CQI Recommendation"
+)
 async def get_cqi_recommendation(job_id: str):
     """
     Generates a CQI recommendation for a single, completed ETL job.
     This provides a granular, course-level analysis of performance gaps.
     """
     logger.info("api_get_recommendation", job_id=job_id)
-    
+
     job = await job_queue.get_job(job_id)
     if not job:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
+        )
 
     if job["status"] != "completed":
         error_message = f"Job is still in status: {job['status']}."
@@ -31,7 +38,12 @@ async def get_cqi_recommendation(job_id: str):
     try:
         loaded_result = job["result"]["loaded"]
         header = ClassRecordHeader(**loaded_result["header"])
-        attainments = [StudentCLOAttainment(**record) for record in loaded_result["attainments"]]
+        attainments = [
+            StudentCLOAttainment(**record) for record in loaded_result["attainments"]
+        ]
+        # NOTE: optional — present only when the payload carries the
+        # pedagogical keys; see `generate_cqi_recommendation`.
+        clo_plo_mapping = loaded_result.get("clo_plo_mapping") or []
     except (KeyError, TypeError) as e:
         logger.error("recommendation_data_error", job_id=job_id, error=str(e))
         raise HTTPException(
@@ -40,7 +52,9 @@ async def get_cqi_recommendation(job_id: str):
         )
 
     try:
-        recommendation = await generate_cqi_recommendation(header, attainments)
+        recommendation = await generate_cqi_recommendation(
+            header, attainments, clo_plo_mapping
+        )
         return recommendation
     except NotImplementedError as e:
         logger.error("recommendation_not_implemented", job_id=job_id, error=str(e))
@@ -56,7 +70,11 @@ async def get_summary_only(payload: InstitutionalSummaryPayload):
     Accepts a consolidated payload and returns pure data rollups (by department,
     program, etc.) without any AI/LLM-generated recommendation.
     """
-    logger.info("api_get_summary_only", period=payload.period.label, submission_count=len(payload.submissions))
+    logger.info(
+        "api_get_summary_only",
+        period=payload.period.label,
+        submission_count=len(payload.submissions),
+    )
     try:
         summary = compute_summary_only(payload)
         return summary
@@ -68,13 +86,20 @@ async def get_summary_only(payload: InstitutionalSummaryPayload):
         )
 
 
-@router.post("/institutional-summary", summary="Get Full Institution-Wide CQI Summary (VPAA Only)")
+@router.post(
+    "/institutional-summary",
+    summary="Get Full Institution-Wide CQI Summary (VPAA Only)",
+)
 async def get_institutional_summary(payload: InstitutionalSummaryPayload):
     """
     Accepts a consolidated payload of multiple course results and generates
     a high-level, institution-wide CQI summary and an AI recommendation.
     """
-    logger.info("api_get_institutional_summary", period=payload.period.label, submission_count=len(payload.submissions))
+    logger.info(
+        "api_get_institutional_summary",
+        period=payload.period.label,
+        submission_count=len(payload.submissions),
+    )
     try:
         summary = await generate_institutional_summary(payload)
         return summary

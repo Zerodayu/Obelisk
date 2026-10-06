@@ -15,12 +15,14 @@ import {
   type FormSubmissionRecord,
 } from "@/lib/store/atoms/forms";
 import { SubmissionEvidence } from "./submission-evidence";
+import { SubmissionJustification } from "./submission-justification";
 
 /**
  * `/submissions/[id]` — the dedicated approval screen, shared by every form
  * code: identity header (form type, PDCA stage, status, waiting-on role), the
  * workflow card (`FormWorkflow` in `layout="page"` — timeline + all actions),
- * and the read-only evidence panel.
+ * the read-only pedagogical justification (Bloom's / I-P-D / assessment
+ * evidence), and the read-only evidence panel.
  *
  * `initial` comes from the server page (which already applied the backend
  * visibility gate); `onChanged` re-reads the submission after every workflow
@@ -111,6 +113,10 @@ export function SubmissionApprovalScreen({
         onChanged={() => void load()}
         submissionId={submissionId}
       />
+
+      {/* NOTE: above the evidence card so the approver reads the alignment
+          (Bloom's / I-P-D / assessment evidence) before the raw payload. */}
+      <SubmissionJustification submissionId={submissionId} />
 
       <SubmissionEvidence submissionId={submissionId} />
     </div>

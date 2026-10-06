@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formPathByCode } from "@/config/navigation";
 import { api } from "@/lib/api-client";
+import type { SubmissionJustificationRecord } from "./submission-justification";
 
 /**
  * Mirrors `SubmissionEvidence` from `apps/backend/src/v1/forms/service.ts`
@@ -18,6 +19,7 @@ export interface SubmissionEvidenceRecord {
   code: string;
   classSectionId: string | null;
   formData: Record<string, unknown>;
+  justification: SubmissionJustificationRecord | null;
   classSection: {
     id: string;
     sectionCode: string;
@@ -61,8 +63,10 @@ function Stat({
 /**
  * Read-only evidence panel for the approval screen: the bound class section
  * (course/term), the capture summary for it (rows, students, below-threshold,
- * at-risk, latest computation run), and the stored `formData` payload. Data
- * comes from `GET /forms/:id/evidence` — nothing is derived client-side.
+ * at-risk, latest computation run), and the stored `formData` payload — the
+ * last one collapsed behind a toggle now, since the pedagogical
+ * justification above carries what an approver actually reads. Data comes
+ * from `GET /forms/:id/evidence` — nothing is derived client-side.
  */
 export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
   const [evidence, setEvidence] = useState<SubmissionEvidenceRecord | null>(
@@ -70,9 +74,12 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  // NOTE: raw JSON is advanced detail — approvers read the justification card.
+  const [showPayload, setShowPayload] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setShowPayload(false);
     try {
       setEvidence(
         await api.get<SubmissionEvidenceRecord>(
@@ -182,10 +189,25 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 
           {payload.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Stored payload</p>
-              <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/30 p-3 text-xs">
-                {JSON.stringify(evidence.formData, null, 2)}
-              </pre>
+              <Button
+                aria-expanded={showPayload}
+                className="-ml-2 h-7 px-2"
+                onClick={() => setShowPayload((open) => !open)}
+                type="button"
+                variant="ghost"
+              >
+                Stored payload
+                <ChevronDownIcon
+                  className={`transition-transform duration-200 ${
+                    showPayload ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+              {showPayload ? (
+                <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/30 p-3 text-xs">
+                  {JSON.stringify(evidence.formData, null, 2)}
+                </pre>
+              ) : null}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">

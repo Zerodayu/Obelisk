@@ -1,9 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import type { AnalyticsSummaryResponse } from "@lib/ingest/ingest-client";
 import {
+	buildSectionAlignment,
 	buildSubmission,
 	hasAnalyzableSnapshot,
+	type SectionAlignment,
 	toRecommendationPayload,
+	withAlignment,
 	worstFromAnalyticsSummary,
 	worstFromStoredSummary,
 } from "@v1/ai/compute";
@@ -232,5 +235,157 @@ describe("toRecommendationPayload", () => {
 		expect(payload.period).toBeNull();
 		expect(payload.term).toBeNull();
 		expect(payload.worstPerformingClos).toEqual([]);
+		expect(payload.alignmentContext).toEqual([]);
+	});
+
+	it("reads the alignment block back out of the snapshot", () => {
+		const payload = toRecommendationPayload({
+			id: "rec-3",
+			summary: "{}",
+			recommendationText: "text",
+			sourceDataSnapshot: {
+				period: { type: "semester", label: "2092-2093 1st" },
+				alignmentContext: [
+					{
+						courseCode: "IT-101",
+						section: "3A",
+						cloCode: "CLO1",
+						bloomsLevel: "Analyze",
+						ipdStage: "i",
+						assessmentTypes: ["Exam"],
+					},
+					{ cloCode: "CLO2" },
+				],
+			},
+			status: "pending_review",
+			generatedAt: new Date("2026-09-27T00:00:00.000Z"),
+			term: null,
+		});
+		expect(payload.alignmentContext).toHaveLength(1);
+		expect(payload.alignmentContext[0]?.bloomsLevel).toBe("Analyze");
+	});
+});
+
+describe("withAlignment", () => {
+	const alignment: SectionAlignment = {
+		courseCode: "IT-101",
+		section: "3A",
+		clos: {
+			CLO1: {
+				bloomsLevel: "Analyze",
+				ipdStage: "i",
+				assessmentTypes: ["Exam", "Rubric"],
+			},
+		},
+	};
+
+	it("attaches Bloom's / I-P-D / assessments to each mapping entry", () => {
+		const { mapping, rows } = withAlignment(
+			[{ clo_code: "CLO1", plo_code: "PLO1", correlation_strength: 1 }],
+			alignment,
+		);
+
+		expect(mapping).toEqual([
+			{
+				clo_code: "CLO1",
+				plo_code: "PLO1",
+				correlation_strength: 1,
+				blooms_level: "Analyze",
+				ipd_stage: "i",
+				assessment_types: ["Exam", "Rubric"],
+			},
+		]);
+		expect(rows).toEqual([
+			{
+				courseCode: "IT-101",
+				section: "3A",
+				cloCode: "CLO1",
+				bloomsLevel: "Analyze",
+				ipdStage: "i",
+				assessmentTypes: ["Exam", "Rubric"],
+			},
+		]);
+	});
+
+	it("leaves the mapping untouched when the section has no alignment", () => {
+		const mapping = [{ clo_code: "CLO1", plo_code: "PLO1" }];
+		expect(withAlignment(mapping, undefined)).toEqual({ mapping, rows: [] });
+	});
+
+	// NOTE: an entry without plo_code would KeyError python's PLO rollup, so
+	// an unmapped-but-aligned CLO is emitted as context only.
+	it("emits a context row for an aligned CLO that has no PLO mapping", () => {
+		const { mapping, rows } = withAlignment([], {
+			courseCode: "IT-101",
+			section: "3A",
+			clos: {
+				CLO9: { bloomsLevel: "Create", ipdStage: "d", assessmentTypes: [] },
+			},
+		});
+
+		expect(mapping).toEqual([]);
+		expect(rows).toHaveLength(1);
+		expect(rows[0]?.cloCode).toBe("CLO9");
+		expect(rows[0]?.bloomsLevel).toBe("Create");
+	});
+});
+
+describe("buildSectionAlignment", () => {
+	it("seeds I-P-D from CloToPloMap and lets saved Part 1 win", () => {
+		const alignment = buildSectionAlignment({
+			courseCode: "IT-101",
+			section: "3A",
+			carFormData: {
+				part1: {
+					cloPloMapping: [
+						{
+							cloCode: "CLO1",
+							bloomsLevel: "Analyze",
+							ipdStage: "d",
+							assessmentTypes: ["Rubric"],
+						},
+					],
+				},
+			},
+			stageRows: [
+				{ cloCode: "CLO1", stage: "i" },
+				{ cloCode: "CLO2", stage: "p" },
+			],
+		});
+
+		expect(alignment.clos.CLO1).toEqual({
+			bloomsLevel: "Analyze",
+			ipdStage: "d",
+			assessmentTypes: ["Rubric"],
+		});
+		// NOTE: Bloom's has no DB source at all — stage-only rows stay null.
+		expect(alignment.clos.CLO2).toEqual({
+			bloomsLevel: null,
+			ipdStage: "p",
+			assessmentTypes: [],
+		});
+	});
+
+	it("drops entries that carry no signal", () => {
+		const alignment = buildSectionAlignment({
+			courseCode: "IT-101",
+			section: "3A",
+			carFormData: { part1: { cloPloMapping: [{ cloCode: "CLO1" }] } },
+			stageRows: [{ cloCode: "CLO2", stage: null }],
+		});
+
+		expect(alignment.clos).toEqual({});
+	});
+
+	it("tolerates a submission with no saved formData", () => {
+		const alignment = buildSectionAlignment({
+			courseCode: "IT-101",
+			section: "3A",
+			carFormData: null,
+			stageRows: [],
+		});
+
+		expect(alignment.clos).toEqual({});
+		expect(alignment.section).toBe("3A");
 	});
 });

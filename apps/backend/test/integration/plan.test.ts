@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
+import { submissionService } from "@v1/forms/service";
 import { MissingRationaleError, TargetBelowFloorError } from "@v1/plan/compute";
 import {
 	assessmentBudgetService,
@@ -166,6 +167,25 @@ describe.skipIf(!db)("PLAN-phase setup forms (integration)", () => {
 				"ITPLAN-PLO2": false,
 			});
 			expect(cmSaved.header).toMatchObject({ programTitle: "BS IT" });
+
+			// The approval screen's justification reads the cells back out of
+			// the DB (they never land in formData): I-P-D coverage counts plus
+			// the PLO that still has no D-stage course (testing_results §2).
+			const cmEvidence = await submissionService.evidence(cm.draft.id, {
+				id: IDS.user,
+				role: "faculty",
+			});
+			expect(cmEvidence.justification).toMatchObject({
+				kind: "curriculum_map",
+				coverage: { i: 1, p: 0, d: 1, unstaged: 0, courses: 2 },
+				uncoveredPlos: ["ITPLAN-PLO2"],
+			});
+			expect(cmEvidence.justification?.notes[0]).toBe(
+				"2 courses · 2 mapped cells — 1 Introduction, 0 Proficiency, 1 Demonstration, 0 unstaged.",
+			);
+			expect(cmEvidence.justification?.notes[1]).toContain("ITPLAN-PLO2");
+			// NOTE: no Bloom's source exists for a curriculum map — rows stay empty.
+			expect(cmEvidence.justification?.rows).toEqual([]);
 
 			const cmAudit = await prisma.auditLog.findFirst({
 				where: { action: "curriculum_map.saved", targetRecordId: cm.draft.id },

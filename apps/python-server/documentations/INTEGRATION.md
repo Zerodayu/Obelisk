@@ -160,6 +160,7 @@ The `error` field will contain a structured JSON object with details about the f
 Per-course AI gap analysis and CQI recommendation.
 - Uses `google-genai` client with multi-key failover (`OBELISK_LLM_API_KEYS`).
 - Returns `409 Conflict` if the job is not yet completed.
+- The completed job's `result.loaded.clo_plo_mapping` is passed through to `generate_cqi_recommendation`. Entries carrying the optional [pedagogical alignment keys](#optional-pedagogical-alignment-keys-on-clo_plo_mapping) (rare on this ETL-driven path, since `loaded.clo_plo_mapping` is normally `[]`) are rendered into the prompt's alignment block; bare mappings are skipped. Response shape is unchanged.
 
 **Normal Success Response (`status: "ok"`):**
 ```json
@@ -219,6 +220,27 @@ This group of endpoints accepts a consolidated payload of multiple course submis
   ]
 }
 ```
+
+**Optional pedagogical alignment keys on `clo_plo_mapping`:**
+
+Entries are `{ "clo_code", "plo_code", "correlation_strength" }` by default. The webapp backend additionally folds in the section's **latest CAR** (regardless of status) when it carries Part 1 data, falling back to the program's CLO→PLO stage:
+
+```json
+{
+  "clo_code": "CLO1",
+  "plo_code": "PLO1",
+  "correlation_strength": 1.0,
+  "blooms_level": "Analyze",
+  "ipd_stage": "i",
+  "assessment_types": ["Exam", "Rubric"]
+}
+```
+
+- The three alignment keys are optional and are only present when they carry a signal; `blooms_level` may be `null`, `ipd_stage` is a bare `i`/`p`/`d` letter (Introduction / Proficiency / Demonstration), `assessment_types` is a list of strings.
+- `CourseSubmission` has **no** `extra="forbid"`, so the extra keys pass validation without a schema change.
+- Entries carrying none of the three keys are skipped by the prompt builder — a bare mapping never produces "not recorded" rows.
+- When at least one entry carries them, both `build_prompt` and `build_institutional_prompt` append a **"Pedagogical alignment"** block inside `<DATA>` (capped at `MAX_ALIGNMENT_LINES = 60` with an explicit omission note), and the LLM is instructed to cite the Bloom's level / I-P-D stage behind any CLO it quotes.
+- Alignment is scoped **per section**, never merged across courses: the rollups consolidate CLOs by bare code, so a shared map would attribute one course's alignment to another's CLO.
 
 ### `POST /analytics/institutional-summary` (VPAA ONLY)
 

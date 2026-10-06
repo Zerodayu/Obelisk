@@ -9,10 +9,14 @@ import { prisma } from "@lib/prisma";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import {
 	type AiRecommendationPayload,
+	type AlignmentContextRow,
+	buildSectionAlignment,
 	buildSubmission,
 	hasAnalyzableSnapshot,
+	type SectionAlignment,
 	type SectionMeta,
 	toRecommendationPayload,
+	withAlignment,
 	worstFromAnalyticsSummary,
 } from "./compute";
 
@@ -94,13 +98,15 @@ export class AiRecommendationService {
 	}
 
 	/**
-	 * Assemble the `/analytics/institutional-summary` payload for one term.
+	 * Assemble the `/analytics/institutional-summary` payload for one term,
+	 * plus the per-course alignment rows the prompt and drawer both read.
 	 * Returns null when the term has no usable snapshots (caller walks to the
 	 * next candidate term).
 	 */
-	private async payloadForTerm(
-		term: TermRef,
-	): Promise<AnalyticsSubmissionsPayload | null> {
+	private async payloadForTerm(term: TermRef): Promise<{
+		payload: AnalyticsSubmissionsPayload;
+		alignment: AlignmentContextRow[];
+	} | null> {
 		const sections = await prisma.classSection.findMany({
 			where: { termId: term.id },
 			select: {
@@ -108,6 +114,7 @@ export class AiRecommendationService {
 				sectionCode: true,
 				course: {
 					select: {
+						id: true,
 						code: true,
 						program: {
 							select: {
@@ -133,11 +140,15 @@ export class AiRecommendationService {
 			},
 			select: {
 				weight: true,
+				stage: true,
 				plo: { select: { programId: true, code: true } },
-				clo: { select: { code: true } },
+				// NOTE: keyed by course, not just code — CLO codes repeat across
+				// every course in a program.
+				clo: { select: { code: true, courseId: true } },
 			},
 		});
 		const mappingByProgramId = new Map<string, Record<string, unknown>[]>();
+		const stageByCourseId = new Map<string, Map<string, string>>();
 		for (const map of maps) {
 			const entry = {
 				clo_code: map.clo.code,
@@ -147,6 +158,31 @@ export class AiRecommendationService {
 			const bucket = mappingByProgramId.get(map.plo.programId) ?? [];
 			bucket.push(entry);
 			mappingByProgramId.set(map.plo.programId, bucket);
+
+			// NOTE: a CLO may map to several PLOs — first non-null stage wins.
+			if (!map.stage) continue;
+			const stages =
+				stageByCourseId.get(map.clo.courseId) ?? new Map<string, string>();
+			if (!stages.has(map.clo.code)) stages.set(map.clo.code, map.stage);
+			stageByCourseId.set(map.clo.courseId, stages);
+		}
+
+		// NOTE: latest CAR per section regardless of status — same "newest
+		// wins" rule as the ETL snapshot. Part 1 only holds Bloom's / I-P-D /
+		// assessment types once faculty have saved it.
+		const cars = await prisma.formSubmission.findMany({
+			where: {
+				formType: { code: "course_assessment_report" },
+				classSectionId: { in: sections.map((section) => section.id) },
+			},
+			orderBy: { createdAt: "desc" },
+			select: { classSectionId: true, formData: true },
+		});
+		const carBySectionId = new Map<string, unknown>();
+		for (const car of cars) {
+			if (car.classSectionId && !carBySectionId.has(car.classSectionId)) {
+				carBySectionId.set(car.classSectionId, car.formData);
+			}
 		}
 
 		// One query for every section's runs, newest first; first-wins per scope.
@@ -165,6 +201,7 @@ export class AiRecommendationService {
 		if (!latestSnapshot.size) return null;
 
 		const submissions: AnalyticsCourseSubmission[] = [];
+		const alignment: AlignmentContextRow[] = [];
 		for (const section of sections) {
 			const snapshot = latestSnapshot.get(section.id);
 			if (!snapshot) continue;
@@ -175,15 +212,37 @@ export class AiRecommendationService {
 				departmentName: section.course.program.department.name,
 				cloPloMapping: mappingByProgramId.get(section.course.program.id),
 			};
-			submissions.push(buildSubmission(meta, snapshot));
+			const submission = buildSubmission(meta, snapshot);
+
+			// NOTE: applied after `buildSubmission` so the alignment survives
+			// whichever mapping source won (DB rows or the snapshot copy).
+			const sectionAlignment: SectionAlignment = buildSectionAlignment({
+				courseCode: section.course.code,
+				section: section.sectionCode,
+				carFormData: carBySectionId.get(section.id),
+				stageRows: [...(stageByCourseId.get(section.course.id) ?? [])].map(
+					([cloCode, stage]) => ({ cloCode, stage }),
+				),
+			});
+			const folded = withAlignment(
+				submission.clo_plo_mapping,
+				sectionAlignment,
+			);
+			submission.clo_plo_mapping = folded.mapping;
+			alignment.push(...folded.rows);
+
+			submissions.push(submission);
 		}
 
 		return {
-			period: {
-				type: "semester",
-				label: `${term.schoolYear} ${term.semester}`,
+			payload: {
+				period: {
+					type: "semester",
+					label: `${term.schoolYear} ${term.semester}`,
+				},
+				submissions,
 			},
-			submissions,
+			alignment,
 		};
 	}
 
@@ -192,16 +251,18 @@ export class AiRecommendationService {
 	 * records) and build the python payload. Throws `AiNoDataError` when no
 	 * candidate term has analyzable snapshots.
 	 */
-	async buildPayload(
-		termId?: string,
-	): Promise<{ payload: AnalyticsSubmissionsPayload; term: TermRef }> {
+	async buildPayload(termId?: string): Promise<{
+		payload: AnalyticsSubmissionsPayload;
+		term: TermRef;
+		alignment: AlignmentContextRow[];
+	}> {
 		const terms = termId
 			? [await this.requireTerm(termId)]
 			: await this.candidateTerms();
 
 		for (const term of terms) {
-			const payload = await this.payloadForTerm(term);
-			if (payload) return { payload, term };
+			const result = await this.payloadForTerm(term);
+			if (result) return { ...result, term };
 		}
 
 		throw new AiNoDataError(
@@ -213,7 +274,7 @@ export class AiRecommendationService {
 
 	/** Generate + persist a fresh recommendation for the target term. */
 	async generate(termId?: string): Promise<AiRecommendationPayload> {
-		const { payload, term } = await this.buildPayload(termId);
+		const { payload, term, alignment } = await this.buildPayload(termId);
 		const response = await this.fetchSummary(payload);
 
 		const row = await prisma.aiRecommendation.create({
@@ -229,6 +290,9 @@ export class AiRecommendationService {
 					promptUsed: response.prompt_used,
 					summary: response.summary,
 					period: response.summary.period,
+					// Bloom's / I-P-D / assessment evidence behind the numbers —
+					// what the drawer's "Pedagogical context" block renders.
+					alignmentContext: alignment,
 					// NOTE: Prisma's InputJsonValue needs an index signature the
 					// response interface can't carry — same cast as the ETL snapshot.
 				} as unknown as Prisma.InputJsonValue,

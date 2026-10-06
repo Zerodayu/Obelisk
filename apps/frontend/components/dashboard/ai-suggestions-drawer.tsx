@@ -17,6 +17,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toastError } from "@/components/ui/toast";
+import { IPD_STAGES } from "@/lib/constants/obe";
 import { canAccess } from "@/lib/role-access";
 import { userAtom } from "@/lib/store/atoms/user";
 import {
@@ -33,8 +34,10 @@ import {
  * The recommendation text is Markdown (LLM output — the python-server's debug
  * stub while `IS_DEBUG_MODE=True`). It is rendered by the minimal converter
  * below into plain HTML elements, styled by the `typeset` classes — no
- * markdown library (see `renderMarkdown`). The "key gaps" block is pure
- * computed rollup data, independent of the LLM.
+ * markdown library (see `renderMarkdown`). The "key gaps" and "pedagogical
+ * context" blocks are pure computed data, independent of the LLM — the latter
+ * carries each section's Bloom's level, I-P-D stage and assessment types as
+ * stored with the recommendation.
  */
 
 type DrawerState =
@@ -48,6 +51,17 @@ const STATUS_LABELS: Record<string, string> = {
   actioned: "Actioned",
   dismissed: "Dismissed",
 };
+
+// NOTE: a busy term carries 100+ alignment rows; the drawer caps what it
+// renders — the stored record keeps every row.
+const VISIBLE_ALIGNMENT_ROWS = 50;
+
+/** `i`/`p`/`d` → "Introduction (I)"; null → em dash (never invented). */
+function ipdLabel(stage: string | null): string {
+  if (!stage) return "—";
+  const meta = IPD_STAGES[stage.toLowerCase()];
+  return meta ? `${meta.label} (${meta.letter})` : stage.toUpperCase();
+}
 
 function scopeLabel(recommendation: AiRecommendation): string | null {
   if (recommendation.period) return recommendation.period.label;
@@ -368,6 +382,8 @@ const ReadyBlock = ({
 
   const label = scopeLabel(recommendation);
   const gaps = recommendation.worstPerformingClos;
+  const alignment = recommendation.alignmentContext;
+  const visibleAlignment = alignment.slice(0, VISIBLE_ALIGNMENT_ROWS);
 
   return (
     <div>
@@ -412,6 +428,48 @@ const ReadyBlock = ({
               ))}
             </tbody>
           </table>
+        </>
+      ) : null}
+
+      {alignment.length > 0 ? (
+        <>
+          <h2>Pedagogical context</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Course</th>
+                <th>Section</th>
+                <th>CLO</th>
+                <th>Bloom's</th>
+                <th>I-P-D</th>
+                <th>Assessment evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleAlignment.map((row) => (
+                <tr key={`${row.courseCode}-${row.section}-${row.cloCode}`}>
+                  <td>{row.courseCode}</td>
+                  <td>{row.section}</td>
+                  <td>{row.cloCode}</td>
+                  <td>{row.bloomsLevel ?? "—"}</td>
+                  <td>{ipdLabel(row.ipdStage)}</td>
+                  <td>
+                    {row.assessmentTypes.length
+                      ? row.assessmentTypes.join(", ")
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {alignment.length > visibleAlignment.length ? (
+            <p>
+              <em>
+                Showing {visibleAlignment.length} of {alignment.length} aligned
+                CLOs — every row is stored with this recommendation.
+              </em>
+            </p>
+          ) : null}
         </>
       ) : null}
 

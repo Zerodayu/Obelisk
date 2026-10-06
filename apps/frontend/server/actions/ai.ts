@@ -26,6 +26,21 @@ export interface WorstPerformingClo {
   recordCount: number;
 }
 
+/**
+ * One course's CLO alignment behind a recommendation — Bloom's Taxonomy,
+ * I-P-D stage and assessment types, read from the section's latest CAR and
+ * stored in `sourceDataSnapshot.alignmentContext` (mirrors backend
+ * `src/v1/ai/compute.ts`).
+ */
+export interface AlignmentContextRow {
+  courseCode: string;
+  section: string;
+  cloCode: string;
+  bloomsLevel: string | null;
+  ipdStage: string | null;
+  assessmentTypes: string[];
+}
+
 /** Client view of an `AiRecommendation` row (mirrors backend compute.ts). */
 export interface AiRecommendation {
   id: string;
@@ -36,6 +51,8 @@ export interface AiRecommendation {
   /** Markdown text from the LLM (or its debug stub while IS_DEBUG_MODE=True). */
   recommendationText: string;
   worstPerformingClos: WorstPerformingClo[];
+  /** Empty for rows generated before this field existed. */
+  alignmentContext: AlignmentContextRow[];
 }
 
 function errorMessage(err: unknown, fallback: string): string {
