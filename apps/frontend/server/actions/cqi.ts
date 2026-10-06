@@ -56,7 +56,7 @@ export async function savePloGapAnalysis(
   },
 ): Promise<ActionResult<{ id: string; gapRows: Record<string, unknown>[] }>> {
   try {
-    const data = await actionApi.post<{
+    const data = await actionApi.put<{
       id: string;
       gapRows: Record<string, unknown>[];
     }>(`/cqi/plo-gap-analysis/${id}`, body);
@@ -112,7 +112,7 @@ export async function saveCqiActionPlan(
   }[],
 ): Promise<ActionResult<{ id: string; entries: Record<string, unknown>[] }>> {
   try {
-    const data = await actionApi.post<{
+    const data = await actionApi.put<{
       id: string;
       entries: Record<string, unknown>[];
     }>(`/cqi/cqi-action-plan/${id}`, { entries });
@@ -137,7 +137,7 @@ export async function trackCqiEntries(
   }[],
 ): Promise<ActionResult<{ id: string; updated: number }>> {
   try {
-    const data = await actionApi.post<{ id: string; updated: number }>(
+    const data = await actionApi.put<{ id: string; updated: number }>(
       `/cqi/cqi-action-plan/${id}/track`,
       { entries },
     );
@@ -200,7 +200,7 @@ export async function saveCtl(
   },
 ): Promise<ActionResult<{ id: string; rows: number }>> {
   try {
-    const data = await actionApi.post<{ id: string; rows: number }>(
+    const data = await actionApi.put<{ id: string; rows: number }>(
       `/cqi/closing-the-loop/${id}`,
       body,
     );
@@ -246,7 +246,7 @@ export async function saveApar(
   },
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const data = await actionApi.post<{ id: string }>(
+    const data = await actionApi.put<{ id: string }>(
       `/cqi/annual-program-report/${id}`,
       body,
     );

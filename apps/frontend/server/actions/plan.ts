@@ -129,7 +129,7 @@ export async function saveAssessmentCalendar(
   },
 ): Promise<ActionResult<Record<string, unknown>>> {
   try {
-    const data = await actionApi.post<Record<string, unknown>>(
+    const data = await actionApi.put<Record<string, unknown>>(
       `/plan/assessment-calendar/${id}`,
       body,
     );
@@ -198,7 +198,7 @@ export async function saveTargetSettingMatrix(
   },
 ): Promise<ActionResult<Record<string, unknown>>> {
   try {
-    const data = await actionApi.post<Record<string, unknown>>(
+    const data = await actionApi.put<Record<string, unknown>>(
       `/plan/target-setting-matrix/${id}`,
       body,
     );
@@ -258,7 +258,7 @@ export async function saveAssessmentBudget(
   },
 ): Promise<ActionResult<Record<string, unknown>>> {
   try {
-    const data = await actionApi.post<Record<string, unknown>>(
+    const data = await actionApi.put<Record<string, unknown>>(
       `/plan/assessment-budget/${id}`,
       body,
     );
