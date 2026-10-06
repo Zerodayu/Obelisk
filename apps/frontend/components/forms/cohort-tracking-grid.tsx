@@ -41,6 +41,15 @@ type YearKey = "Y1" | "Y2" | "Y3" | "Y4";
 
 const YEAR_KEYS: YearKey[] = ["Y1", "Y2", "Y3", "Y4"];
 
+// NOTE: demo column set — one column per CLO/PLO code, matching the seeded
+// workbook CLOs (CLO1–CLO5) and the first five PLOs. Cohort stays a row/filter.
+const CLO_KEYS = ["CLO1", "CLO2", "CLO3", "CLO4", "CLO5"] as const;
+const PLO_KEYS = ["PLO1", "PLO2", "PLO3", "PLO4", "PLO5"] as const;
+
+type CloKey = (typeof CLO_KEYS)[number];
+type PloKey = (typeof PLO_KEYS)[number];
+type CodeKey = CloKey | PloKey;
+
 interface CohortStudent {
   id: string;
   name: string;
@@ -48,7 +57,8 @@ interface CohortStudent {
   program: string;
   cohort: YearKey;
   term: string;
-  yearScores: Record<YearKey, number>;
+  cloScores: Record<CloKey, number>;
+  ploScores: Record<PloKey, number>;
   status: "met" | "not-met";
 }
 
@@ -95,18 +105,41 @@ const COHORT_MEANS: Record<YearKey, Record<string, number>> = {
   Y4: { "2023-1S": 79.9, "2023-2S": 81.3, "2024-1S": 84.6, "2024-2S": 85.8 },
 };
 
+// NOTE: demo-only per-code offsets around the cohort mean — kept small enough
+// that most cells clear the 70% floor but a few dip under it (NOT MET).
+const CODE_OFFSETS: Record<CodeKey, number> = {
+  CLO1: 3.5,
+  CLO2: -5.5,
+  CLO3: 1.2,
+  CLO4: -2.4,
+  CLO5: 4.8,
+  PLO1: 2.1,
+  PLO2: -4.3,
+  PLO3: 0.7,
+  PLO4: -1.8,
+  PLO5: 3.3,
+};
+
+function scoreFor(code: CodeKey, mean: number, index: number): number {
+  return Math.round(mean + CODE_OFFSETS[code] + ((index % 5) - 2) * 3.7);
+}
+
 function buildDemoData(): CohortStudent[] {
   return STUDENT_NAMES.map((name, index) => {
     const cohort = YEAR_KEYS[index % YEAR_KEYS.length];
     const term = TERMS[index % TERMS.length];
-    const yearScores = {} as Record<YearKey, number>;
-    let notMet = false;
-    for (const year of YEAR_KEYS) {
-      const mean = COHORT_MEANS[year][term] ?? COHORT_MEANS[year]["2023-1S"];
-      const score = Math.round(mean + ((index % 5) - 2) * 3.7);
-      yearScores[year] = score;
-      if (score < 70) notMet = true;
-    }
+    const mean = COHORT_MEANS[cohort][term] ?? COHORT_MEANS[cohort]["2023-1S"];
+
+    const cloScores = Object.fromEntries(
+      CLO_KEYS.map((code) => [code, scoreFor(code, mean, index)]),
+    ) as Record<CloKey, number>;
+    const ploScores = Object.fromEntries(
+      PLO_KEYS.map((code) => [code, scoreFor(code, mean, index + 2)]),
+    ) as Record<PloKey, number>;
+
+    const all = [...Object.values(cloScores), ...Object.values(ploScores)];
+    const notMet = all.some((score) => score < 70);
+
     return {
       id: String(index + 1),
       name,
@@ -114,7 +147,8 @@ function buildDemoData(): CohortStudent[] {
       program: PROGRAMS[index % PROGRAMS.length],
       cohort,
       term,
-      yearScores,
+      cloScores,
+      ploScores,
       status: notMet ? "not-met" : "met",
     };
   });
@@ -345,14 +379,27 @@ export function CohortTrackingGrid() {
         enableSorting: true,
         enableHiding: false,
       },
-      ...YEAR_KEYS.map<ColumnDef<DataGridFeatures, CohortStudent>>((year) => ({
-        accessorKey: year,
-        id: year,
-        header: year,
+      // NOTE: one column per CLO/PLO code replaces the old Y1–Y4 year columns;
+      // the cohort stays on the row + filter.
+      ...CLO_KEYS.map<ColumnDef<DataGridFeatures, CohortStudent>>((code) => ({
+        accessorKey: code,
+        id: code,
+        header: code,
         cell: ({ row }) => (
-          <AttainmentCell score={row.original.yearScores[year]} />
+          <AttainmentCell score={row.original.cloScores[code]} />
         ),
-        size: 140,
+        size: 130,
+        enableSorting: true,
+        enableHiding: true,
+      })),
+      ...PLO_KEYS.map<ColumnDef<DataGridFeatures, CohortStudent>>((code) => ({
+        accessorKey: code,
+        id: code,
+        header: code,
+        cell: ({ row }) => (
+          <AttainmentCell score={row.original.ploScores[code]} />
+        ),
+        size: 130,
         enableSorting: true,
         enableHiding: true,
       })),
