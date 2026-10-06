@@ -110,7 +110,7 @@ export async function saveCohortAnnotations(
   ActionResult<{ id: string; annotations: Record<string, unknown>[] }>
 > {
   try {
-    const data = await actionApi.post<{
+    const data = await actionApi.put<{
       id: string;
       annotations: Record<string, unknown>[];
     }>(`/rollup/cohort-tracking/${id}`, { annotations });
