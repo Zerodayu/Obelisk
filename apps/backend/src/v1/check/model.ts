@@ -157,7 +157,8 @@ export const SaveExhibitionFeedbackSchema = t.Object({
 	guests: t.Array(ExhibitionGuestInputSchema, {
 		description: "Guest rows — full replacement on save",
 	}),
-	qualitativeFeedback: t.Optional(t.String()),
+	// NOTE: same null round-trip as divergenceNotes — get() serves null until filled.
+	qualitativeFeedback: t.Optional(t.Union([t.String(), t.Null()])),
 });
 
 export type SaveExhibitionFeedback = typeof SaveExhibitionFeedbackSchema.static;
@@ -196,7 +197,9 @@ export const SaveCloPerceptionSurveySchema = t.Object({
 	cloRows: t.Array(CloPerceptionRowSchema, {
 		description: "Per-CLO Likert tabulation rows",
 	}),
-	divergenceNotes: t.Optional(t.String()),
+	// NOTE: get() returns null for untouched notes and the form screens round-trip
+	// it as-is — accept null so save() doesn't 422 on the first save.
+	divergenceNotes: t.Optional(t.Union([t.String(), t.Null()])),
 });
 
 export type SaveCloPerceptionSurvey =
@@ -236,8 +239,9 @@ export const SaveStudentExitSurveySchema = t.Object({
 	ploRows: t.Array(StudentExitPloRowSchema, {
 		description: "Per-PLO × year-level rating rows",
 	}),
-	divergenceInvestigationNotes: t.Optional(t.String()),
-	qualitativeThemes: t.Optional(t.String()),
+	// NOTE: both are nullable in get() — accept null so the form screens can save untouched.
+	divergenceInvestigationNotes: t.Optional(t.Union([t.String(), t.Null()])),
+	qualitativeThemes: t.Optional(t.Union([t.String(), t.Null()])),
 });
 
 export type SaveStudentExitSurvey = typeof SaveStudentExitSurveySchema.static;
@@ -324,8 +328,9 @@ export const SaveCapstonePanelEvaluationSchema = t.Object({
 	panelistRows: t.Array(CapstonePanelistInputSchema, {
 		description: "Panelist scoring rows — full replacement on save",
 	}),
-	programReadinessDeclaration: t.Optional(t.String()),
-	cqiActionRequired: t.Optional(t.Boolean()),
+	// NOTE: get() returns null for both — a null declaration/flag must stay saveable.
+	programReadinessDeclaration: t.Optional(t.Union([t.String(), t.Null()])),
+	cqiActionRequired: t.Optional(t.Union([t.Boolean(), t.Null()])),
 });
 
 export type SaveCapstonePanelEvaluation =
