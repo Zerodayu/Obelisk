@@ -1,14 +1,19 @@
 /**
  * Form-submission atoms — the first DB-backed dataset wired through the store.
  *
- * `formSubmissionsDataAtom` fetches `GET /forms?scope=mine` from the browser on
- * first subscription and refetches when a filter atom changes or `refreshAtom`
- * runs — **per-user**: the dashboard charts count only the session user's own
- * submissions (the backend resolves `scope` server-side and defaults an
- * omitted one to the caller's own too). `formStatusCountsAtom` derives the
- * submission-status distribution for the status donut: it holds an empty list
- * while the fetch is pending or failed (the donut renders its empty state) and
- * reports real counts — including zeros — once loaded.
+ * `formSubmissionsDataAtom` fetches `GET /forms?scope=visible` from the browser
+ * on first subscription and refetches when a filter atom changes or
+ * `refreshAtom` runs. `scope=visible` is the **chain-entitled** read the
+ * backend resolves from the session: the caller's own submissions plus every
+ * form whose approval chain contains their role — so faculty sees only its
+ * own, a program chair sees what faculty/chair prepared, a dean sees those
+ * plus its own, and vpaa/system_admin see everything (institution-wide). The
+ * dashboard therefore never shows data a role has no business acting on,
+ * and never shows another user's rows just because they share a role.
+ * `formStatusCountsAtom` derives the submission-status distribution for the
+ * status donut: it holds an empty list while the fetch is pending or failed
+ * (the donut renders its empty state) and reports real counts — including
+ * zeros — once loaded.
  */
 
 import { atom } from "jotai";
@@ -132,14 +137,16 @@ export const {
   if (formTypeId) query.formTypeId = formTypeId;
   if (status) query.status = status;
   if (classSectionId) query.classSectionId = classSectionId;
-  // NOTE: per-user — only the caller's own submissions feed the status donut
-  // and the approval-flow chart; institution-wide reads go through
+  // NOTE: chain-entitled scope — own + every form whose approval chain
+  // contains the caller's role (institution-wide for vpaa/system_admin).
+  // Never an unscoped read: two accounts of the same role only share what
+  // that role is entitled to act on. Institution-wide explicitly goes through
   // `allSubmissionsDataAtom` (`scope=all`, archive roles only).
-  query.scope = "mine";
+  query.scope = "visible";
   return api.get<FormSubmissionRecord[]>("/forms", { query, signal });
 });
 
-/** Submission-status distribution for the status donut (caller's own rows). */
+/** Submission-status distribution for the status donut (chain-entitled rows). */
 export const formStatusCountsAtom = atom<FormStatusDatum[]>((get) => {
   const state = get(formSubmissionsStateAtom);
   // No submissions resolved yet (loading or error) — render the empty state

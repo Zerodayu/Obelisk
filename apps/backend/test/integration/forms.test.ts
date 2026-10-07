@@ -269,6 +269,30 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			);
 			expect(noScopeOther.map((s) => s.id)).not.toContain(draft.id);
 
+			// `visible` = chain-entitled read: own + every form whose registered
+			// chain holds the caller's role (the dashboard's scope).
+			// Owner (faculty) still sees their own submission.
+			const visibleOwner = await submissionService.list(
+				scopeWhere("visible", { id: IDS.owner, role: "faculty" }),
+			);
+			expect(visibleOwner.map((s) => s.id)).toContain(draft.id);
+
+			// Another faculty member sits in no approver chain → own rows only,
+			// so the colleague's submission stays invisible to them.
+			const visibleOtherFaculty = await submissionService.list(
+				scopeWhere("visible", { id: IDS.other, role: "faculty" }),
+			);
+			expect(visibleOtherFaculty.map((s) => s.id)).not.toContain(draft.id);
+
+			// The chain runs program_chair → dean → aqau → vpaa, so those roles
+			// see a submission they did not prepare (it must reach their step).
+			for (const role of ["program_chair", "dean", "aqau", "vpaa"]) {
+				const visibleApprover = await submissionService.list(
+					scopeWhere("visible", { id: IDS.other, role }),
+				);
+				expect(visibleApprover.map((s) => s.id)).toContain(draft.id);
+			}
+
 			const pendingChair = await submissionService.list(
 				scopeWhere("pending", { id: "any", role: "program_chair" }),
 			);

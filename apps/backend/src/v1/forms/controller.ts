@@ -97,16 +97,24 @@ export const formsPlugin = new Elysia({
 					]),
 				),
 				scope: t.Optional(
-					t.Union([t.Literal("mine"), t.Literal("pending"), t.Literal("all")], {
-						description:
-							"mine (or omitted) = caller's own submissions; pending = submitted records awaiting the caller's role (all pending for system_admin); all = institution-wide list (vpaa/system_admin only, others match nothing)",
-					}),
+					t.Union(
+						[
+							t.Literal("mine"),
+							t.Literal("visible"),
+							t.Literal("pending"),
+							t.Literal("all"),
+						],
+						{
+							description:
+								"mine (or omitted) = caller's own submissions; visible = own plus every form whose approval chain contains the caller's role (the data of the roles at/below theirs that must reach their step — institution-wide for vpaa/system_admin); pending = submitted records awaiting the caller's role (all pending for system_admin); all = institution-wide list (vpaa/system_admin only, others match nothing)",
+						},
+					),
 				),
 			}),
 			detail: {
 				summary: "List form submissions",
 				description:
-					"Filtered by formTypeId/classSectionId/status on top of a session-derived scope: omitted/`mine` = the caller's own submissions, `pending` = awaiting the caller's role, `all` = institution-wide (archive roles only).",
+					"Filtered by formTypeId/classSectionId/status on top of a session-derived scope: omitted/`mine` = the caller's own submissions, `visible` = chain-entitled read (own + forms whose chain contains their role), `pending` = awaiting the caller's role, `all` = institution-wide (archive roles only).",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "List of form submissions" },

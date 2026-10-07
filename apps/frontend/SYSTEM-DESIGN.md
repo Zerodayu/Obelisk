@@ -152,18 +152,22 @@ mounted by `StoreProvider` in the root layout; atoms live in
   so a chart atom resolves the newest submission with `fetchLatestPayload`
   (`lib/store/latest-payload.ts`) and maps that payload into the datum rows
   beside the atom. Empty list → `[]` → empty chart state.
-- **DB-backed:** `formSubmissionsDataAtom` fetches `GET /forms?scope=mine`
-  (cookie auth, browser-only — never during SSR) — **per-user**: the
-  dashboard status donut and approval-flow chart count only the session
-  user's own submissions, so two accounts of the same role see their own
-  rows, not each other's; `formStatusCountsAtom`, `approvalFlowDataAtom` and
-  `uploadStatusesDataAtom` derive their distributions from the
-  `GET /forms` / `GET /ingest/history` fetches and hold `[]` while loading or
-  when the role-gated route 403s; `mySubmissionsDataAtom` /
-  `pendingApprovalsDataAtom` / `allSubmissionsDataAtom` fetch
-  `GET /forms?scope=mine|pending|all` for the inboxes (institution-wide stays
-  `scope=all`, archive roles only). `userAtom` is seeded from
-  the server-resolved session via `SessionInitializer` in `app/(app)/layout.tsx`.
+- **DB-backed:** `formSubmissionsDataAtom` fetches `GET /forms?scope=visible`
+  (cookie auth, browser-only — never during SSR) — the backend's
+  **chain-entitled** scope: the session user's own submissions plus every form
+  whose approval chain contains their role. So faculty sees only its own rows,
+  a chair/dean/aqau also sees what the roles at or below theirs prepared (only
+  the forms that reach their step), and vpaa/system_admin see everything —
+  two accounts of the same role share exactly what that role may act on, and
+  nothing another user did that never passes through them.
+  `formStatusCountsAtom`, `approvalFlowDataAtom` and `uploadStatusesDataAtom`
+  derive their distributions from the `GET /forms` / `GET /ingest/history`
+  fetches and hold `[]` while loading or when the role-gated route 403s;
+  `mySubmissionsDataAtom` / `pendingApprovalsDataAtom` /
+  `allSubmissionsDataAtom` fetch `GET /forms?scope=mine|pending|all` for the
+  inboxes (institution-wide stays `scope=all`, archive roles only).
+  `userAtom` is seeded from the server-resolved session via
+  `SessionInitializer` in `app/(app)/layout.tsx`.
 - **Ingest state** (`atoms/ingest.ts`) holds upload/polling/result state as
   atoms + action atoms; `ClassRecordUpload` polls and writes results into them
   so any consumer can react to a completed import.

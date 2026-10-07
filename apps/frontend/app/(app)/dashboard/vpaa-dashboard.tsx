@@ -54,9 +54,8 @@ export function VpaaDashboard() {
           <FrameHeader>
             <FrameTitle>CAPA plan approvals</FrameTitle>
             <FrameDescription>
-              Approval-chain decisions on your own submissions — VPAA normally
-              prepares none, so this stays empty (institution-wide: see
-              /all-submissions).
+              Approval-chain decisions across every submission — the VPAA is the
+              final step on all of them.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

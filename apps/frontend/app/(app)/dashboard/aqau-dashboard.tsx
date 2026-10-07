@@ -30,7 +30,7 @@ export function AqauDashboard() {
           <FrameHeader>
             <FrameTitle>My filing queue</FrameTitle>
             <FrameDescription>
-              Your own form submissions by status.
+              Your own submissions plus everything that reaches AQAU, by status.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

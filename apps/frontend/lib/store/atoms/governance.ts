@@ -2,9 +2,11 @@
  * Governance dataset atoms (institutional oversight / QA charts).
  *
  * `approvalFlowDataAtom` and `formStatusCountsAtom` are derived from the real
- * `GET /forms?scope=mine` fetch (see `atoms/forms.ts`), so they reflect live
- * database counts **for the session user's own submissions** — per-user, like
- * every other dashboard dataset. The audit trail reads the real
+ * `GET /forms?scope=visible` fetch (see `atoms/forms.ts`), so they reflect
+ * live database counts for every submission the session user's approval chain
+ * entitles them to — own + the forms that must reach their role (faculty sees
+ * only its own, vpaa/system_admin see everything), never another user's rows
+ * for a role that has no claim on them. The audit trail reads the real
  * `GET /audit/logs` (scoped server-side to the caller), and
  * `auditActivityDataAtom` is derived from it. The remaining charts have no
  * backend endpoint yet (graduation clusters, report exports, platform-wide
@@ -37,10 +39,12 @@ import {
 export { formStatusCountsAtom };
 
 /**
- * Approval-chain decisions per role, aggregated from the caller's own
- * submissions' `approvalSteps`. Shares the `GET /forms?scope=mine` fetch with
- * the status donut — so a role that never prepares forms (vpaa, system_admin)
- * shows no rows here; the live queue is `/approvals` (`scope=pending`).
+ * Approval-chain decisions per role, aggregated from the `approvalSteps` of
+ * every submission the caller's chain entitles them to (own + forms whose
+ * server-derived chain contains their role). Shares the `GET /forms?scope=visible`
+ * fetch with the status donut — so a role that sits in no chain (faculty)
+ * counts only its own submissions, while vpaa/system_admin count everything.
+ * The live step-by-step queue is `/approvals` (`scope=pending`).
  */
 export const approvalFlowDataAtom = atom<ApprovalFlowDatum[]>((get) => {
   const counts = new Map<

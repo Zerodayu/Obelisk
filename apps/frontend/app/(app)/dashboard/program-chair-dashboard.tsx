@@ -97,9 +97,10 @@ export function ProgramChairDashboard() {
         </Frame>
         <Frame className="w-full">
           <FrameHeader>
-            <FrameTitle>Approval decisions on my forms</FrameTitle>
+            <FrameTitle>Approval decisions across my chain</FrameTitle>
             <FrameDescription>
-              Pending / approved / returned across your submissions' chain.
+              Pending / approved / returned over everything prepared at or below
+              your program.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

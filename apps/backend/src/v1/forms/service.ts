@@ -1,5 +1,7 @@
 import { runApprovalEffects } from "@lib/forms/approval-effects";
 import {
+	APPROVAL_ROUTES,
+	APPROVER_ROLES,
 	approvalRouteFor,
 	assertCanArchive,
 	assertCanDecide,
@@ -50,25 +52,58 @@ export type FormSubmissionWithSteps = Prisma.FormSubmissionGetPayload<{
 const APPROVAL_STEP_INCLUDE = { include: SUBMISSION_INCLUDE } as const;
 
 /** Who a user-scoped list query is for — resolved server-side, never spoofable. */
-export type ListScope = "mine" | "pending" | "all";
+export type ListScope = "mine" | "visible" | "pending" | "all";
 
 /**
  * Translate an inbox scope into a Prisma where-clause for the caller.
- * `mine` — and **no scope at all** — → the caller's own submissions; `pending`
- * → submitted records waiting on the caller's role (a `system_admin` sees
- * every pending step); `all` → every submission, for the archive roles only
- * (vpaa/system_admin).
+ * `mine` — and **no scope at all** — → the caller's own submissions; `visible`
+ * → the chain-entitled read (own + every form whose server-derived chain
+ * contains the caller's role, i.e. the data of the roles at or below theirs
+ * that must reach their step); `pending` → submitted records waiting on the
+ * caller's role (a `system_admin` sees every pending step); `all` → every
+ * submission, for the archive roles only (vpaa/system_admin).
  *
  * NOTE: an absent scope used to fall through to an unscoped read so the
  * dashboard status donut could show institution-wide totals to anyone — it is
  * now per-user like `mine`, so no caller can list another user's submissions
  * by omitting the parameter. Institution-wide reads stay explicit via
- * `scope=all` (archive roles only).
+ * `scope=all` (archive roles only) or implicit through `scope=visible` for the
+ * roles that sit in (nearly) every chain.
  */
 export function scopeWhere(
 	scope: ListScope | undefined,
 	caller: { id: string; role: string },
 ): Prisma.FormSubmissionWhereInput {
+	if (scope === "visible") {
+		// NOTE: archive roles are in every chain anyway — short-circuit to the
+		// institution-wide list (`vpaa` is the final rung of every chain,
+		// `system_admin` overrides everything in `canReadSubmission`).
+		if (ARCHIVE_ROLES.includes(caller.role)) return {};
+		// NOTE: chain-entitled visibility — own submissions plus every form
+		// whose registered chain contains the caller's role. Chains are
+		// contiguous from their entry role up to `vpaa`
+		// (lib/forms/approval-routes.ts#ascendToVpaa), so this is exactly "the
+		// data of the roles at or below mine that has to reach my step":
+		// faculty (never an approver) sees only its own, program_chair sees
+		// everything entered at/below chair, and so on up. It mirrors
+		// `canReadSubmission`, so a list can never expose a row that the
+		// per-record read would refuse.
+		const codes = Object.keys(APPROVAL_ROUTES);
+		const ownChain = codes.filter((code) =>
+			APPROVAL_ROUTES[code]?.chain.some((role) => role === caller.role),
+		);
+		const clauses: Prisma.FormSubmissionWhereInput[] = [
+			{ submittedByUserId: caller.id },
+			{ formType: { code: { in: ownChain } } },
+		];
+		// NOTE: an unregistered code falls back to DEFAULT_APPROVAL_ROUTE (the
+		// full approver chain) in `approvalRouteFor` — mirror that here so a
+		// form type missing from the registry lists exactly as it reads.
+		if ((APPROVER_ROLES as readonly string[]).includes(caller.role)) {
+			clauses.push({ formType: { code: { notIn: codes } } });
+		}
+		return { OR: clauses };
+	}
 	if (scope === "all") {
 		// NOTE: the institution-wide list backs the VPAA archive screen — a
 		// spoofed `scope=all` from any other role matches nothing instead of

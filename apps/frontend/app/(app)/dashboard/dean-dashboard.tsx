@@ -67,10 +67,10 @@ export function DeanDashboard() {
         </Frame>
         <Frame className="w-full">
           <FrameHeader>
-            <FrameTitle>Approval decisions on my forms</FrameTitle>
+            <FrameTitle>Approval decisions across my chain</FrameTitle>
             <FrameDescription>
-              Pending / approved / returned across your submissions' chain — the
-              live endorsement queue is at /approvals.
+              Pending / approved / returned over every submission that reaches
+              the dean — faculty, chairs and your own. Live queue: /approvals.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>
