@@ -3,11 +3,14 @@
  * session shortcut, so you can run the app as any role without typing a
  * password:
  *
- * - browser: `GET /dev/session?role=<role>` (`app/dev/session/route.ts`)
- * - terminal: `bun run dev-session <role>` (`scripts/dev-session.ts`)
+ * - browser: `GET /dev/session?role=<id>` (`app/dev/session/route.ts`)
+ * - terminal: `bun run dev-session <id>` (`scripts/dev-session.ts`)
  *
  * The accounts are created by `ROLE_ACCOUNTS` in `backend/prisma/seed.ts`
- * (`<role>@jmcfi.edu.ph` / `password123`) — **keep both sides in sync**.
+ * (`<id>@jmcfi.edu.ph` / `password123`) — **keep both sides in sync**. Every
+ * role has a base account (`<role>`); the data-bearing roles also have a
+ * second one (`<role>1` — e.g. `faculty1`) so one role can be signed in as
+ * two different users and you can see which data is shared between them.
  *
  * NOTE: this is a *real* better-auth sign-in against the backend, so it only
  * works with `DEVELOPMENT=false` — with dev mode on, `getMe()` short-circuits
@@ -16,7 +19,7 @@
  * Must stay edge-safe: no `server-only`, no `next/headers`, no filesystem.
  */
 import { API_ROOT } from "@/lib/api-client";
-import { USER_ROLES, type UserRole } from "@/lib/roles";
+import type { UserRole } from "@/lib/roles";
 
 /** Password every seeded dev account shares (see `backend/prisma/seed.ts`). */
 export const DEV_ACCOUNT_PASSWORD = "password123";
@@ -24,18 +27,55 @@ export const DEV_ACCOUNT_PASSWORD = "password123";
 /** Email domain of the seeded accounts. */
 export const DEV_ACCOUNT_DOMAIN = "jmcfi.edu.ph";
 
-/** Every role that has a seeded `<role>@jmcfi.edu.ph` account. */
-export const DEV_ACCOUNT_ROLES = USER_ROLES;
-
-export function devAccountEmail(role: UserRole): string {
-  return `${role}@${DEV_ACCOUNT_DOMAIN}`;
+/** A seeded dev account: `id` is the email local part + the `dev-as` argument. */
+export interface DevAccount {
+  id: string;
+  role: UserRole;
 }
 
-/** Is `value` a role with a seeded account? (also guards against bad input) */
-export function isDevAccountRole(value: unknown): value is UserRole {
+/**
+ * Every seeded account, mirroring `ROLE_ACCOUNTS` in
+ * `backend/prisma/seed.ts` (keep in sync). A literal list rather than a
+ * derivation so a missing seed row is a visible edit on both sides.
+ */
+export const DEV_ACCOUNTS = [
+  // NOTE: "user" is the onboarding role — these accounts land on /onboarding.
+  { id: "user", role: "user" },
+  { id: "faculty", role: "faculty" },
+  { id: "faculty1", role: "faculty" },
+  { id: "program_chair", role: "program_chair" },
+  { id: "program_chair1", role: "program_chair" },
+  { id: "dean", role: "dean" },
+  { id: "dean1", role: "dean" },
+  { id: "aqau", role: "aqau" },
+  { id: "aqau1", role: "aqau" },
+  { id: "vpaa", role: "vpaa" },
+  { id: "vpaa1", role: "vpaa" },
+  { id: "system_admin", role: "system_admin" },
+] as const satisfies readonly DevAccount[];
+
+/** The email local part (and `dev-as` argument) of every seeded account. */
+export type DevAccountId = (typeof DEV_ACCOUNTS)[number]["id"];
+
+/** Every seeded account id — for usage/error messages. */
+export const DEV_ACCOUNT_IDS: readonly DevAccountId[] = DEV_ACCOUNTS.map(
+  (account) => account.id,
+);
+
+export function devAccountEmail(account: DevAccountId): string {
+  return `${account}@${DEV_ACCOUNT_DOMAIN}`;
+}
+
+/** The role a seeded account signs in with (undefined = unknown account). */
+export function devAccountRole(account: DevAccountId): UserRole | undefined {
+  return DEV_ACCOUNTS.find((entry) => entry.id === account)?.role;
+}
+
+/** Is `value` a seeded account id? (also guards against bad input) */
+export function isDevAccount(value: unknown): value is DevAccountId {
   return (
     typeof value === "string" &&
-    (DEV_ACCOUNT_ROLES as readonly string[]).includes(value)
+    (DEV_ACCOUNT_IDS as readonly string[]).includes(value)
   );
 }
 
@@ -63,13 +103,13 @@ const DEFAULT_ORIGIN = "http://localhost:3000";
 /** Sign-in failure, carrying enough context for a useful message upstream. */
 export class DevSignInError extends Error {
   constructor(
-    readonly role: UserRole,
+    readonly account: DevAccountId,
     readonly status?: number,
     message?: string,
   ) {
     super(
       message ??
-        `Sign-in failed for ${devAccountEmail(role)} (HTTP ${status ?? "no response"}).`,
+        `Sign-in failed for ${devAccountEmail(account)} (HTTP ${status ?? "no response"}).`,
     );
     this.name = "DevSignInError";
   }
@@ -133,8 +173,8 @@ export function cookieHeaderFrom(setCookies: readonly string[]): string {
  * `DevSignInError` when the account does not exist (DB not seeded) or the
  * backend is unreachable.
  */
-export async function signInDevRole(
-  role: UserRole,
+export async function signInDevAccount(
+  account: DevAccountId,
   options: DevSignInOptions = {},
 ): Promise<DevSignInResult> {
   const apiRoot = options.apiRoot ?? API_ROOT;
@@ -165,13 +205,13 @@ export async function signInDevRole(
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
-      email: devAccountEmail(role),
+      email: devAccountEmail(account),
       password: DEV_ACCOUNT_PASSWORD,
     }),
     cache: "no-store",
   }).catch((err: unknown) => {
     throw new DevSignInError(
-      role,
+      account,
       undefined,
       `Backend unreachable at ${apiRoot} (${String(err)}). Is it running?`,
     );
@@ -179,7 +219,7 @@ export async function signInDevRole(
 
   if (!res.ok) {
     // 401/404 here almost always means the account was never seeded.
-    throw new DevSignInError(role, res.status);
+    throw new DevSignInError(account, res.status);
   }
 
   setCookies.push(...res.headers.getSetCookie());

@@ -61,7 +61,7 @@ db-migrate:
 db-generate:
     @just _bun apps/backend db:generate
 
-# seed dev data: one account per role (`<role>@jmcfi.edu.ph` / `password123`), department, program, active term, course, section A, CLO1-7. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
+# seed dev data: one account per role (`<id>@jmcfi.edu.ph` / `password123`) plus a second `<role>1` account for the data-bearing roles (faculty, program_chair, dean, aqau, vpaa — same role, separate user, so you can check which data is shared between users of one role), department, program, active term, course, section A, CLO1-7. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
 [group('setup')]
 db-seed:
     @just _bun apps/backend db:seed
@@ -72,36 +72,37 @@ db-seed:
 [group('dev')]
 dev: _dev
 
-# start the full stack and open the browser already signed in as a seeded role account — real session + cookie, so the backend still enforces everything (accounts from `just db-seed`, DEVELOPMENT=false)
+# start the full stack and open the browser already signed in as a seeded account — real session + cookie, so the backend still enforces everything (accounts from `just db-seed`, DEVELOPMENT=false). `<account>` is a role (`dean`) or a role's second account (`faculty1`)
 [group('dev')]
-dev-as role:
+dev-as account:
     #!/usr/bin/env bash
     set -euo pipefail
-    role='{{role}}'
-    roles="user faculty program_chair dean aqau vpaa system_admin"
-    if [[ " $roles " != *" $role "* ]]; then
-        echo "unknown role: $role" >&2
-        echo "usage: just dev-as <role>" >&2
-        printf '  - %s\n' $roles >&2
+    account='{{account}}'
+    # NOTE: mirrors `ROLE_ACCOUNTS` in apps/backend/prisma/seed.ts / `DEV_ACCOUNTS` in apps/frontend/lib/dev-accounts.ts — keep in sync
+    accounts="user faculty faculty1 program_chair program_chair1 dean dean1 aqau aqau1 vpaa vpaa1 system_admin"
+    if [[ " $accounts " != *" $account "* ]]; then
+        echo "unknown account: $account" >&2
+        echo "usage: just dev-as <account>" >&2
+        printf '  - %s\n' $accounts >&2
         exit 1
     fi
-    exec just _dev "$role"
+    exec just _dev "$account"
 
-# sign in as a seeded role account and print its session cookie for direct backend calls — also writes apps/frontend/.dev-session/<role>.cookie
+# sign in as a seeded account and print its session cookie for direct backend calls — also writes apps/frontend/.dev-session/<account>.cookie
 [group('dev')]
-session role:
-    @just _bun apps/frontend "dev-session {{role}}"
+session account:
+    @just _bun apps/frontend "dev-session {{account}}"
 
-# internal: full dev stack. Empty role = plain dev, otherwise probe the seeded
-# account and open /dev/session?role=ROLE so the browser starts signed in.
-_dev role="":
+# internal: full dev stack. Empty account = plain dev, otherwise probe the seeded
+# account and open /dev/session?role=ACCOUNT so the browser starts signed in.
+_dev account="":
     #!/usr/bin/env bash
     set -euo pipefail
-    role='{{role}}'
+    account='{{account}}'
     # NOTE: /dev/session 404s without this and next.config.ts blocks prod builds — export here, .env.local untouched
     export DEV_SESSION_ENABLED=true
     # NOTE: real session needs DEVELOPMENT=false or getMe() returns DEV_USER and ignores the cookie
-    if [ -n "$role" ]; then
+    if [ -n "$account" ]; then
         export DEVELOPMENT=false
         echo "[dev] DEVELOPMENT=false (real session) — .env.local left unchanged"
     fi
@@ -139,24 +140,24 @@ _dev role="":
 
     base_url="http://localhost:3000"
     session_url="$base_url"
-    if [ -n "$role" ]; then
-        session_url="$base_url/dev/session?role=$role"
+    if [ -n "$account" ]; then
+        session_url="$base_url/dev/session?role=$account"
     fi
 
-    # NOTE: wait for the stack, then open the browser; with a role, probe the seeded account first
+    # NOTE: wait for the stack, then open the browser; with an account, probe the seeded account first
     (
         for _ in $(seq 1 30); do
             (exec 3<>/dev/tcp/127.0.0.1/3000) 2>/dev/null && { exec 3>&-; break; }
             sleep 1
         done
 
-        if [ -n "$role" ]; then
+        if [ -n "$account" ]; then
             # NOTE: backend has to be up too — the probe signs in against it
             for _ in $(seq 1 30); do
                 (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null && { exec 3>&-; break; }
                 sleep 1
             done
-            if ! (cd apps/frontend && bun run dev-session "$role"); then
+            if ! (cd apps/frontend && bun run dev-session "$account"); then
                 echo "[dev] sign-in probe failed (see above) — missing account? run: just db-seed" >&2
             fi
         fi

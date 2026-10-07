@@ -34,15 +34,16 @@ With `DEVELOPMENT=true` the frontend disables auth: `proxy.ts` and the server gu
 
 ### Testing as a role (seeded accounts)
 
-`just db-seed` creates `<role>@jmcfi.edu.ph` / `password123` for every role (`user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, `system_admin`) — see `lib/dev-accounts.ts` and `apps/backend/prisma/seed.ts`, which must stay in sync.
+`just db-seed` creates `<id>@jmcfi.edu.ph` / `password123` for every role (`user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, `system_admin`), plus a **second** account for the data-bearing roles — `faculty1`, `program_chair1`, `dean1`, `aqau1`, `vpaa1` (same role, separate user, so you can check which data is shared between two users of one role). See `lib/dev-accounts.ts` and `apps/backend/prisma/seed.ts`, which must stay in sync.
 
 ```bash
 just dev-as dean     # full stack, browser opens already signed in as dean (real session + cookie)
+just dev-as faculty1 # the same, signed in as the second faculty account
 just session dean    # sign in and print a Cookie: header for direct backend calls
 bun run dev-session dean   # the same, from inside apps/frontend/
 ```
 
-`/dev/session?role=<role>` is a dev-only route (`app/dev/session/route.ts`) that signs in server-side, relays the backend's `Set-Cookie`, and redirects — switch roles by opening it with another value, no restart.
+`/dev/session?role=<id>` is a dev-only route (`app/dev/session/route.ts`) that signs in server-side, relays the backend's `Set-Cookie`, and redirects — switch accounts by opening it with another id, no restart.
 
 Because it signs in without a password, it sits behind three hard gates that **all** answer an empty `404` (indistinguishable from a route that does not exist):
 
@@ -50,9 +51,9 @@ Because it signs in without a password, it sits behind three hard gates that **a
 2. `DEV_SESSION_ENABLED=true` must be in the environment — `just dev`, `just dev-as` and `just dev-frontend` export it; a hand-run `bun dev` leaves it off, so the route does not exist there.
 3. The request must reach the server from loopback: `localhost`, `127.0.0.0/8` or `::1`, and a loopback `x-forwarded-for` when a proxy supplies one (an SSH tunnel forwards to localhost too, so the forwarded client is checked as well).
 
-`next.config.ts` additionally throws on `next build` / `next start` while the flag is set, so a bundle with the route enabled cannot be produced. Refusals log `[dev-session] refused: <reason>` and successful sign-ins log `[dev-session] signed in as <email>` in the frontend console. `bun run dev-session <role>` refuses a non-loopback `API_ROOT`, so the CLI only ever mints a session against a local backend.
+`next.config.ts` additionally throws on `next build` / `next start` while the flag is set, so a bundle with the route enabled cannot be produced. Refusals log `[dev-session] refused: <reason>` and successful sign-ins log `[dev-session] signed in as <email>` in the frontend console. `bun run dev-session <id>` refuses a non-loopback `API_ROOT`, so the CLI only ever mints a session against a local backend.
 
-After the hard gates: dev mode on → `409`, unknown role → `400`.
+After the hard gates: dev mode on → `409`, unknown account id → `400`.
 
 Dev mode and real sessions are mutually exclusive (`getMe()` returns `DEV_USER` whenever `DEVELOPMENT=true`), so `just dev-as` exports `DEVELOPMENT=false` for that run only — `.env.local` is left as-is, and a plain `just dev` keeps your dev-mode setting. Hitting `/dev/session` while dev mode is on returns a `409` explaining that.
 

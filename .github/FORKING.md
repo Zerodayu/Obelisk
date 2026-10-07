@@ -80,7 +80,7 @@ All of these live in the root env files ([`CONTRIBUTING.md` §2](CONTRIBUTING.md
 These are hardcoded to the original institution — adjust them to taste (all safe, small edits):
 
 - **Branding** — [`packages/app-info/index.ts`](../packages/app-info/index.ts) is the single source of truth: product title, description, legal title, `organization` / `organizationAbbr`, and logo paths (logo files live in `apps/frontend/public/metadata/`).
-- **Seed accounts** — `just db-seed` creates `<role>@jmcfi.edu.ph` / `password123`; the domain appears in `apps/backend/prisma/seed.ts` and is mirrored in `apps/frontend/lib/dev-accounts.ts` (**keep the two in sync** — the dev-session route signs in against them). Change both if you want your own dev-login domain.
+- **Seed accounts** — `just db-seed` creates `<id>@jmcfi.edu.ph` / `password123` (one per role, plus a second `<role>1` account for `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`); the account list appears in `apps/backend/prisma/seed.ts` and is mirrored in `apps/frontend/lib/dev-accounts.ts` (**keep the two in sync** — the dev-session route signs in against them, and `just dev-as <id>` validates against the same list). Change both if you want your own dev-login domain.
 - **Institutional docs** — everything in [`system-docs/`](../system-docs/README.md) describes the JMCFI WIN-OBE manual (37 forms, role names, approval policies). Use them as a reference for what the code implements, not as your institution's documentation.
 
 ### Larger adaptations (real code changes)

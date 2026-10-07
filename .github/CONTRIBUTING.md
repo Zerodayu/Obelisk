@@ -166,8 +166,8 @@ The root [`justfile`](../justfile) wraps the common workflows — install, dev, 
 | Recipe | What it does |
 | :--- | :--- |
 | `just dev` | Run backend + frontend + ETL in parallel with colored log prefixes; auto-opens the browser when the frontend is up; Ctrl+C stops all |
-| `just dev-as <role>` | Same as `just dev`, but opens the browser already signed in as a seeded role account (real session + cookie) |
-| `just session <role>` | Sign in as a seeded role account and print its session cookie for direct backend calls |
+| `just dev-as <id>` | Same as `just dev`, but opens the browser already signed in as a seeded account (a role such as `dean`, or a role's second account such as `faculty1` — real session + cookie) |
+| `just session <id>` | Sign in as a seeded account and print its session cookie for direct backend calls |
 | `just stop` | Kill any leftover dev processes |
 | `just dev-backend` | Run only the backend (bun watch, `:8080`) |
 | `just dev-frontend` | Run only the frontend (`next dev`, `:3000`) |
@@ -246,14 +246,14 @@ To simulate a role, edit `DEV_ROLE` in `apps/frontend/server/api-client.ts` (def
 
 ### Testing with a real account (per role)
 
-`just db-seed` creates one account per role — `<role>@jmcfi.edu.ph` / `password123`, for `user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, and `system_admin`. Two ways to use them:
+`just db-seed` creates one account per role — `<id>@jmcfi.edu.ph` / `password123`, for `user`, `faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, and `system_admin` — plus a second `<role>1` account for the data-bearing roles (`faculty1`, `program_chair1`, `dean1`, `aqau1`, `vpaa1`): same role, separate user, so you can sign in twice as one role and see which data is shared between users. Two ways to use them:
 
-- **Browser** — `just dev-as <role>` starts the full stack and opens `http://localhost:3000/dev/session?role=<role>`, which signs in server-side and relays the real session cookie to the browser. Switch roles any time by opening that URL with a different role — no restart. (`user` accounts land on `/onboarding`.)
-- **Terminal** — `just session <role>` signs in and prints a `Cookie:` header (also written to `apps/frontend/.dev-session/<role>.cookie`, gitignored) for `curl`/Bun calls straight against the backend.
+- **Browser** — `just dev-as <id>` starts the full stack and opens `http://localhost:3000/dev/session?role=<id>`, which signs in server-side and relays the real session cookie to the browser. Switch accounts any time by opening that URL with a different id (`dean`, `faculty1`, …) — no restart. (`user` accounts land on `/onboarding`.)
+- **Terminal** — `just session <id>` signs in and prints a `Cookie:` header (also written to `apps/frontend/.dev-session/<id>.cookie`, gitignored) for `curl`/Bun calls straight against the backend.
 
 Dev mode and real sessions are mutually exclusive: with `DEVELOPMENT=true`, `getMe()` short-circuits to `DEV_USER` and the session cookie is ignored. `just dev-as` therefore exports `DEVELOPMENT=false` for that run only (`.env.local` stays as you left it), and `/dev/session` answers `409` if dev mode is on.
 
-`/dev/session` signs in without a password, so it is gated three ways and answers an empty `404` on any miss: non-production `NODE_ENV`, `DEV_SESSION_ENABLED=true` (exported by `just dev` / `dev-as` / `dev-frontend`, **not** by a hand-run `bun dev`), and a loopback request host. `next.config.ts` refuses `next build`/`next start` while the flag is set, so the route cannot ship; `bun run dev-session <role>` refuses a non-loopback backend too. Refusals and successful sign-ins are logged as `[dev-session] …` in the frontend console.
+`/dev/session` signs in without a password, so it is gated three ways and answers an empty `404` on any miss: non-production `NODE_ENV`, `DEV_SESSION_ENABLED=true` (exported by `just dev` / `dev-as` / `dev-frontend`, **not** by a hand-run `bun dev`), and a loopback request host. `next.config.ts` refuses `next build`/`next start` while the flag is set, so the route cannot ship; `bun run dev-session <id>` refuses a non-loopback backend too. Refusals and successful sign-ins are logged as `[dev-session] …` in the frontend console.
 
 ---
 

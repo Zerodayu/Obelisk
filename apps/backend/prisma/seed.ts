@@ -300,24 +300,39 @@ async function main() {
 	console.log(`Created development user: ${devEmail} (ID: ${devUser.id})`);
 	console.log(`Working dev credentials: ${devEmail} / ${devPassword}`);
 
-	// One demo account per role — `<role>@jmcfi.edu.ph` / devPassword — so the
+	// One demo account per role — `<id>@jmcfi.edu.ph` / devPassword — so the
 	// approval chain (lib/forms/approval-routes.ts) and every role gate can be
-	// exercised end-to-end. The frontend mirrors this list in
-	// `frontend/lib/dev-accounts.ts` (`just dev-as <role>` signs the browser in
+	// exercised end-to-end. `id` is the email local part and what
+	// `just dev-as <id>` accepts; the data-bearing roles get a **second**
+	// account (`<role>1`) so the same role can be signed in twice and you can
+	// check which data is shared across users of one role (submissions +
+	// ingest history are per-user, class-section data and pending-approval
+	// inboxes are shared). `user` (onboarding only) and `system_admin` keep a
+	// single account. The frontend mirrors this list in
+	// `frontend/lib/dev-accounts.ts` (`just dev-as <id>` signs the browser in
 	// through `/dev/session`); keep both sides in sync.
 	const ROLE_ACCOUNTS = [
 		// NOTE: "user" is the onboarding role — these accounts land on /onboarding.
-		{ role: "user", name: "User Role Demo" },
-		{ role: "faculty", name: "Faculty User" },
-		{ role: "program_chair", name: "Program Chair User" },
-		{ role: "dean", name: "Dean User" },
-		{ role: "aqau", name: "AQAU User" },
-		{ role: "vpaa", name: "VPAA User" },
-		{ role: "system_admin", name: "System Admin User" },
+		{ id: "user", role: "user", name: "User Role Demo" },
+		{ id: "faculty", role: "faculty", name: "Faculty User" },
+		{ id: "faculty1", role: "faculty", name: "Faculty User 2" },
+		{ id: "program_chair", role: "program_chair", name: "Program Chair User" },
+		{
+			id: "program_chair1",
+			role: "program_chair",
+			name: "Program Chair User 2",
+		},
+		{ id: "dean", role: "dean", name: "Dean User" },
+		{ id: "dean1", role: "dean", name: "Dean User 2" },
+		{ id: "aqau", role: "aqau", name: "AQAU User" },
+		{ id: "aqau1", role: "aqau", name: "AQAU User 2" },
+		{ id: "vpaa", role: "vpaa", name: "VPAA User" },
+		{ id: "vpaa1", role: "vpaa", name: "VPAA User 2" },
+		{ id: "system_admin", role: "system_admin", name: "System Admin User" },
 	] as const;
 
 	for (const account of ROLE_ACCOUNTS) {
-		const email = `${account.role}@jmcfi.edu.ph`;
+		const email = `${account.id}@jmcfi.edu.ph`;
 		await seedAuth.api.signUpEmail({
 			body: { email, password: devPassword, name: account.name },
 		});
@@ -331,7 +346,7 @@ async function main() {
 		});
 		console.log(`Created role user: ${email} (${account.role})`);
 	}
-	console.log(`Role demo credentials: <role>@jmcfi.edu.ph / ${devPassword}`);
+	console.log(`Role demo credentials: <id>@jmcfi.edu.ph / ${devPassword}`);
 
 	const department = await prisma.department.upsert({
 		where: { code: DEPT_CODE },
