@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { toast, toastError } from "@/components/ui/toast";
-import type { CheckFormCode } from "@/server/actions/check";
+import type { CheckFormCode } from "@/lib/check-slugs";
 import {
   getCheckForm,
   initCheckForm,

@@ -8,6 +8,7 @@
 "use server";
 
 import { ApiError } from "@/lib/api-client";
+import { CHECK_FORM_SLUGS, type CheckFormCode } from "@/lib/check-slugs";
 import { actionApi, serverApi } from "@/server/api-client";
 
 export type ActionResult<TData = void> =
@@ -18,21 +19,8 @@ function errorMessage(err: unknown, fallback: string): string {
   return err instanceof ApiError ? err.message : fallback;
 }
 
-// ---------------------------------------------------------------------------
-// Form slug mapping (snake_case code → kebab-case URL path segment)
-// ---------------------------------------------------------------------------
-
-export const CHECK_FORM_SLUGS = {
-  mid_cycle_attainment: "mid-cycle-attainment",
-  peer_observation: "peer-observation",
-  exhibition_feedback: "exhibition-feedback",
-  clo_perception_survey: "clo-perception-survey",
-  student_exit_survey: "student-exit-survey",
-  portfolio_assessment_record: "portfolio-assessment",
-  capstone_panel_evaluation: "capstone-panel",
-} as const;
-
-export type CheckFormCode = keyof typeof CHECK_FORM_SLUGS;
+// NOTE: the code→slug map lives in lib/check-slugs.ts — this file is
+// "use server", so it may only export async functions.
 
 // ---------------------------------------------------------------------------
 // Generic init / get / save
