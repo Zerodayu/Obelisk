@@ -6,6 +6,7 @@ import { FEATURE_ACCESS as BACKEND_FEATURE_ACCESS } from "@lib/role-access";
 import {
 	FEATURE_ACCESS as FRONTEND_FEATURE_ACCESS,
 	FORM_ACCESS as FRONTEND_FORM_ACCESS,
+	screenRoles,
 } from "../../../frontend/lib/role-access";
 
 /**
@@ -50,5 +51,24 @@ describe("frontend role-access mirror", () => {
 	it("keeps the mirror import-free so any runtime can load it", async () => {
 		const source = await Bun.file(FRONTEND_MIRROR_PATH).text();
 		expect(source).not.toMatch(/^\s*import\s/m);
+	});
+
+	it("gates the class-record upload screen to faculty + system_admin", () => {
+		// `/forms/clo-raw-data` renders the upload panel, so its route gate is
+		// narrower than the form's approval route — program_chair stays a
+		// preparer in FORM_ACCESS/APPROVAL_ROUTES (mirrored above) but no
+		// longer opens the screen. The backend keeps the broader
+		// `captureClassRecords` list for its `/ingest/*` reads.
+		expect([...screenRoles("clo_raw_data")]).toEqual([
+			"faculty",
+			"system_admin",
+		]);
+		// Every other screen still resolves to the route gate (preparers ∪
+		// chain ∪ admin), so approvers keep their "Open form screen" links.
+		expect([...screenRoles("course_assessment_report")]).toEqual([
+			...FRONTEND_FORM_ACCESS.course_assessment_report.preparers,
+			...FRONTEND_FORM_ACCESS.course_assessment_report.chain,
+			"system_admin",
+		]);
 	});
 });

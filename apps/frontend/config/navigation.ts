@@ -3,9 +3,15 @@
  * appears in the sidebar and which routes each role may reach.
  *
  * Adding a role or a route = add/edit one entry here (plus the corresponding
- * page under `app/`). Form items carry a stable `code`; their per-form role
- * visibility derives from `FORM_ACCESS` in `lib/role-access.ts` (mirrors the
- * backend approval-routes registry). The sidebar, archive/form gates, and any
+ * page under `app/`). Form items carry a stable `code`; their per-form
+ * **nav** visibility derives from `FORM_ACCESS[code].preparers` in
+ * `lib/role-access.ts` (mirrors the backend approval-routes registry) — a
+ * role sees only the forms it prepares, not every form it merely reviews —
+ * unless the item carries an explicit `roles`, which wins (a screen narrower
+ * than its preparers, e.g. the class-record upload screen).
+ * The sidebar leads with the per-role duty steps from `config/role-duties.ts`
+ * (`sidebarNavFor`) and follows with that catalog; the dashboard checklist
+ * reads the same duty registry. The sidebar, archive/form gates, and any
  * future breadcrumbs all derive from this. Backend still enforces authority;
  * this drives navigation and rendering only.
  *
@@ -35,11 +41,13 @@ import {
   WalletIcon,
 } from "lucide-react";
 
+import { type DutyStep, dutiesFor } from "@/config/role-duties";
 import {
   APPROVER_ROLES,
   ARCHIVE_ROLES,
-  formRoles,
   PLO_MANAGEMENT_ROLES,
+  preparerRoles,
+  screenRoles,
   type UserRole,
 } from "@/lib/role-access";
 import { hasAccess } from "@/lib/roles";
@@ -50,8 +58,11 @@ export interface NavChild {
   url: string;
   /**
    * Explicit allow-list roles; empty/absent = any authenticated role.
-   * Items carrying a `code` ignore this — their roles derive from
-   * `formRoles(code)` in `lib/role-access.ts` (preparers ∪ chain ∪ admin).
+   * An explicit list **wins** over a `code`'s derived roles — use it to
+   * narrow a form screen below its preparers (e.g. the class-record upload
+   * screen, `CLASS_RECORD_SCREEN_ROLES`). Otherwise items carrying a `code`
+   * derive their roles from `preparerRoles(code)` in `lib/role-access.ts`
+   * (the form's preparers).
    */
   roles?: readonly UserRole[];
   /**
@@ -83,6 +94,10 @@ const FORM_SECTIONS: NavSection[] = [
         url: "/forms/clo-raw-data",
         icon: ClipboardListIcon,
         code: "clo_raw_data",
+        // The upload screen is faculty's capture step (admin bypass kept) —
+        // narrower than the form's preparers (which include program_chair).
+        // Nav here follows the screen's route gate, not its preparers.
+        roles: screenRoles("clo_raw_data"),
       },
       {
         title: "Course Assessment Report",
@@ -242,13 +257,38 @@ export const formPathByCode: Record<string, string> = Object.fromEntries(
 );
 
 /**
- * Effective allow-list for a nav item: form screens derive from
- * `formRoles(code)` (preparers ∪ approval chain ∪ system_admin) in
- * `lib/role-access.ts`; items without a code use their explicit `roles`.
+ * Effective allow-list for a nav item: an explicit `roles` list wins (it can
+ * narrow a form screen below its preparers, e.g. the class-record upload
+ * screen); otherwise form screens derive from `preparerRoles(code)` (the
+ * form's preparers — what a role *does*) in `lib/role-access.ts`, and items
+ * without a code fall back to their explicit `roles` (absent = any
+ * authenticated). Chain-only visibility is deliberately excluded here:
+ * approvers reach those screens from the approval inbox, which links through
+ * `formPathForCode`.
  */
 function rolesFor(item: NavChild): readonly UserRole[] | undefined {
-  if (item.code) return formRoles(item.code);
-  return item.roles;
+  if (item.roles) return item.roles;
+  if (item.code) return preparerRoles(item.code);
+  return undefined;
+}
+
+/**
+ * Role-aware screen path for a stable form code — `formPathByCode`, filtered
+ * by `screenRoles(code)` (the screen's **route gate**, not its preparers).
+ *
+ * Use this for links rendered to an arbitrary role (the approval/evidence
+ * panels' "Open form screen"): approvers keep their link to every screen the
+ * route gate lets them open, while a screen gated narrower than its form —
+ * the class-record upload screen (`clo_raw_data` → `CLASS_RECORD_SCREEN_ROLES`)
+ * — never dead-ends a reviewer on a redirect to `/dashboard`.
+ */
+export function formPathForCode(
+  code: string,
+  role: UserRole | undefined,
+): string | undefined {
+  const path = formPathByCode[code];
+  if (!path) return undefined;
+  return hasAccess(role, screenRoles(code)) ? path : undefined;
 }
 
 function allowRoles(item: NavChild, role: UserRole): boolean {
@@ -262,9 +302,11 @@ export function itemVisible(item: NavItem, role: UserRole): boolean {
 }
 
 /**
- * Filter the registry down to the routes/nav a role may see, preserving the
- * grouping structure. Any item the role cannot access — and has no accessible
- * children — is dropped.
+ * Filter the registry down to the forms the role **prepares**, preserving the
+ * grouping structure. Any item the role neither prepares — nor can reach
+ * through an accessible child — is dropped, so empty groups disappear and a
+ * role with no preparer forms (e.g. `vpaa`, `aqau`) gets no forms catalog at
+ * all.
  */
 export function navSectionsFor(role: UserRole): NavSection[] {
   const result: NavSection[] = [];
@@ -274,6 +316,75 @@ export function navSectionsFor(role: UserRole): NavSection[] {
     result.push({ label: group.label, items });
   }
   return result;
+}
+
+// --- Per-role duty steps (the sidebar's "what you do" sections) ------------
+
+/** Nav visibility for a duty step — never wider than the backend allows. */
+function dutyVisible(step: DutyStep, role: UserRole): boolean {
+  if (step.status.kind === "prepare") {
+    // Same rule as a plain form item: the form's preparers.
+    return hasAccess(role, preparerRoles(step.status.code));
+  }
+  if (step.status.kind === "approve") {
+    return hasAccess(role, step.roles ?? APPROVER_ROLES);
+  }
+  // `link` steps carry an explicit feature list (absent = any authenticated).
+  return hasAccess(role, step.roles);
+}
+
+/** Map one duty step to a nav item (prepare steps keep their stable `code`). */
+function dutyNavItem(step: DutyStep): NavItem {
+  const { title, url, icon } = step;
+  if (step.status.kind === "prepare") {
+    return { title, url, icon, code: step.status.code };
+  }
+  if (step.status.kind === "approve") {
+    return { title, url, icon, roles: step.roles ?? APPROVER_ROLES };
+  }
+  return { title, url, icon, roles: step.roles };
+}
+
+/**
+ * The role's duty sections as nav sections, numbered so the sidebar reads as
+ * ordered responsibilities (`1 · Class Records`, `2 · Indirect Survey`, …).
+ * Roles without a duty list get an empty array.
+ */
+function dutyNavSections(role: UserRole): NavSection[] {
+  return dutiesFor(role)
+    .map((section, index) => ({
+      label: `${index + 1} · ${section.label}`,
+      items: section.steps
+        .filter((step) => dutyVisible(step, role))
+        .map(dutyNavItem),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+export interface SidebarNav {
+  /** Ordered responsibility steps for the role (numbered group labels). */
+  duties: NavSection[];
+  /** PDCA catalog — everything else the role prepares, minus duty links. */
+  catalog: NavSection[];
+}
+
+/**
+ * Sidebar payload: duty steps first, then the preparer catalog with any URL a
+ * duty already links to removed (no duplicates). `/forms` keeps calling
+ * `navSectionsFor` directly, so the full preparer catalog stays reachable.
+ */
+export function sidebarNavFor(role: UserRole): SidebarNav {
+  const duties = dutyNavSections(role);
+  const surfaced = new Set(
+    duties.flatMap((section) => section.items.map((item) => item.url)),
+  );
+  const catalog = navSectionsFor(role)
+    .map((group) => ({
+      label: group.label,
+      items: group.items.filter((item) => !surfaced.has(item.url)),
+    }))
+    .filter((group) => group.items.length > 0);
+  return { duties, catalog };
 }
 
 /** Top-level destinations for the Workspace group of the sidebar. */

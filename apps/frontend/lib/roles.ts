@@ -24,6 +24,7 @@ export {
   APPROVER_ROLES,
   ARCHIVE_ROLES,
   CLASS_RECORD_ROLES,
+  CLASS_RECORD_SCREEN_ROLES,
   canAccess,
   FEATURE_ACCESS,
   type FeatureKey,
@@ -32,6 +33,7 @@ export {
   formRoles,
   PLO_MANAGEMENT_ROLES,
   QA_ROLES,
+  screenRoles,
   USER_ROLES,
   type UserRole,
 } from "./role-access";

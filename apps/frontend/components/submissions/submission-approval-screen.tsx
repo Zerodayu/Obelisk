@@ -1,12 +1,13 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { ArrowUpRightIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { FormWorkflow } from "@/components/forms/form-workflow";
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
-import { formPathByCode } from "@/config/navigation";
+import { formPathForCode } from "@/config/navigation";
 import { api } from "@/lib/api-client";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
@@ -14,6 +15,7 @@ import {
   FORM_STATUS_TONES,
   type FormSubmissionRecord,
 } from "@/lib/store/atoms/forms";
+import { userAtom } from "@/lib/store/atoms/user";
 import { SubmissionEvidence } from "./submission-evidence";
 import { SubmissionJustification } from "./submission-justification";
 
@@ -53,7 +55,12 @@ export function SubmissionApprovalScreen({
   const pendingStep = (submission.approvalSteps ?? []).find(
     (step) => step.decision === "pending",
   );
-  const formPath = formType ? formPathByCode[formType.code] : undefined;
+  // Role-aware: a capture-only screen (e.g. clo_raw_data) stays unlinked for
+  // roles that may no longer open it, instead of dead-ending on a redirect.
+  const user = useAtomValue(userAtom);
+  const formPath = formType
+    ? formPathForCode(formType.code, user?.role)
+    : undefined;
 
   return (
     <div className="space-y-6">

@@ -5,6 +5,7 @@ import { FacultyDashboard } from "@/app/(app)/dashboard/faculty-dashboard";
 import { ProgramChairDashboard } from "@/app/(app)/dashboard/program-chair-dashboard";
 import { SystemAdminDashboard } from "@/app/(app)/dashboard/system-admin-dashboard";
 import { VpaaDashboard } from "@/app/(app)/dashboard/vpaa-dashboard";
+import { RoleChecklist } from "@/components/dashboard/role-checklist";
 import {
   DashboardShell,
   type StatCard,
@@ -93,6 +94,9 @@ export function RoleDashboard({ user }: { user: ApiUser }) {
       description={config.description}
       stats={stats}
     >
+      {/* Role's ordered duty list with live done/in-progress states
+          (config/role-duties.ts → lib/duty-status.ts). */}
+      <RoleChecklist role={user.role} />
       <Scope />
     </DashboardShell>
   );

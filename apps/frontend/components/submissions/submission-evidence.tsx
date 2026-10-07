@@ -1,12 +1,14 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { ArrowUpRightIcon, ChevronDownIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { formPathByCode } from "@/config/navigation";
+import { formPathForCode } from "@/config/navigation";
 import { api } from "@/lib/api-client";
+import { userAtom } from "@/lib/store/atoms/user";
 import type { SubmissionJustificationRecord } from "./submission-justification";
 
 /**
@@ -76,6 +78,7 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
   const [error, setError] = useState(false);
   // NOTE: raw JSON is advanced detail — approvers read the justification card.
   const [showPayload, setShowPayload] = useState(false);
+  const user = useAtomValue(userAtom);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,7 +103,10 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
     void load();
   }, [load]);
 
-  const formPath = evidence ? formPathByCode[evidence.code] : undefined;
+  // Role-aware: capture-only screens stay unlinked for roles that lost them.
+  const formPath = evidence
+    ? formPathForCode(evidence.code, user?.role)
+    : undefined;
   const payload = evidence ? Object.entries(evidence.formData ?? {}) : [];
   const section = evidence?.classSection ?? null;
   const capture = evidence?.capture ?? null;

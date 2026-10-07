@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/sidebar";
 import {
   type NavItem,
-  navSectionsFor,
+  type NavSection,
+  sidebarNavFor,
   workspaceNav,
 } from "@/config/navigation";
 import type { ApiUser } from "@/lib/api-client";
@@ -106,13 +107,44 @@ function ChevronIcon({ className }: { className?: string }) {
   );
 }
 
+/** One sidebar group: a group label over its (flat or nested) nav items. */
+function NavSectionGroup({
+  section,
+  pathname,
+}: {
+  section: NavSection;
+  pathname: string;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {section.items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              {item.children && item.children.length > 0 ? (
+                <FormCollapsible item={item} pathname={pathname} />
+              ) : (
+                <WorkspaceLink item={item} pathname={pathname} />
+              )}
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
 /**
- * Registry-driven sidebar navigation. Renders the workspace destinations plus
- * the role-filtered forms catalog from `config/navigation.ts`.
+ * Registry-driven sidebar navigation. Renders the workspace destinations,
+ * then the role's numbered duty sections (`config/role-duties.ts` — "what
+ * this role does, in order"), then whatever forms the role prepares that the
+ * duties don't already link to. All of it comes from `sidebarNavFor(role)`
+ * in `config/navigation.ts`.
  */
 export function SidebarNav({ role }: { role: ApiUser["role"] }) {
   const workspace = workspaceNav(role);
-  const sections = navSectionsFor(role);
+  const { duties, catalog } = sidebarNavFor(role);
   const pathname = usePathname();
 
   return (
@@ -130,23 +162,20 @@ export function SidebarNav({ role }: { role: ApiUser["role"] }) {
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {sections.map((section) => (
-        <SidebarGroup key={section.label}>
-          <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {section.items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  {item.children && item.children.length > 0 ? (
-                    <FormCollapsible item={item} pathname={pathname} />
-                  ) : (
-                    <WorkspaceLink item={item} pathname={pathname} />
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {duties.map((section) => (
+        <NavSectionGroup
+          key={`duty-${section.label}`}
+          section={section}
+          pathname={pathname}
+        />
+      ))}
+
+      {catalog.map((section) => (
+        <NavSectionGroup
+          key={`catalog-${section.label}`}
+          section={section}
+          pathname={pathname}
+        />
       ))}
     </>
   );

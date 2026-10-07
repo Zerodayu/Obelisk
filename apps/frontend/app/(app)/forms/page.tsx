@@ -3,8 +3,9 @@ import { navSectionsFor } from "@/config/navigation";
 import { requireUser } from "@/server/auth";
 
 /**
- * `/forms` index — lists the form groups the current role may access, derived
- * from the navigation registry (`config/navigation.ts`).
+ * `/forms` index — lists the form groups the current role **prepares**,
+ * derived from the navigation registry (`config/navigation.ts`), which filters
+ * on `preparerRoles(code)`. Review-only forms live in the approval inbox.
  */
 export default async function FormsIndexPage() {
   const user = await requireUser();
@@ -15,7 +16,8 @@ export default async function FormsIndexPage() {
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-tight">Forms</h2>
         <p className="text-sm text-muted-foreground">
-          The OBE form catalog, grouped by PDCA phase and filtered to your role.
+          The OBE form catalog, grouped by PDCA phase — the forms your role
+          prepares.
         </p>
       </div>
 
@@ -46,7 +48,8 @@ export default async function FormsIndexPage() {
 
       {sections.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No forms are available for your role yet.
+          Your role does not prepare any forms — review work lives under Pending
+          Approvals.
         </p>
       ) : null}
     </div>

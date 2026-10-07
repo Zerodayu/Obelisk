@@ -85,6 +85,20 @@ export const ACADEMIC_ROLES: readonly UserRole[] = [
 /** Class-record capture (upload/roster/history): same as `captureClassRecords`. */
 export const CLASS_RECORD_ROLES: readonly UserRole[] =
   FEATURE_ACCESS.captureClassRecords;
+/**
+ * Who may open the **class-record upload screen** (`/forms/clo-raw-data`) —
+ * the whole screen, upload panel included.
+ *
+ * NOTE: deliberately **not** a `FEATURE_ACCESS` entry: this is a
+ * frontend-only *rendering* gate (the backend keeps the broader
+ * `captureClassRecords` allow-list for its reads), so it must stay outside
+ * the mirrored maps that `backend/test/unit/role-access-sync.test.ts`
+ * compares. Capture is faculty's job; `system_admin` keeps its usual bypass.
+ */
+export const CLASS_RECORD_SCREEN_ROLES: readonly UserRole[] = [
+  "faculty",
+  "system_admin",
+];
 /** Archive an approved submission **and** open `/archives`. */
 export const ARCHIVE_ROLES: readonly UserRole[] = FEATURE_ACCESS.archive;
 /**
@@ -273,4 +287,39 @@ export function formRoles(code: string): readonly UserRole[] {
   for (const role of route.chain) roles.add(role);
   roles.add("system_admin");
   return [...roles];
+}
+
+/**
+ * Who may actually **open** a form screen — `formRoles(code)` unless the
+ * screen's own route gate is deliberately narrower than the approval route.
+ *
+ * Today's only override: `clo_raw_data` renders the class-record **upload**
+ * screen, whose `layout.tsx` gates to `CLASS_RECORD_SCREEN_ROLES` (faculty +
+ * admin) even though the form's preparers still include `program_chair`.
+ *
+ * Use this for links rendered to an arbitrary role (the approval/evidence
+ * panels' "Open form screen"), so a reader is never sent to a route that
+ * redirects them to `/dashboard`. Keep it in sync with the screen's
+ * `requireRole(...)` call.
+ */
+export function screenRoles(code: string): readonly UserRole[] {
+  if (code === "clo_raw_data") return CLASS_RECORD_SCREEN_ROLES;
+  return formRoles(code);
+}
+
+/**
+ * Who may **prepare** (create/submit) the screen for a stable form code —
+ * the preparer list only, with no approval-chain rungs and no `system_admin`
+ * override.
+ *
+ * This drives **navigation visibility** (`config/navigation.ts` → sidebar and
+ * `/forms` index): show a role only what it actually does. Approver-only
+ * access is still reachable through the approval inbox, and stays enforced by
+ * `formRoles()` (the route gate above) + the backend — hiding a link never
+ * changes authority.
+ *
+ * Unknown codes fall back to every role, matching `formRoles`.
+ */
+export function preparerRoles(code: string): readonly UserRole[] {
+  return FORM_ACCESS[code]?.preparers ?? USER_ROLES;
 }
