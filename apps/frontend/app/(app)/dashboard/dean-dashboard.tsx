@@ -67,9 +67,10 @@ export function DeanDashboard() {
         </Frame>
         <Frame className="w-full">
           <FrameHeader>
-            <FrameTitle>Approval & endorsement queue</FrameTitle>
+            <FrameTitle>Approval decisions on my forms</FrameTitle>
             <FrameDescription>
-              Forms pending endorsement from departmental program chairs.
+              Pending / approved / returned across your submissions' chain — the
+              live endorsement queue is at /approvals.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

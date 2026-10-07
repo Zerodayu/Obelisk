@@ -2,13 +2,15 @@
  * Governance dataset atoms (institutional oversight / QA charts).
  *
  * `approvalFlowDataAtom` and `formStatusCountsAtom` are derived from the real
- * `GET /forms` fetch (see `atoms/forms.ts`), so they reflect live database
- * counts. The audit trail reads the real `GET /audit/logs` (scoped server-side
- * to the caller), and `auditActivityDataAtom` is derived from it. The remaining
- * charts have no backend endpoint yet (graduation clusters, report exports,
- * platform-wide user/role counts, the at-risk flag reasons, and the AI
- * recommendation list), so they are seeded with `[]` and render an empty state
- * instead of fabricated numbers.
+ * `GET /forms?scope=mine` fetch (see `atoms/forms.ts`), so they reflect live
+ * database counts **for the session user's own submissions** — per-user, like
+ * every other dashboard dataset. The audit trail reads the real
+ * `GET /audit/logs` (scoped server-side to the caller), and
+ * `auditActivityDataAtom` is derived from it. The remaining charts have no
+ * backend endpoint yet (graduation clusters, report exports, platform-wide
+ * user/role counts, the at-risk flag reasons, and the AI recommendation
+ * list), so they are seeded with `[]` and render an empty state instead of
+ * fabricated numbers.
  */
 
 import { atom } from "jotai";
@@ -35,8 +37,10 @@ import {
 export { formStatusCountsAtom };
 
 /**
- * Approval-chain decisions per role, aggregated from every submission's
- * `approvalSteps`. Shares the `GET /forms` fetch with the status donut.
+ * Approval-chain decisions per role, aggregated from the caller's own
+ * submissions' `approvalSteps`. Shares the `GET /forms?scope=mine` fetch with
+ * the status donut — so a role that never prepares forms (vpaa, system_admin)
+ * shows no rows here; the live queue is `/approvals` (`scope=pending`).
  */
 export const approvalFlowDataAtom = atom<ApprovalFlowDatum[]>((get) => {
   const counts = new Map<

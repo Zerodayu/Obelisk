@@ -1,12 +1,14 @@
 /**
  * Form-submission atoms — the first DB-backed dataset wired through the store.
  *
- * `formSubmissionsDataAtom` fetches `GET /forms` from the browser on first
- * subscription and refetches when a filter atom changes or `refreshAtom` runs.
- * `formStatusCountsAtom` derives the submission-status distribution for the
- * status donut: it holds an empty list while the fetch is pending or failed
- * (the donut renders its empty state) and reports real counts — including
- * zeros — once loaded.
+ * `formSubmissionsDataAtom` fetches `GET /forms?scope=mine` from the browser on
+ * first subscription and refetches when a filter atom changes or `refreshAtom`
+ * runs — **per-user**: the dashboard charts count only the session user's own
+ * submissions (the backend resolves `scope` server-side and defaults an
+ * omitted one to the caller's own too). `formStatusCountsAtom` derives the
+ * submission-status distribution for the status donut: it holds an empty list
+ * while the fetch is pending or failed (the donut renders its empty state) and
+ * reports real counts — including zeros — once loaded.
  */
 
 import { atom } from "jotai";
@@ -130,10 +132,14 @@ export const {
   if (formTypeId) query.formTypeId = formTypeId;
   if (status) query.status = status;
   if (classSectionId) query.classSectionId = classSectionId;
+  // NOTE: per-user — only the caller's own submissions feed the status donut
+  // and the approval-flow chart; institution-wide reads go through
+  // `allSubmissionsDataAtom` (`scope=all`, archive roles only).
+  query.scope = "mine";
   return api.get<FormSubmissionRecord[]>("/forms", { query, signal });
 });
 
-/** Submission-status distribution for the status donut. */
+/** Submission-status distribution for the status donut (caller's own rows). */
 export const formStatusCountsAtom = atom<FormStatusDatum[]>((get) => {
   const state = get(formSubmissionsStateAtom);
   // No submissions resolved yet (loading or error) — render the empty state

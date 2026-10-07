@@ -256,6 +256,19 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			);
 			expect(mineOther.map((s) => s.id)).not.toContain(draft.id);
 
+			// NOTE: an omitted scope defaults to the caller's own rows — the
+			// dashboard's `GET /forms` (which sends no `scope`) must not serve
+			// another user's submissions to any role, admin included.
+			const noScopeOwner = await submissionService.list(
+				scopeWhere(undefined, { id: IDS.owner, role: "faculty" }),
+			);
+			expect(noScopeOwner.map((s) => s.id)).toContain(draft.id);
+
+			const noScopeOther = await submissionService.list(
+				scopeWhere(undefined, { id: IDS.other, role: "system_admin" }),
+			);
+			expect(noScopeOther.map((s) => s.id)).not.toContain(draft.id);
+
 			const pendingChair = await submissionService.list(
 				scopeWhere("pending", { id: "any", role: "program_chair" }),
 			);

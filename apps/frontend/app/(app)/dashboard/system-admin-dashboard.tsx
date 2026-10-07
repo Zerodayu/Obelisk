@@ -43,7 +43,7 @@ export function SystemAdminDashboard() {
           <FrameHeader>
             <FrameTitle>Submission volume by status</FrameTitle>
             <FrameDescription>
-              All form submissions across the platform.
+              Your own form submissions by status.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

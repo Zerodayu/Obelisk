@@ -152,13 +152,17 @@ mounted by `StoreProvider` in the root layout; atoms live in
   so a chart atom resolves the newest submission with `fetchLatestPayload`
   (`lib/store/latest-payload.ts`) and maps that payload into the datum rows
   beside the atom. Empty list → `[]` → empty chart state.
-- **DB-backed:** `formSubmissionsDataAtom` fetches `GET /forms`
-  (cookie auth, browser-only — never during SSR); `formStatusCountsAtom`,
-  `approvalFlowDataAtom` and `uploadStatusesDataAtom` derive their
-  distributions from the `GET /forms` / `GET /ingest/history` fetches and hold
-  `[]` while loading or when the role-gated route 403s;
-  `mySubmissionsDataAtom` / `pendingApprovalsDataAtom` fetch
-  `GET /forms?scope=mine|pending` for the inboxes. `userAtom` is seeded from
+- **DB-backed:** `formSubmissionsDataAtom` fetches `GET /forms?scope=mine`
+  (cookie auth, browser-only — never during SSR) — **per-user**: the
+  dashboard status donut and approval-flow chart count only the session
+  user's own submissions, so two accounts of the same role see their own
+  rows, not each other's; `formStatusCountsAtom`, `approvalFlowDataAtom` and
+  `uploadStatusesDataAtom` derive their distributions from the
+  `GET /forms` / `GET /ingest/history` fetches and hold `[]` while loading or
+  when the role-gated route 403s; `mySubmissionsDataAtom` /
+  `pendingApprovalsDataAtom` / `allSubmissionsDataAtom` fetch
+  `GET /forms?scope=mine|pending|all` for the inboxes (institution-wide stays
+  `scope=all`, archive roles only). `userAtom` is seeded from
   the server-resolved session via `SessionInitializer` in `app/(app)/layout.tsx`.
 - **Ingest state** (`atoms/ingest.ts`) holds upload/polling/result state as
   atoms + action atoms; `ClassRecordUpload` polls and writes results into them

@@ -71,7 +71,7 @@ export function FacultyDashboard() {
           <FrameHeader>
             <FrameTitle>Course assessment report drafts</FrameTitle>
             <FrameDescription>
-              Submission status across the term.
+              Your submissions by status, this term.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>

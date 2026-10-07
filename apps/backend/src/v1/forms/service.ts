@@ -54,15 +54,21 @@ export type ListScope = "mine" | "pending" | "all";
 
 /**
  * Translate an inbox scope into a Prisma where-clause for the caller.
- * `mine` → the caller's own submissions; `pending` → submitted records waiting
- * on the caller's role (a `system_admin` sees every pending step); `all` →
- * every submission, for the archive roles only (vpaa/system_admin).
+ * `mine` — and **no scope at all** — → the caller's own submissions; `pending`
+ * → submitted records waiting on the caller's role (a `system_admin` sees
+ * every pending step); `all` → every submission, for the archive roles only
+ * (vpaa/system_admin).
+ *
+ * NOTE: an absent scope used to fall through to an unscoped read so the
+ * dashboard status donut could show institution-wide totals to anyone — it is
+ * now per-user like `mine`, so no caller can list another user's submissions
+ * by omitting the parameter. Institution-wide reads stay explicit via
+ * `scope=all` (archive roles only).
  */
 export function scopeWhere(
 	scope: ListScope | undefined,
 	caller: { id: string; role: string },
 ): Prisma.FormSubmissionWhereInput {
-	if (scope === "mine") return { submittedByUserId: caller.id };
 	if (scope === "all") {
 		// NOTE: the institution-wide list backs the VPAA archive screen — a
 		// spoofed `scope=all` from any other role matches nothing instead of
@@ -88,9 +94,8 @@ export function scopeWhere(
 			currentApproverRole: caller.role as ApproverRole,
 		};
 	}
-	// NOTE: no scope = unscoped read; still open to any authenticated role
-	// (the dashboard status donut depends on it). Harden separately.
-	return {};
+	// NOTE: `mine` and the no-scope default — the caller's own submissions only.
+	return { submittedByUserId: caller.id };
 }
 
 function newId(): string {

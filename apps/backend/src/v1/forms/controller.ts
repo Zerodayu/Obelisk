@@ -99,14 +99,14 @@ export const formsPlugin = new Elysia({
 				scope: t.Optional(
 					t.Union([t.Literal("mine"), t.Literal("pending"), t.Literal("all")], {
 						description:
-							"mine = caller's own submissions; pending = submitted records awaiting the caller's role (all pending for system_admin); all = institution-wide list (vpaa/system_admin only, others match nothing)",
+							"mine (or omitted) = caller's own submissions; pending = submitted records awaiting the caller's role (all pending for system_admin); all = institution-wide list (vpaa/system_admin only, others match nothing)",
 					}),
 				),
 			}),
 			detail: {
 				summary: "List form submissions",
 				description:
-					"Filtered by formTypeId/classSectionId/status, or by session-derived `scope=mine|pending|all` for the submission inboxes.",
+					"Filtered by formTypeId/classSectionId/status on top of a session-derived scope: omitted/`mine` = the caller's own submissions, `pending` = awaiting the caller's role, `all` = institution-wide (archive roles only).",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "List of form submissions" },

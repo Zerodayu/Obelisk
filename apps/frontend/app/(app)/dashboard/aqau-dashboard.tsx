@@ -28,9 +28,9 @@ export function AqauDashboard() {
       <div className="grid gap-4 sm:grid-cols-2">
         <Frame className="w-full">
           <FrameHeader>
-            <FrameTitle>Institution-wide filing queue</FrameTitle>
+            <FrameTitle>My filing queue</FrameTitle>
             <FrameDescription>
-              Form submissions by status across all programs.
+              Your own form submissions by status.
             </FrameDescription>
           </FrameHeader>
           <FramePanel>
