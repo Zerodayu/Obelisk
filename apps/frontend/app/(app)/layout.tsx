@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import { SessionInitializer } from "@/lib/store/session-initializer";
+import { listDepartments } from "@/server/actions/academic";
 import { requireUser } from "@/server/auth";
 
 /**
@@ -20,10 +21,27 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
+  // Department prefix for the sidebar line ("— CITE: Dean"): resolved here,
+  // server-side, so it renders on first paint instead of after a client fetch.
+  // Accounts without a department (aqau/vpaa/system_admin) skip the lookup.
+  let departmentLabel: string | undefined;
+  const departmentId = user.departmentId;
+  if (departmentId) {
+    const departments = await listDepartments();
+    if (departments.ok) {
+      const department = departments.data.find(
+        (entry) => entry.id === departmentId,
+      );
+      departmentLabel = department?.name || department?.code;
+    }
+  }
+
   return (
     <>
       <SessionInitializer user={user} />
-      <AppShell user={user}>{children}</AppShell>
+      <AppShell user={user} departmentLabel={departmentLabel}>
+        {children}
+      </AppShell>
     </>
   );
 }

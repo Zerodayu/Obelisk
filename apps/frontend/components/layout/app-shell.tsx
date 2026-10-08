@@ -8,12 +8,16 @@ import type { ApiUser } from "@/lib/api-client";
 /**
  * Shared authenticated shell. Renders the role-aware sidebar + header around
  * `children`. Used by `(app)/layout.tsx` so every authenticated page shares it.
+ * `departmentLabel` is the signed-in user's department name (resolved in the
+ * layout) — the sidebar prints it before the role.
  */
 export function AppShell({
   user,
+  departmentLabel,
   children,
 }: {
   user: ApiUser;
+  departmentLabel?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -25,7 +29,11 @@ export function AppShell({
         } as React.CSSProperties
       }
     >
-      <AppSidebar user={user} variant="inset" />
+      <AppSidebar
+        user={user}
+        departmentLabel={departmentLabel}
+        variant="inset"
+      />
       <SidebarInset>
         <SiteHeader />
         <div className="flex flex-1 flex-col">

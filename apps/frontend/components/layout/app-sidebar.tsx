@@ -23,11 +23,20 @@ import { app } from "@/utils/app-info";
  * Role-aware application sidebar. Nav content (workspace + form catalog +
  * secondary) is derived from the authenticated user's role via
  * `config/navigation.ts` — see that registry to add or gate routes.
+ *
+ * The header line reads `— <department>: <role>` for accounts with a
+ * department on file (a dean picks it when requesting the role, faculty and
+ * program chairs inherit it from their program) and `— <role>` otherwise.
+ * `departmentLabel` is resolved server-side in `(app)/layout.tsx`.
  */
 export function AppSidebar({
   user,
+  departmentLabel,
   ...props
-}: React.ComponentProps<typeof Sidebar> & { user: ApiUser }) {
+}: React.ComponentProps<typeof Sidebar> & {
+  user: ApiUser;
+  departmentLabel?: string;
+}) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -43,7 +52,8 @@ export function AppSidebar({
               <div className="grid flex-1 leading-tight">
                 <span className="text-base font-bold">{app.title}</span>
                 <span className="truncate font-mono font-bold text-xs text-foreground/70">
-                  — {roleLabel(user.role)}
+                  — {departmentLabel ? `${departmentLabel}: ` : ""}
+                  {roleLabel(user.role)}
                 </span>
               </div>
             </SidebarMenuButton>
