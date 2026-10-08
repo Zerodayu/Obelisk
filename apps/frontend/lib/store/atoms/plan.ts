@@ -19,7 +19,6 @@ import type {
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
-import type { AcademicProgram } from "@/lib/store/atoms/academic";
 import { userAtom } from "@/lib/store/atoms/user";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
 
@@ -82,19 +81,20 @@ export const {
  * CLO→PLO coverage matrix for one program — every mapping row.
  *
  * `/plan/clo-plo-map` is program-scoped (`programId` is a required query param,
- * the route 422s without it), so this prefers the signed-in user's program and
- * otherwise falls back to the first program the backend knows.
- * TODO(program-scope): there is no program selector in the UI — an institution-
- * wide dean/AQAU view would need per-program fan-out (or a `programId=any`
- * route) instead of one program's map.
+ * the route 422s without it), so it uses the signed-in user's program.
+ * NOTE: no "first program the backend knows" fallback anymore — `/academic/
+ * programs` is unit-scoped on the backend (`lib/unit-scope.ts`), and picking
+ * an arbitrary first row would render another unit's (or a random program's)
+ * matrix as if it were the caller's.
+ * TODO(program-scope): there is no program selector in the UI — a dean/AQAU
+ * (institution-wide) view needs per-program fan-out (or a `programId=any`
+ * route) instead of one program's map; until then it renders empty.
  */
 export const {
   dataAtom: curriculumCoverageDataAtom,
   refreshAtom: refreshCurriculumCoverageAtom,
 } = atomWithAsyncData<CurriculumCoverageDatum[]>([], async (get, signal) => {
-  const programId =
-    get(userAtom)?.programId ??
-    (await api.get<AcademicProgram[]>("/academic/programs", { signal }))[0]?.id;
+  const programId = get(userAtom)?.programId;
   if (!programId) return [];
 
   const maps = await api.get<CloToPloMapDto[]>("/plan/clo-plo-map", {
