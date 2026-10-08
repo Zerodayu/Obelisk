@@ -376,6 +376,34 @@ async function main() {
 	});
 	console.log(`Created/updated program: ${program.name} (${program.code})`);
 
+	// Scope the demo accounts exactly the way an onboarding request would
+	// (`REQUESTED_SCOPE` in src/v1/auth/model.ts): a dean files the department,
+	// faculty / program_chair file the program and inherit its department —
+	// so the sidebar header reads "— CITE: <role>" for them in dev.
+	const SCOPED_DEMO_ROLES = [
+		{ role: "dean", programId: null, departmentId: department.id },
+		{
+			role: "program_chair",
+			programId: program.id,
+			departmentId: department.id,
+		},
+		{ role: "faculty", programId: program.id, departmentId: department.id },
+	] as const;
+	for (const scope of SCOPED_DEMO_ROLES) {
+		const scoped = await prisma.user.updateMany({
+			where: { email: { endsWith: "@jmcfi.edu.ph" }, role: scope.role },
+			data: {
+				programId: scope.programId,
+				departmentId: scope.departmentId,
+			},
+		});
+		console.log(
+			`Scoped ${scoped.count} ${scope.role} account(s) to ${
+				scope.programId ? `${program.code} / ` : ""
+			}${department.code}`,
+		);
+	}
+
 	// Seed 13 BSIT Program Learning Outcomes (PLOs)
 	for (const plo of BSIT_PLOS) {
 		const existingPlo = await prisma.plo.findFirst({

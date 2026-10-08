@@ -49,7 +49,9 @@ export const DEV_USER: ApiUser = {
   roleRequestStatus: "none",
   employeeId: null,
   programId: null,
-  departmentId: null,
+  // Matches `SAMPLE_DEPARTMENTS` (dev-mode `listDepartments()`), so the
+  // sidebar header renders its "— CITE: <role>" prefix without a real account.
+  departmentId: "dept-1",
   isActive: true,
   createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
   updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
