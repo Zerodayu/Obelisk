@@ -1,5 +1,6 @@
 import cors from "@elysia/cors";
 import openapi from "@elysia/openapi";
+import { UnitScopeError } from "@lib/unit-scope";
 import { appINFO } from "@obelisk/app-info";
 import { env } from "@utils/env";
 import { Elysia } from "elysia";
@@ -15,6 +16,15 @@ const app = new Elysia()
 	// The start time rides on the Request object (one per request, no globals)
 	.onRequest(({ request }) => {
 		(request as Request & { _start?: number })._start = performance.now();
+	})
+	// NOTE: unit scoping (`lib/unit-scope.ts`) throws from deep inside service
+	// methods and even from wrapped read handlers (`cached(...)`), so the 403 is
+	// mapped once here rather than per controller — every route inherits it.
+	.onError(({ error, set }) => {
+		if (error instanceof UnitScopeError) {
+			set.status = 403;
+			return { error: error.message };
+		}
 	})
 	.onAfterResponse(({ request, path, set }) => {
 		const start = (request as Request & { _start?: number })._start;
