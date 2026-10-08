@@ -4,6 +4,7 @@ import {
 	assertCanCaptureClassRecords,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
+import { assertClassSectionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
@@ -26,6 +27,17 @@ import {
 /** The authenticated caller's role (better-auth additional field). */
 function callerRole(user: unknown): string {
 	return (user as { role?: string } | undefined)?.role ?? "user";
+}
+
+/**
+ * Role gate **and** unit gate, run together on every route that binds to a
+ * class section: the caller must be allowed to capture class records *and* the
+ * section must sit inside its own program/department (`lib/unit-scope.ts`) —
+ * otherwise reading/ETL-ing it would leak or write across units (403).
+ */
+async function gateSection(user: unknown, classSectionId: string) {
+	assertCanCaptureClassRecords(callerRole(user));
+	await assertClassSectionInScope(unitScopeOf(user), classSectionId);
 }
 
 /**
@@ -60,7 +72,7 @@ export const ingestPlugin = new Elysia({
 	.post(
 		"/upload",
 		async ({ body, user }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, body.classSectionId);
 			// Start the ETL job but do not wait for it to complete.
 			return ingestService.startUpload(
 				body.file,
@@ -90,7 +102,7 @@ export const ingestPlugin = new Elysia({
 	.get(
 		"/clo-raw-data/submission",
 		async ({ query, user }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, query.classSectionId);
 			return ingestService.getSubmission(query.classSectionId);
 		},
 		{
@@ -113,7 +125,7 @@ export const ingestPlugin = new Elysia({
 	.post(
 		"/clo-raw-data/init",
 		async ({ body, user }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, body.classSectionId);
 			return ingestService.initSubmission(body.classSectionId, user.id);
 		},
 		{
@@ -160,7 +172,7 @@ export const ingestPlugin = new Elysia({
 		"/attainments",
 		async (ctx) => {
 			// NOTE: assert outside `cached` so a cache hit skips nothing.
-			assertCanCaptureClassRecords(callerRole(ctx.user));
+			await gateSection(ctx.user, ctx.query.classSectionId);
 			return listAttainmentsCached(ctx);
 		},
 		{
@@ -185,7 +197,7 @@ export const ingestPlugin = new Elysia({
 	.put(
 		"/attainments",
 		async ({ body, user, set }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, body.classSectionId);
 			try {
 				return await attainmentService.updateScores(
 					body.classSectionId,
@@ -222,7 +234,7 @@ export const ingestPlugin = new Elysia({
 	.post(
 		"/attainments/reimport",
 		async ({ body, user, set }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, body.classSectionId);
 			try {
 				return await attainmentService.reimportScores(
 					body.file,
@@ -263,7 +275,7 @@ export const ingestPlugin = new Elysia({
 	.get(
 		"/upload/:jobId/status",
 		async ({ params, query, user }) => {
-			assertCanCaptureClassRecords(callerRole(user));
+			await gateSection(user, query.classSectionId);
 			const result = await ingestService.getJobStatus(
 				params.jobId,
 				query.classSectionId,

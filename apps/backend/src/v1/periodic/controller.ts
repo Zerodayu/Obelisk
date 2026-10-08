@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -57,10 +58,11 @@ export const periodicPlugin = new Elysia({
 	// --- F09 resource_monitoring ------------------------------------------------
 	.get(
 		"/resource-monitoring",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("resource_monitoring", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -104,7 +106,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/resource-monitoring/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await resourceMonitoringService.get(params.id);
 			} catch (error) {
@@ -127,6 +132,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/resource-monitoring/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await resourceMonitoringService.save(params.id, user.id, body);
 			} catch (error) {
@@ -151,10 +157,11 @@ export const periodicPlugin = new Elysia({
 	// --- F20 alumni_tracer ------------------------------------------------------
 	.get(
 		"/alumni-tracer",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("alumni_tracer", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -198,7 +205,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/alumni-tracer/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await alumniTracerService.get(params.id);
 			} catch (error) {
@@ -221,6 +231,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/alumni-tracer/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await alumniTracerService.save(params.id, user.id, body);
 			} catch (error) {
@@ -245,10 +256,11 @@ export const periodicPlugin = new Elysia({
 	// --- F21 employer_satisfaction_survey ---------------------------------------
 	.get(
 		"/employer-survey",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("employer_satisfaction_survey", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -292,7 +304,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/employer-survey/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await employerSurveyService.get(params.id);
 			} catch (error) {
@@ -315,6 +330,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/employer-survey/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await employerSurveyService.save(params.id, user.id, body);
 			} catch (error) {
@@ -339,10 +355,11 @@ export const periodicPlugin = new Elysia({
 	// --- F26 systemic_gap_report ------------------------------------------------
 	.get(
 		"/systemic-gap-report",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("systemic_gap_report", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -386,7 +403,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/systemic-gap-report/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await systemicGapReportService.get(params.id);
 			} catch (error) {
@@ -409,6 +429,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/systemic-gap-report/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await systemicGapReportService.save(params.id, user.id, body);
 			} catch (error) {
@@ -434,10 +455,11 @@ export const periodicPlugin = new Elysia({
 	// --- F27 capa_plan ---------------------------------------------------------
 	.get(
 		"/capa-plan",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("capa_plan", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -477,7 +499,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/capa-plan/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await capaPlanService.get(params.id);
 			} catch (error) {
@@ -500,6 +525,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/capa-plan/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await capaPlanService.save(params.id, user.id, body);
 			} catch (error) {
@@ -524,10 +550,11 @@ export const periodicPlugin = new Elysia({
 	// --- F28 institutional_review ----------------------------------------------
 	.get(
 		"/institutional-review",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("institutional_review", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -571,7 +598,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/institutional-review/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await institutionalReviewService.get(params.id);
 			} catch (error) {
@@ -594,6 +624,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/institutional-review/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await institutionalReviewService.save(params.id, user.id, body);
 			} catch (error) {
@@ -619,10 +650,11 @@ export const periodicPlugin = new Elysia({
 	// --- F02 portfolio_roadmap --------------------------------------------------
 	.get(
 		"/portfolio-roadmap",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPeriodicSubmissions("portfolio_roadmap", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -666,7 +698,10 @@ export const periodicPlugin = new Elysia({
 	)
 	.get(
 		"/portfolio-roadmap/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await portfolioRoadmapService.get(params.id);
 			} catch (error) {
@@ -689,6 +724,7 @@ export const periodicPlugin = new Elysia({
 	.put(
 		"/portfolio-roadmap/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await portfolioRoadmapService.save(params.id, user.id, body);
 			} catch (error) {

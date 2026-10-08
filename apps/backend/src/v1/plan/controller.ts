@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
@@ -97,8 +98,11 @@ export const planPlugin = new Elysia({
 	// --- curriculum_map (F01) -------------------------------------------------
 	.get(
 		"/curriculum-map",
-		cached(60, async ({ query }) =>
-			listPlanSubmissions("curriculum_map", { programId: query.programId }),
+		cached(60, async ({ query, user }) =>
+			listPlanSubmissions("curriculum_map", {
+				programId: query.programId,
+				unit: unitScopeOf(user),
+			}),
 		),
 		{
 			auth: true,
@@ -145,7 +149,10 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/curriculum-map/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await curriculumMapService.get(params.id);
 			} catch (error) {
@@ -168,6 +175,7 @@ export const planPlugin = new Elysia({
 	.put(
 		"/curriculum-map/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await curriculumMapService.save(params.id, user.id, body);
 			} catch (error) {
@@ -194,9 +202,10 @@ export const planPlugin = new Elysia({
 	// --- assessment_calendar (F03) ---------------------------------------------
 	.get(
 		"/assessment-calendar",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPlanSubmissions("assessment_calendar", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -244,7 +253,10 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/assessment-calendar/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await assessmentCalendarService.get(params.id);
 			} catch (error) {
@@ -267,6 +279,7 @@ export const planPlugin = new Elysia({
 	.put(
 		"/assessment-calendar/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await assessmentCalendarService.save(params.id, user.id, body);
 			} catch (error) {
@@ -295,9 +308,10 @@ export const planPlugin = new Elysia({
 	// --- target_setting_matrix (F04) ----------------------------------------------
 	.get(
 		"/target-setting-matrix",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listPlanSubmissions("target_setting_matrix", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -345,7 +359,10 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/target-setting-matrix/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await targetSettingMatrixService.get(params.id);
 			} catch (error) {
@@ -368,6 +385,7 @@ export const planPlugin = new Elysia({
 	.put(
 		"/target-setting-matrix/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await targetSettingMatrixService.save(params.id, user.id, body);
 			} catch (error) {
@@ -397,8 +415,11 @@ export const planPlugin = new Elysia({
 	// --- assessment_budget (F06) ------------------------------------------------------
 	.get(
 		"/assessment-budget",
-		cached(60, async ({ query }) =>
-			listPlanSubmissions("assessment_budget", { programId: query.programId }),
+		cached(60, async ({ query, user }) =>
+			listPlanSubmissions("assessment_budget", {
+				programId: query.programId,
+				unit: unitScopeOf(user),
+			}),
 		),
 		{
 			auth: true,
@@ -445,7 +466,10 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/assessment-budget/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await assessmentBudgetService.get(params.id);
 			} catch (error) {
@@ -469,6 +493,7 @@ export const planPlugin = new Elysia({
 	.put(
 		"/assessment-budget/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await assessmentBudgetService.save(params.id, user.id, body);
 			} catch (error) {
@@ -496,9 +521,11 @@ export const planPlugin = new Elysia({
 	// --- plo entity ---------------------------------------------------------------
 	.get(
 		"/plos",
-		async ({ query, set }) => {
+		async ({ query, user, set }) => {
 			try {
-				return await ploService.list(query.programId);
+				// NOTE: `ploService.list` refuses a `programId` outside the
+				// caller's unit (403) — PLOs of another program aren't enumerable.
+				return await ploService.list(query.programId, unitScopeOf(user));
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
@@ -609,11 +636,16 @@ export const planPlugin = new Elysia({
 	// --- clo_to_plo_map ----------------------------------------------------------
 	.get(
 		"/clo-plo-map",
-		cached(60, async ({ query, set }) => {
+		cached(60, async ({ query, user, set }) => {
 			try {
-				return await cloToPloMapService.list(query.programId, {
-					courseId: query.courseId,
-				});
+				// NOTE: unit-scoped inside the service (403 for a foreign program).
+				return await cloToPloMapService.list(
+					query.programId,
+					unitScopeOf(user),
+					{
+						courseId: query.courseId,
+					},
+				);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
@@ -639,9 +671,12 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/clo-plo-map/entities",
-		cached(60, async ({ query, set }) => {
+		cached(60, async ({ query, user, set }) => {
 			try {
-				return await cloToPloMapService.listEntities(query.programId);
+				return await cloToPloMapService.listEntities(
+					query.programId,
+					unitScopeOf(user),
+				);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
@@ -668,9 +703,11 @@ export const planPlugin = new Elysia({
 	)
 	.post(
 		"/clo-plo-map",
-		async ({ body, set }) => {
+		async ({ body, user, set }) => {
 			try {
-				return await cloToPloMapService.create(body);
+				// NOTE: `user.id` lets the service resolve the caller's unit and
+				// refuse a CLO/PLO link that crosses outside it (403).
+				return await cloToPloMapService.create(body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
@@ -695,9 +732,9 @@ export const planPlugin = new Elysia({
 	)
 	.put(
 		"/clo-plo-map/:id",
-		async ({ params, body, set }) => {
+		async ({ params, body, user, set }) => {
 			try {
-				return await cloToPloMapService.update(params.id, body);
+				return await cloToPloMapService.update(params.id, body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
@@ -719,9 +756,9 @@ export const planPlugin = new Elysia({
 	)
 	.delete(
 		"/clo-plo-map/:id",
-		async ({ params, set }) => {
+		async ({ params, user, set }) => {
 			try {
-				await cloToPloMapService.delete(params.id);
+				await cloToPloMapService.delete(params.id, user.id);
 				return { ok: true };
 			} catch (error) {
 				return mapPlanErrors(error, set);

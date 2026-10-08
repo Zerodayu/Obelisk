@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -60,10 +61,11 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/clo-attainment-summary",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listRollupSubmissions("clo_attainment_summary", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -84,6 +86,9 @@ export const rollupPlugin = new Elysia({
 	.get(
 		"/clo-attainment-summary/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cloSummaryService.generateFromSubmission(
 					params.id,
@@ -151,10 +156,11 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/plo-attainment-summary",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listRollupSubmissions("plo_attainment_summary", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -174,6 +180,9 @@ export const rollupPlugin = new Elysia({
 	.get(
 		"/plo-attainment-summary/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await ploSummaryService.generateFromSubmission(
 					params.id,
@@ -238,10 +247,11 @@ export const rollupPlugin = new Elysia({
 	)
 	.get(
 		"/cohort-tracking",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listRollupSubmissions("cohort_tracking", {
 				classSectionId: query.classSectionId,
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -261,6 +271,9 @@ export const rollupPlugin = new Elysia({
 	.get(
 		"/cohort-tracking/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cohortTrackingService.generateFromSubmission(
 					params.id,
@@ -295,6 +308,7 @@ export const rollupPlugin = new Elysia({
 	.put(
 		"/cohort-tracking/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cohortTrackingService.save(params.id, user.id, body);
 			} catch (error) {

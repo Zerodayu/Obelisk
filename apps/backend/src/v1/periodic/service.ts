@@ -1,6 +1,13 @@
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { registerSubmitGate, SubmitGateError } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import {
+	assertProgramInScope,
+	assertTargetInScope,
+	submissionUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import type {
 	AcquisitionStatus,
 	CqiImplementationStatus,
@@ -179,6 +186,10 @@ async function ensurePeriodicDraft(
 	termId: string,
 	userId: string,
 ): Promise<{ id: string }> {
+	// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+	// could adopt (and then be handed the id of) another unit's open draft.
+	await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 	const formTypeId = await ensurePeriodicFormType(code);
 	const existing = await prisma.formSubmission.findFirst({
 		where: {
@@ -201,7 +212,7 @@ async function ensurePeriodicDraft(
 
 export async function listPeriodicSubmissions(
 	formTypeCode: PeriodicFormCode,
-	opts: { programId?: string; termId?: string } = {},
+	opts: { unit: UnitScope; programId?: string; termId?: string },
 ): Promise<
 	Array<{
 		id: string;
@@ -212,6 +223,11 @@ export async function listPeriodicSubmissions(
 		program: { code: string; name: string } | null;
 	}>
 > {
+	// NOTE: `unit` is required, never defaulted — a missed call site is a
+	// typecheck error rather than an institution-wide list. A foreign
+	// `?programId=` is refused (403) before the query.
+	if (opts.programId) await assertProgramInScope(opts.unit, opts.programId);
+
 	const formType = await prisma.formType.findUnique({
 		where: { code: formTypeCode },
 		select: { id: true },
@@ -221,6 +237,7 @@ export async function listPeriodicSubmissions(
 	return prisma.formSubmission.findMany({
 		where: {
 			formTypeId: formType.id,
+			...submissionUnitWhere(opts.unit),
 			...(opts.programId ? { programId: opts.programId } : {}),
 			...(opts.termId ? { termId: opts.termId } : {}),
 		},

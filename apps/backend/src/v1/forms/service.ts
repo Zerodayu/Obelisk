@@ -22,6 +22,17 @@ import {
 import { assertSubmitGate } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
 import { ARCHIVE_ROLES } from "@lib/role-access";
+import {
+	assertClassSectionInScope,
+	assertSubmissionInScope,
+	assertTargetInScope,
+	type NormalizedCaller,
+	type ScopeCaller,
+	scopeCaller,
+	submissionUnitWhere,
+	unitScopeForUser,
+	unitScopeOf,
+} from "@lib/unit-scope";
 import type { ApproverRole, Prisma } from "@prisma/generated/prisma/client";
 import type {
 	CreateFormSubmission,
@@ -69,10 +80,26 @@ export type ListScope = "mine" | "visible" | "pending" | "all";
  * by omitting the parameter. Institution-wide reads stay explicit via
  * `scope=all` (archive roles only) or implicit through `scope=visible` for the
  * roles that sit in (nearly) every chain.
+ *
+ * **Unit narrowing** (`lib/unit-scope.ts`): whatever the inbox scope resolves
+ * to is additionally intersected with the caller's unit — a `program_chair`
+ * never sees another program's rows and a `dean` never sees another
+ * department's, even for the chain-entitled `visible`/`pending` scopes.
  */
 export function scopeWhere(
 	scope: ListScope | undefined,
-	caller: { id: string; role: string },
+	caller: ScopeCaller,
+): Prisma.FormSubmissionWhereInput {
+	const c = scopeCaller(caller);
+	const base = inboxWhere(scope, c);
+	const unit = submissionUnitWhere(unitScopeOf(c));
+	return Object.keys(unit).length > 0 ? { AND: [base, unit] } : base;
+}
+
+/** The role/ownership half of `scopeWhere` — the unit clause is added by it. */
+function inboxWhere(
+	scope: ListScope | undefined,
+	caller: NormalizedCaller,
 ): Prisma.FormSubmissionWhereInput {
 	if (scope === "visible") {
 		// NOTE: archive roles are in every chain anyway — short-circuit to the
@@ -227,16 +254,22 @@ export class SubmissionService {
 	 * `GET /forms/:id` — visibility-checked read used by the approval screen.
 	 * Throws `SubmissionNotFoundError` (unknown id) or
 	 * `SubmissionForbiddenError` (no rights) instead of leaking the record.
+	 *
+	 * Beyond the chain/owner read rule, the row must also sit inside the
+	 * caller's **unit** (`lib/unit-scope.ts`) — `UnitScopeError` (403) when
+	 * another program/department prepared it.
 	 */
 	async getForViewer(
 		id: string,
-		caller: { id: string; role: string },
+		caller: ScopeCaller,
 	): Promise<FormSubmissionWithSteps> {
 		const submission = await this.findById(id);
 		if (!submission) throw new SubmissionNotFoundError();
-		if (!canViewSubmission(submission, caller)) {
+		const c = scopeCaller(caller);
+		if (!canViewSubmission(submission, c)) {
 			throw new SubmissionForbiddenError();
 		}
+		await assertSubmissionInScope(unitScopeOf(c), id);
 		return submission;
 	}
 
@@ -265,10 +298,7 @@ export class SubmissionService {
 	 * registered pedagogical justification (Bloom's / I-P-D / assessment
 	 * evidence — `lib/forms/justification.ts`).
 	 */
-	async evidence(
-		id: string,
-		caller: { id: string; role: string },
-	): Promise<SubmissionEvidence> {
+	async evidence(id: string, caller: ScopeCaller): Promise<SubmissionEvidence> {
 		const submission = await this.getForViewer(id, caller);
 		const classSectionId = submission.classSectionId;
 		const formData = (submission.formData ?? {}) as Record<string, unknown>;
@@ -342,6 +372,17 @@ export class SubmissionService {
 		data: CreateFormSubmission,
 		userId: string,
 	): Promise<FormSubmissionWithSteps> {
+		// NOTE: unit check resolves the caller's scope from the **DB row**
+		// (never the request body) — a faculty/chair may only file under its own
+		// program, a dean under its department, and a program-less submission
+		// (`programId` + section both absent) belongs to the institution roles.
+		// This one choke point covers every `POST /forms` *and* every module
+		// `…/init` draft, which all create through here.
+		await assertTargetInScope(await unitScopeForUser(userId), {
+			programId: data.programId,
+			classSectionId: data.classSectionId,
+		});
+
 		const submission = await prisma.formSubmission.create({
 			data: {
 				id: newId(),
@@ -378,6 +419,17 @@ export class SubmissionService {
 		) {
 			throw new NotOwnerError();
 		}
+
+		// Unit re-check: an owner may not re-file their draft under another
+		// program (or move it onto a section outside their unit).
+		const unit = await unitScopeForUser(userId);
+		if (data.classSectionId) {
+			await assertClassSectionInScope(unit, data.classSectionId);
+		}
+		await assertTargetInScope(unit, {
+			programId: data.programId ?? existing.programId,
+			classSectionId: data.classSectionId ?? existing.classSectionId,
+		});
 
 		const submission = await prisma.formSubmission.update({
 			where: { id },
@@ -456,6 +508,11 @@ export class SubmissionService {
 		if (!existing) throw new SubmissionNotFoundError();
 		// NOTE: RBAC first — the caller must hold the step's role (admin overrides).
 		assertCanDecide(callerRole, approverRole);
+		// NOTE: then the **unit** — a program_chair/dean may only sign off on
+		// rows of its own program/department (`UnitScopeError` otherwise). The
+		// approver is by definition not the owner, so this is the one workflow
+		// write that can reach across units without it.
+		await assertSubmissionInScope(await unitScopeForUser(userId), id);
 		assertTransition(
 			existing.status,
 			decision === "approved" ? "approved" : "returned",

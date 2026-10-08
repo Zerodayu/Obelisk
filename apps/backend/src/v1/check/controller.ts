@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -53,10 +54,11 @@ export const checkPlugin = new Elysia({
 	// --- F08 mid_cycle_attainment -----------------------------------------------
 	.get(
 		"/mid-cycle-attainment",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("mid_cycle_attainment", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -100,7 +102,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/mid-cycle-attainment/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await midCycleAttainmentService.get(params.id);
 			} catch (error) {
@@ -123,6 +128,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/mid-cycle-attainment/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await midCycleAttainmentService.save(params.id, user.id, body);
 			} catch (error) {
@@ -147,10 +153,11 @@ export const checkPlugin = new Elysia({
 	// --- F10 peer_observation ---------------------------------------------------
 	.get(
 		"/peer-observation",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("peer_observation", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -194,7 +201,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/peer-observation/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await peerObservationService.get(params.id);
 			} catch (error) {
@@ -217,6 +227,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/peer-observation/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await peerObservationService.save(params.id, user.id, body);
 			} catch (error) {
@@ -241,10 +252,11 @@ export const checkPlugin = new Elysia({
 	// --- F11 exhibition_feedback ------------------------------------------------
 	.get(
 		"/exhibition-feedback",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("exhibition_feedback", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -288,7 +300,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/exhibition-feedback/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await exhibitionFeedbackService.get(params.id);
 			} catch (error) {
@@ -311,6 +326,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/exhibition-feedback/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await exhibitionFeedbackService.save(params.id, user.id, body);
 			} catch (error) {
@@ -335,10 +351,11 @@ export const checkPlugin = new Elysia({
 	// --- F12 clo_perception_survey ----------------------------------------------
 	.get(
 		"/clo-perception-survey",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("clo_perception_survey", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -382,7 +399,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/clo-perception-survey/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cloPerceptionSurveyService.get(params.id);
 			} catch (error) {
@@ -405,6 +425,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/clo-perception-survey/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cloPerceptionSurveyService.save(params.id, user.id, body);
 			} catch (error) {
@@ -429,10 +450,11 @@ export const checkPlugin = new Elysia({
 	// --- F17 student_exit_survey ------------------------------------------------
 	.get(
 		"/student-exit-survey",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("student_exit_survey", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -476,7 +498,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/student-exit-survey/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await studentExitSurveyService.get(params.id);
 			} catch (error) {
@@ -499,6 +524,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/student-exit-survey/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await studentExitSurveyService.save(params.id, user.id, body);
 			} catch (error) {
@@ -523,10 +549,11 @@ export const checkPlugin = new Elysia({
 	// --- F18 portfolio_assessment_record ----------------------------------------
 	.get(
 		"/portfolio-assessment",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("portfolio_assessment_record", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -570,7 +597,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/portfolio-assessment/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await portfolioAssessmentService.get(params.id);
 			} catch (error) {
@@ -593,6 +623,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/portfolio-assessment/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await portfolioAssessmentService.save(params.id, user.id, body);
 			} catch (error) {
@@ -617,10 +648,11 @@ export const checkPlugin = new Elysia({
 	// --- F19 capstone_panel_evaluation ------------------------------------------
 	.get(
 		"/capstone-panel",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCheckSubmissions("capstone_panel_evaluation", {
 				programId: query.programId,
 				termId: query.termId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -664,7 +696,10 @@ export const checkPlugin = new Elysia({
 	)
 	.get(
 		"/capstone-panel/:id",
-		cached(120, async ({ params, set }) => {
+		cached(120, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await capstonePanelEvaluationService.get(params.id);
 			} catch (error) {
@@ -687,6 +722,7 @@ export const checkPlugin = new Elysia({
 	.put(
 		"/capstone-panel/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await capstonePanelEvaluationService.save(
 					params.id,

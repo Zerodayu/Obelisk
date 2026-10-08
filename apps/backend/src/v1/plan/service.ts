@@ -4,6 +4,13 @@ import {
 } from "@lib/forms/justification";
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { prisma } from "@lib/prisma";
+import {
+	assertProgramInScope,
+	assertTargetInScope,
+	submissionUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
 import {
@@ -238,6 +245,10 @@ async function ensureDraft(
 	termId: string,
 	userId: string,
 ): Promise<{ id: string }> {
+	// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+	// could adopt (and then be handed the id of) another unit's open draft.
+	await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 	const formTypeId = await ensurePlanFormType(code);
 	const existing = await prisma.formSubmission.findFirst({
 		where: {
@@ -259,8 +270,12 @@ async function ensureDraft(
 
 export async function listPlanSubmissions(
 	formTypeCode: keyof typeof FORM_TYPES,
-	opts: { programId?: string } = {},
+	opts: { unit: UnitScope; programId?: string },
 ): Promise<PlanSubmissionListItem[]> {
+	// NOTE: `unit` is required, never defaulted — a missed call site is a
+	// typecheck error rather than an institution-wide list.
+	if (opts.programId) await assertProgramInScope(opts.unit, opts.programId);
+
 	const formType = await prisma.formType.findUnique({
 		where: { code: formTypeCode },
 		select: { id: true },
@@ -270,6 +285,7 @@ export async function listPlanSubmissions(
 	return prisma.formSubmission.findMany({
 		where: {
 			formTypeId: formType.id,
+			...submissionUnitWhere(opts.unit),
 			...(opts.programId ? { programId: opts.programId } : {}),
 		},
 		orderBy: { createdAt: "desc" },
@@ -1023,8 +1039,12 @@ function toPloEntity(plo: {
 export class PloService {
 	/**
 	 * List a program's PLO entities ordered by code.
+	 *
+	 * `unit` is the caller's session unit (`lib/unit-scope.ts`) — a `programId`
+	 * outside it is refused with 403 before anything is read.
 	 */
-	async list(programId: string): Promise<PloEntityDto[]> {
+	async list(programId: string, unit: UnitScope): Promise<PloEntityDto[]> {
+		await assertProgramInScope(unit, programId);
 		await assertPloProgramExists(programId);
 		const plos = await prisma.plo.findMany({
 			where: { programId },
@@ -1038,6 +1058,9 @@ export class PloService {
 	 * and the target must clear the >=70% institutional hard floor.
 	 */
 	async create(input: CreatePlo, userId: string): Promise<PloEntityDto> {
+		// NOTE: unit resolved from the DB row, not the request body — a dean may
+		// only add PLOs to a program of its own department.
+		await assertProgramInScope(await unitScopeForUser(userId), input.programId);
 		await assertPloProgramExists(input.programId);
 
 		const target = input.targetAttainmentPct ?? DEFAULT_TARGET;
@@ -1079,6 +1102,12 @@ export class PloService {
 	): Promise<PloEntityDto> {
 		const existing = await prisma.plo.findUnique({ where: { id } });
 		if (!existing) throw new PloNotFoundError(id);
+		// NOTE: the PLO's own program decides — editing another unit's PLO is a
+		// 403 even for a dean (which may only touch its department's programs).
+		await assertProgramInScope(
+			await unitScopeForUser(userId),
+			existing.programId,
+		);
 
 		const patch: Prisma.PloUpdateInput = {};
 		if (body.code !== undefined && body.code !== existing.code) {
@@ -1121,6 +1150,10 @@ export class PloService {
 	async delete(id: string, userId: string): Promise<void> {
 		const existing = await prisma.plo.findUnique({ where: { id } });
 		if (!existing) throw new PloNotFoundError(id);
+		await assertProgramInScope(
+			await unitScopeForUser(userId),
+			existing.programId,
+		);
 
 		const [maps, attainments, gaps, cqiEntries] = await Promise.all([
 			prisma.cloToPloMap.count({ where: { ploId: id } }),
@@ -1171,8 +1204,12 @@ export class CloToPloMapService {
 	 */
 	async list(
 		programId: string,
+		unit: UnitScope,
 		opts: { courseId?: string } = {},
 	): Promise<CloToPloMapDto[]> {
+		// NOTE: a foreign `?programId=` is refused (403) before anything reads.
+		await assertProgramInScope(unit, programId);
+
 		const program = await prisma.program.findUnique({
 			where: { id: programId },
 			select: { id: true },
@@ -1214,7 +1251,10 @@ export class CloToPloMapService {
 	 */
 	async listEntities(
 		programId: string,
+		unit: UnitScope,
 	): Promise<{ clos: CloDto[]; plos: PloDto[] }> {
+		await assertProgramInScope(unit, programId);
+
 		const program = await prisma.program.findUnique({
 			where: { id: programId },
 			select: {
@@ -1258,27 +1298,43 @@ export class CloToPloMapService {
 
 	/**
 	 * Create a new CLO-PLO mapping.
+	 *
+	 * Both ends are checked against the caller's unit (`userId` → session row):
+	 * a mapping may only link a CLO and a PLO the caller can actually see.
 	 */
-	async create(input: CloToPloMapInput): Promise<CloToPloMapDto> {
+	async create(
+		input: CloToPloMapInput,
+		userId: string,
+	): Promise<CloToPloMapDto> {
+		const unit = await unitScopeForUser(userId);
+
 		const clo = await prisma.clo.findUnique({
 			where: { id: input.cloId },
-			select: { id: true, code: true, description: true, courseId: true },
+			select: {
+				id: true,
+				code: true,
+				description: true,
+				courseId: true,
+				course: { select: { programId: true } },
+			},
 		});
 		if (!clo) {
 			throw new CloToPloMapSourceNotFoundError(
 				`CLO '${input.cloId}' not found`,
 			);
 		}
+		await assertProgramInScope(unit, clo.course.programId);
 
 		const plo = await prisma.plo.findUnique({
 			where: { id: input.ploId },
-			select: { id: true, code: true, description: true },
+			select: { id: true, code: true, description: true, programId: true },
 		});
 		if (!plo) {
 			throw new CloToPloMapSourceNotFoundError(
 				`PLO '${input.ploId}' not found`,
 			);
 		}
+		await assertProgramInScope(unit, plo.programId);
 
 		const existing = await prisma.cloToPloMap.findFirst({
 			where: { cloId: input.cloId, ploId: input.ploId },
@@ -1315,13 +1371,27 @@ export class CloToPloMapService {
 	/**
 	 * Update weight and/or stage of an existing mapping.
 	 */
-	async update(id: string, body: UpdateCloToPloMap): Promise<CloToPloMapDto> {
+	async update(
+		id: string,
+		body: UpdateCloToPloMap,
+		userId: string,
+	): Promise<CloToPloMapDto> {
 		const existing = await prisma.cloToPloMap.findUnique({
 			where: { id },
+			select: {
+				id: true,
+				cloId: true,
+				ploId: true,
+				clo: { select: { course: { select: { programId: true } } } },
+				plo: { select: { programId: true } },
+			},
 		});
 		if (!existing) {
 			throw new CloToPloMapNotFoundError(id);
 		}
+		const unit = await unitScopeForUser(userId);
+		await assertProgramInScope(unit, existing.clo.course.programId);
+		await assertProgramInScope(unit, existing.plo.programId);
 
 		const patch: Prisma.CloToPloMapUpdateInput = {};
 		if (body.weight !== undefined) patch.weight = body.weight;
@@ -1350,13 +1420,21 @@ export class CloToPloMapService {
 	/**
 	 * Delete a CLO-PLO mapping.
 	 */
-	async delete(id: string): Promise<void> {
+	async delete(id: string, userId: string): Promise<void> {
 		const existing = await prisma.cloToPloMap.findUnique({
 			where: { id },
+			select: {
+				id: true,
+				clo: { select: { course: { select: { programId: true } } } },
+				plo: { select: { programId: true } },
+			},
 		});
 		if (!existing) {
 			throw new CloToPloMapNotFoundError(id);
 		}
+		const unit = await unitScopeForUser(userId);
+		await assertProgramInScope(unit, existing.clo.course.programId);
+		await assertProgramInScope(unit, existing.plo.programId);
 
 		await prisma.cloToPloMap.delete({ where: { id } });
 	}

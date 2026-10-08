@@ -5,6 +5,13 @@ import {
 	type SubmissionJustification,
 } from "@lib/forms/justification";
 import { prisma } from "@lib/prisma";
+import {
+	assertClassSectionInScope,
+	assertSubmissionInScope,
+	submissionUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import { isRootCauseCategory } from "@lib/validators/root-cause";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
@@ -242,6 +249,10 @@ export class CarService {
 			select: { id: true, status: true, formData: true },
 		});
 		if (!existing) throw new CarNotFoundError(submissionId);
+		// NOTE: unit check — the approver-less draft may only be edited by its
+		// owner (owner rows are always inside the caller's own unit) or by an
+		// institution-wide role; a scoped caller gets 403 for a foreign CAR.
+		await assertSubmissionInScope(await unitScopeForUser(userId), submissionId);
 		if (existing.status !== "draft" && existing.status !== "returned") {
 			throw new CarInvalidEditError();
 		}
@@ -283,10 +294,16 @@ export class CarService {
 	}
 
 	/** Lists CAR submissions, most recent first (optionally for a section). */
-	async list(classSectionId?: string) {
+	async list(unit: UnitScope, classSectionId?: string) {
+		// NOTE: a foreign `?classSectionId=` is refused (403) rather than
+		// silently intersected, and the unit clause narrows the rest.
+		if (classSectionId) {
+			await assertClassSectionInScope(unit, classSectionId);
+		}
 		return prisma.formSubmission.findMany({
 			where: {
 				formType: { code: CAR_FORM_TYPE_CODE },
+				...submissionUnitWhere(unit),
 				...(classSectionId ? { classSectionId } : {}),
 			},
 			orderBy: { createdAt: "desc" },
@@ -313,6 +330,13 @@ export class CarService {
 		userId: string,
 		computationRunId?: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's CAR draft.
+		await assertClassSectionInScope(
+			await unitScopeForUser(userId),
+			classSectionId,
+		);
+
 		const formTypeId = await this.ensureCarFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {

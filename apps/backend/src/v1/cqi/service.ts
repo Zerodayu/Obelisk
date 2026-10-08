@@ -1,6 +1,13 @@
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { registerSubmitGate, SubmitGateError } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import {
+	assertProgramInScope,
+	assertTargetInScope,
+	submissionUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import { isRootCauseCategory } from "@lib/validators/root-cause";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { meanPct } from "@v1/car/compute";
@@ -92,6 +99,10 @@ export class PloGapAnalysisService {
 		termId: string,
 		userId: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {
@@ -409,6 +420,10 @@ export class CqiActionPlanService {
 		termId: string,
 		userId: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {
@@ -659,6 +674,10 @@ export class ClosingTheLoopService {
 		termId: string,
 		userId: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {
@@ -1038,6 +1057,10 @@ export class AnnualProgramReportService {
 		userId: string,
 		termId?: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const reportingTermId =
 			termId ?? (await this.latestTermWithData(programId));
@@ -1321,8 +1344,13 @@ export class AnnualProgramReportService {
 /** Lists CQI submissions for a form type, newest first. */
 export async function listCqiSubmissions(
 	formTypeCode: string,
-	opts: { programId?: string } = {},
+	opts: { unit: UnitScope; programId?: string },
 ): Promise<CqiSubmissionListItem[]> {
+	// NOTE: `unit` is required, never defaulted — a missed call site is a
+	// typecheck error rather than an institution-wide list. A foreign
+	// `?programId=` is refused (403) before the query.
+	if (opts.programId) await assertProgramInScope(opts.unit, opts.programId);
+
 	const formType = await prisma.formType.findUnique({
 		where: { code: formTypeCode },
 		select: { id: true },
@@ -1332,6 +1360,7 @@ export async function listCqiSubmissions(
 	return prisma.formSubmission.findMany({
 		where: {
 			formTypeId: formType.id,
+			...submissionUnitWhere(opts.unit),
 			...(opts.programId ? { programId: opts.programId } : {}),
 		},
 		orderBy: { createdAt: "desc" },

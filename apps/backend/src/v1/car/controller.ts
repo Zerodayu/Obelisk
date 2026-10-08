@@ -1,4 +1,9 @@
 import { cached } from "@lib/cache";
+import {
+	assertClassSectionInScope,
+	assertSubmissionInScope,
+	unitScopeOf,
+} from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -17,6 +22,10 @@ export const carPlugin = new Elysia({
 	.post(
 		"/generate",
 		async ({ body, user }) => {
+			// NOTE: unit gate first — assembling a CAR reads attainment for the
+			// section, so a section outside the caller's unit must be refused
+			// (403) before anything is computed or drafted.
+			await assertClassSectionInScope(unitScopeOf(user), body.classSectionId);
 			const draft = await carService.ensureDraft(
 				body.classSectionId,
 				user.id,
@@ -49,7 +58,9 @@ export const carPlugin = new Elysia({
 	)
 	.get(
 		"/",
-		cached(60, async ({ query }) => carService.list(query.classSectionId)),
+		cached(60, async ({ query, user }) =>
+			carService.list(unitScopeOf(user), query.classSectionId),
+		),
 		{
 			auth: true,
 			query: ListCarsQuerySchema,
@@ -67,7 +78,10 @@ export const carPlugin = new Elysia({
 	)
 	.get(
 		"/:id",
-		cached(300, async ({ params, set }) => {
+		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a CAR id from another program/department is
+			// refused (403) before the payload is assembled or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await carService.generateFromSubmission(params.id);
 			} catch (error) {

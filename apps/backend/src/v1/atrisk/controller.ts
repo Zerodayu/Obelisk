@@ -5,6 +5,7 @@ import {
 	assertCanCaptureClassRecords,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -74,7 +75,10 @@ export const atRiskPlugin = new Elysia({
 				// to reflect flag clears the moment a final approval lands, and
 				// `cached` keys are opaque URL hashes with no invalidation hook
 				// (see lib/cache.ts). One indexed count per call is cheap.
-				return await atRiskService.listFlags(query.classSectionId);
+				return await atRiskService.listFlags(
+					unitScopeOf(user),
+					query.classSectionId,
+				);
 			} catch (error) {
 				return mapAtRiskErrors(error, set);
 			}
@@ -123,7 +127,10 @@ export const atRiskPlugin = new Elysia({
 	)
 	.get(
 		"/action/:id",
-		async ({ params, set }) => {
+		async ({ params, user, set }) => {
+			// NOTE: unit gate — an action-taken draft from another
+			// program/department is refused (403) before it is read.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await atRiskService.get(params.id);
 			} catch (error) {

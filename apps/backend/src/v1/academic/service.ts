@@ -1,14 +1,29 @@
 import { prisma } from "@lib/prisma";
+import {
+	assertProgramInScope,
+	classSectionUnitWhere,
+	departmentUnitWhere,
+	programUnitWhere,
+	type UnitScope,
+} from "@lib/unit-scope";
 
-export async function listPrograms() {
+/**
+ * Reference lists are unit-scoped too (`lib/unit-scope.ts`): a faculty/chair
+ * only gets its own program, a dean only the programs of its department, so a
+ * scoped account cannot even enumerate another unit's offering. `terms` stay
+ * institution-wide — the calendar is shared by every unit.
+ */
+export async function listPrograms(unit: UnitScope) {
 	return prisma.program.findMany({
+		where: programUnitWhere(unit),
 		select: { id: true, code: true, name: true },
 		orderBy: { code: "asc" },
 	});
 }
 
-export async function listDepartments() {
+export async function listDepartments(unit: UnitScope) {
 	return prisma.department.findMany({
+		where: departmentUnitWhere(unit),
 		select: { id: true, code: true, name: true },
 		orderBy: { code: "asc" },
 	});
@@ -28,11 +43,23 @@ export async function listTerms() {
 	});
 }
 
-export async function listClassSections(programId?: string, termId?: string) {
+export async function listClassSections(
+	unit: UnitScope,
+	programId?: string,
+	termId?: string,
+) {
+	// NOTE: a foreign `?programId=` is refused outright (403) rather than
+	// silently intersected to an empty list — the caller is told it is not
+	// theirs, and no unit filter below can ever be widened by it.
+	if (programId) await assertProgramInScope(unit, programId);
+
 	return prisma.classSection.findMany({
 		where: {
-			...(programId ? { course: { programId } } : {}),
-			...(termId ? { termId } : {}),
+			AND: [
+				classSectionUnitWhere(unit),
+				programId ? { course: { programId } } : {},
+				termId ? { termId } : {},
+			],
 		},
 		select: {
 			id: true,

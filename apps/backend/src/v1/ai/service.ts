@@ -6,6 +6,7 @@ import type {
 } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { prisma } from "@lib/prisma";
+import { aiRecommendationUnitWhere, type UnitScope } from "@lib/unit-scope";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import {
 	type AiRecommendationPayload,
@@ -307,9 +308,16 @@ export class AiRecommendationService {
 	 * Newest persisted recommendation (or null). Intentionally NOT wrapped in
 	 * `cached()` — a generate POST must be visible on the next drawer open,
 	 * and a single-row read is cheap.
+	 *
+	 * `unit` filters it: a recommendation's `sourceDataSnapshot` carries the
+	 * whole institution's rollup, and `generate()` stores institution-wide rows
+	 * (`programId = null`) — so only institution-wide roles get a payload back;
+	 * a program/department-scoped caller only ever receives recommendations
+	 * filed under a program of its own unit (403 never, just `null`).
 	 */
-	async latest(): Promise<AiRecommendationPayload | null> {
+	async latest(unit: UnitScope): Promise<AiRecommendationPayload | null> {
 		const row = await prisma.aiRecommendation.findFirst({
+			where: aiRecommendationUnitWhere(unit),
 			orderBy: [{ generatedAt: "desc" }, { id: "desc" }],
 			include: { term: { select: { schoolYear: true, semester: true } } },
 		});

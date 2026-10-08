@@ -6,6 +6,13 @@ import type {
 } from "@lib/ingest/ingest-client";
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { prisma } from "@lib/prisma";
+import {
+	assertProgramInScope,
+	assertTargetInScope,
+	submissionUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { aggregateClo, cloLevel, meanPct } from "@v1/car/compute";
 import { submissionService } from "@v1/forms/service";
@@ -105,6 +112,12 @@ export class CloSummaryService {
 		userId: string,
 		computationRunId?: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), {
+			classSectionId,
+		});
+
 		const formTypeId = await this.ensureFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {
@@ -312,6 +325,10 @@ export class PloSummaryService {
 		termId: string,
 		userId: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const existing = await prisma.formSubmission.findFirst({
 			where: {
@@ -632,6 +649,10 @@ export class CohortTrackingService {
 		userId: string,
 		termId?: string,
 	): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's open draft.
+		await assertTargetInScope(await unitScopeForUser(userId), { programId });
+
 		const formTypeId = await this.ensureFormType();
 		const reportingTermId =
 			termId ?? (await this.latestTermWithData(programId));
@@ -847,8 +868,17 @@ export class CohortTrackingService {
 /** Lists roll-up submissions for a form type, newest first. */
 export async function listRollupSubmissions(
 	formTypeCode: string,
-	opts: { programId?: string; classSectionId?: string } = {},
+	opts: {
+		unit: UnitScope;
+		programId?: string;
+		classSectionId?: string;
+	},
 ): Promise<RollupSubmissionListItem[]> {
+	// NOTE: `unit` is required, never defaulted — a missed call site is a
+	// typecheck error rather than an institution-wide list. A foreign
+	// `?programId=` is refused (403) before the query.
+	if (opts.programId) await assertProgramInScope(opts.unit, opts.programId);
+
 	const formType = await prisma.formType.findUnique({
 		where: { code: formTypeCode },
 		select: { id: true },
@@ -858,6 +888,7 @@ export async function listRollupSubmissions(
 	return prisma.formSubmission.findMany({
 		where: {
 			formTypeId: formType.id,
+			...submissionUnitWhere(opts.unit),
 			...(opts.programId ? { programId: opts.programId } : {}),
 			...(opts.classSectionId ? { classSectionId: opts.classSectionId } : {}),
 		},

@@ -2,6 +2,12 @@ import { registerApprovalEffect } from "@lib/forms/approval-effects";
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { registerSubmitGate, SubmitGateError } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import {
+	assertClassSectionInScope,
+	atRiskFlagUnitWhere,
+	type UnitScope,
+	unitScopeForUser,
+} from "@lib/unit-scope";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
 import type { SaveActionTaken } from "./model";
@@ -89,10 +95,22 @@ export class AtRiskService {
 	 * `GET /atrisk/flags` — the at-risk watchlist: one row per `AtRiskFlag`
 	 * with the student and the CLO the flag points at, optionally scoped to a
 	 * class section (via `cloAttainment.classSectionId`).
+	 *
+	 * `unit` narrows it to the caller's program/department (`lib/unit-scope.ts`)
+	 * — flags on students of another unit are never listed, and a foreign
+	 * `classSectionId` filter is refused outright with 403.
 	 */
-	async listFlags(classSectionId?: string) {
+	async listFlags(unit: UnitScope, classSectionId?: string) {
+		if (classSectionId) {
+			await assertClassSectionInScope(unit, classSectionId);
+		}
 		return prisma.atRiskFlag.findMany({
-			where: classSectionId ? { cloAttainment: { classSectionId } } : {},
+			where: {
+				AND: [
+					atRiskFlagUnitWhere(unit),
+					classSectionId ? { cloAttainment: { classSectionId } } : {},
+				],
+			},
 			include: {
 				student: {
 					select: {
@@ -121,6 +139,13 @@ export class AtRiskService {
 	 * created (the flags it cleared are gone for good).
 	 */
 	async init(classSectionId: string, userId: string): Promise<{ id: string }> {
+		// NOTE: unit check before the reuse lookup — otherwise a scoped caller
+		// could adopt (and then be handed the id of) another unit's draft.
+		await assertClassSectionInScope(
+			await unitScopeForUser(userId),
+			classSectionId,
+		);
+
 		const section = await prisma.classSection.findUnique({
 			where: { id: classSectionId },
 			include: { course: { select: { programId: true } } },
@@ -187,6 +212,11 @@ export class AtRiskService {
 		) {
 			throw new ActionTakenInvalidEditError();
 		}
+
+		// NOTE: no explicit unit assert here — `submissionService.update` only
+		// accepts the owner (or `system_admin`, which is institution-wide), so a
+		// foreign draft can't reach this point; the target program/section it
+		// writes to is unit-checked there too.
 
 		return submissionService.update(id, userId, callerRole, {
 			formData: {

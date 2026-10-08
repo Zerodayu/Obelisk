@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import { ClassSectionQuerySchema } from "./model";
@@ -21,11 +22,13 @@ export const academicPlugin = new Elysia({
 	.use(authPlugin)
 	.get(
 		"/programs",
-		cached(300, async () => listPrograms()),
+		cached(300, async ({ user }) => listPrograms(unitScopeOf(user))),
 		{
 			auth: true,
 			detail: {
-				summary: "List all programs",
+				summary: "List the caller's programs",
+				description:
+					"Session-derived unit scope: a faculty/chair lists its own program, a dean the programs of its department, institution-wide roles all of them.",
 				...SECURITY,
 				responses: {
 					200: { description: "List of programs" },
@@ -36,11 +39,13 @@ export const academicPlugin = new Elysia({
 	)
 	.get(
 		"/departments",
-		cached(300, async () => listDepartments()),
+		cached(300, async ({ user }) => listDepartments(unitScopeOf(user))),
 		{
 			auth: true,
 			detail: {
-				summary: "List all departments",
+				summary: "List the caller's departments",
+				description:
+					"Session-derived unit scope: a faculty/chair lists the department of its program, a dean its own department, institution-wide roles all of them.",
 				...SECURITY,
 				responses: {
 					200: { description: "List of departments" },
@@ -66,18 +71,21 @@ export const academicPlugin = new Elysia({
 	)
 	.get(
 		"/class-sections",
-		cached(120, async ({ query }) =>
-			listClassSections(query.programId, query.termId),
+		cached(120, async ({ query, user }) =>
+			listClassSections(unitScopeOf(user), query.programId, query.termId),
 		),
 		{
 			auth: true,
 			query: ClassSectionQuerySchema,
 			detail: {
 				summary: "List class sections, optionally filtered by program and term",
+				description:
+					"Listed within the caller's unit only; a `programId` outside that unit is refused with 403.",
 				...SECURITY,
 				responses: {
 					200: { description: "List of class sections" },
 					401: { description: "Unauthorized" },
+					403: { description: "programId is outside the caller's unit" },
 				},
 			},
 		},

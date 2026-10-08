@@ -3,6 +3,7 @@ import {
 	assertCanGenerateAiInsights,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
+import { unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import { AiRecommendationParamsSchema } from "./model";
@@ -49,14 +50,16 @@ export const aiPlugin = new Elysia({
 				set.status = 401;
 				return { recommendation: null };
 			}
-			return { recommendation: await aiRecommendationService.latest() };
+			return {
+				recommendation: await aiRecommendationService.latest(unitScopeOf(user)),
+			};
 		},
 		{
 			auth: true,
 			detail: {
 				summary: "Get the latest persisted AI CQI recommendation",
 				description:
-					"Returns the newest `AiRecommendation` (markdown text + worst-performing CLOs + period + the per-course alignment context behind it: Bloom's level, I-P-D stage, assessment types) or null when none has been generated yet. Open to every authenticated role — only generation is gated.",
+					"Returns the newest `AiRecommendation` (markdown text + worst-performing CLOs + period + the per-course alignment context behind it: Bloom's level, I-P-D stage, assessment types) or null when none has been generated yet. Generation is institution-wide, so only institution-wide roles (AQAU/VPAA/admin) receive one — scoped faculty/chair/dean callers get `null`. Only generation is gated.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: { description: "Latest recommendation or null" },

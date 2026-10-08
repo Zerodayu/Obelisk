@@ -1,4 +1,5 @@
 import { cached } from "@lib/cache";
+import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import {
@@ -64,9 +65,10 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/plo-gap-analysis",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCqiSubmissions("plo_gap_analysis", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -86,6 +88,9 @@ export const cqiPlugin = new Elysia({
 	.get(
 		"/plo-gap-analysis/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await ploGapAnalysisService.generateFromSubmission(
 					params.id,
@@ -120,6 +125,7 @@ export const cqiPlugin = new Elysia({
 	.put(
 		"/plo-gap-analysis/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await ploGapAnalysisService.save(params.id, user.id, body);
 			} catch (error) {
@@ -188,9 +194,10 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/cqi-action-plan",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCqiSubmissions("cqi_action_plan", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -210,6 +217,9 @@ export const cqiPlugin = new Elysia({
 	.get(
 		"/cqi-action-plan/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cqiActionPlanService.generateFromSubmission(
 					params.id,
@@ -244,6 +254,7 @@ export const cqiPlugin = new Elysia({
 	.put(
 		"/cqi-action-plan/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cqiActionPlanService.save(params.id, user.id, body);
 			} catch (error) {
@@ -281,6 +292,7 @@ export const cqiPlugin = new Elysia({
 	.put(
 		"/cqi-action-plan/:id/track",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await cqiActionPlanService.track(params.id, user.id, body);
 			} catch (error) {
@@ -346,9 +358,10 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/closing-the-loop",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCqiSubmissions("closing_the_loop", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -368,6 +381,9 @@ export const cqiPlugin = new Elysia({
 	.get(
 		"/closing-the-loop/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await closingTheLoopService.generateFromSubmission(
 					params.id,
@@ -402,6 +418,7 @@ export const cqiPlugin = new Elysia({
 	.put(
 		"/closing-the-loop/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await closingTheLoopService.save(params.id, user.id, body);
 			} catch (error) {
@@ -470,9 +487,10 @@ export const cqiPlugin = new Elysia({
 	)
 	.get(
 		"/annual-program-report",
-		cached(60, async ({ query }) =>
+		cached(60, async ({ query, user }) =>
 			listCqiSubmissions("annual_program_report", {
 				programId: query.programId,
+				unit: unitScopeOf(user),
 			}),
 		),
 		{
@@ -492,6 +510,9 @@ export const cqiPlugin = new Elysia({
 	.get(
 		"/annual-program-report/:id",
 		cached(300, async ({ params, user, set }) => {
+			// NOTE: unit gate — a submission id from another program/department
+			// is refused (403) before the payload is read or cached.
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await annualProgramReportService.generateFromSubmission(
 					params.id,
@@ -526,6 +547,7 @@ export const cqiPlugin = new Elysia({
 	.put(
 		"/annual-program-report/:id",
 		async ({ params, body, user, set }) => {
+			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
 				return await annualProgramReportService.save(params.id, user.id, body);
 			} catch (error) {

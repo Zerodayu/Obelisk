@@ -5,6 +5,7 @@ import {
 import { formMetaFor } from "@lib/forms/form-meta";
 import { InvalidTransitionError } from "@lib/forms/state-machine";
 import { SubmitGateError } from "@lib/forms/submit-gates";
+import { UnitScopeError } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 import {
@@ -44,7 +45,9 @@ function mapFormsError(
 	if (
 		error instanceof ApprovalForbiddenError ||
 		error instanceof NotOwnerError ||
-		error instanceof SubmissionForbiddenError
+		error instanceof SubmissionForbiddenError ||
+		// Wrong unit — the row belongs to another program/department.
+		error instanceof UnitScopeError
 	) {
 		set.status = 403;
 		return { error: error.message };
@@ -76,11 +79,9 @@ export const formsPlugin = new Elysia({
 					: {}),
 				...(query.status ? { status: query.status } : {}),
 				// Session-derived scoping — the caller cannot spoof whose inbox
-				// or approval queue they are listing.
-				...scopeWhere(query.scope, {
-					id: user.id,
-					role: callerRole(user),
-				}),
+				// or approval queue they are listing. `scopeWhere` additionally
+				// narrows every scope to the caller's unit (program/department).
+				...scopeWhere(query.scope, user),
 			}),
 		{
 			auth: true,
@@ -145,10 +146,10 @@ export const formsPlugin = new Elysia({
 			// Uncached: the stepper must reflect the latest decision right after
 			// an approve/return.
 			try {
-				const submission = await submissionService.getForViewer(params.id, {
-					id: user.id,
-					role: callerRole(user),
-				});
+				const submission = await submissionService.getForViewer(
+					params.id,
+					user,
+				);
 				// Response-only composition — keeps `getForViewer`'s Prisma
 				// return type (and `evidence()`, which shares it) untouched.
 				// `submittedAt: null` means the chain has never run (draft).
@@ -182,10 +183,7 @@ export const formsPlugin = new Elysia({
 		"/:id/evidence",
 		async ({ params, user, set }) => {
 			try {
-				return await submissionService.evidence(params.id, {
-					id: user.id,
-					role: callerRole(user),
-				});
+				return await submissionService.evidence(params.id, user);
 			} catch (error) {
 				return mapFormsError(error, set);
 			}
