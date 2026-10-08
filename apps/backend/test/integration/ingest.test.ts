@@ -956,6 +956,8 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 						name: "Submission Faculty",
 						email: "it-sub-faculty@obelisk.local",
 						role: "faculty",
+						programId: ids.program,
+						departmentId: ids.department,
 						isActive: true,
 					},
 					{
@@ -963,6 +965,8 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 						name: "Submission Chair",
 						email: "it-sub-chair@obelisk.local",
 						role: "program_chair",
+						programId: ids.program,
+						departmentId: ids.department,
 						isActive: true,
 					},
 					{
@@ -970,6 +974,8 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 						name: "Submission Dean",
 						email: "it-sub-dean@obelisk.local",
 						role: "dean",
+						programId: ids.program,
+						departmentId: ids.department,
 						isActive: true,
 					},
 					{

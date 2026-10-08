@@ -4,6 +4,7 @@ import type {
 	InstitutionalSummaryResponse,
 } from "@lib/ingest/ingest-client";
 import { prisma } from "@lib/prisma";
+import { unitScopeOf } from "@lib/unit-scope";
 import { isDbReachable } from "@test/helpers/db-gate";
 import {
 	AiNoDataError,
@@ -233,7 +234,9 @@ describe.skipIf(!db)("AI recommendation generation (integration)", () => {
 			expect(row.termId).toBe(IDS.term);
 			expect(row.status).toBe("pending_review");
 
-			const latest = await service.latest();
+			const latest = await service.latest(
+				unitScopeOf({ id: "ai-test", role: "vpaa" }),
+			);
 			expect(latest?.id).toBe(payload.id);
 		} finally {
 			await resetAiData();
@@ -244,7 +247,9 @@ describe.skipIf(!db)("AI recommendation generation (integration)", () => {
 		await resetAiData();
 		const service = new AiRecommendationService(stubFetcher().fetcher);
 		try {
-			expect(await service.latest()).toBeNull();
+			expect(
+				await service.latest(unitScopeOf({ id: "ai-test", role: "vpaa" })),
+			).toBeNull();
 		} finally {
 			await resetAiData();
 		}

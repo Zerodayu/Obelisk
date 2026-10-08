@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
+import { unitScopeOf } from "@lib/unit-scope";
 import { isDbReachable } from "@test/helpers/db-gate";
 import { submissionService } from "@v1/forms/service";
 import { MissingRationaleError, TargetBelowFloorError } from "@v1/plan/compute";
@@ -460,7 +461,12 @@ describe.skipIf(!db)("PLAN-phase setup forms (integration)", () => {
 		await seedAcademicChain();
 		try {
 			// --- list (seeded rows, ordered by code) ---------------------------
-			const initial = await ploService.list(IDS.program);
+			// `IDS.user` is a plain pre-onboarding account (role `user` →
+			// institution-wide) — PLO listing takes the caller's unit explicitly.
+			const initial = await ploService.list(
+				IDS.program,
+				unitScopeOf({ id: IDS.user, role: "user" }),
+			);
 			expect(initial.map((p) => p.code)).toEqual([
 				"ITPLAN-PLO1",
 				"ITPLAN-PLO2",

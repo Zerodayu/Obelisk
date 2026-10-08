@@ -128,6 +128,10 @@ async function seed() {
 				name: "Forms Owner",
 				email: "forms-owner@obelisk.local",
 				role: "faculty",
+				// Scoped accounts carry their unit — `submissionService.create`
+				// resolves the caller's program from the DB row, never the body.
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -135,6 +139,8 @@ async function seed() {
 				name: "Forms Other",
 				email: "forms-other@obelisk.local",
 				role: "faculty",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -142,6 +148,8 @@ async function seed() {
 				name: "Forms Chair",
 				email: "forms-chair@obelisk.local",
 				role: "program_chair",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 		],
@@ -286,20 +294,36 @@ describe.skipIf(!db)("forms service (integration)", () => {
 
 			// The chain runs program_chair → dean → aqau → vpaa, so those roles
 			// see a submission they did not prepare (it must reach their step).
+			// The program-scoped (chair) and department-scoped (dean) callers
+			// carry their unit — the session is what narrows `visible`.
 			for (const role of ["program_chair", "dean", "aqau", "vpaa"]) {
+				const unit =
+					role === "program_chair"
+						? { programId: IDS.program }
+						: role === "dean"
+							? { departmentId: IDS.department }
+							: {};
 				const visibleApprover = await submissionService.list(
-					scopeWhere("visible", { id: IDS.other, role }),
+					scopeWhere("visible", { id: IDS.other, role, ...unit }),
 				);
 				expect(visibleApprover.map((s) => s.id)).toContain(draft.id);
 			}
 
 			const pendingChair = await submissionService.list(
-				scopeWhere("pending", { id: "any", role: "program_chair" }),
+				scopeWhere("pending", {
+					id: "any",
+					role: "program_chair",
+					programId: IDS.program,
+				}),
 			);
 			expect(pendingChair.map((s) => s.id)).toContain(draft.id);
 
 			const pendingDean = await submissionService.list(
-				scopeWhere("pending", { id: "any", role: "dean" }),
+				scopeWhere("pending", {
+					id: "any",
+					role: "dean",
+					departmentId: IDS.department,
+				}),
 			);
 			expect(pendingDean.map((s) => s.id)).not.toContain(draft.id);
 
@@ -368,14 +392,22 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(
 				(
 					await submissionService.list(
-						scopeWhere("pending", { id: "any", role: "program_chair" }),
+						scopeWhere("pending", {
+							id: "any",
+							role: "program_chair",
+							programId: IDS.program,
+						}),
 					)
 				).map((s) => s.id),
 			).not.toContain(draft.id);
 			expect(
 				(
 					await submissionService.list(
-						scopeWhere("pending", { id: "any", role: "dean" }),
+						scopeWhere("pending", {
+							id: "any",
+							role: "dean",
+							departmentId: IDS.department,
+						}),
 					)
 				).map((s) => s.id),
 			).toContain(draft.id);
@@ -440,7 +472,14 @@ describe.skipIf(!db)("forms service (integration)", () => {
 		try {
 			// --- multi-step chain advance (CAR: chair → dean → aqau → vpaa) ------
 			const car = await submissionService.create(
-				{ formTypeId: IDS.carType, termId: IDS.term, formData: {} },
+				// Program-bound, like every real `…/init` — a scoped faculty may
+				// only file under its own program.
+				{
+					formTypeId: IDS.carType,
+					programId: IDS.program,
+					termId: IDS.term,
+					formData: {},
+				},
 				IDS.owner,
 			);
 			const submitted = await submissionService.submit(
@@ -543,6 +582,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 					await submissionService.getForViewer(draft.id, {
 						id: IDS.chair,
 						role: "program_chair",
+						programId: IDS.program,
 					})
 				).id,
 			).toBe(draft.id);
@@ -572,6 +612,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			const evidence = await submissionService.evidence(draft.id, {
 				id: IDS.chair,
 				role: "program_chair",
+				programId: IDS.program,
 			});
 			expect(evidence.code).toBe(RAW_DATA_CODE);
 			expect(evidence.classSection).toMatchObject({
@@ -594,7 +635,12 @@ describe.skipIf(!db)("forms service (integration)", () => {
 
 			// A section-less submission has nothing to summarize.
 			const bare = await submissionService.create(
-				{ formTypeId: IDS.carType, termId: IDS.term, formData: { a: 1 } },
+				{
+					formTypeId: IDS.carType,
+					programId: IDS.program,
+					termId: IDS.term,
+					formData: { a: 1 },
+				},
 				IDS.owner,
 			);
 			const bareEvidence = await submissionService.evidence(bare.id, {

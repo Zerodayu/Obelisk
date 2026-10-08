@@ -103,6 +103,9 @@ async function seedAcademicChain() {
 			email: "cqi@obelisktest.local",
 			// annual_program_report is prepared by the program chair.
 			role: "program_chair",
+			// Scoped accounts carry their unit — drafts resolve the caller's
+			// program from the DB row, never the request body.
+			programId: IDS.program,
 		},
 	});
 }

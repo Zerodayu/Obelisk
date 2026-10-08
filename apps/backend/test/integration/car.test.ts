@@ -21,14 +21,6 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 		};
 
 		try {
-			await prisma.user.create({
-				data: {
-					id: ids.user,
-					name: "CAR Faculty",
-					email: "car@ingest.test",
-					role: "faculty",
-				},
-			});
 			await prisma.department.create({
 				data: { id: ids.department, name: "CAR Dept", code: "IT-CAR" },
 			});
@@ -38,6 +30,18 @@ describe.skipIf(!db)("CAR generation (integration)", () => {
 					departmentId: ids.department,
 					name: "CAR Program",
 					code: "IT-CAR-PROG",
+				},
+			});
+			// The faculty account comes after its program — scoped accounts
+			// carry their unit, which `carService` reads from the DB row.
+			await prisma.user.create({
+				data: {
+					id: ids.user,
+					name: "CAR Faculty",
+					email: "car@ingest.test",
+					role: "faculty",
+					programId: ids.program,
+					departmentId: ids.department,
 				},
 			});
 			await prisma.academicTerm.create({

@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { NotOwnerError } from "@lib/forms/approval-routes";
 import { SubmitGateError } from "@lib/forms/submit-gates";
 import { prisma } from "@lib/prisma";
+import { unitScopeOf } from "@lib/unit-scope";
 import { isDbReachable } from "@test/helpers/db-gate";
 import {
 	ACTION_TAKEN_CODE,
@@ -289,6 +290,8 @@ async function seed(): Promise<void> {
 				name: "At-Risk Faculty",
 				email: "atrisk-faculty@obelisktest.local",
 				role: "faculty",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -296,6 +299,8 @@ async function seed(): Promise<void> {
 				name: "At-Risk Other",
 				email: "atrisk-other@obelisktest.local",
 				role: "faculty",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -303,6 +308,8 @@ async function seed(): Promise<void> {
 				name: "At-Risk Chair",
 				email: "atrisk-chair@obelisktest.local",
 				role: "program_chair",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -310,6 +317,8 @@ async function seed(): Promise<void> {
 				name: "At-Risk Dean",
 				email: "atrisk-dean@obelisktest.local",
 				role: "dean",
+				programId: IDS.program,
+				departmentId: IDS.department,
 				isActive: true,
 			},
 			{
@@ -354,7 +363,10 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 		await reset();
 		await seed();
 		try {
-			const sectionA = await atRiskService.listFlags(IDS.sectionA);
+			// These fixtures are institution-wide (no unit) — `listFlags` takes
+			// the caller's unit as its first argument.
+			const INSTITUTION = unitScopeOf({ id: "atrisk-test", role: "vpaa" });
+			const sectionA = await atRiskService.listFlags(INSTITUTION, IDS.sectionA);
 			expect(sectionA).toHaveLength(3);
 			expect(sectionA.map((r) => r.studentId).sort()).toEqual(
 				[IDS.s1, IDS.s2, IDS.s3].sort(),
@@ -365,12 +377,12 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 			expect(sectionA[0]?.student.studentNumber).toBeDefined();
 			expect(sectionA[0]?.cloAttainment?.clo.code).toBe("CLO1");
 
-			const sectionB = await atRiskService.listFlags(IDS.sectionB);
+			const sectionB = await atRiskService.listFlags(INSTITUTION, IDS.sectionB);
 			expect(sectionB).toHaveLength(1);
 			expect(sectionB[0]?.studentId).toBe(IDS.s1);
 
 			// Unscoped listing contains every test flag (other fixtures may exist).
-			const all = await atRiskService.listFlags();
+			const all = await atRiskService.listFlags(INSTITUTION);
 			expect(all.map((r) => r.id)).toEqual(expect.arrayContaining(FLAG_IDS));
 		} finally {
 			await reset();
