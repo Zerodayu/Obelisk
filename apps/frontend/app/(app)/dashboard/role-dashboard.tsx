@@ -16,7 +16,6 @@ import { roleLabel } from "@/lib/roles";
 interface DashboardConfig {
   title: string;
   description: string;
-  scopeLabel?: string;
   component: ComponentType;
 }
 
@@ -35,13 +34,11 @@ const ROLE_DASHBOARDS: Record<string, DashboardConfig> = {
   program_chair: {
     title: "Program Chair",
     description: "Your program's attainment, targets, approvals, and CQI.",
-    scopeLabel: "Own Program",
     component: ProgramChairDashboard,
   },
   dean: {
     title: "Dean",
     description: "Your department's endorsements, budgets, and sign-offs.",
-    scopeLabel: "Own Department",
     component: DeanDashboard,
   },
   aqau: {
@@ -75,10 +72,22 @@ function UserPlaceholderDashboard() {
   );
 }
 
-/** Scope badge text derived from the session user's institutional links. */
+/**
+ * Scope badge text derived from the session user's institutional links.
+ *
+ * Mirrors the backend's unit scope (`apps/backend/lib/unit-scope.ts`): faculty
+ * and program chairs read their own program, a dean its own department, and
+ * institution-wide roles (AQAU/VPAA/admin) carry no chip at all. A scoped
+ * role with no unit on file says so instead of claiming a scope it does not
+ * have — the backend fails those sessions closed to their own rows.
+ */
 function scopeLabelFor(user: ApiUser): string | undefined {
-  if (user.programId) return `Program ${user.programId}`;
-  if (user.departmentId) return `Department ${user.departmentId}`;
+  if (user.role === "faculty" || user.role === "program_chair") {
+    return user.programId ? "Own Program" : "Program unassigned";
+  }
+  if (user.role === "dean") {
+    return user.departmentId ? "Own Department" : "Department unassigned";
+  }
   return undefined;
 }
 
@@ -90,7 +99,7 @@ export function RoleDashboard({ user }: { user: ApiUser }) {
   return (
     <DashboardShell
       title={`${config.title} — ${roleLabel(user.role)}`}
-      scopeLabel={config.scopeLabel ?? scopeLabelFor(user)}
+      scopeLabel={scopeLabelFor(user)}
       description={config.description}
       stats={stats}
     >
