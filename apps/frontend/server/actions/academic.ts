@@ -2,7 +2,11 @@
 
 import { ApiError } from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
-import { SAMPLE_CLASS_SECTIONS } from "@/lib/store/atoms/academic";
+import {
+  type AcademicDepartment,
+  SAMPLE_CLASS_SECTIONS,
+  SAMPLE_DEPARTMENTS,
+} from "@/lib/store/atoms/academic";
 import { actionApi } from "@/server/api-client";
 
 export type ActionResult<TData = void> =
@@ -77,6 +81,26 @@ export async function listPrograms(): Promise<ActionResult<AcademicProgram[]>> {
     return {
       ok: false,
       error: errorMessage(err, "Failed to load programs."),
+    };
+  }
+}
+
+/** Departments (`GET /academic/departments`) — the scope a dean request carries. */
+export async function listDepartments(): Promise<
+  ActionResult<AcademicDepartment[]>
+> {
+  if (isDevMode) {
+    return { ok: true, data: SAMPLE_DEPARTMENTS };
+  }
+  try {
+    const data = await actionApi.get<AcademicDepartment[]>(
+      "/academic/departments",
+    );
+    return { ok: true, data };
+  } catch (err) {
+    return {
+      ok: false,
+      error: errorMessage(err, "Failed to load departments."),
     };
   }
 }

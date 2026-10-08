@@ -112,3 +112,45 @@ export function scopeForRole(role: UserRole | undefined): UserScope {
       return {};
   }
 }
+
+/**
+ * What a role request has to be scoped to: a program, a department, nothing.
+ * `faculty`/`program_chair` work inside one program, a `dean` sits over a
+ * department (covering its programs), and the institution-wide roles
+ * (aqau/vpaa) are scoped to neither. Drives the conditional program /
+ * department select on `/onboarding`.
+ *
+ * Mirrored by the backend's `REQUESTED_SCOPE`
+ * (`apps/backend/src/v1/auth/model.ts`), which enforces it — keep both in
+ * sync (guarded by `apps/backend/test/unit/role-request.test.ts`).
+ */
+export type RequestedScopeKind = "program" | "department";
+
+export const REQUESTED_SCOPE = {
+  faculty: "program",
+  program_chair: "program",
+  dean: "department",
+} as const satisfies Partial<Record<UserRole, RequestedScopeKind>>;
+
+/** The scope a request for `role` must carry, or `null` for none. */
+export function requestedScopeForRole(
+  role: UserRole | string | undefined,
+): RequestedScopeKind | null {
+  if (typeof role !== "string") return null;
+  return (
+    (REQUESTED_SCOPE as Record<string, RequestedScopeKind | undefined>)[role] ??
+    null
+  );
+}
+
+/** Does a request for `role` have to carry a program? */
+export function roleNeedsProgram(role: UserRole | string | undefined): boolean {
+  return requestedScopeForRole(role) === "program";
+}
+
+/** Does a request for `role` have to carry a department? */
+export function roleNeedsDepartment(
+  role: UserRole | string | undefined,
+): boolean {
+  return requestedScopeForRole(role) === "department";
+}

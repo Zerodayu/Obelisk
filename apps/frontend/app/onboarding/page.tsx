@@ -4,7 +4,8 @@ import { OnboardingForm } from "@/components/auth/onboarding-form";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { DEV_ENFORCE_ROLE_ACCESS, isDevMode } from "@/lib/dev-mode";
-import { roleLabel } from "@/lib/roles";
+import { requestedScopeForRole, roleLabel } from "@/lib/roles";
+import { listDepartments, listPrograms } from "@/server/actions/academic";
 import { requireUser } from "@/server/auth";
 
 /**
@@ -29,6 +30,31 @@ const Onboarding = async () => {
   const pendingRole = isWaiting
     ? roleLabel(user.requestedRole ?? undefined)
     : undefined;
+
+  // Scoped requests carry a program or a department — show what was filed
+  // alongside the role so the applicant sees exactly what is under review.
+  let pendingScope: { label: string; value: string } | undefined;
+  const requestedScope = isWaiting
+    ? requestedScopeForRole(user.requestedRole ?? undefined)
+    : null;
+  const requestedProgramId =
+    requestedScope === "program" ? user.programId : null;
+  const requestedDepartmentId =
+    requestedScope === "department" ? user.departmentId : null;
+  if (requestedProgramId) {
+    const programs = await listPrograms();
+    const code = programs.ok
+      ? programs.data.find((program) => program.id === requestedProgramId)?.code
+      : undefined;
+    if (code) pendingScope = { label: "Program", value: code };
+  } else if (requestedDepartmentId) {
+    const departments = await listDepartments();
+    const department = departments.ok
+      ? departments.data.find((entry) => entry.id === requestedDepartmentId)
+      : undefined;
+    const name = department?.name || department?.code;
+    if (name) pendingScope = { label: "Department", value: name };
+  }
 
   // The backend bumps `updatedAt` when a role request is filed; it's the
   // closest proxy for the submission date (no dedicated field exists).
@@ -81,6 +107,17 @@ const Onboarding = async () => {
                     {pendingRole}
                   </dd>
                 </div>
+                {pendingScope && (
+                  <div className="flex items-center justify-between gap-4">
+                    <dt className="shrink-0 text-muted-foreground">
+                      {pendingScope.label}
+                    </dt>
+                    <dd className="flex items-center gap-1.5 font-medium">
+                      <span className="size-1.5 shrink-0 rounded-full bg-primary" />
+                      {pendingScope.value}
+                    </dd>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-4">
                   <dt className="shrink-0 text-muted-foreground">Submitted</dt>
                   <dd className="font-medium">{submittedAt}</dd>

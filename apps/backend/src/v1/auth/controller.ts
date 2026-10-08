@@ -5,6 +5,7 @@ import type { Session, User } from "better-auth";
 import { Elysia, t } from "elysia";
 import {
 	RoleRequestError,
+	type RoleRequestScope,
 	SELF_SELECTABLE_ROLES,
 	type SelfSelectableRole,
 	validateRoleRequest,
@@ -40,15 +41,47 @@ export const roleRequestService = {
 	/**
 	 * File (or re-file) a role request for the signed-in user. New accounts
 	 * sign in through the org-restricted Google provider without a role; they
-	 * choose one here and a system_admin must approve it.
+	 * choose one here and a system_admin must approve it. The request carries
+	 * the role's scope — `faculty`/`program_chair` name a program (their
+	 * department is derived from it), a `dean` names the department that
+	 * covers its programs — persisted to `user.program_id` / `user.department_id`
+	 * so the approver sees it and the granted role lands already scoped.
 	 */
 	async submit(
 		user: { id: string; role?: string; roleRequestStatus?: string },
 		requestedRole: string,
+		scope?: RoleRequestScope,
 	) {
-		const validation = validateRoleRequest(user, requestedRole);
+		const validation = validateRoleRequest(user, requestedRole, scope);
 		if (!validation.ok) {
 			throw new RoleRequestError(validation.message, validation.status);
+		}
+
+		// Scope ids are resolved against reference tables — never trust the
+		// client. Exactly one of the two columns ends up set (both null for
+		// aqau/vpaa), so a re-filed request can't leave a stale scope behind.
+		let programId: string | null = null;
+		let departmentId: string | null = null;
+		if (scope?.programId) {
+			const program = await prisma.program.findUnique({
+				where: { id: scope.programId },
+				select: { id: true, departmentId: true },
+			});
+			if (!program) {
+				throw new RoleRequestError("Program not found.", 400);
+			}
+			programId = program.id;
+			// A faculty member/chair also belongs to the program's department.
+			departmentId = program.departmentId;
+		} else if (scope?.departmentId) {
+			const department = await prisma.department.findUnique({
+				where: { id: scope.departmentId },
+				select: { id: true },
+			});
+			if (!department) {
+				throw new RoleRequestError("Department not found.", 400);
+			}
+			departmentId = department.id;
 		}
 
 		await prisma.user.update({
@@ -56,6 +89,8 @@ export const roleRequestService = {
 			data: {
 				requestedRole: requestedRole as UserRole,
 				roleRequestStatus: "pending",
+				programId,
+				departmentId,
 			},
 		});
 
@@ -81,18 +116,25 @@ export const roleRequestService = {
 		if (target.roleRequestStatus !== "pending")
 			throw new RoleRequestError("Role request is already resolved", 409);
 
+		const data =
+			decision === "approved"
+				? // The scope (program/department) was resolved when the request
+					// was filed, so approval just grants the role.
+					({
+						role: target.requestedRole,
+						roleRequestStatus: "approved",
+					} as const)
+				: ({
+						// No request on file anymore — drop the scope with it.
+						roleRequestStatus: "denied",
+						requestedRole: null,
+						programId: null,
+						departmentId: null,
+					} as const);
+
 		await prisma.user.update({
 			where: { id: userId },
-			data:
-				decision === "approved"
-					? {
-							role: target.requestedRole,
-							roleRequestStatus: "approved",
-						}
-					: {
-							roleRequestStatus: "denied",
-							requestedRole: null,
-						},
+			data,
 		});
 
 		return decision;
@@ -151,7 +193,15 @@ export const authPlugin = new Elysia({ name: "auth" })
 				"/auth/role-request",
 				async ({ user, body, set }) => {
 					try {
-						return await roleRequestService.submit(user, body.requestedRole);
+						const scope: RoleRequestScope = {
+							programId: body.programId,
+							departmentId: body.departmentId,
+						};
+						return await roleRequestService.submit(
+							user,
+							body.requestedRole,
+							scope,
+						);
 					} catch (error) {
 						if (error instanceof RoleRequestError) {
 							set.status = error.status;
@@ -167,16 +217,24 @@ export const authPlugin = new Elysia({ name: "auth" })
 								SELF_SELECTABLE_ROLES.map((role) => [role, role]),
 							) as Record<SelfSelectableRole, SelfSelectableRole>,
 						),
+						// Optional at the schema level (which one applies is
+						// role-derived); the service rejects a missing/unknown
+						// scope and the wrong id for the selected role.
+						programId: t.Optional(t.String()),
+						departmentId: t.Optional(t.String()),
 					}),
 					detail: {
 						tags: ["Auth"],
 						summary: "Request a role",
 						description:
-							"Authenticated users without an institutional role file a role request here; a system_admin must approve it before the role is granted.",
+							"Authenticated users without an institutional role file a role request here; a system_admin must approve it before the role is granted. Scope follows the role: faculty/program_chair carry the id of the program they teach in (their department is derived from it), dean carries the id of the department that covers its programs, aqau/vpaa carry neither — all stored on user.program_id / user.department_id.",
 						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 						responses: {
 							200: { description: "Role request filed" },
-							400: { description: "Invalid requested role" },
+							400: {
+								description:
+									"Invalid requested role or scope (missing/unknown program or department)",
+							},
 							401: { description: "Unauthorized" },
 							409: {
 								description: "Account already has a role or a pending request",

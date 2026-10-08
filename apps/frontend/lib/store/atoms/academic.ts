@@ -20,6 +20,13 @@ export interface AcademicProgram {
   name: string;
 }
 
+/** A college/department row (`GET /academic/departments`) — dean scope. */
+export interface AcademicDepartment {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export interface AcademicTerm {
   id: string;
   schoolYear: string;
@@ -64,6 +71,11 @@ const SAMPLE_PROGRAMS: AcademicProgram[] = [
   },
   { id: "prog-5", code: "BSA", name: "Bachelor of Science in Accountancy" },
   { id: "prog-6", code: "BSN", name: "Bachelor of Science in Nursing" },
+];
+
+/** Dev-mode stand-in for `GET /academic/departments` (mirrors the seed's CITE). */
+export const SAMPLE_DEPARTMENTS: AcademicDepartment[] = [
+  { id: "dept-1", code: "CITE", name: "CITE" },
 ];
 
 const SAMPLE_TERMS: AcademicTerm[] = [

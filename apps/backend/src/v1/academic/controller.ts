@@ -2,7 +2,12 @@ import { cached } from "@lib/cache";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 import { ClassSectionQuerySchema } from "./model";
-import { listClassSections, listPrograms, listTerms } from "./service";
+import {
+	listClassSections,
+	listDepartments,
+	listPrograms,
+	listTerms,
+} from "./service";
 
 const SECURITY = {
 	security: [{ bearerAuth: [] as string[], apiKeyCookie: [] as string[] }],
@@ -24,6 +29,21 @@ export const academicPlugin = new Elysia({
 				...SECURITY,
 				responses: {
 					200: { description: "List of programs" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/departments",
+		cached(300, async () => listDepartments()),
+		{
+			auth: true,
+			detail: {
+				summary: "List all departments",
+				...SECURITY,
+				responses: {
+					200: { description: "List of departments" },
 					401: { description: "Unauthorized" },
 				},
 			},

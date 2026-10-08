@@ -56,12 +56,20 @@ export async function signInWithEmail(input: {
   redirect(input.next?.startsWith("/") ? input.next : "/dashboard");
 }
 
-/** File (or re-file) a role request for the signed-in user. */
+/** File (or re-file) a role request for the signed-in user. `scope` carries
+ * the ids the role's `REQUESTED_SCOPE` expects — a `programId` for
+ * faculty/program_chair, a `departmentId` for dean, neither for aqau/vpaa —
+ * and the backend validates the combination. */
 export async function fileRoleRequest(
   requestedRole: string,
+  scope?: { programId?: string; departmentId?: string },
 ): Promise<ActionResult> {
   try {
-    await actionApi.post("/auth/role-request", { requestedRole });
+    await actionApi.post("/auth/role-request", {
+      requestedRole,
+      ...(scope?.programId ? { programId: scope.programId } : {}),
+      ...(scope?.departmentId ? { departmentId: scope.departmentId } : {}),
+    });
     return { ok: true, data: undefined };
   } catch (err) {
     return {

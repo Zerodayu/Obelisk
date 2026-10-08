@@ -7,6 +7,13 @@ export async function listPrograms() {
 	});
 }
 
+export async function listDepartments() {
+	return prisma.department.findMany({
+		select: { id: true, code: true, name: true },
+		orderBy: { code: "asc" },
+	});
+}
+
 export async function listTerms() {
 	return prisma.academicTerm.findMany({
 		select: {
