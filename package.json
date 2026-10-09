@@ -26,6 +26,8 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
     "@dotenvx/dotenvx": "^2.20.1",
+    "@shadcn/lint": "^0.2.0",
+    "oxlint": "^1.87.0",
     "turbo": "latest",
     "typescript": "^5",
     "vercel": "latest"
