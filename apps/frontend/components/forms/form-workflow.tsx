@@ -266,7 +266,7 @@ export function FormWorkflow({
             Prepared by {submission.submittedBy.name} ·{" "}
             {label(submission.submittedBy.role)}
           </span>
-          <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {new Date(preparedAt).toLocaleString()}
           </p>
         </div>
@@ -493,7 +493,7 @@ export function FormWorkflow({
               className={item.wide ? "sm:col-span-3" : undefined}
               key={item.label}
             >
-              <dt className="text-[0.65rem] font-medium tracking-wide text-muted-foreground uppercase">
+              <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                 {item.label}
               </dt>
               <dd className="text-sm break-words">{item.value}</dd>
@@ -550,7 +550,7 @@ export function FormWorkflow({
                   </p>
                 ) : null}
                 {step.decidedAt ? (
-                  <p className="mt-0.5 text-[0.65rem] text-muted-foreground">
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {new Date(step.decidedAt).toLocaleString()}
                   </p>
                 ) : null}

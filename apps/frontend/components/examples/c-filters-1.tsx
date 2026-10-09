@@ -627,7 +627,7 @@ export function Pattern() {
         </div>
 
         {/* Debug Block */}
-        <pre className="bg-muted dark:bg-muted/60 mt-2 max-h-[400px] w-full max-w-[500px] overflow-auto overflow-x-auto rounded-md border p-3 text-xs">
+        <pre className="bg-muted dark:bg-muted/60 mt-2 max-h-100 w-full max-w-125 overflow-auto overflow-x-auto rounded-md border p-3 text-xs">
           {JSON.stringify(filters, null, 2)}
         </pre>
       </div>

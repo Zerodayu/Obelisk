@@ -59,7 +59,7 @@ const money = (value: number) => value.toLocaleString("en-US");
 export function EChartsRevenueMixPieChart() {
   return (
     <div className="flex h-full w-full items-center gap-3 p-4 sm:gap-6">
-      <div className="relative aspect-square w-[40%] max-w-72 shrink-0">
+      <div className="relative aspect-square w-2/5 max-w-72 shrink-0">
         <EChartsPieChart
           data={chartData}
           config={chartConfig}
@@ -79,11 +79,11 @@ export function EChartsRevenueMixPieChart() {
         </EChartsPieChart>
 
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="border-border flex aspect-square w-[56%] flex-col items-center justify-center rounded-full border border-dashed">
+          <div className="border-border flex aspect-square w-14/25 flex-col items-center justify-center rounded-full border border-dashed">
             <span className="text-primary text-lg leading-none font-semibold tracking-tight sm:text-2xl">
               {money(ORDERS)}
             </span>
-            <span className="text-muted-foreground mt-1 text-[10px] sm:text-xs">
+            <span className="text-muted-foreground mt-1 text-xs">
               Total orders
             </span>
           </div>
@@ -93,7 +93,7 @@ export function EChartsRevenueMixPieChart() {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-center">
         {chartData.map(({ channel, label, value, swatch }) => (
           <div key={channel} className="flex items-center gap-2 py-1.5 sm:py-2">
-            <span className={cn("size-2.5 shrink-0 rounded-[3px]", swatch)} />
+            <span className={cn("size-2.5 shrink-0 rounded-xs", swatch)} />
             <span className="text-muted-foreground truncate text-xs">
               {label}
             </span>

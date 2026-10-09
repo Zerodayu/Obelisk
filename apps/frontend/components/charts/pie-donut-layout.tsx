@@ -39,7 +39,7 @@ export function PieDonutLayout<TData extends Record<string, unknown>>({
 
   return (
     <div className="flex h-full w-full items-center gap-3 p-4 sm:gap-6">
-      <div className="relative aspect-square w-[40%] max-w-72 shrink-0">
+      <div className="relative aspect-square w-2/5 max-w-72 shrink-0">
         <EChartsPieChart
           data={data}
           config={config}
@@ -60,7 +60,7 @@ export function PieDonutLayout<TData extends Record<string, unknown>>({
         </EChartsPieChart>
 
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="border-border flex aspect-square w-[56%] flex-col items-center justify-center rounded-full border border-dashed">
+          <div className="border-border flex aspect-square w-14/25 flex-col items-center justify-center rounded-full border border-dashed">
             <span className="text-foreground font-mono text-lg leading-none font-semibold tracking-tight sm:text-2xl">
               {formatValue(total)}
             </span>
@@ -82,7 +82,7 @@ export function PieDonutLayout<TData extends Record<string, unknown>>({
           return (
             <div key={name} className="flex items-center gap-2 py-1.5 sm:py-2">
               <span
-                className="size-2.5 shrink-0 rounded-[3px]"
+                className="size-2.5 shrink-0 rounded-xs"
                 style={{ backgroundColor: color }}
               />
               <span className="text-muted-foreground truncate text-xs">

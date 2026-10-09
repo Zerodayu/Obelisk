@@ -19,7 +19,7 @@ export function DrawerSwipeHandle() {
       <DrawerTrigger
         render={<Button variant="secondary">Open Drawer</Button>}
       />
-      <DrawerContent className={"h-[70vh]"}>
+      <DrawerContent className={"h-3/4"}>
         <DrawerHeader>
           <DrawerTitle>Drawer</DrawerTitle>
           <DrawerDescription>Drawer with a swipe handle.</DrawerDescription>

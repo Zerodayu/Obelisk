@@ -287,7 +287,7 @@ export function CohortTrackingForm() {
                       value: term.termId,
                       label: termLabel(term),
                     }))}
-                    className="w-[200px]"
+                    className="w-50"
                   />
                 </div>
               </div>
@@ -420,16 +420,19 @@ export function CohortTrackingForm() {
               {annotations.map((ann, idx) => (
                 <div
                   key={idx}
-                  className="grid gap-2 sm:grid-cols-[100px_80px_80px_1fr_auto] items-start"
+                  className="flex flex-col gap-2 sm:flex-row sm:items-start"
                 >
-                  <div className="text-sm font-medium pt-2">
+                  <div className="text-sm font-medium pt-2 sm:w-25 shrink-0">
                     {ann.yearLevel ? `Y${ann.yearLevel}` : "All"}
                   </div>
-                  <div className="text-muted-foreground text-sm pt-2">
+                  <div className="text-muted-foreground text-sm pt-2 sm:w-20 shrink-0">
                     {ann.termId}
                   </div>
-                  <div className="text-sm font-medium pt-2">{ann.cloCode}</div>
+                  <div className="text-sm font-medium pt-2 sm:w-20 shrink-0">
+                    {ann.cloCode}
+                  </div>
                   <Textarea
+                    className="sm:flex-1 min-w-0"
                     value={ann.followUp}
                     onChange={(e) =>
                       updateAnnotation(idx, "followUp", e.target.value)

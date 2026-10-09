@@ -390,7 +390,7 @@ export default function MidCycleAttainmentForm() {
                     </td>
                     <td className="px-3 py-2">
                       <Input
-                        className="min-w-[200px]"
+                        className="min-w-50"
                         value={row.cloDescription ?? ""}
                         onChange={(e) =>
                           updateRow(idx, "cloDescription", e.target.value)

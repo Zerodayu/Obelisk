@@ -237,7 +237,7 @@ export function CurriculumMapForm() {
                   {ploCodes.map((code) => (
                     <th
                       key={code}
-                      className="py-2 pr-2 text-center min-w-[60px]"
+                      className="py-2 pr-2 text-center min-w-15"
                     >
                       {code}
                     </th>

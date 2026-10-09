@@ -591,7 +591,7 @@ export function CloPloMatrixPanel() {
                                   {map.stage && (
                                     <span
                                       className={cn(
-                                        "rounded px-1 text-[10px] font-semibold",
+                                        "rounded px-1 text-xs font-semibold",
                                         STAGE_BADGE_CLASS[map.stage],
                                       )}
                                     >

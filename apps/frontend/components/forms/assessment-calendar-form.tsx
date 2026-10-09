@@ -254,7 +254,7 @@ export function AssessmentCalendarForm() {
                                       ? "info"
                                       : "outline"
                                   }
-                                  className="cursor-pointer text-[0.6rem]"
+                                  className="cursor-pointer text-xs"
                                   onClick={() => {
                                     if (event.isTemplate) return;
                                     const yrs = event.cohortYears.includes(y)

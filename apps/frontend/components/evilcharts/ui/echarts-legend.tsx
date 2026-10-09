@@ -68,24 +68,24 @@ export function LegendIndicator({
     case "circle-outline":
       return (
         <div
-          className="h-2.5 w-2.5 shrink-0 rounded-full p-[1.5px]"
+          className="h-2.5 w-2.5 shrink-0 rounded-full p-0.5"
           style={outline}
         />
       );
     case "vertical-bar":
-      return <div className="h-3 w-1 shrink-0 rounded-[2px]" style={fill} />;
+      return <div className="h-3 w-1 shrink-0 rounded-xs" style={fill} />;
     case "horizontal-bar":
-      return <div className="h-1 w-3 shrink-0 rounded-[2px]" style={fill} />;
+      return <div className="h-1 w-3 shrink-0 rounded-xs" style={fill} />;
     case "rounded-square-outline":
       return (
         <div
-          className="h-2.5 w-2.5 shrink-0 rounded-[3px] p-[1.5px]"
+          className="h-2.5 w-2.5 shrink-0 rounded-xs p-0.5"
           style={outline}
         />
       );
     case "rounded-square":
     default:
-      return <div className="h-2 w-2 shrink-0 rounded-[2px]" style={fill} />;
+      return <div className="h-2 w-2 shrink-0 rounded-xs" style={fill} />;
   }
 }
 

@@ -166,7 +166,7 @@ export function PloSummaryForm() {
                 {payload.plos.map((row) => (
                   <tr key={row.ploCode} className="border-b last:border-0">
                     <td className="py-2 pr-4 font-medium">{row.ploCode}</td>
-                    <td className="py-2 pr-4 max-w-[200px] truncate">
+                    <td className="py-2 pr-4 max-w-50 truncate">
                       {row.ploDescription}
                     </td>
                     <td className="py-2 pr-4 text-right">{row.targetPct}%</td>

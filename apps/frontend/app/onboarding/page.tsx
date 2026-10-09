@@ -80,7 +80,7 @@ const Onboarding = async () => {
                   Pending
                 </span>
                 <div className="space-y-1">
-                  <h1 className="font-medium text-2xl tracking-[-0.015em]">
+                  <h1 className="font-medium text-2xl tracking-tight">
                     Request pending
                   </h1>
                   <p className="text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ const Onboarding = async () => {
             </div>
           ) : (
             <>
-              <h1 className="mt-3 text-center font-medium text-2xl tracking-[-0.015em]">
+              <h1 className="mt-3 text-center font-medium text-2xl tracking-tight">
                 Choose your role
               </h1>
               <p className="mt-1 text-center text-sm text-muted-foreground">
