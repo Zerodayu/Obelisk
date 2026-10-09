@@ -21,6 +21,8 @@
 		"**/*.svg",
 		"apps/backend/.agents",
 		"apps/frontend/.agents",
+		"apps/frontend/components/ui",
+		"apps/frontend/components/reui",
 		"apps/backend/prisma/generated",
 		"apps/backend/skills-lock.json",
 		"**/src/generated/runtime-env.ts"
