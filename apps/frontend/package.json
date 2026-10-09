@@ -9,8 +9,8 @@
     "build:prod": "bunx dotenvx run -f ../../.env.prod -- next build",
     "start": "bunx dotenvx run -f ../../.env.local -- next start",
     "start:prod": "bunx dotenvx run -f ../../.env.prod -- next start",
-    "lint": "biome check",
-    "format": "biome format --write"
+    "lint": "bunx oxlint .",
+    "format": "bunx oxfmt ."
   },
   "dependencies": {
     "@ark-ui/react": "^5.38.0",

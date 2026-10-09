@@ -200,7 +200,7 @@ dev-etl:
 
 # --- quality ---
 
-# lint backend + frontend (biome, orchestrated by turbo)
+# lint backend + frontend (oxlint, orchestrated by turbo)
 [group('quality')]
 lint:
     bun run lint
@@ -210,7 +210,7 @@ lint:
 typecheck:
     bun run typecheck
 
-# format backend + frontend (biome, orchestrated by turbo)
+# format backend + frontend (oxfmt, orchestrated by turbo)
 [group('quality')]
 format:
     bun run format
