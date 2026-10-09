@@ -4,6 +4,7 @@ and calling the LLM API to generate CQI recommendations.
 """
 
 from collections import defaultdict
+import json
 import re
 from typing import List
 from google import genai
@@ -50,7 +51,7 @@ Return ONLY JSON matching the provided schema:
 def strip_code_fences(text: str) -> str:
     """Remove one wrapping JSON or plain Markdown code fence without parsing the body."""
     trimmed = text.strip()
-    match = re.fullmatch(
+    match = re.search(
         r"```(?:json)?\s*(.*?)\s*```", trimmed, flags=re.IGNORECASE | re.DOTALL
     )
     return match.group(1).strip() if match else trimmed
@@ -206,7 +207,7 @@ def build_prompt(
     if not gaps:
         return ""
 
-    data_lines = [
+    data_lines = [\
         f"Course: {header.course_code} ({header.course_title})",
         f"Section: {header.section}",
         f"Instructor: {header.instructor_name}",
@@ -251,11 +252,17 @@ def build_prompt(
 async def call_llm_api(prompt: str) -> str:
     if IS_DEBUG_MODE:
         logger.info("llm_call_placeholder", prompt_length=len(prompt))
-        return (
-            "[PLACEHOLDER RESPONSE — no real API call made]\n"
-            "This is a mock CQI recommendation. Replace call_llm_api() with a real "
-            "API integration to get actual AI-generated suggestions here."
-        )
+        return json.dumps({
+            "summary": "Mock CQI recommendation summary.",
+            "recommendations": [
+                {
+                    "title": "Review Assessment Alignment",
+                    "explanation": "Ensure assessment rubrics and questions directly measure intended learning outcomes.",
+                    "recommendedFor": "Faculty",
+                }
+            ],
+            "pattern": "Mock cross-CLO pattern identified.",
+        })
 
     # --- Real API Integration with Multi-Key Failover ---
     api_keys = settings.llm_api_keys_list

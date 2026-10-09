@@ -3,8 +3,8 @@
 This document lists known limitations, design trade-offs, and deferred implementation details for the OBELISK ETL & Analytics Service.
 
 1.  **LLM Integration Status**
-    -   **Status**: Implemented (`google-genai` client, Debug/Mock Mode Currently Active by Default)
-    -   **Details**: The AI-powered recommendation features are wired to Google's Gemini API (`gemini-3.6-flash` in `app/analytics/cqi_recommender.py`) using the new `google-genai` SDK. By default, `IS_DEBUG_MODE` is set to `True` to provide deterministic mock responses without requiring an active API key or incurring external latency. To activate live LLM generation, set `IS_DEBUG_MODE = False` in `cqi_recommender.py` and supply a valid `OBELISK_LLM_API_KEY` in the root env file (`.env.local` / `.env.prod`).
+    -   **Status**: Implemented (`google-genai` client, Live Multi-Key Gemini API Enabled by Default)
+    -   **Details**: The AI-powered CQI recommendation features are wired to Google's Gemini API (`gemini-3.5-flash-lite` in `app/analytics/cqi_recommender.py`) using the official `google-genai` SDK with sequential multi-key failover (`OBELISK_LLM_API_KEYS` / `OBELISK_LLM_API_KEY`). By default, `IS_DEBUG_MODE` is set to `False` to generate real advisory JSON adhering to the CQI schema (`summary`, `recommendations`, and `pattern`). Setting `IS_DEBUG_MODE = True` provides offline deterministic mock responses without external network calls.
 
 2.  **Indirect Attainment Ingestion (v2 AUN-OBE Template)**
     -   **Status**: Implemented (Per-Student Indirect Rating and 70/30 Composite Recomputation)

@@ -98,104 +98,49 @@ flowchart TD
     end
     
     D -.-> F
-    E --> K["Webapp polls GET /jobs/{job_id}"]
-    J -.-> K
-    K --> L["Job status == 'completed' -> Webapp stores results in DB"]
-    K --> M["Webapp calls GET /analytics/jobs/{job_id}/recommendation"]
 ```
 
-### Detailed Pipeline Stages
+### Step-by-Step Breakdown
 
-#### Step 1: Receiving & Queueing (`app/api/routes/upload.py`)
-1. Receives `.xlsx` file via multipart form data.
-2. Validates file size (default max: 10MB).
-3. Saves file chunk-by-chunk to the local `uploads/` directory with a unique UUID.
-4. Generates a new `job_id` and adds the job metadata to Redis with status `queued`.
-5. Pushes `job_id` into the Redis queue list (`obelisk:{profile}:job_queue` — profile is `OBELISK_ENV`, so dev and prod stacks sharing one Redis never consume each other's jobs).
-6. Returns `202 Accepted` with `{ "job_id": "...", "status": "queued" }`. The HTTP connection terminates here without waiting for processing.
+#### 1. Ingestion (`POST /upload`)
+- The instructor submits a `.xlsx` file from the browser.
+- The webapp backend streams the multipart upload to Python's `/upload` endpoint.
+- Python saves the file into `uploads/` using a temporary `.tmp` extension, renaming atomically on completion to prevent partial reads.
+- A job UUID is registered in Redis hash `obelisk:{profile}:job:{job_id}` with `status: "queued"`, and pushed onto the list `obelisk:{profile}:job_queue`.
+- The API immediately returns `202 Accepted` with `{ "job_id": "...", "status": "queued" }`. The HTTP connection terminates here.
 
-#### Step 2: Background Consumption (`app/workers/worker.py`)
-- Multiple background worker loops (default: 4 workers) run concurrently.
-- Each worker executes a non-blocking `BRPOP` against Redis with a 1-second timeout.
-- When a job arrives, the worker marks the job status in Redis as `running`.
+#### 2. Background Queue Processing (`app/workers/worker.py`)
+- Independent `asyncio.Task` worker loops continuously block on `BRPOP obelisk:{profile}:job_queue 2`.
+- When a job arrives, its status in Redis is updated to `running`.
+- The worker executes the pipeline wrapped in an execution timeout:
+  - If successful, it stores `status: "completed"`, `result: { "loaded": ... }` into Redis.
+  - If a handled business or validation error occurs, it sets `status: "failed"` and stores a structured error object.
+  - If an unexpected crash occurs, it stores a formatted traceback in `error`.
+- The temporary uploaded file is deleted from disk in a `finally` block to prevent disk leakage.
 
-#### Step 3: Extraction (`app/etl/extract/extractor.py`)
-1. **Workbook Load**: Opens `.xlsx` using `openpyxl` with `data_only=True` to read calculated formula values rather than formulas.
-2. **Sheet Verification**: Verifies presence of mandatory worksheets:
-   - `Direct CLO`
-   - `Indirect CLO`
-   - *If either is missing, fails immediately with a structured `MissingWorksheet` error.*
-3. **Template Validation**: Checks marker cells (`A1` on both sheets) to ensure the file is an authentic AUN-OBE template. Old templates (with `Database`/`Exam`/`COVERPAGE` sheets) raise structured errors immediately.
-4. **Course Type Gating**: If the workbook has a `SETUP` sheet, verifies cell `B6` declares `"LECTURE"`. If any other course type (like `"RESEARCH"`) is present, halts with structured `UnsupportedCourseType` error.
-5. **Dynamic CLO Block Discovery**:
-   - `Direct CLO`: Scans row 3 starting at Column C (col 3), stepping by 7 columns until an empty cell is encountered.
-   - `Indirect CLO`: Scans row 4 starting at Column C (col 3), stepping by 2 columns until an empty cell is encountered.
-6. **Dynamic Roster Discovery**: Reads student IDs and names starting from row 5, terminating at the first empty row or known summary-row label (`CLASS AVERAGE`, `MEAN RATING`, `%age CO ATTAINMENT`).
-7. **Raw Value Extraction**:
-   - Direct: Extracts 6 raw cells per block: Prelim Score/Max, Midterm Score/Max, Final Score/Max. (Never reads the Excel "Attainment %" formula column).
-   - Indirect: Extracts raw Likert Rating (1–5) per block. (Never reads the Excel "Attainment %" formula column).
-8. **CLO-PLO Mapping**: CLO-PLO mapping is permanently retired from python-server; returns an empty list `[]`.
+#### 3. Client Polling (`GET /jobs/{job_id}`)
+- The frontend/webapp polls `GET /jobs/{job_id}` at 1–2 second intervals.
+- The response returns `{ "status": "queued" | "running" | "completed" | "failed", "result": ... }`.
+- Once `status` is `completed`, the webapp consumes `result.loaded.attainments` and persists the computed numbers into PostgreSQL via Prisma.
 
-#### Step 4: Transformation (`app/etl/transform/transformer.py`)
-1. **Formula 1A Calculation (Direct CLO Attainment)**:
-   Recomputed independently from the raw scores:
-   $$\text{direct\_clo\_attainment\_pct} = \frac{\text{Prelim Score} + \text{Midterm Score} + \text{Final Score}}{\text{Prelim Max} + \text{Midterm Max} + \text{Final Max}}$$
-2. **Formula 1B Calculation (Indirect CLO Attainment)**:
-   Recomputed independently from the survey rating:
-   $$\text{indirect\_clo\_attainment\_pct} = \left(\frac{\text{Rating}}{5.0}\right) \times 100$$
-3. **Institutional Threshold Evaluation**:
-   - Compares the attainment percentage against the fixed institutional standard:
-     $$\text{met\_threshold} = (\text{direct\_clo\_attainment\_pct} \ge 0.70)$$
-4. **4-Tier CLO Attainment Level**:
-   - $\ge 85\%$ $\rightarrow$ **Exceptional**
-   - $70\% - 84\%$ $\rightarrow$ **Proficient**
-   - $60\% - 69\%$ $\rightarrow$ **Basic**
-   - $< 60\%$ $\rightarrow$ **Below Basic**
-5. **Rule 1: Assessment Completeness**:
-   - Checks if the student has recorded scores in **PRELIM**, **MIDTERM**, and **FINAL** periods for that specific CLO.
-   - Flags `is_record_complete = true/false`.
-   - Computes section-level completeness percentage (`section_completeness_pct`) and flags `rule1_met = (section_completeness_pct >= 0.60)`.
-6. **Output Shape Stability**: `excluded_reason` is set to `null` across all rows.
-7. **Formula Versioning**: Computes a deterministic SHA-256 hash representing the formula configuration for audit traceability.
-
-#### Step 5: Loading & Completion (`app/etl/load/loader.py`)
-1. Formats the data into the canonical output JSON envelope:
-   ```json
-   {
-     "loaded": {
-       "header": { "course_code": "GE 1", ... },
-       "attainments": [ ... ],
-       "clo_plo_mapping": []
-     }
-   }
-   ```
-2. Updates Redis job entry to `completed` with the result payload.
-3. If an error occurred anywhere in the pipeline, the worker catches the `OBELISKError`, serializes its structured JSON (`error_type`, `message`, `details`), and sets status to `failed`.
-
-#### Step 6: Per-Course CQI Advisory (`GET /analytics/jobs/{job_id}/recommendation`)
-- Once the job is `completed`, the webapp can request an AI recommendation for that specific course.
-- Scans `attainments` for any CLO where students failed to meet the 70% threshold.
-- Replaces student names with anonymized placeholders (`Student A`, `Student B`) to protect privacy.
-- Calls Google Gemini using the `google-genai` SDK (`gemini-3.6-flash`) with **automatic key pool failover**:
-  - Uses configured keys from `OBELISK_LLM_API_KEYS`.
-  - Sequentially retries across keys if a rate limit or quota exception occurs.
-  - If all keys fail, gracefully marks `"status": "error"` without raising unhandled exceptions.
-- Returns structured Markdown with **Summary**, **Findings**, **Recommendations**, and **Pattern Flagged**.
+#### 4. Optional: Per-Course CQI Advisory (`GET /analytics/jobs/{job_id}/recommendation`)
+- Once the ETL job completes, the client may call `GET /analytics/jobs/{job_id}/recommendation`.
+- The recommender checks student attainment against the 70% threshold.
+- If gaps exist, it anonymizes student identities (`Student A`, `Student B`) and builds an advisory prompt for Google Gemini (`gemini-3.5-flash-lite`).
+- Google Gemini responds with structured JSON advisory recommendations with automatic multi-key failover (`OBELISK_LLM_API_KEYS`).
 
 ---
 
-## 4. Deep Dive: Process 2 — Institutional & Program Analytics
+## 4. Deep Dive: Process 2 — Institutional Analytics & Executive Summaries
 
-This process runs when academic leaders (Deans, Program Heads, VPAA) view multi-course OBE rollups across departments or entire programs.
+This process runs synchronously and does **not** process Excel spreadsheets. Instead, it accepts pre-aggregated semester payloads from the webapp backend.
 
-Unlike the ETL pipeline, this process is **synchronous**: the webapp sends a consolidated payload of pre-computed course submissions, and the service returns rolled-up analytics immediately.
+### High-Level Flowchart
 
 ```mermaid
 flowchart TD
-    A["Webapp gathers Course Submissions from DB"] --> B{"Choose Endpoint"}
-    
-    B -->|"POST /analytics/summary\n(Deans / Program Heads / AVPs)"| C["compute_summary_only()"]
-    B -->|"POST /analytics/institutional-summary\n(VPAA Only)"| D["generate_institutional_summary()"]
+    A["Webapp Consolidates Semester Data from DB"] --> B["POST /analytics/summary or /institutional-summary"]
+    B --> C["FastAPI Validates Pydantic Payload"]
     
     subgraph Analytics Computation Engine
         C --> E["1. Anonymize Student Data"]
@@ -237,7 +182,7 @@ $$\text{plo\_rule3\_met} = (\text{plo\_completeness\_pct} \ge 0.60)$$
 
 #### 6. Formula 7C: Program-Wide PLO Average
 Calculated **only** at the Program level:
-$$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\\text{Total number of PLOs in program}}$$
+$$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\text{Total number of PLOs in program}}$$
 
 #### 7. Worst-Performing CLO Identification
 The engine identifies the 3 lowest-scoring CLOs in each department, program, and AVP group, sorted by lowest attainment percentage and highest student impact.
@@ -295,6 +240,11 @@ All configuration is managed in `app/core/config.py` via environment variables (
 * **`OBELISK_WEBAPP_SHARED_SECRET`**: If set, activates `X-Webapp-Secret` verification on protected endpoints.
 * **`OBELISK_LLM_API_KEYS`**: List of Google Gemini API keys for live recommendations with automatic failover (supports JSON array e.g. `["key1", "key2"]` or comma-separated `key1,key2`).
 * **`OBELISK_LLM_API_KEY`**: Backward-compatible single API key setting.
+* **`OBELISK_LLM_MODEL`**: Model string (default `gemini-3.5-flash-lite`).
 * **`IS_DEBUG_MODE` in `cqi_recommender.py`**:
-  - When `True` (default): Returns instant mock CQI responses so the system works completely offline without API keys.
-  - When `False`: Makes real API calls to Google Gemini (`gemini-3.6-flash`).
+  - When `False` (default): Makes real API calls to Google Gemini (`gemini-3.5-flash-lite`) using sequential multi-key failover, returning valid structured JSON recommendations (`summary`, `recommendations`, `pattern`).
+  - When `True`: Returns instant deterministic mock CQI JSON responses so the system works offline without API keys.
+* **E2E Test Verification (`testing_modules/test_upload_e2e.py`)**:
+  - Runs end-to-end tests across both worst-performing (`JMCFI_Class_Record_Template_AUN-OBE(worst).xlsx`) and mixed-attainment (`JMCFI_Class_Record_Template_AUN-OBE(mixed).xlsx`) workbooks.
+  - Logs concise CLO gap summaries instead of dumping raw student attainment arrays, avoiding console buffer truncations.
+  - Enforces explicit assertions ensuring `recommendation` exists, is non-empty, parses as valid JSON, and contains `summary`, `recommendations`, and `pattern`.

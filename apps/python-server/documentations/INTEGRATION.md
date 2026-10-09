@@ -161,15 +161,16 @@ Per-course AI gap analysis and CQI recommendation.
 - Uses `google-genai` client with multi-key failover (`OBELISK_LLM_API_KEYS`).
 - Returns `409 Conflict` if the job is not yet completed.
 - The completed job's `result.loaded.clo_plo_mapping` is passed through to `generate_cqi_recommendation`. Entries carrying the optional [pedagogical alignment keys](#optional-pedagogical-alignment-keys-on-clo_plo_mapping) (rare on this ETL-driven path, since `loaded.clo_plo_mapping` is normally `[]`) are rendered into the prompt's alignment block; bare mappings are skipped. Response shape is unchanged.
+- The `recommendation` string returns schema-compliant JSON with `summary`, `recommendations`, and `pattern`.
 
 **Normal Success Response (`status: "ok"`):**
 ```json
 {
-  "course_code": "GE 1",
+  "course_code": "IT 101",
   "status": "ok",
   "gaps": [ ... ],
   "prompt_used": "...",
-  "recommendation": "## Summary\n..."
+  "recommendation": "{\n  \"summary\": \"In IT 101 (Section BSIT - 1A), multiple students fell below the 70% threshold...\",\n  \"recommendations\": [\n    {\n      \"title\": \"Review Teaching Strategies\",\n      \"explanation\": \"Faculty should evaluate instructional materials...\",\n      \"recommendedFor\": \"Faculty\"\n    }\n  ],\n  \"pattern\": \"Cross-CLO underperformance observed across sections.\"\n}"
 }
 ```
 
@@ -208,14 +209,14 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 **Request body:**
 ```json
 {
-  \"period\": { \"type\": \"semester\", \"label\": \"SY 2025-2026, 1st Sem\" },
-  \"submissions\": [
+  "period": { "type": "semester", "label": "SY 2025-2026, 1st Sem" },
+  "submissions": [
     {
-      \"department\": \"CITE\",
-      \"program\": \"BSIT\",
-      \"header\": { ... },
-      \"attainments\": [ ... ],
-      \"clo_plo_mapping\": [ ... ]
+      "department": "CITE",
+      "program": "BSIT",
+      "header": { ... },
+      "attainments": [ ... ],
+      "clo_plo_mapping": [ ... ]
     }
   ]
 }
