@@ -35,12 +35,12 @@ export interface AssessmentEvidenceRow {
 }
 
 export interface SubmissionJustification {
-	kind: "car" | "curriculum_map";
-	/** CAR: one row per CLO. Empty for curriculum_map. */
+	kind: "car" | "curriculum_map" | "details";
+	/** CAR: one row per CLO. Empty for curriculum_map/details. */
 	rows: JustificationRow[];
-	/** CAR: Part 2 attainment per assessment type. Empty for curriculum_map. */
+	/** CAR: Part 2 attainment per assessment type. Empty for curriculum_map/details. */
 	assessmentEvidence: AssessmentEvidenceRow[];
-	/** curriculum_map: mapped cells per I-P-D stage. Null for CAR. */
+	/** curriculum_map: mapped cells per I-P-D stage. Null for CAR/details. */
 	coverage: {
 		i: number;
 		p: number;
@@ -76,16 +76,16 @@ export function registerJustification(
 }
 
 /**
- * Resolve the justification for a form code. Returns null when nothing is
- * registered — never throws, so a broken resolver cannot fail the whole
- * evidence endpoint (the approver still sees the capture counters).
+ * Resolve the justification for a form code. Falls back to
+ * `detailsJustification` when no specific resolver is registered — approvers
+ * always see form-specific context, never the empty state. Never throws.
  */
 export async function resolveJustification(
 	formTypeCode: string,
 	ctx: JustificationContext,
 ): Promise<SubmissionJustification | null> {
 	const resolve = resolvers.get(formTypeCode);
-	if (!resolve) return null;
+	if (!resolve) return detailsJustification(formTypeCode);
 	try {
 		return (await resolve(ctx)) ?? null;
 	} catch (error) {
@@ -279,6 +279,97 @@ export function curriculumJustification(
 		assessmentEvidence: [],
 		coverage,
 		uncoveredPlos,
+		notes,
+	};
+}
+
+// --- Fallback details for forms without a specific resolver -------------------
+//
+// Forms that don't register a specific resolver (CAR, curriculum_map) still
+// need to show approvers something meaningful. This map provides plain-language
+// notes about what each form is for and what approvers should verify.
+// The fallback is used in resolveJustification when no resolver is registered.
+
+const FORM_DETAILS: Record<string, string[]> = {
+	stakeholder_consultation: [
+		"Records input from industry partners, parents, and community stakeholders on program outcomes.",
+		"Approvers verify that consultation findings are documented and linked to PLO improvement actions.",
+	],
+	assessment_budget: [
+		"Tracks assessment-related expenditures across PDCA phases.",
+		"Approvers verify that budget allocations align with the assessment calendar and approved activities.",
+	],
+	mid_cycle_attainment: [
+		"Reusable cohort attainment block with per-CLO mid-cycle status and at-risk watchlist.",
+		"Approvers verify that mid-cycle interventions are documented for at-risk students.",
+	],
+	resource_monitoring: [
+		"Monitors acquisition and implementation of resources (equipment, materials, facilities).",
+		"Approvers verify that resources are deployed as planned and support PLO attainment.",
+	],
+	peer_observation: [
+		"Structured peer review of teaching practice across 7 fixed criteria.",
+		"Approvers verify that observations are conducted and improvement areas are identified.",
+	],
+	clo_perception_survey: [
+		"5-point Likert tabulation of stakeholder perceptions on CLO achievement.",
+		"Approvers verify divergence analysis against direct attainment data.",
+	],
+	plo_attainment_summary: [
+		"Program-level PLO attainment across all sections.",
+		"Approvers verify Rule 3 status and mapped CLO alignment.",
+	],
+	student_exit_survey: [
+		"Per-PLO year-level rating survey of graduating students.",
+		"Approvers verify divergence investigation and improvement actions.",
+	],
+	alumni_tracer: [
+		"Longitudinal tracking of graduate employment and further education.",
+		"Approvers verify tracer findings are linked to program improvement.",
+	],
+	employer_satisfaction_survey: [
+		"Employer ratings of graduate competence against PLOs.",
+		"Approvers verify satisfaction scores and improvement actions.",
+	],
+	plo_gap_analysis: [
+		"Identifies NOT-MET PLO-cohort gaps with root-cause categories.",
+		"Approvers verify root causes are assigned and CQI actions are planned.",
+	],
+	annual_program_report: [
+		"Annual program assessment with 12 KPIs, attachments, and narratives.",
+		"Approvers verify KPI attainment and attachment checklist.",
+	],
+	closing_the_loop: [
+		"Evaluates whether CQI interventions closed attainment gaps.",
+		"Approvers verify loop status is computed from 5 conditions.",
+	],
+	systemic_gap_report: [
+		"Analyzes systemic gaps across multiple cohorts.",
+		"Approvers verify gap patterns and corrective actions.",
+	],
+	institutional_review: [
+		"Institutional management review records.",
+		"Approvers verify review findings and action items.",
+	],
+	action_taken: [
+		"Records interventions for at-risk students.",
+		"Approvers verify interventions are documented and at-risk flags are cleared on final approval.",
+	],
+};
+
+/**
+ * Fallback justification for forms without a specific resolver. Returns
+ * form-specific notes so approvers see meaningful context instead of the
+ * generic "No pedagogical justification recorded" empty state.
+ */
+export function detailsJustification(formCode: string): SubmissionJustification {
+	const notes = FORM_DETAILS[formCode] ?? [];
+	return {
+		kind: "details",
+		rows: [],
+		assessmentEvidence: [],
+		coverage: null,
+		uncoveredPlos: [],
 		notes,
 	};
 }

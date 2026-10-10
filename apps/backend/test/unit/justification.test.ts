@@ -185,8 +185,10 @@ describe("resolveJustification", () => {
 		formData: {},
 	};
 
-	it("returns null for a form code with no registered resolver", async () => {
-		expect(await resolveJustification("no_such_form_code", ctx)).toBeNull();
+	it("returns details fallback for a form code with no registered resolver", async () => {
+		const justification = await resolveJustification("no_such_form_code", ctx);
+		expect(justification?.kind).toBe("details");
+		expect(justification?.notes).toEqual([]);
 	});
 
 	it("returns whatever the registered resolver produced", async () => {
