@@ -22,7 +22,9 @@
 		"db:generate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma generate",
 		"db:seed-prod": "NODE_ENV=production dotenvx run -f ../../.env.prod -- bun prisma/seed.ts",
 		"db:studio-prod": "dotenvx run -f ../../.env.prod -- bunx prisma studio",
-		"db:migrate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma migrate deploy"
+		"db:migrate-prod": "dotenvx run -f ../../.env.prod -- bunx prisma migrate deploy",
+		"backfill:approval-free": "dotenvx run -f ../../.env.local -- bun scripts/backfill-approval-free.ts",
+		"backfill:approval-free-prod": "dotenvx run -f ../../.env.prod -- bun scripts/backfill-approval-free.ts"
 	},
 	"dependencies": {
 		"@better-auth/prisma-adapter": "^1.6.23",
