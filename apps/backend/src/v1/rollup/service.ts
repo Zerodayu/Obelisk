@@ -9,6 +9,7 @@ import { prisma } from "@lib/prisma";
 import {
 	assertProgramInScope,
 	assertTargetInScope,
+	cloAttainmentUnitWhere,
 	submissionUnitWhere,
 	type UnitScope,
 	unitScopeForUser,
@@ -22,6 +23,8 @@ import {
 	buildCohortLines,
 	type CohortEntryInput,
 	type CohortPloEntryInput,
+	SCORE_BANDS,
+	scoreBandOf,
 } from "./compute";
 import type {
 	CloSectionSummary,
@@ -1160,6 +1163,33 @@ function toNumber(value: number | null | Prisma.Decimal): number | null {
 /** Converts a python-server 0–1 fraction to the 0–100 percentage scale. */
 function toPct(fraction: number): number {
 	return Math.round(fraction * 10000) / 100;
+}
+
+/**
+ * `GET /rollup/score-bands` — students distributed across the 4 rubric bands,
+ * unit-scoped. Each student is counted **once**, in the band of their *lowest*
+ * composite CLO score — the same "any CLO below the floor" rule the at-risk
+ * flag uses, so a student cannot appear in two bands or be counted twice.
+ */
+export async function listScoreBands(unit: UnitScope) {
+	const lowest = await prisma.cloAttainment.groupBy({
+		by: ["studentId"],
+		where: cloAttainmentUnitWhere(unit),
+		_min: { compositeScorePct: true },
+	});
+
+	const counts = new Map<string, number>(SCORE_BANDS.map((band) => [band, 0]));
+	for (const row of lowest) {
+		const score = Number(row._min.compositeScorePct ?? 0);
+		const band = scoreBandOf(score);
+		counts.set(band, (counts.get(band) ?? 0) + 1);
+	}
+
+	// Always emit all four bands (zeros included) so the axis is stable.
+	return SCORE_BANDS.map((band) => ({
+		band,
+		studentCount: counts.get(band) ?? 0,
+	}));
 }
 
 // --- Services --------------------------------------------------------------

@@ -14,6 +14,7 @@ import {
 	cloSummaryService,
 	cohortTrackingService,
 	listRollupSubmissions,
+	listScoreBands,
 	ploSummaryService,
 	RollupInvalidEditError,
 	RollupSourceNotFoundError,
@@ -26,6 +27,23 @@ export const rollupPlugin = new Elysia({
 	tags: ["Roll-up"],
 })
 	.use(authPlugin)
+	.get(
+		"/score-bands",
+		cached(300, async ({ user }) => listScoreBands(unitScopeOf(user))),
+		{
+			auth: true,
+			detail: {
+				summary: "Students distributed across the 4-tier rubric bands",
+				description:
+					"Unit-scoped. Each student is counted once, in the band of their lowest composite CLO score (the same any-CLO-below-the-floor rule the at-risk flag uses). All four bands are always returned, zeros included, so the chart axis is stable.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Band -> student count" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
 	.post(
 		"/clo-attainment-summary/generate",
 		async ({ body, user }) => {
