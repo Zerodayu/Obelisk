@@ -15,6 +15,7 @@ import type {
 	PloAttainmentDatum,
 	ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
+import { api } from "@/lib/api-client";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
 
@@ -145,13 +146,22 @@ export const {
 );
 
 /**
- * 4-tier rubric score bands — no backend endpoint aggregates student scores
- * into bands yet (`NO_ENDPOINT`), so the chart renders its empty state.
+ * 4-tier rubric score bands (`GET /rollup/score-bands`).
+ *
+ * The server owns the band labels and boundaries and counts each student once
+ * (in the band of their lowest CLO score), so nothing is re-derived here.
  */
 export const {
 	dataAtom: scoreBandsDataAtom,
 	refreshAtom: refreshScoreBandsAtom,
-} = atomWithMockData<ScoreBandDatum[]>([]);
+} = atomWithAsyncData<ScoreBandDatum[]>([], (_get, signal) =>
+	api
+		.get<{ band: ScoreBandDatum["band"]; studentCount: number }[]>(
+			"/rollup/score-bands",
+			{ signal },
+		)
+		.then((rows) => rows.map((r) => ({ ...r }))),
+);
 
 /**
  * Biennial PEO attainment vs target — the `Peo` / `PeoAttainment` models are
