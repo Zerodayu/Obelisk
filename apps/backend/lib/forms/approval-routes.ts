@@ -348,6 +348,28 @@ export function assertCanDecide(
 }
 
 /**
+ * May `caller` **approve** a submission they prepared themselves? Never —
+ * ten registered routes give `program_chair` both the preparer list and
+ * rung 1, so without this the owner's own row lands in their pending inbox
+ * and they could sign off on it. The owner may still *return* (withdraw)
+ * their own row; that is checked separately by the caller.
+ * shortcut: same-role approval by ANOTHER user stays allowed (the manual
+ * sanctions the role overlap, e.g. peer_observation) — upgrade to a
+ * distinct-signer split if accreditation requires it.
+ */
+export function assertNotSelfApproval(
+	caller: { id: string; role: string },
+	submission: { submittedByUserId: string | null },
+): void {
+	if (caller.role === "system_admin") return;
+	if (submission.submittedByUserId === caller.id) {
+		throw new ApprovalForbiddenError(
+			"You may not approve your own submission — another holder of this role must sign it",
+		);
+	}
+}
+
+/**
  * May `caller` submit this submission? Requires ownership (or admin) **and**
  * a preparer role from the form's approval route.
  */

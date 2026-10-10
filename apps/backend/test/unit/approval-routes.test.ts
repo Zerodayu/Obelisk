@@ -7,6 +7,7 @@ import {
 	assertCanArchive,
 	assertCanDecide,
 	assertCanSubmit,
+	assertNotSelfApproval,
 	chainSteps,
 	DEFAULT_APPROVAL_ROUTE,
 	NotOwnerError,
@@ -168,6 +169,32 @@ describe("workflow authorization", () => {
 			ApprovalForbiddenError,
 		);
 		expect(() => assertCanDecide("system_admin", "vpaa")).not.toThrow();
+	});
+
+	it("never lets the owner approve their own submission", () => {
+		const own = { submittedByUserId: "chair-1" };
+
+		// The exposure: a route whose preparers and rung 1 are both chairs.
+		expect(() =>
+			assertNotSelfApproval({ id: "chair-1", role: "program_chair" }, own),
+		).toThrow(ApprovalForbiddenError);
+
+		// Another holder of the same role signs instead (same-role allowed).
+		expect(() =>
+			assertNotSelfApproval({ id: "chair-2", role: "program_chair" }, own),
+		).not.toThrow();
+
+		// A submission nobody prepared yet (null owner) can be decided.
+		expect(() =>
+			assertNotSelfApproval({ id: "chair-1", role: "program_chair" }, {
+				submittedByUserId: null,
+			}),
+		).not.toThrow();
+
+		// system_admin keeps its override.
+		expect(() =>
+			assertNotSelfApproval({ id: "chair-1", role: "system_admin" }, own),
+		).not.toThrow();
 	});
 
 	it("requires owner + preparer role to submit", () => {

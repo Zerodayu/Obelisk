@@ -282,6 +282,10 @@ export function FormWorkflow({
     pendingStep != null &&
     user != null &&
     (user.role === pendingStep.approverRole || isAdmin);
+  // NOTE: the backend refuses self-approval (assertNotSelfApproval) — don't
+  // offer the owner a dead Approve button. They can still Return (withdraw)
+  // their own row, which stays under `canDecide`.
+  const canApprove = canDecide && (!isOwner || isAdmin);
   const canArchive =
     status === "approved" && user != null && ARCHIVE_ROLES.includes(user.role);
 
@@ -357,29 +361,31 @@ export function FormWorkflow({
 
           {canDecide && pendingStep ? (
             <>
-              <Button
-                disabled={busy != null}
-                onClick={() =>
-                  void run(
-                    "approve",
-                    "form-workflow:approve",
-                    "Step approved",
-                    () =>
-                      approveFormAction(
-                        submission.id,
-                        pendingStep.approverRole as ApproverRoleValue,
-                      ),
-                  )
-                }
-                type="button"
-              >
-                {busy === "approve" ? (
-                  <Spinner className="size-3.5" />
-                ) : (
-                  <CheckIcon />
-                )}
-                Approve
-              </Button>
+              {canApprove ? (
+                <Button
+                  disabled={busy != null}
+                  onClick={() =>
+                    void run(
+                      "approve",
+                      "form-workflow:approve",
+                      "Step approved",
+                      () =>
+                        approveFormAction(
+                          submission.id,
+                          pendingStep.approverRole as ApproverRoleValue,
+                        ),
+                    )
+                  }
+                  type="button"
+                >
+                  {busy === "approve" ? (
+                    <Spinner className="size-3.5" />
+                  ) : (
+                    <CheckIcon />
+                  )}
+                  Approve
+                </Button>
+              ) : null}
 
               <Dialog
                 onOpenChange={(details) => setReturnOpen(details.open)}

@@ -6,6 +6,7 @@ import {
 	assertCanArchive,
 	assertCanDecide,
 	assertCanSubmit,
+	assertNotSelfApproval,
 	chainSteps,
 	NotOwnerError,
 } from "@lib/forms/approval-routes";
@@ -154,6 +155,10 @@ function inboxWhere(
 		return {
 			status: "submitted",
 			currentApproverRole: caller.role as ApproverRole,
+			// NOTE: the owner cannot decide their own row
+			// (assertNotSelfApproval) — keep it out of their inbox rather than
+			// offering a dead Approve button.
+			NOT: { submittedByUserId: caller.id },
 		};
 	}
 	// NOTE: `mine` and the no-scope default — the caller's own submissions only.
@@ -508,10 +513,15 @@ export class SubmissionService {
 		if (!existing) throw new SubmissionNotFoundError();
 		// NOTE: RBAC first — the caller must hold the step's role (admin overrides).
 		assertCanDecide(callerRole, approverRole);
+		// NOTE: then ownership — nobody signs off on their own row. Applies to
+		// `approved` only: the owner returning (withdrawing) their own
+		// submission grants no approval and keeps a stuck draft recoverable.
+		if (decision === "approved") {
+			assertNotSelfApproval({ id: userId, role: callerRole }, existing);
+		}
 		// NOTE: then the **unit** — a program_chair/dean may only sign off on
-		// rows of its own program/department (`UnitScopeError` otherwise). The
-		// approver is by definition not the owner, so this is the one workflow
-		// write that can reach across units without it.
+		// rows of its own program/department (`UnitScopeError` otherwise). A
+		// signer outside the owner's unit is possible (system_admin override).
 		await assertSubmissionInScope(await unitScopeForUser(userId), id);
 		assertTransition(
 			existing.status,

@@ -555,6 +555,83 @@ describe.skipIf(!db)("forms service (integration)", () => {
 		}
 	});
 
+	it("blocks self-approval and keeps the owner's own row out of their inbox", async () => {
+		await seed();
+		try {
+			// A chair prepares `clo_raw_data` — preparers and rung 1 are both
+			// `program_chair`, the classic self-approval shape.
+			const draft = await submissionService.create(
+				{
+					formTypeId: IDS.rawType,
+					termId: IDS.term,
+					classSectionId: IDS.classSection,
+					formData: { note: "chair-prepared" },
+				},
+				IDS.chair,
+			);
+			const submitted = await submissionService.submit(
+				draft.id,
+				IDS.chair,
+				"program_chair",
+			);
+			expect(submitted.currentApproverRole).toBe("program_chair");
+
+			// The owner's own pending row stays out of THEIR inbox...
+			const pendingOwn = await submissionService.list(
+				scopeWhere("pending", {
+					id: IDS.chair,
+					role: "program_chair",
+					programId: IDS.program,
+				}),
+			);
+			expect(pendingOwn.map((s) => s.id)).not.toContain(draft.id);
+			// ...while the step still shows as pending for everyone else.
+			const pendingAny = await submissionService.list(
+				scopeWhere("pending", {
+					id: "any",
+					role: "program_chair",
+					programId: IDS.program,
+				}),
+			);
+			expect(pendingAny.map((s) => s.id)).toContain(draft.id);
+
+			// The owner may not sign off on their own row.
+			await expect(
+				submissionService.decide(
+					draft.id,
+					"program_chair",
+					IDS.chair,
+					"program_chair",
+					{ decision: "approved" },
+				),
+			).rejects.toThrow(ApprovalForbiddenError);
+
+			// They may return (withdraw) it back to themselves.
+			const returned = await submissionService.decide(
+				draft.id,
+				"program_chair",
+				IDS.chair,
+				"program_chair",
+				{ decision: "returned", comment: "withdrawing to edit" },
+			);
+			expect(returned.status).toBe("returned");
+
+			// Resubmitted → another holder of the same role signs it.
+			await submissionService.submit(draft.id, IDS.chair, "program_chair");
+			const advanced = await submissionService.decide(
+				draft.id,
+				"program_chair",
+				IDS.other,
+				"program_chair",
+				{ decision: "approved" },
+			);
+			expect(advanced.status).toBe("submitted");
+			expect(advanced.currentApproverRole).toBe("dean");
+		} finally {
+			await cleanup();
+		}
+	});
+
 	it("scopes submission reads by visibility and returns section evidence", async () => {
 		await seed();
 		try {
