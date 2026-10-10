@@ -1,8 +1,10 @@
 "use client";
 
 import { createListCollection } from "@ark-ui/react";
+import { useAtomValue } from "jotai";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
+import { ContextRequired } from "@/components/forms/context-required";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,7 +18,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { ProgramSelect } from "@/components/ui/program-select";
 import {
 	Select,
 	SelectContent,
@@ -28,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { toast, toastError } from "@/components/ui/toast";
 import { isDevMode } from "@/lib/dev-mode";
+import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
 import { cn } from "@/lib/utils";
 import {
 	type CloEntity,
@@ -131,7 +133,7 @@ interface WeightOption {
  * that map to nothing and PLOs no CLO reaches.
  */
 export function CloPloMatrixPanel() {
-	const [programId, setProgramId] = useState("");
+	const programId = useAtomValue(selectedProgramIdAtom);
 	const [courseFilter, setCourseFilter] = useState("");
 	const [maps, setMaps] = useState<CloPloMapDto[]>([]);
 	const [clos, setClos] = useState<CloEntity[]>([]);
@@ -194,6 +196,8 @@ export function CloPloMatrixPanel() {
 	}, []);
 
 	useEffect(() => {
+		// Reset the course filter so a program switch never keeps a stale course.
+		setCourseFilter("");
 		fetchData(programId);
 	}, [programId, fetchData]);
 
@@ -427,21 +431,6 @@ export function CloPloMatrixPanel() {
 		<div className="space-y-4">
 			<div className="flex flex-wrap items-end justify-between gap-3">
 				<div className="flex flex-wrap items-end gap-3">
-					<div className="w-full max-w-sm space-y-1">
-						<Field>
-							<FieldLabel>Program</FieldLabel>
-							<FieldDescription>
-								Pick a program to see its CLO-PLO connections.
-							</FieldDescription>
-							<ProgramSelect
-								value={programId || undefined}
-								onValueChange={(value) => {
-									setProgramId(value);
-									setCourseFilter("");
-								}}
-							/>
-						</Field>
-					</div>
 					{programId && courses.length > 0 && (
 						<div className="w-full max-w-xs space-y-1">
 							<Field>
@@ -478,9 +467,7 @@ export function CloPloMatrixPanel() {
 			</div>
 
 			{!programId ? (
-				<div className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-					Select a program to see which PLO each CLO connects to.
-				</div>
+				<ContextRequired scope="program" />
 			) : loading ? (
 				<div className="text-muted-foreground py-4 text-center text-sm">
 					Loading...

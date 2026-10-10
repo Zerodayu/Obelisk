@@ -1,7 +1,9 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 
+import { ContextRequired } from "@/components/forms/context-required";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -16,10 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ProgramSelect } from "@/components/ui/program-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { isDevMode } from "@/lib/dev-mode";
+import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
 import {
 	createPlo,
 	deletePlo,
@@ -75,12 +77,13 @@ function nextPloCode(records: PloRecord[]): string {
 }
 
 /**
- * Dean-only PLO management: pick a program, then add/edit/delete its Program
- * Learning Outcomes. The Add dialog opens with the next sequential code
- * (PLO1, PLO2, …) already filled in — the dean mainly types the statement.
+ * Dean-only PLO management: reads the active program from the shared academic
+ * context, then add/edit/delete its Program Learning Outcomes. The Add dialog
+ * opens with the next sequential code (PLO1, PLO2, …) already filled in — the
+ * dean mainly types the statement.
  */
 export function PloManagementPanel() {
-	const [programId, setProgramId] = useState("");
+	const programId = useAtomValue(selectedProgramIdAtom);
 	const [records, setRecords] = useState<PloRecord[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [dialogOpen, setDialogOpen] = useState(false);
@@ -240,28 +243,14 @@ export function PloManagementPanel() {
 
 	return (
 		<div className="space-y-4">
-			<div className="flex flex-wrap items-end justify-between gap-3">
-				<div className="w-full max-w-sm space-y-1">
-					<Field>
-						<FieldLabel>Program</FieldLabel>
-						<FieldDescription>
-							Select the program whose PLOs you want to manage.
-						</FieldDescription>
-						<ProgramSelect
-							value={programId || undefined}
-							onValueChange={setProgramId}
-						/>
-					</Field>
-				</div>
+			<div className="flex justify-end">
 				<Button onClick={openCreateDialog} disabled={!programId}>
 					+ Add PLO
 				</Button>
 			</div>
 
 			{!programId ? (
-				<div className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-					Select a program to view its Program Learning Outcomes.
-				</div>
+				<ContextRequired scope="program" />
 			) : loading ? (
 				<div className="text-muted-foreground py-4 text-center text-sm">
 					Loading...
