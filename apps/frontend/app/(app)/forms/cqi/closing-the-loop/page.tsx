@@ -11,6 +11,7 @@ export default async function ClosingTheLoopPage() {
 			code="closing_the_loop"
 			pdcaStage="ACT"
 			description="Evaluate whether CQI interventions closed the attainment gap. Loop status is computed from 5 conditions."
+			details="Approvers verify that loop status is computed from the 5 conditions and that OPEN loops have a re-assessment plan."
 		>
 			<CtlForm />
 		</FormPlaceholder>

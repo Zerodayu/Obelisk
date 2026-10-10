@@ -11,6 +11,7 @@ export default async function AssessmentBudgetPage() {
 			code="assessment_budget"
 			pdcaStage="PLAN"
 			description="Track assessment-related budget across PDCA phases. 12 fixed line items seeded; add custom items for program-specific needs."
+			details="Approvers verify that budget allocations align with the assessment calendar and approved activities."
 		>
 			<AssessmentBudgetForm />
 		</FormPlaceholder>

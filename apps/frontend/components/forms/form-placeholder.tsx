@@ -12,12 +12,14 @@ export function FormPlaceholder({
 	code,
 	pdcaStage,
 	description,
+	details,
 	children,
 }: {
 	title: string;
 	code: string;
 	pdcaStage: string;
 	description?: string;
+	details?: string;
 	children?: React.ReactNode;
 }) {
 	return (
@@ -34,6 +36,9 @@ export function FormPlaceholder({
 				</div>
 				{description ? (
 					<p className="text-muted-foreground text-sm">{description}</p>
+				) : null}
+				{details ? (
+					<p className="text-muted-foreground text-sm">{details}</p>
 				) : null}
 			</div>
 			{children ?? <PendingSection label={`${title} screen`} />}

@@ -11,6 +11,7 @@ export default async function PeerObservationPage() {
 			code="peer_observation"
 			pdcaStage="CHECK"
 			description="7 fixed criteria observation form with per-criterion rating scales."
+			details="Approvers verify that observations are conducted by a qualified peer and that improvement areas are identified with follow-up actions."
 		>
 			<PeerObservationForm />
 		</FormPlaceholder>

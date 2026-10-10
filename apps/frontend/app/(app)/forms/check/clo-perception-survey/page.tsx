@@ -11,6 +11,7 @@ export default async function CloPerceptionSurveyPage() {
 			code="clo_perception_survey"
 			pdcaStage="CHECK"
 			description="5-point Likert tabulation with divergence auto-detection against direct attainment."
+			details="Approvers verify divergence analysis between perception scores and direct attainment, and that discrepancies are investigated."
 		>
 			<CloPerceptionSurveyForm />
 		</FormPlaceholder>

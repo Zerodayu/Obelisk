@@ -12,6 +12,7 @@ export default async function CourseAssessmentReportPage() {
 			code="course_assessment_report"
 			pdcaStage="DO"
 			description="Term-level hub consolidating a term's attainment into 7 parts. Generate from ingest data, then edit the editable sections (P1, P5, P6, P7)."
+			details="Approvers verify CLO-to-PLO alignment, Bloom's Taxonomy levels, I-P-D stages, and assessment evidence for each part."
 		>
 			<CarForm />
 		</FormPlaceholder>

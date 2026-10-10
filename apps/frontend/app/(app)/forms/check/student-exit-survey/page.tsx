@@ -11,6 +11,7 @@ export default async function StudentExitSurveyPage() {
 			code="student_exit_survey"
 			pdcaStage="CHECK"
 			description="Per-PLO year-level rating survey with divergence investigation."
+			details="Approvers verify that exit survey ratings are tabulated per PLO and that divergence from attainment data triggers investigation."
 		>
 			<StudentExitSurveyForm />
 		</FormPlaceholder>

@@ -11,6 +11,7 @@ export default async function AnnualProgramReportPage() {
 			code="annual_program_report"
 			pdcaStage="ACT"
 			description="Compile the APAR with 12 KPIs, attachments checklist, and 5 narrative sections. Submit gate requires an approved Cohort Tracking Sheet."
+			details="Approvers verify KPI attainment against benchmarks, that all required attachments are included, and that narrative sections address prior-year findings."
 		>
 			<AparForm />
 		</FormPlaceholder>

@@ -29,7 +29,7 @@ export interface AssessmentEvidenceRowRecord {
 }
 
 export interface SubmissionJustificationRecord {
-	kind: "car" | "curriculum_map";
+	kind: "car" | "curriculum_map" | "details";
 	rows: JustificationRowRecord[];
 	assessmentEvidence: AssessmentEvidenceRowRecord[];
 	coverage: {
@@ -244,7 +244,7 @@ export function SubmissionJustification({
 					<h3 className="text-base font-semibold">Pedagogical justification</h3>
 					{justification ? (
 						<Badge variant="outline">
-							{justification.kind === "car" ? "CAR" : "Curriculum map"}
+							{justification.kind === "car" ? "CAR" : justification.kind === "curriculum_map" ? "Curriculum map" : "Form details"}
 						</Badge>
 					) : null}
 				</div>

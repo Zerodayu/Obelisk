@@ -11,6 +11,7 @@ export default async function MidCycleAttainmentPage() {
 			code="mid_cycle_attainment"
 			pdcaStage="CHECK"
 			description="Reusable cohort attainment block with per-CLO mid-cycle status and at-risk watchlist."
+			details="Approvers verify that mid-cycle interventions are documented for at-risk students and that attainment trends are reviewed before the full-term cycle."
 		>
 			<MidCycleAttainmentForm />
 		</FormPlaceholder>

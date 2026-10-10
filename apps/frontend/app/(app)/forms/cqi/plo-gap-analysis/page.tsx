@@ -11,6 +11,7 @@ export default async function PloGapAnalysisPage() {
 			code="plo_gap_analysis"
 			pdcaStage="ACT"
 			description="Identify NOT-MET PLO-cohort gaps and assign root-cause categories with owners."
+			details="Approvers verify that root causes are assigned to each gap, that owners are named, and that CQI actions are planned for the next cycle."
 		>
 			<PloGapAnalysisForm />
 		</FormPlaceholder>

@@ -11,6 +11,7 @@ export default async function ActionTakenPage() {
 			code="action_taken"
 			pdcaStage="ACT"
 			description="Record the intervention performed for each at-risk student in a class section. The at-risk flag is cleared only when this form completes its approval chain."
+			details="Approvers verify that interventions are documented for each at-risk student and that at-risk flags are cleared on final approval."
 		>
 			<ActionTakenForm />
 		</FormPlaceholder>
