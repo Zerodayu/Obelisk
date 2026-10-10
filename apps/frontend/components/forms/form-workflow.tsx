@@ -33,6 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { api } from "@/lib/api-client";
+import { formNeedsApproval } from "@/lib/form-tags";
 import { ARCHIVE_ROLES, FORM_ACCESS } from "@/lib/role-access";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
@@ -202,10 +203,14 @@ export function FormWorkflow({
   const label = (role: string) => roleLabel(role as UserRole);
 
   const formMeta = submission.formMeta ?? null;
+  // NOTE: Setup/Record-tagged forms file with no approval — no route preview,
+  // no steps; submitting moves them straight to `approved`.
+  const approvalFree = !formNeedsApproval(submission.formType?.code ?? "");
   // Route preview: `ApprovalStep` rows are only materialized on submit, so a
   // draft/returned submission derives the route from the mirrored registry.
   const previewChain: readonly UserRole[] =
     isPage &&
+    !approvalFree &&
     steps.length === 0 &&
     (status === "draft" || status === "returned")
       ? (FORM_ACCESS[submission.formType?.code ?? ""]?.chain ?? [])
@@ -344,7 +349,7 @@ export function FormWorkflow({
                 void run(
                   "submit",
                   "form-workflow:submit",
-                  "Submitted for approval",
+                  approvalFree ? "Form filed" : "Submitted for approval",
                   () => submitFormAction(submission.id),
                 )
               }
@@ -355,7 +360,7 @@ export function FormWorkflow({
               ) : (
                 <SendIcon />
               )}
-              Submit for approval
+              {approvalFree ? "File form" : "Submit for approval"}
             </Button>
           ) : null}
 
@@ -596,8 +601,9 @@ export function FormWorkflow({
         </div>
       ) : status === "draft" || status === "returned" ? (
         <p className="text-xs text-muted-foreground">
-          No approval steps yet — the chain is created from this form's
-          registered route when you submit.
+          {approvalFree
+            ? "No approval required — submitting files this form as a record."
+            : "No approval steps yet — the chain is created from this form's registered route when you submit."}
         </p>
       ) : null}
     </section>

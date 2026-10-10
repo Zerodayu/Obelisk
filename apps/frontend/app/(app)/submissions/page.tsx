@@ -16,7 +16,8 @@ export default async function MySubmissionsPage() {
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-tight">My Submissions</h2>
         <p className="text-sm text-muted-foreground">
-          Forms you have prepared or submitted, from draft through approval.
+          Forms you have prepared that route through approval, from draft
+          through sign-off.
         </p>
       </div>
       <SubmissionInbox devPreview={isDevMode} scope="mine" />

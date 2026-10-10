@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Status } from "@/components/ui/status";
 import { toast, toastError } from "@/components/ui/toast";
+import { formNeedsApproval } from "@/lib/form-tags";
 import { ARCHIVE_ROLES, roleLabel, type UserRole } from "@/lib/roles";
 import type { AsyncState } from "@/lib/store/async-atom";
 import {
@@ -178,9 +179,17 @@ export function SubmissionInbox({
   );
   const [archivingId, setArchivingId] = useState<string | null>(null);
 
+  // NOTE: Setup/Record-tagged forms file with no approval, so they stay off
+  // the "My Submissions" inbox — only approval-bound forms are listed here.
+  const visible =
+    scope === "mine"
+      ? submissions.filter(
+          (s) => s.formType === undefined || formNeedsApproval(s.formType.code),
+        )
+      : submissions;
   const rows = statusFilter
-    ? submissions.filter((submission) => submission.status === statusFilter)
-    : submissions;
+    ? visible.filter((submission) => submission.status === statusFilter)
+    : visible;
   const canArchive = user != null && ARCHIVE_ROLES.includes(user.role);
 
   async function archive(id: string) {
