@@ -58,6 +58,13 @@ export const FEATURE_ACCESS = {
 	 * Self-scoped reads (own entries only) stay open to every role.
 	 */
 	viewAllAuditLogs: ["vpaa", "system_admin"],
+	/**
+	 * Read platform-wide aggregates that are scoped to no unit — the user
+	 * role distribution (`GET /auth/users/role-counts`) and the report-export
+	 * format counts (`GET /reports/exports`). Institution-level statistics,
+	 * so admin-only rather than open to every role like a unit-scoped read.
+	 */
+	viewPlatformStats: ["system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type FeatureKey = keyof typeof FEATURE_ACCESS;

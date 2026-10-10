@@ -41,6 +41,14 @@ export const FEATURE_ACCESS = {
 	 * Self-scoped reads (own entries only) stay open to every role.
 	 */
 	viewAllAuditLogs: ["vpaa", "system_admin"],
+	/**
+	 * Read platform-wide aggregates that are scoped to no unit — the user
+	 * role distribution (`GET /auth/users/role-counts`) and the report-export
+	 * format counts (`GET /reports/exports`). These are institution-level
+	 * statistics (an institution's role headcount, its export volume), so they
+	 * are admin-only rather than open to every role like a unit-scoped read.
+	 */
+	viewPlatformStats: ["system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;
 
 export type FeatureKey = keyof typeof FEATURE_ACCESS;
@@ -93,6 +101,19 @@ export const AI_INSIGHT_GENERATION_ROLES: readonly string[] =
 /** Roles that may read every user's audit-log entries (full waterfall). */
 export const VIEW_ALL_AUDIT_ROLES: readonly string[] =
 	FEATURE_ACCESS.viewAllAuditLogs;
+
+/** Roles that may read platform-wide (non-unit-scoped) aggregates. */
+export const PLATFORM_STATS_ROLES: readonly string[] =
+	FEATURE_ACCESS.viewPlatformStats;
+
+/** May `role` read platform-wide aggregates? */
+export function assertCanViewPlatformStats(role: string | undefined): void {
+	if (!hasRole(role, PLATFORM_STATS_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not read platform-wide statistics — expected one of: ${PLATFORM_STATS_ROLES.join(", ")}`,
+		);
+	}
+}
 
 /** May `role` trigger an AI recommendation generation? */
 export function assertCanGenerateAiInsights(role: string | undefined): void {
