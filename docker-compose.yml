@@ -185,8 +185,6 @@ services:
     environment:
       # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
-      # NOTE: MagicDNS name — obelisk-logs.<tailnet>.ts.net
-      TS_HOSTNAME: obelisk-logs
       # NOTE: state must persist or every restart registers a new node
       TS_STATE_DIR: /var/lib/tailscale
       # NOTE: reuse the stored login instead of re-authing on every start
@@ -236,8 +234,6 @@ services:
     environment:
       # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
-      # NOTE: MagicDNS name — obelisk-stats.<tailnet>.ts.net
-      TS_HOSTNAME: obelisk-stats
       # NOTE: state must persist or every restart registers a new node
       TS_STATE_DIR: /var/lib/tailscale
       # NOTE: reuse the stored login instead of re-authing on every start

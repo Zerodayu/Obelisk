@@ -13,7 +13,7 @@ Runs behind a single Caddy edge with automatic HTTPS and ships its own log viewe
 - Dozzle log viewer (tailnet-only via a Tailscale sidecar)
 - Access logs on every hop
 - umami analytics (self-hosted; tracker public, dashboard tailnet-only)
-- Admin surfaces on MagicDNS names (`obelisk-logs` / `obelisk-stats`) — no Tailscale install on the VPS
+- Admin surfaces on auto-assigned MagicDNS names — no Tailscale install on the VPS
 - Page-view tracker loads only when configured
 - One-time setup documented in DEPLOYMENT.md
 - Own Postgres — no external database
