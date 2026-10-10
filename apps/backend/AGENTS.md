@@ -18,6 +18,7 @@ src/
     ├── atrisk/           # At-risk watchlist + Action-Taken Record (clears flags on final approval)
     ├── audit/            # Audit-trail reads (GET /audit/logs — server-scoped waterfall)
     ├── auth/             # Auth (better-auth config, session guard macro, role requests)
+    ├── archive/          # Graduation-cluster archive (READ side + PEO capture; compile/purge pending)
     ├── car/              # Course Assessment Report (F13)
     ├── cqi/              # CQI/ACT loop (F22, F23, F25, F24 APAR)
     ├── check/            # CHECK-stage supporting instruments (F08/F10/F11/F12/F17/F18/F19)
@@ -117,7 +118,7 @@ action_taken              -> Action-Taken Record (At-Risk Students)
 5. `curriculum_map`, `assessment_calendar`, `target_setting_matrix`, `assessment_budget` (PLAN-phase setup)
 6. ✅ `mid_cycle_attainment`, `resource_monitoring`, `peer_observation`, `exhibition_feedback`, `clo_perception_survey`, `student_exit_survey`, `portfolio_assessment_record`, `capstone_panel_evaluation` (supporting DO/CHECK instruments) — **DONE** (Phase 6)
 7. ✅ `alumni_tracer`, `employer_satisfaction_survey`, `annual_program_report`, `systemic_gap_report`, `capa_plan`, `portfolio_roadmap`, `institutional_review` (periodic/escalation/institutional) — **DONE** (Phase 6; `annual_program_report` done in Phase 4)
-8. Graduation-cluster archival pipeline (after PEO attainment capture)
+8. Graduation-cluster archival pipeline (after PEO attainment capture) — ✅ **read side + PEO capture** DONE (`src/v1/archive/` — `GET /archives`, `/archives/composition`, `/archives/status-counts`, `GET /archives/:clusterId`, `POST /archives/:clusterId/confirm`). ⛔ **Write pipeline not built**: auto-create clusters, compile snapshots, export artifacts, and purge granular rows — compile deletes source rows (`StudentScore`/`CloAttainment`/`AtRiskFlag`), an irreversible operation that needs its own design pass. A deployment that has never run it shows empty composition, rendered as an empty state.
 
 Each phase's Definition of Done includes unit tests (bun:test) for services/validators plus integration tests against the dev DB (gated on DB reachability), with lint and typecheck green.
 
