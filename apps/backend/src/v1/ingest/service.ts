@@ -16,6 +16,7 @@ import {
 	reconcileAtRisk,
 } from "@lib/ingest/score-edit";
 import { prisma } from "@lib/prisma";
+import { cloAttainmentUnitWhere, type UnitScope } from "@lib/unit-scope";
 import type { Prisma, UploadRecord } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
 
@@ -1192,6 +1193,53 @@ export class IngestService {
 			userId,
 		);
 		return { formSubmissionId: created.id };
+	}
+
+	/**
+	 * `GET /ingest/computation-runs` — how many 70/30 computation runs each
+	 * term has, unit-scoped through the sections the runs' attainment rows
+	 * belong to. Terms with zero runs are not invented; the chart simply has
+	 * no bar for them.
+	 */
+	async listComputationRuns(unit: UnitScope) {
+		const runs = await prisma.computationRun.findMany({
+			where: { cloAttainments: { some: cloAttainmentUnitWhere(unit) } },
+			select: {
+				formulaVersion: true,
+				cloAttainments: {
+					select: {
+						classSection: {
+							select: {
+								term: { select: { schoolYear: true, semester: true } },
+							},
+						},
+					},
+					distinct: ["classSectionId"],
+					take: 1,
+				},
+			},
+		});
+
+		const counts = new Map<
+			string,
+			{ runCount: number; formulaVersion: string }
+		>();
+		for (const run of runs) {
+			const term = run.cloAttainments[0]?.classSection.term;
+			if (!term) continue;
+			// `shortcut: a run is counted once, under the term of its first
+			// attainment row — a run spanning two terms is vanishingly rare and
+			// splitting it would double-count the run.
+			const key = `${term.schoolYear} ${term.semester}`;
+			const bucket = counts.get(key) ?? {
+				runCount: 0,
+				formulaVersion: run.formulaVersion,
+			};
+			bucket.runCount += 1;
+			counts.set(key, bucket);
+		}
+
+		return [...counts].map(([term, bucket]) => ({ term, ...bucket }));
 	}
 
 	/** Returns the upload history for a user, newest first. */

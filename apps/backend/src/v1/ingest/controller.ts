@@ -171,6 +171,27 @@ export const ingestPlugin = new Elysia({
 		},
 	)
 	.get(
+		"/computation-runs",
+		async ({ user }) => {
+			assertCanCaptureClassRecords(callerRole(user));
+			return ingestService.listComputationRuns(unitScopeOf(user));
+		},
+		{
+			auth: true,
+			detail: {
+				summary: "Count 70/30 computation runs per term",
+				description:
+					"Unit-scoped volume of ComputationRun rows grouped by the academic term of the sections they scored. Powers the per-term run-volume chart.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Term -> run count + formula version" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
+				},
+			},
+		},
+	)
+	.get(
 		"/attainments",
 		async (ctx) => {
 			// NOTE: assert outside `cached` so a cache hit skips nothing.
