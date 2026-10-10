@@ -222,6 +222,9 @@ async function resetCqiData() {
 			OR: [{ classSectionId: IDS.section }, { programId: IDS.program }],
 		},
 	});
+	// NOTE: after the submissions above (FK) — scoped to the id this file
+	// creates, so a CAR FormType another suite registered is never deleted.
+	await prisma.formType.deleteMany({ where: { id: "it-cqi-car-type" } });
 	await prisma.student.deleteMany({ where: { programId: IDS.program } });
 	await prisma.cloToPloMap.deleteMany({
 		where: { cloId: { in: [IDS.clo1, IDS.clo2] } },
@@ -241,6 +244,12 @@ async function cleanup(draftIds: string[]) {
 	await prisma.auditLog.deleteMany({
 		where: { targetRecordId: { in: draftIds } },
 	});
+	// The CAR FormType/submission the exit-check test seeds for the prefill —
+	// left behind they collide with `forms.test` seeding the same form code.
+	await prisma.formSubmission.deleteMany({
+		where: { id: "it-cqi-car-submission" },
+	});
+	await prisma.formType.deleteMany({ where: { id: "it-cqi-car-type" } });
 	await prisma.ctlRow.deleteMany({
 		where: { closingTheLoopId: { in: draftIds } },
 	});
@@ -312,6 +321,40 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 			});
 			expect(savedGap.gapRows[0].rootCauseCategory).toBe("4-Student Factors");
 
+			// An approved CAR carries a Part 5 CQI row for CLO1 (mapped to
+			// PLO1) — F13's entries are the prefill source for F23.
+			const carType = await prisma.formType.upsert({
+				where: { code: "course_assessment_report" },
+				update: {},
+				create: {
+					id: "it-cqi-car-type",
+					code: "course_assessment_report",
+					name: "Course Assessment Report (CAR)",
+					pdcaStage: "CHECK",
+					sequenceNo: 13,
+				},
+			});
+			const carSubmission = await prisma.formSubmission.create({
+				data: {
+					id: "it-cqi-car-submission",
+					formTypeId: carType.id,
+					programId: IDS.program,
+					termId: IDS.term,
+					status: "approved",
+					formData: {
+						part5: [
+							{
+								cloCode: "CLO1",
+								rootCauseCategory: "2-Instruction & Pedagogy",
+								intervention: "Flip the lab demo before the lab",
+								owner: "CAR Owner",
+								timelineAndKpi: "AY 2095-2096; cohort 2 avg >= 85%",
+							},
+						],
+					},
+				},
+			});
+
 			// F23: the open gap becomes a planned CQI entry carrying the gap's root cause.
 			const planDraft = await cqiActionPlanService.ensureDraft(
 				IDS.program,
@@ -330,10 +373,14 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 				ploCode: "PLO1",
 				cohortYearLevel: 2,
 				priorAttainmentPct: 67.5,
-				evidenceSource: "F22 Gap Analysis Matrix",
+				evidenceSource: `F22 Gap Analysis Matrix; CAR ${carSubmission.id}`,
+				// F22's own fields win over the CAR's Part 5 row.
 				rootCauseCategory: "4-Student Factors",
+				owner: "Prof A",
+				// The CAR fills what F22 does not collect.
+				intervention: "Flip the lab demo before the lab",
+				timelineAndKpi: "AY 2095-2096; cohort 2 avg >= 85%",
 				status: "planned",
-				intervention: "",
 			});
 
 			const linked = await prisma.gapRow.findUniqueOrThrow({

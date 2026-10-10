@@ -36,6 +36,8 @@ const GAP_ANALYSIS_CODE = "plo_gap_analysis";
 const CQI_PLAN_CODE = "cqi_action_plan";
 const ANNUAL_REPORT_CODE = "annual_program_report";
 const CTL_CODE = "closing_the_loop";
+/** Prefill source for CQI entries — F13's Part 5 lives on its submissions. */
+const CAR_CODE = "course_assessment_report";
 const MIN_ATTAINMENT_PCT = 70;
 
 export class CqiSourceNotFoundError extends Error {
@@ -410,6 +412,15 @@ export class PloGapAnalysisService {
 // F23 `cqi_action_plan`: the stateful two-phase living document. One entry per
 // gap, planned in this cycle, tracked-to-completion in the next.
 
+/** A Part 5 CQI row as stored in a CAR's `formData` (SaveCarParts["part5"]). */
+interface CarPart5Entry {
+	cloCode?: string;
+	rootCauseCategory?: string;
+	intervention?: string;
+	owner?: string;
+	timelineAndKpi?: string;
+}
+
 export class CqiActionPlanService {
 	async ensureFormType(): Promise<string> {
 		return ensureCqiFormType(CQI_PLAN_CODE, "CQI Action Plan", 18);
@@ -473,9 +484,18 @@ export class CqiActionPlanService {
 			include: { plo: { select: { code: true, description: true } } },
 		});
 
+		// F13's Part 5 CQI rows seed the plan — root cause / intervention /
+		// owner migrate from the CAR instead of every entry starting blank.
+		const carSources = await this.loadCarPart5Sources(
+			programId,
+			openGaps.map((gap) => gap.ploId),
+		);
+
 		const submission = await this.findProgramTermSubmission(programId, termId);
 		if (submission && openGaps.length > 0) {
 			for (const gap of openGaps) {
+				const carSource = carSources.get(gap.ploId);
+				const car = carSource?.part5;
 				const entryId = crypto.randomUUID();
 				await prisma.cqiEntry.create({
 					data: {
@@ -483,13 +503,21 @@ export class CqiActionPlanService {
 						cqiActionPlanId: submission.id,
 						ploId: gap.ploId,
 						cohortYearLevel: gap.cohortYearLevel,
-						evidenceSource: "F22 Gap Analysis Matrix",
+						evidenceSource: carSource
+							? `F22 Gap Analysis Matrix; CAR ${carSource.submissionId}`
+							: "F22 Gap Analysis Matrix",
 						priorAttainmentPct: Number(gap.attainmentPct),
-						rootCauseCategory: gap.rootCauseCategory ?? "1-Curriculum Design",
-						intervention: "",
-						owner: "",
+						// F22's own fields win; the CAR fills the blanks.
+						rootCauseCategory:
+							gap.rootCauseCategory ||
+							car?.rootCauseCategory ||
+							"1-Curriculum Design",
+						// NOTE: F22 collects the named owner — the old code
+						// dropped it for "" here.
+						owner: gap.namedOwner || car?.owner || "",
 						ownerRole: "",
-						timelineAndKpi: "",
+						intervention: car?.intervention || "",
+						timelineAndKpi: car?.timelineAndKpi || "",
 						status: "planned",
 					},
 				});
@@ -541,6 +569,61 @@ export class CqiActionPlanService {
 			);
 		}
 		return this.generate(submission.programId, submission.termId, userId);
+	}
+
+	/**
+	 * The newest approved CAR Part 5 CQI row for each gap PLO — Part 5 is
+	 * keyed by CLO code, so the match runs through `CloToPloMap`.
+	 * shortcut: Part 5 aggregates all cohorts of a course, so only the PLO
+	 * half of a gap is matched; the cohort half cannot be verified from it.
+	 */
+	private async loadCarPart5Sources(
+		programId: string,
+		ploIds: string[],
+	): Promise<Map<string, { submissionId: string; part5: CarPart5Entry }>> {
+		const result = new Map<
+			string,
+			{ submissionId: string; part5: CarPart5Entry }
+		>();
+		const uniquePloIds = [...new Set(ploIds)];
+		if (uniquePloIds.length === 0) return result;
+
+		const maps = await prisma.cloToPloMap.findMany({
+			where: { ploId: { in: uniquePloIds } },
+			select: { ploId: true, clo: { select: { code: true } } },
+		});
+		const cloCodesByPlo = new Map<string, Set<string>>();
+		for (const map of maps) {
+			const codes = cloCodesByPlo.get(map.ploId) ?? new Set<string>();
+			codes.add(map.clo.code);
+			cloCodesByPlo.set(map.ploId, codes);
+		}
+		if (cloCodesByPlo.size === 0) return result;
+
+		// Newest approved CARs first — the first row found wins.
+		const cars = await prisma.formSubmission.findMany({
+			where: {
+				programId,
+				status: "approved",
+				formType: { code: CAR_CODE },
+			},
+			orderBy: { createdAt: "desc" },
+			take: 10,
+			select: { id: true, formData: true },
+		});
+		for (const car of cars) {
+			const part5 = ((car.formData ?? {}) as { part5?: CarPart5Entry[] })
+				.part5;
+			if (!part5?.length) continue;
+			for (const [ploId, codes] of cloCodesByPlo) {
+				if (result.has(ploId)) continue;
+				const entry = part5.find(
+					(row) => row.cloCode != null && codes.has(row.cloCode),
+				);
+				if (entry) result.set(ploId, { submissionId: car.id, part5: entry });
+			}
+		}
+		return result;
 	}
 
 	async save(
