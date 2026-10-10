@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -16,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
 import type { ActionTakenData, AtRiskFlagRow } from "@/server/actions/at-risk";
 import {
@@ -138,6 +140,8 @@ export function ActionTakenForm() {
     }
   }, [classSectionId]);
 
+  const auto = useAutoGenerate([classSectionId], handleInit);
+
   const handleSave = useCallback(async () => {
     if (!payload) return;
     setSaving(true);
@@ -177,8 +181,8 @@ export function ActionTakenForm() {
         <FrameHeader>
           <FrameTitle>Open Action-Taken Record</FrameTitle>
           <FrameDescription>
-            Select the class section to see its at-risk watchlist, then open the
-            form for that section.
+            Pick a class section to review its at-risk watchlist — the form
+            opens automatically for it.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
@@ -186,20 +190,13 @@ export function ActionTakenForm() {
             <ContextRequired scope="class-section" />
           ) : (
             <div className="space-y-4">
+              <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
               <div className="text-sm text-muted-foreground">
                 {flagsLoading
                   ? "Loading at-risk students..."
                   : watchlist.length === 0
                     ? "No at-risk students in this section."
                     : `${watchlist.length} at-risk student(s) in this section.`}
-              </div>
-              <div>
-                <Button
-                  onClick={handleInit}
-                  disabled={loading || !classSectionId}
-                >
-                  {loading ? "Opening..." : "Open Form"}
-                </Button>
               </div>
             </div>
           )}
@@ -279,6 +276,13 @@ export function ActionTakenForm() {
             />
           </Field>
           <div className="mt-4 flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={auto.retry}
+              disabled={loading || auto.busy}
+            >
+              Re-generate
+            </Button>
             <Button onClick={handleSave} disabled={saving || !editable}>
               {saving ? "Saving..." : "Save Changes"}
             </Button>

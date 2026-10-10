@@ -2,6 +2,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -16,6 +17,7 @@ import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -100,6 +102,8 @@ export default function MidCycleAttainmentForm() {
     }
   }, [programId, termId]);
 
+  const auto = useAutoGenerate([programId, termId], handleInit);
+
   const handleSave = useCallback(async () => {
     if (!payload) return;
     setSaving(true);
@@ -178,19 +182,14 @@ export default function MidCycleAttainmentForm() {
         <FrameHeader>
           <FrameTitle>Mid-Cycle CLO Attainment Summary (F08)</FrameTitle>
           <FrameDescription>
-            Initialize the form with Program and Term to begin.
+            Generated automatically for the current Program and Term.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleInit}
-              disabled={loading || !programId || !termId}
-            >
-              {loading ? "Initializing..." : "Initialize Form"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -476,6 +475,13 @@ export default function MidCycleAttainmentForm() {
       </Frame>
 
       <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
+        >
+          Re-generate
+        </Button>
         <Button onClick={handleSave} disabled={saving || !editable}>
           {saving ? "Saving..." : "Save Changes"}
         </Button>

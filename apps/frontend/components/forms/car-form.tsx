@@ -3,6 +3,7 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -24,6 +25,7 @@ import {
   BLOOMS_LEVELS,
   ROOT_CAUSES,
 } from "@/lib/constants/obe";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
 import {
   type AssessmentTypeRow,
@@ -836,6 +838,14 @@ export function CarForm() {
     }
   }, [classSectionId, setPayload, setDirty]);
 
+  // NOTE: auto-generate on open, but skip when this section's CAR is already
+  // loaded — regenerating would wipe unsaved edits; the Re-generate button in
+  // the bar does that on demand.
+  const auto = useAutoGenerate([classSectionId], () => {
+    if (payload?.classSectionId === classSectionId) return;
+    return handleGenerate();
+  });
+
   const handleSave = useCallback(async () => {
     if (!payload?.formSubmissionId) return;
     setSaving(true);
@@ -894,25 +904,33 @@ export function CarForm() {
 
   return (
     <div className="space-y-4">
-      {/* Top Generator Bar */}
+      {/* Top Status Bar — the CAR pre-generates for the picked section. */}
       <Frame>
         <FrameHeader>
-          <FrameTitle>Generate Course Assessment Report</FrameTitle>
+          <FrameTitle>Course Assessment Report</FrameTitle>
           <FrameDescription>
-            Generate or view the 7-part CAR from ingest data for the selected
-            class section.
+            The 7-part CAR is generated automatically from ingest data for the
+            selected class section.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           {!classSectionId ? (
             <ContextRequired scope="class-section" />
+          ) : payload?.classSectionId === classSectionId ? (
+            <div>
+              <Button
+                variant="outline"
+                onClick={() => void handleGenerate()}
+                disabled={generating}
+              >
+                {generating ? "Generating..." : "Re-generate"}
+              </Button>
+            </div>
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={generating || !classSectionId.trim()}
-            >
-              {generating ? "Generating..." : "Generate CAR"}
-            </Button>
+            <GeneratingState
+              busy={generating || auto.busy}
+              retry={auto.retry}
+            />
           )}
         </FramePanel>
       </Frame>

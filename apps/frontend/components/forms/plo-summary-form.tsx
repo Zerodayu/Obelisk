@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { toast, toastError } from "@/components/ui/toast";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -75,6 +77,8 @@ export function PloSummaryForm() {
     }
   }, [programId, termId]);
 
+  const auto = useAutoGenerate([programId, termId], handleGenerate);
+
   if (!payload) {
     return (
       <Frame>
@@ -89,12 +93,7 @@ export function PloSummaryForm() {
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || !programId.trim() || !termId.trim()}
-            >
-              {loading ? "Generating..." : "Generate"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -196,8 +195,12 @@ export function PloSummaryForm() {
       </Frame>
 
       <div className="flex justify-end">
-        <Button variant="outline" onClick={() => setPayload(null)}>
-          Generate Another
+        <Button
+          variant="outline"
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
+        >
+          Re-generate
         </Button>
       </div>
     </div>

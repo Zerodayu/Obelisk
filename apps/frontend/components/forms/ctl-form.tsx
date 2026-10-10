@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -17,6 +18,7 @@ import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -102,6 +104,8 @@ export function CtlForm() {
     }
   }, [programId, termId]);
 
+  const auto = useAutoGenerate([programId, termId], handleGenerate);
+
   const handleSave = useCallback(async () => {
     if (!payload?.formSubmissionId) return;
     setSaving(true);
@@ -167,12 +171,7 @@ export function CtlForm() {
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || !programId.trim() || !termId.trim()}
-            >
-              {loading ? "Generating..." : "Generate"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -337,12 +336,10 @@ export function CtlForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          onClick={() => {
-            setPayload(null);
-            setRows([]);
-          }}
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
         >
-          Generate Another
+          Re-generate
         </Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}

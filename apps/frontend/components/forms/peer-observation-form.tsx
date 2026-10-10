@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -17,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -144,6 +146,8 @@ export default function PeerObservationForm() {
     }
   }, [programId, termId]);
 
+  const auto = useAutoGenerate([programId, termId], handleInit);
+
   const handleSave = useCallback(async () => {
     if (!payload) return;
     setSaving(true);
@@ -192,12 +196,7 @@ export default function PeerObservationForm() {
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleInit}
-              disabled={loading || !programId || !termId}
-            >
-              {loading ? "Initializing..." : "Initialize"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>

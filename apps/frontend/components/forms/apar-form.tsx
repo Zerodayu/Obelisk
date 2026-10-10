@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
 import { generateApar, saveApar } from "@/server/actions/cqi";
 
@@ -97,6 +99,8 @@ export function AparForm() {
     }
   }, [programId]);
 
+  const auto = useAutoGenerate([programId], handleGenerate);
+
   const handleSave = useCallback(async () => {
     if (!payload?.formSubmissionId) return;
     setSaving(true);
@@ -133,12 +137,7 @@ export function AparForm() {
           {!programId ? (
             <ContextRequired scope="program" />
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || !programId.trim()}
-            >
-              {loading ? "Generating..." : "Generate"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -250,13 +249,10 @@ export function AparForm() {
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
-          onClick={() => {
-            setPayload(null);
-            setAttachments({});
-            setNarratives({});
-          }}
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
         >
-          Generate Another
+          Re-generate
         </Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}

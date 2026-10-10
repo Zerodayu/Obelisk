@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -15,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast, toastError } from "@/components/ui/toast";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -88,6 +90,8 @@ export function AssessmentCalendarForm() {
     }
   }, [programId, termId]);
 
+  const auto = useAutoGenerate([programId, termId], handleGenerate);
+
   const handleSave = useCallback(async () => {
     if (!payload?.formSubmissionId) return;
     setSaving(true);
@@ -159,12 +163,7 @@ export function AssessmentCalendarForm() {
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleGenerate}
-              disabled={loading || !programId.trim() || !termId.trim()}
-            >
-              {loading ? "Initializing..." : "Initialize"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -316,12 +315,10 @@ export function AssessmentCalendarForm() {
         </Button>
         <Button
           variant="outline"
-          onClick={() => {
-            setPayload(null);
-            setEvents([]);
-          }}
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
         >
-          Re-initialize
+          Re-generate
         </Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving ? "Saving..." : "Save"}

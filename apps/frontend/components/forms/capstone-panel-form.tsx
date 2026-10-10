@@ -3,6 +3,7 @@
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
 import { ContextRequired } from "@/components/forms/context-required";
+import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
+import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
   selectedProgramIdAtom,
   selectedTermIdAtom,
@@ -104,6 +106,8 @@ export default function CapstonePanelForm() {
       setLoading(false);
     }
   }, [programId, termId]);
+
+  const auto = useAutoGenerate([programId, termId], handleInit);
 
   const handleSave = useCallback(async () => {
     if (!payload) return;
@@ -193,19 +197,14 @@ export default function CapstonePanelForm() {
         <FrameHeader>
           <FrameTitle>Capstone Panel Evaluation</FrameTitle>
           <FrameDescription>
-            F19 — Load an existing form instance.
+            F19 — loaded automatically for the current academic context.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
           {!programId || !termId ? (
             <ContextRequired scope="program-term" />
           ) : (
-            <Button
-              onClick={handleInit}
-              disabled={loading || !programId || !termId}
-            >
-              {loading ? "Loading…" : "Load Form"}
-            </Button>
+            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
           )}
         </FramePanel>
       </Frame>
@@ -479,6 +478,13 @@ export default function CapstonePanelForm() {
       </Frame>
 
       <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          onClick={auto.retry}
+          disabled={loading || auto.busy}
+        >
+          Re-generate
+        </Button>
         <Button onClick={handleSave} disabled={saving || !editable}>
           {saving ? "Saving…" : "Save"}
         </Button>
