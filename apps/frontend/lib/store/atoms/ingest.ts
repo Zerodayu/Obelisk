@@ -191,10 +191,21 @@ export const uploadStatusesDataAtom = atom<UploadStatusDatum[]>((get) => {
 /** Refreshes the underlying `GET /ingest/history` fetch. */
 export const refreshUploadStatusesAtom = refreshUploadHistoryAtom;
 
-// TODO(computation-runs): `ComputationRun` is only read by internal services —
-// no route lists runs per term yet.
-/** 70/30 computation-run volume per term (`ComputationRun`). */
+/**
+ * 70/30 computation-run volume per term (`GET /ingest/computation-runs`).
+ *
+ * The backend gates this on class-record capture (faculty/program_chair/
+ * system_admin) and unit-scopes it, so it 403s for the QA roles — the chart
+ * only renders on the faculty dashboard for that reason.
+ */
 export const {
 	dataAtom: computationRunsDataAtom,
 	refreshAtom: refreshComputationRunsAtom,
-} = atomWithMockData<ComputationRunDatum[]>([]);
+} = atomWithAsyncData<ComputationRunDatum[]>([], (_get, signal) =>
+	api
+		.get<{ term: string; runCount: number; formulaVersion: string }[]>(
+			"/ingest/computation-runs",
+			{ signal },
+		)
+		.then((rows) => rows.map((r) => ({ ...r }))),
+);
