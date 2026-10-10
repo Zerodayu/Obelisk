@@ -4,205 +4,205 @@ import { useAtomValue } from "jotai";
 
 import { ChartEmptyState } from "@/components/charts/chart-empty-state";
 import type {
-  CloAttainmentDatum,
-  CohortTrendDatum,
-  PeoAttainmentDatum,
-  PloAttainmentDatum,
-  ScoreBandDatum,
+	CloAttainmentDatum,
+	CohortTrendDatum,
+	PeoAttainmentDatum,
+	PloAttainmentDatum,
+	ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
 import {
-  type ChartConfig,
-  EChartsBarChart,
+	type ChartConfig,
+	EChartsBarChart,
 } from "@/components/evilcharts/charts/echarts-bar-chart";
 import {
-  EChartsLineChart,
-  type ChartConfig as LineConfig,
+	EChartsLineChart,
+	type ChartConfig as LineConfig,
 } from "@/components/evilcharts/charts/echarts-line-chart";
 import {
-  cloAttainmentsDataAtom,
-  cohortTrendsDataAtom,
-  peoAttainmentsDataAtom,
-  ploAttainmentsDataAtom,
-  scoreBandsDataAtom,
+	cloAttainmentsDataAtom,
+	cohortTrendsDataAtom,
+	peoAttainmentsDataAtom,
+	ploAttainmentsDataAtom,
+	scoreBandsDataAtom,
 } from "@/lib/store/atoms/attainments";
 
 const FLOOR_NOTE =
-  "Composite = Direct × 70% + Indirect × 30%. The ≥70% floor is enforced server-side.";
+	"Composite = Direct × 70% + Indirect × 30%. The ≥70% floor is enforced server-side.";
 
 const attainmentConfig = {
-  direct: {
-    label: "Direct",
-    colors: { light: ["var(--chart-1)"] },
-  },
-  indirect: {
-    label: "Indirect",
-    colors: { light: ["var(--info)"] },
-  },
-  composite: {
-    label: "Composite",
-    colors: { light: ["var(--chart-3)"] },
-  },
+	direct: {
+		label: "Direct",
+		colors: { light: ["var(--chart-1)"] },
+	},
+	indirect: {
+		label: "Indirect",
+		colors: { light: ["var(--info)"] },
+	},
+	composite: {
+		label: "Composite",
+		colors: { light: ["var(--chart-3)"] },
+	},
 } satisfies ChartConfig;
 
 const floorConfig = {
-  met: { label: "MET ≥70%", colors: { light: ["var(--success)"] } },
-  notMet: {
-    label: "NOT MET <70%",
-    colors: { light: ["var(--destructive)"] },
-  },
+	met: { label: "MET ≥70%", colors: { light: ["var(--success)"] } },
+	notMet: {
+		label: "NOT MET <70%",
+		colors: { light: ["var(--destructive)"] },
+	},
 } satisfies ChartConfig;
 
 const ploConfig = {
-  attained: {
-    label: "Attained",
-    colors: { light: ["var(--chart-1)"] },
-  },
-  target: {
-    label: "Target",
-    colors: { light: ["var(--muted-foreground)"] },
-  },
+	attained: {
+		label: "Attained",
+		colors: { light: ["var(--chart-1)"] },
+	},
+	target: {
+		label: "Target",
+		colors: { light: ["var(--muted-foreground)"] },
+	},
 } satisfies ChartConfig;
 
 const peoConfig = {
-  attained: {
-    label: "Attained",
-    colors: { light: ["var(--chart-2)"] },
-  },
-  target: {
-    label: "Target",
-    colors: { light: ["var(--muted-foreground)"] },
-  },
+	attained: {
+		label: "Attained",
+		colors: { light: ["var(--chart-2)"] },
+	},
+	target: {
+		label: "Target",
+		colors: { light: ["var(--muted-foreground)"] },
+	},
 } satisfies ChartConfig;
 
 const bandConfig = {
-  count: {
-    label: "Students",
-    colors: { light: ["var(--primary)"] },
-  },
+	count: {
+		label: "Students",
+		colors: { light: ["var(--primary)"] },
+	},
 } satisfies ChartConfig;
 
 const cohortConfig = {
-  Y1: { label: "Year 1", colors: { light: ["var(--chart-1)"] } },
-  Y2: { label: "Year 2", colors: { light: ["var(--chart-3)"] } },
-  Y3: { label: "Year 3", colors: { light: ["var(--warning)"] } },
-  Y4: { label: "Year 4", colors: { light: ["var(--success)"] } },
+	Y1: { label: "Year 1", colors: { light: ["var(--chart-1)"] } },
+	Y2: { label: "Year 2", colors: { light: ["var(--chart-3)"] } },
+	Y3: { label: "Year 3", colors: { light: ["var(--warning)"] } },
+	Y4: { label: "Year 4", colors: { light: ["var(--success)"] } },
 } satisfies LineConfig;
 
 /** Grouped bars of direct / indirect / composite CLO attainment (CHECK roll-up). */
 export function CloAttainmentBars({
-  data: override,
+	data: override,
 }: {
-  data?: CloAttainmentDatum[];
+	data?: CloAttainmentDatum[];
 }) {
-  const atomData = useAtomValue(cloAttainmentsDataAtom);
-  const data = override ?? atomData;
-  const rows = data.map((c) => ({
-    cloCode: c.cloCode,
-    direct: c.directScorePct ?? 0,
-    indirect: c.indirectScorePct ?? 0,
-    composite: c.compositeScorePct,
-  }));
-  if (rows.length === 0) return <ChartEmptyState />;
-  // The summary payload carries no per-CLO direct/indirect averages yet —
-  // omit those series rather than drawing zero-height bars (see the atom).
-  const hasDirect = data.some((c) => c.directScorePct != null);
-  const hasIndirect = data.some((c) => c.indirectScorePct != null);
+	const atomData = useAtomValue(cloAttainmentsDataAtom);
+	const data = override ?? atomData;
+	const rows = data.map((c) => ({
+		cloCode: c.cloCode,
+		direct: c.directScorePct ?? 0,
+		indirect: c.indirectScorePct ?? 0,
+		composite: c.compositeScorePct,
+	}));
+	if (rows.length === 0) return <ChartEmptyState />;
+	// The summary payload carries no per-CLO direct/indirect averages yet —
+	// omit those series rather than drawing zero-height bars (see the atom).
+	const hasDirect = data.some((c) => c.directScorePct != null);
+	const hasIndirect = data.some((c) => c.indirectScorePct != null);
 
-  return (
-    <EChartsBarChart
-      data={rows}
-      config={attainmentConfig}
-      xDataKey="cloCode"
-      className="h-full w-full"
-      stackType="stacked"
-    >
-      <EChartsBarChart.Grid />
-      <EChartsBarChart.XAxis dataKey="cloCode" />
-      <EChartsBarChart.YAxis
-        tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
-        label="Attainment"
-      />
-      <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Legend />
-      {hasDirect ? <EChartsBarChart.Bar dataKey="direct" /> : null}
-      {hasIndirect ? <EChartsBarChart.Bar dataKey="indirect" /> : null}
-      <EChartsBarChart.Bar dataKey="composite" />
-    </EChartsBarChart>
-  );
+	return (
+		<EChartsBarChart
+			data={rows}
+			config={attainmentConfig}
+			xDataKey="cloCode"
+			className="h-full w-full"
+			stackType="stacked"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis dataKey="cloCode" />
+			<EChartsBarChart.YAxis
+				tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+				label="Attainment"
+			/>
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Legend />
+			{hasDirect ? <EChartsBarChart.Bar dataKey="direct" /> : null}
+			{hasIndirect ? <EChartsBarChart.Bar dataKey="indirect" /> : null}
+			<EChartsBarChart.Bar dataKey="composite" />
+		</EChartsBarChart>
+	);
 }
 
 /** Grouped bars of PLO attainment vs the configured target (≥70% floor). */
 export function PloAttainmentBars({
-  data: override,
+	data: override,
 }: {
-  data?: PloAttainmentDatum[];
+	data?: PloAttainmentDatum[];
 }) {
-  const atomData = useAtomValue(ploAttainmentsDataAtom);
-  const data = override ?? atomData;
-  const rows = data.map((p) => ({
-    ploCode: p.ploCode,
-    attained: p.attainedPct,
-    target: p.targetAttainmentPct,
-  }));
-  if (rows.length === 0) return <ChartEmptyState />;
+	const atomData = useAtomValue(ploAttainmentsDataAtom);
+	const data = override ?? atomData;
+	const rows = data.map((p) => ({
+		ploCode: p.ploCode,
+		attained: p.attainedPct,
+		target: p.targetAttainmentPct,
+	}));
+	if (rows.length === 0) return <ChartEmptyState />;
 
-  return (
-    <EChartsBarChart
-      data={rows}
-      config={ploConfig}
-      xDataKey="ploCode"
-      className="h-full w-full"
-      stackType="stacked"
-    >
-      <EChartsBarChart.Grid />
-      <EChartsBarChart.XAxis dataKey="ploCode" />
-      <EChartsBarChart.YAxis
-        tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
-        label="Attainment"
-      />
-      <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="attained" />
-      <EChartsBarChart.Bar dataKey="target" />
-    </EChartsBarChart>
-  );
+	return (
+		<EChartsBarChart
+			data={rows}
+			config={ploConfig}
+			xDataKey="ploCode"
+			className="h-full w-full"
+			stackType="stacked"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis dataKey="ploCode" />
+			<EChartsBarChart.YAxis
+				tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+				label="Attainment"
+			/>
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Legend />
+			<EChartsBarChart.Bar dataKey="attained" />
+			<EChartsBarChart.Bar dataKey="target" />
+		</EChartsBarChart>
+	);
 }
 
 /** Grouped bars of PEO attainment vs the configured target (biennial). */
 export function PeoAttainmentBars({
-  data: override,
+	data: override,
 }: {
-  data?: PeoAttainmentDatum[];
+	data?: PeoAttainmentDatum[];
 }) {
-  const atomData = useAtomValue(peoAttainmentsDataAtom);
-  const data = override ?? atomData;
-  const rows = data.map((p) => ({
-    peoCode: p.peoCode,
-    attained: p.attainedPct,
-    target: p.targetAttainmentPct,
-  }));
-  if (rows.length === 0) return <ChartEmptyState />;
+	const atomData = useAtomValue(peoAttainmentsDataAtom);
+	const data = override ?? atomData;
+	const rows = data.map((p) => ({
+		peoCode: p.peoCode,
+		attained: p.attainedPct,
+		target: p.targetAttainmentPct,
+	}));
+	if (rows.length === 0) return <ChartEmptyState />;
 
-  return (
-    <EChartsBarChart
-      data={rows}
-      config={peoConfig}
-      xDataKey="peoCode"
-      className="h-full w-full"
-      stackType="stacked"
-    >
-      <EChartsBarChart.Grid />
-      <EChartsBarChart.XAxis dataKey="peoCode" />
-      <EChartsBarChart.YAxis
-        tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
-        label="Attainment"
-      />
-      <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="attained" />
-      <EChartsBarChart.Bar dataKey="target" />
-    </EChartsBarChart>
-  );
+	return (
+		<EChartsBarChart
+			data={rows}
+			config={peoConfig}
+			xDataKey="peoCode"
+			className="h-full w-full"
+			stackType="stacked"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis dataKey="peoCode" />
+			<EChartsBarChart.YAxis
+				tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+				label="Attainment"
+			/>
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Legend />
+			<EChartsBarChart.Bar dataKey="attained" />
+			<EChartsBarChart.Bar dataKey="target" />
+		</EChartsBarChart>
+	);
 }
 
 /**
@@ -211,102 +211,102 @@ export function PeoAttainmentBars({
  * Data derives from the shared CLO-attainment atom (server-flagged threshold).
  */
 export function AttainmentFloorBars() {
-  const data = useAtomValue(cloAttainmentsDataAtom);
-  const rows = data.map((c) => ({
-    label: c.cloCode,
-    met: c.isBelowThreshold ? null : c.compositeScorePct,
-    notMet: c.isBelowThreshold ? c.compositeScorePct : null,
-  }));
-  if (rows.length === 0) return <ChartEmptyState />;
+	const data = useAtomValue(cloAttainmentsDataAtom);
+	const rows = data.map((c) => ({
+		label: c.cloCode,
+		met: c.isBelowThreshold ? null : c.compositeScorePct,
+		notMet: c.isBelowThreshold ? c.compositeScorePct : null,
+	}));
+	if (rows.length === 0) return <ChartEmptyState />;
 
-  return (
-    <EChartsBarChart
-      data={rows}
-      config={floorConfig}
-      xDataKey="label"
-      className="h-full w-full"
-      stackType="stacked"
-    >
-      <EChartsBarChart.Grid />
-      <EChartsBarChart.XAxis dataKey="label" />
-      <EChartsBarChart.YAxis
-        tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
-      />
-      <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Legend />
-      <EChartsBarChart.Bar dataKey="met" />
-      <EChartsBarChart.Bar dataKey="notMet" />
-    </EChartsBarChart>
-  );
+	return (
+		<EChartsBarChart
+			data={rows}
+			config={floorConfig}
+			xDataKey="label"
+			className="h-full w-full"
+			stackType="stacked"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis dataKey="label" />
+			<EChartsBarChart.YAxis
+				tickFormatter={(value) => `${Number(value).toFixed(0)}%`}
+			/>
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Legend />
+			<EChartsBarChart.Bar dataKey="met" />
+			<EChartsBarChart.Bar dataKey="notMet" />
+		</EChartsBarChart>
+	);
 }
 
 /** Longitudinal per-cohort composite attainment across terms (cohort tracking). */
 export function CohortTrendLines({
-  data: override,
+	data: override,
 }: {
-  data?: CohortTrendDatum[];
+	data?: CohortTrendDatum[];
 }) {
-  const atomData = useAtomValue(cohortTrendsDataAtom);
-  const data = override ?? atomData;
-  const terms = [...new Set(data.map((d) => d.term))];
-  const rows = terms.map((term) => {
-    const row: Record<string, unknown> = { term };
-    for (const cohort of ["Y1", "Y2", "Y3", "Y4"] as const) {
-      row[cohort] =
-        data.find((d) => d.term === term && d.cohort === cohort)
-          ?.compositeScorePct ?? null;
-    }
-    return row;
-  });
-  if (rows.length === 0) return <ChartEmptyState />;
+	const atomData = useAtomValue(cohortTrendsDataAtom);
+	const data = override ?? atomData;
+	const terms = [...new Set(data.map((d) => d.term))];
+	const rows = terms.map((term) => {
+		const row: Record<string, unknown> = { term };
+		for (const cohort of ["Y1", "Y2", "Y3", "Y4"] as const) {
+			row[cohort] =
+				data.find((d) => d.term === term && d.cohort === cohort)
+					?.compositeScorePct ?? null;
+		}
+		return row;
+	});
+	if (rows.length === 0) return <ChartEmptyState />;
 
-  return (
-    <EChartsLineChart
-      data={rows}
-      config={cohortConfig}
-      xDataKey="term"
-      className="h-full w-full"
-      curveType="monotone"
-    >
-      <EChartsLineChart.Grid />
-      <EChartsLineChart.XAxis dataKey="term" />
-      <EChartsLineChart.YAxis
-        tickFormatter={(value) => `${value}%`}
-        label="Attainment"
-      />
-      <EChartsLineChart.Tooltip />
-      <EChartsLineChart.Legend />
-      <EChartsLineChart.Line dataKey="Y1" strokeWidth={2} />
-      <EChartsLineChart.Line dataKey="Y2" strokeWidth={2} />
-      <EChartsLineChart.Line dataKey="Y3" strokeWidth={2} />
-      <EChartsLineChart.Line dataKey="Y4" strokeWidth={2} />
-    </EChartsLineChart>
-  );
+	return (
+		<EChartsLineChart
+			data={rows}
+			config={cohortConfig}
+			xDataKey="term"
+			className="h-full w-full"
+			curveType="monotone"
+		>
+			<EChartsLineChart.Grid />
+			<EChartsLineChart.XAxis dataKey="term" />
+			<EChartsLineChart.YAxis
+				tickFormatter={(value) => `${value}%`}
+				label="Attainment"
+			/>
+			<EChartsLineChart.Tooltip />
+			<EChartsLineChart.Legend />
+			<EChartsLineChart.Line dataKey="Y1" strokeWidth={2} />
+			<EChartsLineChart.Line dataKey="Y2" strokeWidth={2} />
+			<EChartsLineChart.Line dataKey="Y3" strokeWidth={2} />
+			<EChartsLineChart.Line dataKey="Y4" strokeWidth={2} />
+		</EChartsLineChart>
+	);
 }
 
 /** Distribution of students across the 4-tier rubric bands. */
 export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
-  const atomData = useAtomValue(scoreBandsDataAtom);
-  const data = override ?? atomData;
-  const rows = data.map((b) => ({ band: b.band, count: b.studentCount }));
-  if (rows.length === 0) return <ChartEmptyState />;
-  return (
-    <EChartsBarChart
-      data={rows}
-      config={bandConfig}
-      xDataKey="band"
-      className="h-full w-full"
-    >
-      <EChartsBarChart.Grid />
-      <EChartsBarChart.XAxis
-        dataKey="band"
-        tickFormatter={(v) => v.split(" ")[0]}
-      />
-      <EChartsBarChart.YAxis label="Students" />
-      <EChartsBarChart.Tooltip />
-      <EChartsBarChart.Bar dataKey="count" variant="expandable" />
-    </EChartsBarChart>
-  );
+	const atomData = useAtomValue(scoreBandsDataAtom);
+	const data = override ?? atomData;
+	const rows = data.map((b) => ({ band: b.band, count: b.studentCount }));
+	if (rows.length === 0) return <ChartEmptyState />;
+	return (
+		<EChartsBarChart
+			data={rows}
+			config={bandConfig}
+			xDataKey="band"
+			className="h-full w-full"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis
+				dataKey="band"
+				tickFormatter={(v) => v.split(" ")[0]}
+			/>
+			<EChartsBarChart.YAxis label="Students" />
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Bar dataKey="count" variant="expandable" />
+		</EChartsBarChart>
+	);
 }
 
 export const ATTAINMENT_FLOOR_NOTE = FLOOR_NOTE;

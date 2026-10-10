@@ -51,7 +51,7 @@ These are institutional rules from the OBE manual and the forms implementation r
 
 - **≥70% hard floor** — every attainment target/benchmark (program, cohort, CLO, PLO, KPI) validates to at least 70%. Shared validator lives in the service layer.
 - **Composite attainment formula** — `Direct × 70% + Indirect × 30%`. Mirrors default `directWeight = 0.70` / `indirectWeight = 0.30` on `ComputationRun`.
-- **At-risk auto-flag** — a student is at-risk if *any* CLO score `< 70%`. Computed, never manually entered (see `CloAttainment.isBelowThreshold`, `AtRiskFlag`).
+- **At-risk auto-flag** — a student is at-risk if _any_ CLO score `< 70%`. Computed, never manually entered (see `CloAttainment.isBelowThreshold`, `AtRiskFlag`).
 - **Loop Status is computed, not a free field** — the Closing-the-Loop (CTL) report may only mark a CQI loop `CLOSED` when all five documented conditions are met; otherwise it is `OPEN - Re-assess` or `OPEN - Not Implemented`. Do not accept a manually-forced CLOSED value.
 - **APAR validation gate** — the Annual Program Report is blocked from submission if the Cohort Tracking Sheet is not attached.
 - **Approval chains** descend by role: `faculty → program_chair → dean → aqau → vpaa`, but the **exact chain per form is server-derived** — `lib/forms/approval-routes.ts` registers each stable form code with its preparer roles and ordered approver chain, and the forms service enforces ownership + per-step role match on submit/approve/return/archive (`system_admin` override included). Never accept client-supplied steps or RBAC decisions; `FormSubmission.currentApproverRole` + `ApprovalStep` mirror the registry's state. Two institutional rules are coded there (use `ascendToVpaa(entry)` when adding a form): **every chain runs from its manual entry point up to `vpaa`** — no rung skipped, so VPAA always gives the final review before archive — and **the VPAA never appears in `preparerRoles`** (top of the hierarchy: it reviews, generates the AI report, and archives; it does not originate submissions).
@@ -65,6 +65,7 @@ These are institutional rules from the OBE manual and the forms implementation r
 The manual references forms by ephemeral IDs (`F01`, `F02`, ... `F28`). **These IDs are provisional and may change when the manual is revised — never rely on them in code, DB, or documentation.**
 
 Refer to forms by either:
+
 1. **the form title**, or
 2. the **stable snake_case code** (maps directly to `FormType.code`).
 
@@ -132,6 +133,7 @@ Phases 6 forms are split across two feature plugins:
 **Schema:** `prisma/schema/13-phase6.prisma` — 8 row models (`MidCycleCohortRow`, `ResourceItemRow`, `CqiImplementRow`, `ExhibitionGuestRow`, `PortfolioCriterionRow`, `CapstonePanelistRow`, `PortfolioRoadmapRow`, `PortfolioRubricRow`). 3 new enums in `01-enums.prisma`: `MidCycleStatus`, `AcquisitionStatus`, `CqiImplementationStatus`. 8 back-relations on `FormSubmission` in `06-forms.prisma`.
 
 **Submit gates** (registered in `lib/forms/submit-gates.ts`):
+
 - F11 `exhibition_feedback`: ≥3 `ExhibitionGuestRow` rows.
 - F19 `capstone_panel_evaluation`: ≥2 faculty + ≥1 industry `CapstonePanelistRow` rows.
 - F20 `alumni_tracer` / F21 `employer_satisfaction_survey`: no approved submission within 18 months (biennial).

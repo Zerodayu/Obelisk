@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+
 import { AppShell } from "@/components/layout/app-shell";
 import { SessionInitializer } from "@/lib/store/session-initializer";
 import { listDepartments } from "@/server/actions/academic";
@@ -13,35 +14,35 @@ import { requireUser } from "@/server/auth";
  * see the app shell or dashboards.
  */
 export default async function AppLayout({
-  children,
+	children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const user = await requireUser();
+	const user = await requireUser();
 
-  if (user.role === "user") {
-    redirect("/onboarding");
-  }
+	if (user.role === "user") {
+		redirect("/onboarding");
+	}
 
-  // Department prefix for the sidebar line ("— CITE: Dean"): resolved here,
-  // server-side, so it renders on first paint instead of after a client fetch.
-  // Accounts without a department (aqau/vpaa/system_admin) skip the lookup.
-  let departmentLabel: string | undefined;
-  const departmentId = user.departmentId;
-  if (departmentId) {
-    const departments = await listDepartments();
-    if (departments.ok) {
-      const department = departments.data.find(
-        (entry) => entry.id === departmentId,
-      );
-      departmentLabel = department?.name || department?.code;
-    }
-  }
+	// Department prefix for the sidebar line ("— CITE: Dean"): resolved here,
+	// server-side, so it renders on first paint instead of after a client fetch.
+	// Accounts without a department (aqau/vpaa/system_admin) skip the lookup.
+	let departmentLabel: string | undefined;
+	const departmentId = user.departmentId;
+	if (departmentId) {
+		const departments = await listDepartments();
+		if (departments.ok) {
+			const department = departments.data.find(
+				(entry) => entry.id === departmentId,
+			);
+			departmentLabel = department?.name || department?.code;
+		}
+	}
 
-  return (
-    <>
-      <SessionInitializer user={user} />
-      <AppShell user={user} departmentLabel={departmentLabel}>
-        {children}
-      </AppShell>
-    </>
-  );
+	return (
+		<>
+			<SessionInitializer user={user} />
+			<AppShell user={user} departmentLabel={departmentLabel}>
+				{children}
+			</AppShell>
+		</>
+	);
 }

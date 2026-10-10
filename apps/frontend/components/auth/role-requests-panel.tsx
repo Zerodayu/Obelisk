@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { toast, toastError } from "@/components/ui/toast";
 import { ApiError, api } from "@/lib/api-client";
@@ -8,156 +9,156 @@ import { ROLE_LABELS, type UserRole } from "@/lib/roles";
 import { decideRoleRequest } from "@/server/actions/auth";
 
 interface RoleRequestProgram {
-  id: string;
-  name: string;
-  code: string;
+	id: string;
+	name: string;
+	code: string;
 }
 
 interface RoleRequestDepartment {
-  id: string;
-  name: string;
-  code: string;
+	id: string;
+	name: string;
+	code: string;
 }
 
 interface RoleRequestUser {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  requestedRole: UserRole;
-  roleRequestStatus: "none" | "pending" | "approved" | "denied";
-  employeeId?: string | null;
-  program?: RoleRequestProgram | null;
-  department?: RoleRequestDepartment | null;
-  isActive: boolean;
-  createdAt: string;
+	id: string;
+	name: string;
+	email: string;
+	role: UserRole;
+	requestedRole: UserRole;
+	roleRequestStatus: "none" | "pending" | "approved" | "denied";
+	employeeId?: string | null;
+	program?: RoleRequestProgram | null;
+	department?: RoleRequestDepartment | null;
+	isActive: boolean;
+	createdAt: string;
 }
 
 export function RoleRequestsPanel() {
-  const [requests, setRequests] = useState<RoleRequestUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+	const [requests, setRequests] = useState<RoleRequestUser[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      setRequests(await api.get<RoleRequestUser[]>("/auth/role-requests"));
-    } catch (err) {
-      const message =
-        err instanceof ApiError ? err.message : "Could not load role requests.";
-      setError(message);
-      toastError({
-        status: err instanceof ApiError ? err.status : undefined,
-        scope: "role-requests",
-        title: "Could not load role requests",
-        description: message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+	const load = useCallback(async () => {
+		setLoading(true);
+		setError(null);
+		try {
+			setRequests(await api.get<RoleRequestUser[]>("/auth/role-requests"));
+		} catch (err) {
+			const message =
+				err instanceof ApiError ? err.message : "Could not load role requests.";
+			setError(message);
+			toastError({
+				status: err instanceof ApiError ? err.status : undefined,
+				scope: "role-requests",
+				title: "Could not load role requests",
+				description: message,
+			});
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+	useEffect(() => {
+		void load();
+	}, [load]);
 
-  async function decide(userId: string, action: "approve" | "deny") {
-    setBusyId(userId);
-    setError(null);
-    const result = await decideRoleRequest(userId, action);
-    if (!result.ok) {
-      setError(result.error);
-      toastError({
-        scope: "role-requests:decide",
-        title: "Request failed",
-        description: result.error,
-      });
-    } else {
-      toast.success({
-        title:
-          action === "approve"
-            ? "Role request approved"
-            : "Role request denied",
-      });
-      await load();
-    }
-    setBusyId(null);
-  }
+	async function decide(userId: string, action: "approve" | "deny") {
+		setBusyId(userId);
+		setError(null);
+		const result = await decideRoleRequest(userId, action);
+		if (!result.ok) {
+			setError(result.error);
+			toastError({
+				scope: "role-requests:decide",
+				title: "Request failed",
+				description: result.error,
+			});
+		} else {
+			toast.success({
+				title:
+					action === "approve"
+						? "Role request approved"
+						: "Role request denied",
+			});
+			await load();
+		}
+		setBusyId(null);
+	}
 
-  return (
-    <section className="rounded-xl border bg-card p-6 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h3 className="text-base font-semibold">Role requests</h3>
-          <p className="text-xs text-muted-foreground">
-            Approve or deny pending role requests from new accounts.
-          </p>
-        </div>
-        <Button
-          disabled={loading}
-          onClick={() => void load()}
-          type="button"
-          variant="outline"
-        >
-          Refresh
-        </Button>
-      </div>
+	return (
+		<section className="bg-card rounded-xl border p-6 shadow-sm">
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<div>
+					<h3 className="text-base font-semibold">Role requests</h3>
+					<p className="text-muted-foreground text-xs">
+						Approve or deny pending role requests from new accounts.
+					</p>
+				</div>
+				<Button
+					disabled={loading}
+					onClick={() => void load()}
+					type="button"
+					variant="outline"
+				>
+					Refresh
+				</Button>
+			</div>
 
-      {error ? <p className="mt-4 text-sm text-destructive">{error}</p> : null}
+			{error ? <p className="text-destructive mt-4 text-sm">{error}</p> : null}
 
-      {loading ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          Loading pending requests…
-        </p>
-      ) : requests.length === 0 ? (
-        <p className="mt-6 text-sm text-muted-foreground">
-          No pending role requests.
-        </p>
-      ) : (
-        <ul className="mt-4 divide-y divide-border">
-          {requests.map((request) => (
-            <li
-              key={request.id}
-              className="flex flex-wrap items-center gap-3 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{request.name}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {request.email}
-                </p>
-                <p className="mt-1 text-xs">
-                  <span className="font-medium">
-                    {ROLE_LABELS[request.requestedRole]}
-                  </span>
-                  {" · "}
-                  {[request.program?.name, request.department?.name]
-                    .filter(Boolean)
-                    .join(" · ") || "No program/department on file"}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  disabled={busyId === request.id}
-                  onClick={() => void decide(request.id, "approve")}
-                  type="button"
-                >
-                  Approve
-                </Button>
-                <Button
-                  disabled={busyId === request.id}
-                  onClick={() => void decide(request.id, "deny")}
-                  type="button"
-                  variant="outline"
-                >
-                  Deny
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
+			{loading ? (
+				<p className="text-muted-foreground mt-6 text-sm">
+					Loading pending requests…
+				</p>
+			) : requests.length === 0 ? (
+				<p className="text-muted-foreground mt-6 text-sm">
+					No pending role requests.
+				</p>
+			) : (
+				<ul className="divide-border mt-4 divide-y">
+					{requests.map((request) => (
+						<li
+							key={request.id}
+							className="flex flex-wrap items-center gap-3 py-3"
+						>
+							<div className="min-w-0 flex-1">
+								<p className="truncate text-sm font-medium">{request.name}</p>
+								<p className="text-muted-foreground truncate text-xs">
+									{request.email}
+								</p>
+								<p className="mt-1 text-xs">
+									<span className="font-medium">
+										{ROLE_LABELS[request.requestedRole]}
+									</span>
+									{" · "}
+									{[request.program?.name, request.department?.name]
+										.filter(Boolean)
+										.join(" · ") || "No program/department on file"}
+								</p>
+							</div>
+							<div className="flex gap-2">
+								<Button
+									disabled={busyId === request.id}
+									onClick={() => void decide(request.id, "approve")}
+									type="button"
+								>
+									Approve
+								</Button>
+								<Button
+									disabled={busyId === request.id}
+									onClick={() => void decide(request.id, "deny")}
+									type="button"
+									variant="outline"
+								>
+									Deny
+								</Button>
+							</div>
+						</li>
+					))}
+				</ul>
+			)}
+		</section>
+	);
 }

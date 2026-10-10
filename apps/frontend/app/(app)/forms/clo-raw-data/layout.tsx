@@ -3,8 +3,8 @@ import { requireRole } from "@/server/auth";
 
 /** Role gate for the class-record capture (CLO raw data) upload screen. */
 export default async function CloRawDataLayout({
-  children,
+	children,
 }: Readonly<{ children: React.ReactNode }>) {
-  await requireRole(CLASS_RECORD_SCREEN_ROLES);
-  return children;
+	await requireRole(CLASS_RECORD_SCREEN_ROLES);
+	return children;
 }

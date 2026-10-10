@@ -9,17 +9,17 @@ import { requireUser } from "@/server/auth";
  * is entitled to. Backend still enforces the boundary.
  */
 export default async function AuditLogsPage() {
-  await requireUser();
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">Audit Logs</h2>
-        <p className="text-sm text-muted-foreground">
-          Who did what, in role-hierarchy order. You see your own activity; the
-          VPAA and system admin see every role&apos;s trail.
-        </p>
-      </div>
-      <AuditWaterfall />
-    </div>
-  );
+	await requireUser();
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">Audit Logs</h2>
+				<p className="text-muted-foreground text-sm">
+					Who did what, in role-hierarchy order. You see your own activity; the
+					VPAA and system admin see every role&apos;s trail.
+				</p>
+			</div>
+			<AuditWaterfall />
+		</div>
+	);
 }

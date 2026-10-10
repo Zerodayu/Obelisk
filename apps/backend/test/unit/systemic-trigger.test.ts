@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import {
 	type CohortPloSnapshot,
 	findSystemicTriggers,
@@ -10,7 +11,10 @@ function cycle(
 	year: string,
 	rows: Array<[ploCode: string, achieved: boolean]>,
 ): CohortPloSnapshot {
-	return { cycle: year, plos: rows.map(([ploCode, achieved]) => ({ ploCode, achieved })) };
+	return {
+		cycle: year,
+		plos: rows.map(([ploCode, achieved]) => ({ ploCode, achieved })),
+	};
 }
 
 describe("findSystemicTriggers", () => {

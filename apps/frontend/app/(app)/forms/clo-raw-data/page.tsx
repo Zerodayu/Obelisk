@@ -4,11 +4,11 @@ import { ClassRecordUpload } from "@/components/forms/class-record-upload";
 import { CloRawDataWorkflow } from "@/components/forms/clo-raw-data-workflow";
 import { UploadHistoryTable } from "@/components/forms/upload-history-table";
 import {
-  Frame,
-  FrameDescription,
-  FrameHeader,
-  FramePanel,
-  FrameTitle,
+	Frame,
+	FrameDescription,
+	FrameHeader,
+	FramePanel,
+	FrameTitle,
 } from "@/components/reui/frame";
 import { CLASS_RECORD_SCREEN_ROLES } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
@@ -21,52 +21,52 @@ import { requireRole } from "@/server/auth";
  * `/ingest/*` call this screen makes.
  */
 export default async function CloRawDataPage() {
-  await requireRole(CLASS_RECORD_SCREEN_ROLES);
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Per-Student CLO Raw Data
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Enter or import per-student scores for your class section. At-risk
-          flags are computed server-side (any CLO &lt; 70%).
-        </p>
-      </div>
-      {/* Approval strip — placeholder until a submission is started for the
+	await requireRole(CLASS_RECORD_SCREEN_ROLES);
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">
+					Per-Student CLO Raw Data
+				</h2>
+				<p className="text-muted-foreground text-sm">
+					Enter or import per-student scores for your class section. At-risk
+					flags are computed server-side (any CLO &lt; 70%).
+				</p>
+			</div>
+			{/* Approval strip — placeholder until a submission is started for the
           class section selected in the upload panel below. */}
-      <CloRawDataWorkflow />
-      <ClassRecordUpload />
-      <UploadHistoryTable />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Class score bands</FrameTitle>
-            <FrameDescription>
-              Distribution across the 4-tier rubric. Empty until an endpoint
-              aggregates student scores into bands.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <ScoreBandBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>At-risk watchlist</FrameTitle>
-            <FrameDescription>
-              Any CLO score below 70% auto-flags a student (server-computed).
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <AtRiskDonut />
-            </div>
-          </FramePanel>
-        </Frame>
-      </div>
-    </div>
-  );
+			<CloRawDataWorkflow />
+			<ClassRecordUpload />
+			<UploadHistoryTable />
+			<div className="grid gap-4 sm:grid-cols-2">
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Class score bands</FrameTitle>
+						<FrameDescription>
+							Distribution across the 4-tier rubric. Empty until an endpoint
+							aggregates student scores into bands.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<ScoreBandBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>At-risk watchlist</FrameTitle>
+						<FrameDescription>
+							Any CLO score below 70% auto-flags a student (server-computed).
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<AtRiskDonut />
+						</div>
+					</FramePanel>
+				</Frame>
+			</div>
+		</div>
+	);
 }

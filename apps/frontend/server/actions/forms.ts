@@ -16,34 +16,34 @@ import { actionApi } from "@/server/api-client";
 export type ApproverRoleValue = "program_chair" | "dean" | "aqau" | "vpaa";
 
 export type WorkflowActionResult<TData = void> =
-  | { ok: true; data: TData }
-  | { ok: false; error: string; status?: number };
+	| { ok: true; data: TData }
+	| { ok: false; error: string; status?: number };
 
 function workflowFailure(
-  err: unknown,
-  fallback: string,
+	err: unknown,
+	fallback: string,
 ): {
-  ok: false;
-  error: string;
-  status?: number;
+	ok: false;
+	error: string;
+	status?: number;
 } {
-  return {
-    ok: false,
-    error: err instanceof ApiError ? err.message : fallback,
-    status: err instanceof ApiError ? err.status : undefined,
-  };
+	return {
+		ok: false,
+		error: err instanceof ApiError ? err.message : fallback,
+		status: err instanceof ApiError ? err.status : undefined,
+	};
 }
 
 /** Submit a draft/returned submission → derives the server-side approval chain. */
 export async function submitFormAction(
-  id: string,
+	id: string,
 ): Promise<WorkflowActionResult> {
-  try {
-    await actionApi.post<unknown>(`/forms/${id}/submit`, {});
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return workflowFailure(err, "Failed to submit for approval.");
-  }
+	try {
+		await actionApi.post<unknown>(`/forms/${id}/submit`, {});
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return workflowFailure(err, "Failed to submit for approval.");
+	}
 }
 
 /**
@@ -51,57 +51,57 @@ export async function submitFormAction(
  * program are resolved server-side, so the client only picks the section.
  */
 export async function initCloRawDataAction(
-  classSectionId: string,
+	classSectionId: string,
 ): Promise<WorkflowActionResult<{ formSubmissionId: string }>> {
-  try {
-    const data = await actionApi.post<{ formSubmissionId: string }>(
-      "/ingest/clo-raw-data/init",
-      { classSectionId },
-    );
-    return { ok: true, data };
-  } catch (err) {
-    return workflowFailure(err, "Failed to start the submission.");
-  }
+	try {
+		const data = await actionApi.post<{ formSubmissionId: string }>(
+			"/ingest/clo-raw-data/init",
+			{ classSectionId },
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return workflowFailure(err, "Failed to start the submission.");
+	}
 }
 
 /** Approve the pending step for `role` (must match the caller's role). */
 export async function approveFormAction(
-  id: string,
-  role: ApproverRoleValue,
-  comment?: string,
+	id: string,
+	role: ApproverRoleValue,
+	comment?: string,
 ): Promise<WorkflowActionResult> {
-  try {
-    await actionApi.post<unknown>(`/forms/${id}/approve/${role}`, {
-      comment: comment || undefined,
-    });
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return workflowFailure(err, "Failed to approve this step.");
-  }
+	try {
+		await actionApi.post<unknown>(`/forms/${id}/approve/${role}`, {
+			comment: comment || undefined,
+		});
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return workflowFailure(err, "Failed to approve this step.");
+	}
 }
 
 /** Return the pending step for `role` with a required reviewer comment. */
 export async function returnFormAction(
-  id: string,
-  role: ApproverRoleValue,
-  comment: string,
+	id: string,
+	role: ApproverRoleValue,
+	comment: string,
 ): Promise<WorkflowActionResult> {
-  try {
-    await actionApi.post<unknown>(`/forms/${id}/return`, { role, comment });
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return workflowFailure(err, "Failed to return this submission.");
-  }
+	try {
+		await actionApi.post<unknown>(`/forms/${id}/return`, { role, comment });
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return workflowFailure(err, "Failed to return this submission.");
+	}
 }
 
 /** Archive an approved submission (aqau/vpaa/system_admin only). */
 export async function archiveFormAction(
-  id: string,
+	id: string,
 ): Promise<WorkflowActionResult> {
-  try {
-    await actionApi.post<unknown>(`/forms/${id}/archive`, {});
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return workflowFailure(err, "Failed to archive this submission.");
-  }
+	try {
+		await actionApi.post<unknown>(`/forms/${id}/archive`, {});
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return workflowFailure(err, "Failed to archive this submission.");
+	}
 }

@@ -18,9 +18,9 @@ import { api } from "@/lib/api-client";
 
 /** Fields the resolver reads off every `*SubmissionListItem`. */
 interface SubmissionListItem {
-  id: string;
-  /** ISO string in JSON — `Date` in the backend type. */
-  createdAt: string;
+	id: string;
+	/** ISO string in JSON — `Date` in the backend type. */
+	createdAt: string;
 }
 
 /**
@@ -31,21 +31,21 @@ interface SubmissionListItem {
  * @param signal     abort signal forwarded from the atom fetcher
  */
 export async function fetchLatestPayload<TPayload>(
-  listPath: string,
-  payloadPath: (id: string) => string,
-  signal?: AbortSignal,
+	listPath: string,
+	payloadPath: (id: string) => string,
+	signal?: AbortSignal,
 ): Promise<TPayload | null> {
-  const list = await api.get<SubmissionListItem[]>(listPath, { signal });
+	const list = await api.get<SubmissionListItem[]>(listPath, { signal });
 
-  let newest: SubmissionListItem | undefined;
-  for (const item of list) {
-    if (!newest || Date.parse(item.createdAt) > Date.parse(newest.createdAt)) {
-      newest = item;
-    }
-  }
-  if (!newest) return null;
+	let newest: SubmissionListItem | undefined;
+	for (const item of list) {
+		if (!newest || Date.parse(item.createdAt) > Date.parse(newest.createdAt)) {
+			newest = item;
+		}
+	}
+	if (!newest) return null;
 
-  return api.get<TPayload>(payloadPath(newest.id), { signal });
+	return api.get<TPayload>(payloadPath(newest.id), { signal });
 }
 
 /**
@@ -54,5 +54,5 @@ export async function fetchLatestPayload<TPayload>(
  * when it carries no prefix. Mirrors `backend/lib/validators/root-cause.ts`.
  */
 export function stripRootCausePrefix(category: string): string {
-  return category.replace(/^\d+-/, "");
+	return category.replace(/^\d+-/, "");
 }

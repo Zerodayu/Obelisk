@@ -9,13 +9,13 @@
  */
 
 import type {
-  AssessmentTypeDatum,
-  BudgetLineDatum,
-  CurriculumCoverageDatum,
-  PloToPeoCoverageDatum,
-  ScheduleDatum,
-  StudentYearLevelDatum,
-  TargetSettingDatum,
+	AssessmentTypeDatum,
+	BudgetLineDatum,
+	CurriculumCoverageDatum,
+	PloToPeoCoverageDatum,
+	ScheduleDatum,
+	StudentYearLevelDatum,
+	TargetSettingDatum,
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
@@ -27,28 +27,28 @@ const TARGET_SETTING_MATRIX = "/plan/target-setting-matrix";
 
 /** Payload subset of `GET /plan/assessment-budget/:id` (`plan/model.ts`). */
 interface AssessmentBudgetPayload {
-  lineItems: {
-    phase: string;
-    name: string;
-    estimatedCost: number;
-    approvedCost: number | null;
-  }[];
+	lineItems: {
+		phase: string;
+		name: string;
+		estimatedCost: number;
+		approvedCost: number | null;
+	}[];
 }
 
 /** Payload subset of `GET /plan/target-setting-matrix/:id` (`plan/model.ts`). */
 interface TargetSettingMatrixPayload {
-  ploRows: {
-    targets: [number, number, number, number];
-  }[];
-  /** Program-wide mean target per year level (Y1–Y4), derived from `ploRows`. */
-  programPloAvg: number[];
+	ploRows: {
+		targets: [number, number, number, number];
+	}[];
+	/** Program-wide mean target per year level (Y1–Y4), derived from `ploRows`. */
+	programPloAvg: number[];
 }
 
 /** `CloToPloMapDto` from `GET /plan/clo-plo-map`. */
 interface CloToPloMapDto {
-  weight: number;
-  clo: { code: string };
-  plo: { code: string };
+	weight: number;
+	clo: { code: string };
+	plo: { code: string };
 }
 
 const YEAR_LEVELS = ["Y1", "Y2", "Y3", "Y4"] as const;
@@ -61,20 +61,20 @@ const YEAR_LEVELS = ["Y1", "Y2", "Y3", "Y4"] as const;
  * series alone until one lands.
  */
 export const {
-  dataAtom: budgetLinesDataAtom,
-  refreshAtom: refreshBudgetLinesAtom,
+	dataAtom: budgetLinesDataAtom,
+	refreshAtom: refreshBudgetLinesAtom,
 } = atomWithAsyncData<BudgetLineDatum[]>([], (_get, signal) =>
-  fetchLatestPayload<AssessmentBudgetPayload>(
-    ASSESSMENT_BUDGET,
-    (id) => `${ASSESSMENT_BUDGET}/${id}`,
-    signal,
-  ).then((payload) =>
-    (payload?.lineItems ?? []).map((item) => ({
-      lineItem: item.name,
-      phase: item.phase.toUpperCase() as BudgetLineDatum["phase"],
-      planned: item.approvedCost ?? item.estimatedCost,
-    })),
-  ),
+	fetchLatestPayload<AssessmentBudgetPayload>(
+		ASSESSMENT_BUDGET,
+		(id) => `${ASSESSMENT_BUDGET}/${id}`,
+		signal,
+	).then((payload) =>
+		(payload?.lineItems ?? []).map((item) => ({
+			lineItem: item.name,
+			phase: item.phase.toUpperCase() as BudgetLineDatum["phase"],
+			planned: item.approvedCost ?? item.estimatedCost,
+		})),
+	),
 );
 
 /**
@@ -91,21 +91,21 @@ export const {
  * route) instead of one program's map; until then it renders empty.
  */
 export const {
-  dataAtom: curriculumCoverageDataAtom,
-  refreshAtom: refreshCurriculumCoverageAtom,
+	dataAtom: curriculumCoverageDataAtom,
+	refreshAtom: refreshCurriculumCoverageAtom,
 } = atomWithAsyncData<CurriculumCoverageDatum[]>([], async (get, signal) => {
-  const programId = get(userAtom)?.programId;
-  if (!programId) return [];
+	const programId = get(userAtom)?.programId;
+	if (!programId) return [];
 
-  const maps = await api.get<CloToPloMapDto[]>("/plan/clo-plo-map", {
-    signal,
-    query: { programId },
-  });
-  return maps.map((map) => ({
-    cloCode: map.clo.code,
-    ploCode: map.plo.code,
-    weight: map.weight,
-  }));
+	const maps = await api.get<CloToPloMapDto[]>("/plan/clo-plo-map", {
+		signal,
+		query: { programId },
+	});
+	return maps.map((map) => ({
+		cloCode: map.clo.code,
+		ploCode: map.plo.code,
+		weight: map.weight,
+	}));
 });
 
 /**
@@ -117,19 +117,19 @@ export const {
  * target series alone.
  */
 export const {
-  dataAtom: targetSettingsDataAtom,
-  refreshAtom: refreshTargetSettingsAtom,
+	dataAtom: targetSettingsDataAtom,
+	refreshAtom: refreshTargetSettingsAtom,
 } = atomWithAsyncData<TargetSettingDatum[]>([], (_get, signal) =>
-  fetchLatestPayload<TargetSettingMatrixPayload>(
-    TARGET_SETTING_MATRIX,
-    (id) => `${TARGET_SETTING_MATRIX}/${id}`,
-    signal,
-  ).then((payload) =>
-    (payload?.programPloAvg ?? []).map((targetAttainmentPct, index) => ({
-      yearLevel: YEAR_LEVELS[index] ?? `Y${index + 1}`,
-      targetAttainmentPct,
-    })),
-  ),
+	fetchLatestPayload<TargetSettingMatrixPayload>(
+		TARGET_SETTING_MATRIX,
+		(id) => `${TARGET_SETTING_MATRIX}/${id}`,
+		signal,
+	).then((payload) =>
+		(payload?.programPloAvg ?? []).map((targetAttainmentPct, index) => ({
+			yearLevel: YEAR_LEVELS[index] ?? `Y${index + 1}`,
+			targetAttainmentPct,
+		})),
+	),
 );
 
 /**
@@ -138,22 +138,22 @@ export const {
  * assessment counts, so no endpoint feeds this chart yet.
  */
 export const { dataAtom: scheduleDataAtom, refreshAtom: refreshScheduleAtom } =
-  atomWithMockData<ScheduleDatum[]>([]);
+	atomWithMockData<ScheduleDatum[]>([]);
 
 /** PLO→PEO coverage matrix (`PloToPeoMap`) — no route reads the model yet. */
 export const {
-  dataAtom: ploToPeoCoverageDataAtom,
-  refreshAtom: refreshPloToPeoCoverageAtom,
+	dataAtom: ploToPeoCoverageDataAtom,
+	refreshAtom: refreshPloToPeoCoverageAtom,
 } = atomWithMockData<PloToPeoCoverageDatum[]>([]);
 
 /** Assessment items by type (`AssessmentItem.type`) — no aggregation route. */
 export const {
-  dataAtom: assessmentTypesDataAtom,
-  refreshAtom: refreshAssessmentTypesAtom,
+	dataAtom: assessmentTypesDataAtom,
+	refreshAtom: refreshAssessmentTypesAtom,
 } = atomWithMockData<AssessmentTypeDatum[]>([]);
 
 /** Students by year level (`Student.yearLevel`) — no student roster route. */
 export const {
-  dataAtom: studentYearLevelsDataAtom,
-  refreshAtom: refreshStudentYearLevelsAtom,
+	dataAtom: studentYearLevelsDataAtom,
+	refreshAtom: refreshStudentYearLevelsAtom,
 } = atomWithMockData<StudentYearLevelDatum[]>([]);

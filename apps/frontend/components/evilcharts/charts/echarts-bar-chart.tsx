@@ -2,82 +2,83 @@
 
 import { BarChart, type BarSeriesOption } from "echarts/charts";
 import {
-  DataZoomComponent,
-  type DataZoomComponentOption,
-  GridComponent,
-  type GridComponentOption,
-  TooltipComponent,
-  type TooltipComponentOption,
+	DataZoomComponent,
+	type DataZoomComponentOption,
+	GridComponent,
+	type GridComponentOption,
+	TooltipComponent,
+	type TooltipComponentOption,
 } from "echarts/components";
 import type { ComposeOption, ImagePatternObject } from "echarts/core";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { motion, useReducedMotion } from "motion/react";
 import {
-  Children,
-  type CSSProperties,
-  type FC,
-  isValidElement,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
+	Children,
+	type CSSProperties,
+	type FC,
+	isValidElement,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
+
 import {
-  Brush,
-  type BrushGeometry,
-  type BrushOverlayElements,
-  type BrushProps,
-  type BrushRange,
-  buildBrushDataZoom,
-  syncBrushOverlay,
+	Brush,
+	type BrushGeometry,
+	type BrushOverlayElements,
+	type BrushProps,
+	type BrushRange,
+	buildBrushDataZoom,
+	syncBrushOverlay,
 } from "@/components/evilcharts/ui/echarts-brush";
 import {
-  buildChartCss,
-  type ChartConfig,
-  flattenColor,
-  getColorsCount,
-  type ResolvedColors,
-  resolveColors,
-  withAlpha,
+	buildChartCss,
+	type ChartConfig,
+	flattenColor,
+	getColorsCount,
+	type ResolvedColors,
+	resolveColors,
+	withAlpha,
 } from "@/components/evilcharts/ui/echarts-chart";
 import { sampleGradient } from "@/components/evilcharts/ui/echarts-dot";
 import {
-  LegendOverlay,
-  type LegendVariant,
+	LegendOverlay,
+	type LegendVariant,
 } from "@/components/evilcharts/ui/echarts-legend";
 import {
-  type TooltipPosition,
-  type TooltipRoundness,
-  type TooltipVariant,
-  tooltipBaseOption,
-  tooltipIndicatorHtml,
-  tooltipRow,
-  tooltipShell,
+	type TooltipPosition,
+	type TooltipRoundness,
+	type TooltipVariant,
+	tooltipBaseOption,
+	tooltipIndicatorHtml,
+	tooltipRow,
+	tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
 
 // Shared types re-exported here so existing consumers keep importing them from
 // the chart module.
 export type {
-  ChartConfig,
-  LegendVariant,
-  TooltipPosition,
-  TooltipRoundness,
-  TooltipVariant,
+	ChartConfig,
+	LegendVariant,
+	TooltipPosition,
+	TooltipRoundness,
+	TooltipVariant,
 };
 
 // NOTE: register only what this chart uses — `DataZoomComponent` bundles the
 // brush slider and the inside (wheel/drag) zoom; the brush chrome is raw zrender
 // (see syncBrushOverlay); every series is a bar, so no LineChart.
 echarts.use([
-  BarChart,
-  GridComponent,
-  TooltipComponent,
-  DataZoomComponent,
-  CanvasRenderer,
+	BarChart,
+	GridComponent,
+	TooltipComponent,
+	DataZoomComponent,
+	CanvasRenderer,
 ]);
 
 type EChartsInstance = ReturnType<typeof echarts.init>;
@@ -85,10 +86,10 @@ type EChartsInstance = ReturnType<typeof echarts.init>;
 // This chart's exact option surface — narrower than echarts' full EChartsOption,
 // so a misspelled key fails the compile instead of silently reaching setOption.
 type EChartsOption = ComposeOption<
-  | BarSeriesOption
-  | GridComponentOption
-  | TooltipComponentOption
-  | DataZoomComponentOption
+	| BarSeriesOption
+	| GridComponentOption
+	| TooltipComponentOption
+	| DataZoomComponentOption
 >;
 
 // Single-entry views of the composed option's array-or-single fields — the
@@ -163,46 +164,46 @@ const BRUSH_FILLER_OPACITY = 0; // selected-range wash — evil-brush draws none
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type BarVariant =
-  | "default"
-  | "hatched"
-  | "duotone"
-  | "duotone-reverse"
-  | "gradient"
-  | "stripped"
-  | "blocks"
-  | "expandable";
+	| "default"
+	| "hatched"
+	| "duotone"
+	| "duotone-reverse"
+	| "gradient"
+	| "stripped"
+	| "blocks"
+	| "expandable";
 export type StackType = "default" | "stacked" | "percent";
 export type BarLayout = "vertical" | "horizontal";
 export type BarAnimationType =
-  | "none"
-  | "left-to-right"
-  | "right-to-left"
-  | "center-out"
-  | "edges-in";
+	| "none"
+	| "left-to-right"
+	| "right-to-left"
+	| "center-out"
+	| "edges-in";
 // Tooltip/legend/config types live in the shared echarts modules — imported and
 // re-exported at the top of this file.
 
 export interface EChartsBarChartProps<TData extends Record<string, unknown>> {
-  data: TData[]; // rows rendered by the chart
-  config: ChartConfig; // series colors + labels
-  xDataKey?: keyof TData & string; // category key — falls back to the axis dataKey / first free column
-  className?: string; // extra classes for the chart container
-  stackType?: StackType; // how multiple bars combine
-  layout?: BarLayout; // orientation of the bars
-  barRadius?: number; // default corner radius every <Bar> inherits
-  animation?: boolean; // master switch for the intro grow-in — false renders instantly
-  animationType?: BarAnimationType; // default grow-in order each <Bar> inherits
-  barGap?: number; // gap between bars within the same category, in pixels
-  barCategoryGap?: number; // gap between categories of bars, in pixels
-  defaultSelectedDataKey?: string | null; // series selected on first render
-  onSelectionChange?: (key: string | null) => void; // fires when the selected series changes
-  // Colors ONLY the tallest column and mutes the rest — the comparison is per
-  // COLUMN (totals across every series), so a whole stack or group lights up.
-  enableMaxValueHighlight?: boolean;
-  isLoading?: boolean; // shows the animated loading skeleton
-  loadingBars?: number; // number of bars in the loading skeleton
-  chartOptions?: Record<string, unknown>; // escape hatch merged over the built ECharts option
-  children?: ReactNode; // declarative config — <Bar>, <XAxis>, <YAxis>, <Grid>, <Tooltip>, <Legend>, <Brush>
+	data: TData[]; // rows rendered by the chart
+	config: ChartConfig; // series colors + labels
+	xDataKey?: keyof TData & string; // category key — falls back to the axis dataKey / first free column
+	className?: string; // extra classes for the chart container
+	stackType?: StackType; // how multiple bars combine
+	layout?: BarLayout; // orientation of the bars
+	barRadius?: number; // default corner radius every <Bar> inherits
+	animation?: boolean; // master switch for the intro grow-in — false renders instantly
+	animationType?: BarAnimationType; // default grow-in order each <Bar> inherits
+	barGap?: number; // gap between bars within the same category, in pixels
+	barCategoryGap?: number; // gap between categories of bars, in pixels
+	defaultSelectedDataKey?: string | null; // series selected on first render
+	onSelectionChange?: (key: string | null) => void; // fires when the selected series changes
+	// Colors ONLY the tallest column and mutes the rest — the comparison is per
+	// COLUMN (totals across every series), so a whole stack or group lights up.
+	enableMaxValueHighlight?: boolean;
+	isLoading?: boolean; // shows the animated loading skeleton
+	loadingBars?: number; // number of bars in the loading skeleton
+	chartOptions?: Record<string, unknown>; // escape hatch merged over the built ECharts option
+	children?: ReactNode; // declarative config — <Bar>, <XAxis>, <YAxis>, <Grid>, <Tooltip>, <Legend>, <Brush>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,14 +214,14 @@ export interface EChartsBarChartProps<TData extends Record<string, unknown>> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface BarProps {
-  dataKey: string; // series key — must exist on the data + config
-  variant?: BarVariant; // fill style for this bar only
-  radius?: number; // corner radius — falls back to the root barRadius
-  animationType?: BarAnimationType; // grow-in order — falls back to the root animationType
-  isClickable?: boolean; // lets this bar be selected by clicking it
-  enableHoverHighlight?: boolean; // dims the other bars while one is hovered
-  glowing?: boolean; // applies a soft outer glow to this bar
-  bufferBar?: boolean; // renders the last data point as a hatched "buffer" bar
+	dataKey: string; // series key — must exist on the data + config
+	variant?: BarVariant; // fill style for this bar only
+	radius?: number; // corner radius — falls back to the root barRadius
+	animationType?: BarAnimationType; // grow-in order — falls back to the root animationType
+	isClickable?: boolean; // lets this bar be selected by clicking it
+	enableHoverHighlight?: boolean; // dims the other bars while one is hovered
+	glowing?: boolean; // applies a soft outer glow to this bar
+	bufferBar?: boolean; // renders the last data point as a hatched "buffer" bar
 }
 
 /**
@@ -231,12 +232,12 @@ export interface BarProps {
 const Bar: FC<BarProps> = () => null;
 
 export interface XAxisProps {
-  dataKey?: string; // category key — overrides the root xDataKey (vertical layout)
-  // Category values are stringified, so the formatter always sees a string —
-  // letting examples share `(value) => value.substring(0, 3)` with the Recharts twin.
-  tickFormatter?: (value: string, index: number) => string; // formats x tick labels
-  label?: string; // axis title, centered below the x-position tick labels
-  hideDots?: boolean; // hides the tick dots beside this axis's labels
+	dataKey?: string; // category key — overrides the root xDataKey (vertical layout)
+	// Category values are stringified, so the formatter always sees a string —
+	// letting examples share `(value) => value.substring(0, 3)` with the Recharts twin.
+	tickFormatter?: (value: string, index: number) => string; // formats x tick labels
+	label?: string; // axis title, centered below the x-position tick labels
+	hideDots?: boolean; // hides the tick dots beside this axis's labels
 }
 
 /**
@@ -246,10 +247,10 @@ export interface XAxisProps {
 const XAxis: FC<XAxisProps> = () => null;
 
 export interface YAxisProps {
-  dataKey?: string; // category key — overrides the root xDataKey (horizontal layout)
-  tickFormatter?: (value: string, index: number) => string; // formats y tick labels
-  label?: string; // axis title, rotated alongside the y-position tick labels
-  hideDots?: boolean; // hides the tick dots beside this axis's labels
+	dataKey?: string; // category key — overrides the root xDataKey (horizontal layout)
+	tickFormatter?: (value: string, index: number) => string; // formats y tick labels
+	label?: string; // axis title, rotated alongside the y-position tick labels
+	hideDots?: boolean; // hides the tick dots beside this axis's labels
 }
 
 /**
@@ -262,20 +263,20 @@ const YAxis: FC<YAxisProps> = () => null;
 const Grid: FC = () => null;
 
 export interface TooltipProps {
-  variant?: TooltipVariant; // visual style of the tooltip surface
-  roundness?: TooltipRoundness; // border-radius of the tooltip
-  defaultIndex?: number; // data index the tooltip shows by default, with no hover
-  position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and only tracks the pointer's X
+	variant?: TooltipVariant; // visual style of the tooltip surface
+	roundness?: TooltipRoundness; // border-radius of the tooltip
+	defaultIndex?: number; // data index the tooltip shows by default, with no hover
+	position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and only tracks the pointer's X
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
 const Tooltip: FC<TooltipProps> = () => null;
 
 export interface LegendProps {
-  variant?: LegendVariant; // visual style of the legend indicators
-  align?: "left" | "center" | "right"; // horizontal placement
-  verticalAlign?: "top" | "middle" | "bottom"; // vertical placement
-  isClickable?: boolean; // lets each entry toggle selection of its series
+	variant?: LegendVariant; // visual style of the legend indicators
+	align?: "left" | "center" | "right"; // horizontal placement
+	verticalAlign?: "top" | "middle" | "bottom"; // vertical placement
+	isClickable?: boolean; // lets each entry toggle selection of its series
 }
 
 /** Presence enables the HTML legend overlay. Renders nothing. */
@@ -287,140 +288,140 @@ const Legend: FC<LegendProps> = () => null;
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BarSeriesConfig = {
-  dataKey: string;
-  variant: BarVariant;
-  radius?: number;
-  animationType?: BarAnimationType;
-  isClickable: boolean;
-  enableHoverHighlight: boolean;
-  glowing: boolean;
-  bufferBar: boolean;
+	dataKey: string;
+	variant: BarVariant;
+	radius?: number;
+	animationType?: BarAnimationType;
+	isClickable: boolean;
+	enableHoverHighlight: boolean;
+	glowing: boolean;
+	bufferBar: boolean;
 };
 
 type AxisSlot = {
-  present: boolean;
-  dataKey?: string;
-  tickFormatter?: (value: string, index: number) => string;
-  label?: string;
-  hideDots: boolean;
+	present: boolean;
+	dataKey?: string;
+	tickFormatter?: (value: string, index: number) => string;
+	label?: string;
+	hideDots: boolean;
 };
 type TooltipSlot = {
-  present: boolean;
-  variant: TooltipVariant;
-  roundness: TooltipRoundness;
-  defaultIndex?: number;
-  position: TooltipPosition;
+	present: boolean;
+	variant: TooltipVariant;
+	roundness: TooltipRoundness;
+	defaultIndex?: number;
+	position: TooltipPosition;
 };
 type LegendSlot = {
-  present: boolean;
-  variant: LegendVariant;
-  align: "left" | "center" | "right";
-  verticalAlign: "top" | "middle" | "bottom";
-  isClickable: boolean;
+	present: boolean;
+	variant: LegendVariant;
+	align: "left" | "center" | "right";
+	verticalAlign: "top" | "middle" | "bottom";
+	isClickable: boolean;
 };
 type BrushSlot = {
-  present: boolean; // a <Brush> child was passed — replaces the old showBrush prop
-  height?: number;
-  formatLabel?: (value: string, index: number) => string;
-  onChange?: (range: { startIndex: number; endIndex: number }) => void;
+	present: boolean; // a <Brush> child was passed — replaces the old showBrush prop
+	height?: number;
+	formatLabel?: (value: string, index: number) => string;
+	onChange?: (range: { startIndex: number; endIndex: number }) => void;
 };
 
 type CollectedConfig = {
-  bars: BarSeriesConfig[];
-  xAxis: AxisSlot;
-  yAxis: AxisSlot;
-  showGrid: boolean;
-  tooltip: TooltipSlot;
-  legend: LegendSlot;
-  brush: BrushSlot;
+	bars: BarSeriesConfig[];
+	xAxis: AxisSlot;
+	yAxis: AxisSlot;
+	showGrid: boolean;
+	tooltip: TooltipSlot;
+	legend: LegendSlot;
+	brush: BrushSlot;
 };
 
 function collectConfig(children: ReactNode): CollectedConfig {
-  const bars: BarSeriesConfig[] = [];
-  let xAxis: AxisSlot = { present: false, hideDots: false };
-  let yAxis: AxisSlot = { present: false, hideDots: false };
-  let showGrid = false;
-  let tooltip: TooltipSlot = {
-    present: false,
-    variant: "default",
-    roundness: "lg",
-    position: "variable",
-  };
-  let legend: LegendSlot = {
-    present: false,
-    variant: "rounded-square",
-    align: "right",
-    verticalAlign: "top",
-    isClickable: false,
-  };
-  let brush: BrushSlot = { present: false };
+	const bars: BarSeriesConfig[] = [];
+	let xAxis: AxisSlot = { present: false, hideDots: false };
+	let yAxis: AxisSlot = { present: false, hideDots: false };
+	let showGrid = false;
+	let tooltip: TooltipSlot = {
+		present: false,
+		variant: "default",
+		roundness: "lg",
+		position: "variable",
+	};
+	let legend: LegendSlot = {
+		present: false,
+		variant: "rounded-square",
+		align: "right",
+		verticalAlign: "top",
+		isClickable: false,
+	};
+	let brush: BrushSlot = { present: false };
 
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return;
-    const type = child.type;
+	Children.forEach(children, (child) => {
+		if (!isValidElement(child)) return;
+		const type = child.type;
 
-    if (type === Bar) {
-      const props = child.props as BarProps;
-      bars.push({
-        dataKey: props.dataKey,
-        variant: props.variant ?? "default",
-        radius: props.radius,
-        animationType: props.animationType,
-        isClickable: props.isClickable ?? false,
-        enableHoverHighlight: props.enableHoverHighlight ?? false,
-        glowing: props.glowing ?? false,
-        bufferBar: props.bufferBar ?? false,
-      });
-    } else if (type === XAxis) {
-      const props = child.props as XAxisProps;
-      xAxis = {
-        present: true,
-        dataKey: props.dataKey,
-        tickFormatter: props.tickFormatter,
-        label: props.label,
-        hideDots: props.hideDots ?? false,
-      };
-    } else if (type === YAxis) {
-      const props = child.props as YAxisProps;
-      yAxis = {
-        present: true,
-        dataKey: props.dataKey,
-        tickFormatter: props.tickFormatter,
-        label: props.label,
-        hideDots: props.hideDots ?? false,
-      };
-    } else if (type === Grid) {
-      showGrid = true;
-    } else if (type === Tooltip) {
-      const props = child.props as TooltipProps;
-      tooltip = {
-        present: true,
-        variant: props.variant ?? "default",
-        roundness: props.roundness ?? "lg",
-        defaultIndex: props.defaultIndex,
-        position: props.position ?? "variable",
-      };
-    } else if (type === Legend) {
-      const props = child.props as LegendProps;
-      legend = {
-        present: true,
-        variant: props.variant ?? "rounded-square",
-        align: props.align ?? "right",
-        verticalAlign: props.verticalAlign ?? "top",
-        isClickable: props.isClickable ?? false,
-      };
-    } else if (type === Brush) {
-      const props = child.props as BrushProps;
-      brush = {
-        present: true,
-        height: props.height,
-        formatLabel: props.formatLabel,
-        onChange: props.onChange,
-      };
-    }
-  });
+		if (type === Bar) {
+			const props = child.props as BarProps;
+			bars.push({
+				dataKey: props.dataKey,
+				variant: props.variant ?? "default",
+				radius: props.radius,
+				animationType: props.animationType,
+				isClickable: props.isClickable ?? false,
+				enableHoverHighlight: props.enableHoverHighlight ?? false,
+				glowing: props.glowing ?? false,
+				bufferBar: props.bufferBar ?? false,
+			});
+		} else if (type === XAxis) {
+			const props = child.props as XAxisProps;
+			xAxis = {
+				present: true,
+				dataKey: props.dataKey,
+				tickFormatter: props.tickFormatter,
+				label: props.label,
+				hideDots: props.hideDots ?? false,
+			};
+		} else if (type === YAxis) {
+			const props = child.props as YAxisProps;
+			yAxis = {
+				present: true,
+				dataKey: props.dataKey,
+				tickFormatter: props.tickFormatter,
+				label: props.label,
+				hideDots: props.hideDots ?? false,
+			};
+		} else if (type === Grid) {
+			showGrid = true;
+		} else if (type === Tooltip) {
+			const props = child.props as TooltipProps;
+			tooltip = {
+				present: true,
+				variant: props.variant ?? "default",
+				roundness: props.roundness ?? "lg",
+				defaultIndex: props.defaultIndex,
+				position: props.position ?? "variable",
+			};
+		} else if (type === Legend) {
+			const props = child.props as LegendProps;
+			legend = {
+				present: true,
+				variant: props.variant ?? "rounded-square",
+				align: props.align ?? "right",
+				verticalAlign: props.verticalAlign ?? "top",
+				isClickable: props.isClickable ?? false,
+			};
+		} else if (type === Brush) {
+			const props = child.props as BrushProps;
+			brush = {
+				present: true,
+				height: props.height,
+				formatLabel: props.formatLabel,
+				onChange: props.onChange,
+			};
+		}
+	});
 
-  return { bars, xAxis, yAxis, showGrid, tooltip, legend, brush };
+	return { bars, xAxis, yAxis, showGrid, tooltip, legend, brush };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -435,254 +436,254 @@ const GRAY = "rgba(120, 120, 120, 1)";
 // Solid vertical top→bottom color for a series — a plain string for one color,
 // else a vertical multi-stop gradient; the `default` variant paints at full alpha.
 function solidVerticalPaint(
-  slots: string[],
-  alpha: number,
+	slots: string[],
+	alpha: number,
 ): string | echarts.graphic.LinearGradient {
-  if (slots.length <= 1) {
-    const base = slots[0] ?? GRAY;
-    return alpha === 1 ? base : withAlpha(base, alpha);
-  }
-  const stops = slots.map((color, i) => ({
-    offset: i / (slots.length - 1),
-    color: withAlpha(color, alpha),
-  }));
-  return new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
+	if (slots.length <= 1) {
+		const base = slots[0] ?? GRAY;
+		return alpha === 1 ? base : withAlpha(base, alpha);
+	}
+	const stops = slots.map((color, i) => ({
+		offset: i / (slots.length - 1),
+		color: withAlpha(color, alpha),
+	}));
+	return new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
 }
 
 // The `gradient` variant: a vertical fade from solid to clear — Recharts masks
 // white@1 at 20% → white@0 at 90%, so alpha holds through the top fifth, clear by 90%.
 function verticalFadePaint(slots: string[]): echarts.graphic.LinearGradient {
-  const offsets = [0, 0.2, 0.45, 0.7, 0.9, 1];
-  const alphaAt = (t: number) =>
-    t <= 0.2 ? 1 : t >= 0.9 ? 0 : 1 - (t - 0.2) / 0.7;
-  const stops = offsets.map((t) => ({
-    offset: t,
-    color: withAlpha(sampleGradient(slots, t), alphaAt(t)),
-  }));
-  return new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
+	const offsets = [0, 0.2, 0.45, 0.7, 0.9, 1];
+	const alphaAt = (t: number) =>
+		t <= 0.2 ? 1 : t >= 0.9 ? 0 : 1 - (t - 0.2) / 0.7;
+	const stops = offsets.map((t) => ({
+		offset: t,
+		color: withAlpha(sampleGradient(slots, t), alphaAt(t)),
+	}));
+	return new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
 }
 
 // The `duotone` family: a hard alpha split at 50% across the bar's short axis —
 // exact for single-color; multi-color falls back to the base color, the accepted
 // approximation matching the twin's single-color examples.
 function duotoneSplitPaint(
-  base: string,
-  leftAlpha: number,
-  rightAlpha: number,
-  isHorizontal: boolean,
+	base: string,
+	leftAlpha: number,
+	rightAlpha: number,
+	isHorizontal: boolean,
 ): echarts.graphic.LinearGradient {
-  const stops = [
-    { offset: 0, color: withAlpha(base, leftAlpha) },
-    { offset: 0.5, color: withAlpha(base, leftAlpha) },
-    { offset: 0.5, color: withAlpha(base, rightAlpha) },
-    { offset: 1, color: withAlpha(base, rightAlpha) },
-  ];
-  // Cross-axis split — x for vertical bars, y for horizontal, reading across the bar.
-  return isHorizontal
-    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, stops)
-    : new echarts.graphic.LinearGradient(1, 0, 0, 0, stops);
+	const stops = [
+		{ offset: 0, color: withAlpha(base, leftAlpha) },
+		{ offset: 0.5, color: withAlpha(base, leftAlpha) },
+		{ offset: 0.5, color: withAlpha(base, rightAlpha) },
+		{ offset: 1, color: withAlpha(base, rightAlpha) },
+	];
+	// Cross-axis split — x for vertical bars, y for horizontal, reading across the bar.
+	return isHorizontal
+		? new echarts.graphic.LinearGradient(0, 0, 0, 1, stops)
+		: new echarts.graphic.LinearGradient(1, 0, 0, 0, stops);
 }
 
 // The `stripped` fill: a bright band spanning exactly `capFraction` of the bar
 // (offset 0 = the tip), with a hard two-stop edge (coincident offsets) so it stays
 // a crisp pill; the bar's rounded corners round the cap's top.
 function strippedDatumPaint(
-  slots: string[],
-  isHorizontal: boolean,
-  capFraction: number,
+	slots: string[],
+	isHorizontal: boolean,
+	capFraction: number,
 ): echarts.graphic.LinearGradient {
-  const f = Math.min(Math.max(capFraction, 0), 1);
-  const cap = withAlpha(sampleGradient(slots, 0), 1);
-  const bodyTop = withAlpha(sampleGradient(slots, f), STRIPPED_BODY_ALPHA);
-  const bodyEnd = withAlpha(sampleGradient(slots, 1), STRIPPED_BODY_ALPHA);
-  const stops = [
-    { offset: 0, color: cap },
-    { offset: f, color: cap },
-    { offset: f, color: bodyTop },
-    { offset: 1, color: bodyEnd },
-  ];
-  // Tip at offset 0: top (y 0→1) for vertical bars, right (x 1→0) for horizontal.
-  return isHorizontal
-    ? new echarts.graphic.LinearGradient(1, 0, 0, 0, stops)
-    : new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
+	const f = Math.min(Math.max(capFraction, 0), 1);
+	const cap = withAlpha(sampleGradient(slots, 0), 1);
+	const bodyTop = withAlpha(sampleGradient(slots, f), STRIPPED_BODY_ALPHA);
+	const bodyEnd = withAlpha(sampleGradient(slots, 1), STRIPPED_BODY_ALPHA);
+	const stops = [
+		{ offset: 0, color: cap },
+		{ offset: f, color: cap },
+		{ offset: f, color: bodyTop },
+		{ offset: 1, color: bodyEnd },
+	];
+	// Tip at offset 0: top (y 0→1) for vertical bars, right (x 1→0) for horizontal.
+	return isHorizontal
+		? new echarts.graphic.LinearGradient(1, 0, 0, 0, stops)
+		: new echarts.graphic.LinearGradient(0, 0, 0, 1, stops);
 }
 
 // Gradient fraction for a STRIPPED_CAP_HEIGHT-px cap on a bar of `value` magnitude
 // at `valuePxPerUnit` px/unit; a small constant is used before the first layout.
 function strippedCapFraction(
-  value: number,
-  valuePxPerUnit: number | null,
+	value: number,
+	valuePxPerUnit: number | null,
 ): number {
-  if (valuePxPerUnit == null) return STRIPPED_FALLBACK_FRACTION;
-  const barPx = Math.abs(value) * valuePxPerUnit;
-  if (!(barPx > 0)) return STRIPPED_FALLBACK_FRACTION;
-  return Math.min(STRIPPED_CAP_HEIGHT / barPx, STRIPPED_CAP_MAX_FRACTION);
+	if (valuePxPerUnit == null) return STRIPPED_FALLBACK_FRACTION;
+	const barPx = Math.abs(value) * valuePxPerUnit;
+	if (!(barPx > 0)) return STRIPPED_FALLBACK_FRACTION;
+	return Math.min(STRIPPED_CAP_HEIGHT / barPx, STRIPPED_CAP_MAX_FRACTION);
 }
 
 // Value-axis pixels-per-unit read off the live coordinate system — the stripped
 // cap's fixed pixel height becomes a per-bar fraction (null before the first layout).
 function measureValuePxPerUnit(
-  chart: EChartsInstance,
-  isHorizontal: boolean,
+	chart: EChartsInstance,
+	isHorizontal: boolean,
 ): number | null {
-  const finder = isHorizontal ? { xAxisIndex: 0 } : { yAxisIndex: 0 };
-  // NOTE: convertToPixel throws before the first setOption and whenever the value
-  // axis isn't laid out — treat any failure as "not measurable".
-  try {
-    const p0 = chart.convertToPixel(finder, 0);
-    const p1 = chart.convertToPixel(finder, 1);
-    if (typeof p0 !== "number" || typeof p1 !== "number") return null;
-    const delta = Math.abs(p1 - p0);
-    return Number.isFinite(delta) && delta > 0 ? delta : null;
-  } catch {
-    return null;
-  }
+	const finder = isHorizontal ? { xAxisIndex: 0 } : { yAxisIndex: 0 };
+	// NOTE: convertToPixel throws before the first setOption and whenever the value
+	// axis isn't laid out — treat any failure as "not measurable".
+	try {
+		const p0 = chart.convertToPixel(finder, 0);
+		const p1 = chart.convertToPixel(finder, 1);
+		if (typeof p0 !== "number" || typeof p1 !== "number") return null;
+		const delta = Math.abs(p1 - p0);
+		return Number.isFinite(delta) && delta > 0 ? delta : null;
+	} catch {
+		return null;
+	}
 }
 
 // A bar's rendered width, so `blocks` segments can be square: category pitch minus
 // the category gap — a px number when the consumer set one, else ECharts' "20%".
 function measureBarWidthPx(
-  chart: EChartsInstance,
-  isHorizontal: boolean,
-  barCategoryGap: number | undefined,
+	chart: EChartsInstance,
+	isHorizontal: boolean,
+	barCategoryGap: number | undefined,
 ): number | null {
-  const finder = isHorizontal ? { yAxisIndex: 0 } : { xAxisIndex: 0 };
-  try {
-    const p0 = chart.convertToPixel(finder, 0);
-    const p1 = chart.convertToPixel(finder, 1);
-    if (typeof p0 !== "number" || typeof p1 !== "number") return null;
-    const pitch = Math.abs(p1 - p0);
-    if (!Number.isFinite(pitch) || pitch <= 0) return null;
-    const width = barCategoryGap != null ? pitch - barCategoryGap : pitch * 0.8;
-    return width > 1 ? width : null;
-  } catch {
-    return null;
-  }
+	const finder = isHorizontal ? { yAxisIndex: 0 } : { xAxisIndex: 0 };
+	try {
+		const p0 = chart.convertToPixel(finder, 0);
+		const p1 = chart.convertToPixel(finder, 1);
+		if (typeof p0 !== "number" || typeof p1 !== "number") return null;
+		const pitch = Math.abs(p1 - p0);
+		if (!Number.isFinite(pitch) || pitch <= 0) return null;
+		const width = barCategoryGap != null ? pitch - barCategoryGap : pitch * 0.8;
+		return width > 1 ? width : null;
+	} catch {
+		return null;
+	}
 }
 
 // NOTE: stripes are drawn STRAIGHT and the pattern rotated (zrender applies
 // transforms like ECharts decals) — a baked diagonal clips at the tile corners,
 // reading as periodic gaps. Rendered at devicePixelRatio, scaled back down.
 function patternFill(
-  kind: "hatched" | "buffer" | "blocks",
-  color: string,
-  blockSize = BLOCK_SIZE,
+	kind: "hatched" | "buffer" | "blocks",
+	color: string,
+	blockSize = BLOCK_SIZE,
 ): ImagePatternObject | null {
-  if (typeof document === "undefined") return null;
-  const dpr = Math.max(window.devicePixelRatio || 1, 1);
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
+	if (typeof document === "undefined") return null;
+	const dpr = Math.max(window.devicePixelRatio || 1, 1);
+	const canvas = document.createElement("canvas");
+	const ctx = canvas.getContext("2d");
+	if (!ctx) return null;
 
-  const size = (width: number, height: number) => {
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-  };
-  const pattern = (rotation = 0): ImagePatternObject => ({
-    image: canvas,
-    repeat: "repeat",
-    rotation,
-    scaleX: 1 / dpr,
-    scaleY: 1 / dpr,
-  });
+	const size = (width: number, height: number) => {
+		canvas.width = width * dpr;
+		canvas.height = height * dpr;
+		ctx.scale(dpr, dpr);
+	};
+	const pattern = (rotation = 0): ImagePatternObject => ({
+		image: canvas,
+		repeat: "repeat",
+		rotation,
+		scaleX: 1 / dpr,
+		scaleY: 1 / dpr,
+	});
 
-  if (kind === "blocks") {
-    // 1px-wide tile — repeats horizontally into a band, vertically into the block stack.
-    size(1, blockSize + BLOCK_GAP);
-    ctx.fillStyle = withAlpha(color, 1);
-    ctx.fillRect(0, 0, 1, blockSize);
-    return pattern();
-  }
+	if (kind === "blocks") {
+		// 1px-wide tile — repeats horizontally into a band, vertically into the block stack.
+		size(1, blockSize + BLOCK_GAP);
+		ctx.fillStyle = withAlpha(color, 1);
+		ctx.fillRect(0, 0, 1, blockSize);
+		return pattern();
+	}
 
-  if (kind === "hatched") {
-    // Recharts hatched: 0.3 everywhere, full along a 1.5px stripe every 5px, leaning -45°.
-    size(5, 5);
-    ctx.fillStyle = withAlpha(color, 0.3);
-    ctx.fillRect(0, 0, 5, 5);
-    ctx.fillStyle = withAlpha(color, 1);
-    ctx.fillRect(0, 0, 1.5, 5);
-    return pattern(-Math.PI / 4);
-  }
+	if (kind === "hatched") {
+		// Recharts hatched: 0.3 everywhere, full along a 1.5px stripe every 5px, leaning -45°.
+		size(5, 5);
+		ctx.fillStyle = withAlpha(color, 0.3);
+		ctx.fillRect(0, 0, 5, 5);
+		ctx.fillStyle = withAlpha(color, 1);
+		ctx.fillRect(0, 0, 1.5, 5);
+		return pattern(-Math.PI / 4);
+	}
 
-  // buffer: bare diagonal lines on clear ground (no body fill) — the last "projected" bar.
-  size(5, 5);
-  ctx.fillStyle = withAlpha(color, 1);
-  ctx.fillRect(0, 0, 1, 5);
-  return pattern(-Math.PI / 4);
+	// buffer: bare diagonal lines on clear ground (no body fill) — the last "projected" bar.
+	size(5, 5);
+	ctx.fillStyle = withAlpha(color, 1);
+	ctx.fillRect(0, 0, 1, 5);
+	return pattern(-Math.PI / 4);
 }
 
 // The `expandable` fill at a given openness: a horizontal gradient with HARD
 // stops — clear outside the centre strip, series paint inside. Animating the stops
 // expands it; a real width change would relayout the bar group instead.
 function expandableDatumPaint(
-  slots: string[],
-  fraction: number,
+	slots: string[],
+	fraction: number,
 ): echarts.graphic.LinearGradient {
-  const base = slots[0] ?? GRAY;
-  const half = Math.max(0, Math.min(1, fraction)) / 2;
-  const left = 0.5 - half;
-  const right = 0.5 + half;
-  const clear = withAlpha(base, 0);
-  return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
-    { offset: 0, color: clear },
-    { offset: left, color: clear },
-    { offset: left, color: base },
-    { offset: right, color: base },
-    { offset: right, color: clear },
-    { offset: 1, color: clear },
-  ]);
+	const base = slots[0] ?? GRAY;
+	const half = Math.max(0, Math.min(1, fraction)) / 2;
+	const left = 0.5 - half;
+	const right = 0.5 + half;
+	const clear = withAlpha(base, 0);
+	return new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+		{ offset: 0, color: clear },
+		{ offset: left, color: clear },
+		{ offset: left, color: base },
+		{ offset: right, color: base },
+		{ offset: right, color: clear },
+		{ offset: 1, color: clear },
+	]);
 }
 
 // A bar variant resolved into its ECharts fill — `base` is the first slot, `slots` the run.
 function barFillPaint(
-  variant: BarVariant,
-  slots: string[],
-  isHorizontal: boolean,
-  blockSize = BLOCK_SIZE,
+	variant: BarVariant,
+	slots: string[],
+	isHorizontal: boolean,
+	blockSize = BLOCK_SIZE,
 ): string | echarts.graphic.LinearGradient | ImagePatternObject {
-  const base = slots[0] ?? GRAY;
-  switch (variant) {
-    case "gradient":
-      return verticalFadePaint(slots);
-    case "duotone":
-      return duotoneSplitPaint(base, 0.4, 1, isHorizontal);
-    case "duotone-reverse":
-      return duotoneSplitPaint(base, 1, 0.4, isHorizontal);
-    case "hatched":
-      return patternFill("hatched", base) ?? solidVerticalPaint(slots, 1);
-    case "blocks":
-      return (
-        patternFill("blocks", base, blockSize) ?? solidVerticalPaint(slots, 1)
-      );
-    case "expandable":
-      // Series-level fallback only — buildBarSeries gives each datum its own openness.
-      return expandableDatumPaint(slots, EXPAND_COLLAPSED);
-    case "stripped":
-      // Series-level fallback only — buildBarSeries overrides each stripped datum.
-      return strippedDatumPaint(
-        slots,
-        isHorizontal,
-        STRIPPED_FALLBACK_FRACTION,
-      );
-    default:
-      return solidVerticalPaint(slots, 1);
-  }
+	const base = slots[0] ?? GRAY;
+	switch (variant) {
+		case "gradient":
+			return verticalFadePaint(slots);
+		case "duotone":
+			return duotoneSplitPaint(base, 0.4, 1, isHorizontal);
+		case "duotone-reverse":
+			return duotoneSplitPaint(base, 1, 0.4, isHorizontal);
+		case "hatched":
+			return patternFill("hatched", base) ?? solidVerticalPaint(slots, 1);
+		case "blocks":
+			return (
+				patternFill("blocks", base, blockSize) ?? solidVerticalPaint(slots, 1)
+			);
+		case "expandable":
+			// Series-level fallback only — buildBarSeries gives each datum its own openness.
+			return expandableDatumPaint(slots, EXPAND_COLLAPSED);
+		case "stripped":
+			// Series-level fallback only — buildBarSeries overrides each stripped datum.
+			return strippedDatumPaint(
+				slots,
+				isHorizontal,
+				STRIPPED_FALLBACK_FRACTION,
+			);
+		default:
+			return solidVerticalPaint(slots, 1);
+	}
 }
 
 // Border radius per variant/layout: non-stripped bars round every corner (a plain
 // Recharts number); stripped rounds only the tip — top vertical, right horizontal.
 function barBorderRadius(
-  radius: number,
-  variant: BarVariant,
-  isHorizontal: boolean,
+	radius: number,
+	variant: BarVariant,
+	isHorizontal: boolean,
 ): number | number[] {
-  // Blocks draw their own square segments; a radius would clip the end one. An
-  // expandable bar is a thin line at rest, where a radius would swallow it.
-  if (variant === "blocks" || variant === "expandable") return 0;
-  if (variant !== "stripped") return radius;
-  // ECharts corner order: [top-left, top-right, bottom-right, bottom-left].
-  return isHorizontal ? [0, radius, radius, 0] : [radius, radius, 0, 0];
+	// Blocks draw their own square segments; a radius would clip the end one. An
+	// expandable bar is a thin line at rest, where a radius would swallow it.
+	if (variant === "blocks" || variant === "expandable") return 0;
+	if (variant !== "stripped") return radius;
+	// ECharts corner order: [top-left, top-right, bottom-right, bottom-left].
+	return isHorizontal ? [0, radius, radius, 0] : [radius, radius, 0, 0];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -691,35 +692,35 @@ function barBorderRadius(
 
 // A bar dims to SELECTION_DIM only when a DIFFERENT series is selected.
 function selectionOpacity(selected: string | null, key: string): number {
-  return selected === null || selected === key ? 1 : SELECTION_DIM;
+	return selected === null || selected === key ? 1 : SELECTION_DIM;
 }
 
 // Stagger steps a bar at `index` waits before it grows in — the order encoded by
 // `animationType`; bars are independent rectangles, so (unlike the area chart's
 // single clip) each direction is honored via a per-datum `animationDelay`.
 function barStaggerDelay(
-  type: BarAnimationType,
-  index: number,
-  count: number,
+	type: BarAnimationType,
+	index: number,
+	count: number,
 ): number {
-  if (type === "none" || count <= 0) return 0;
-  const last = count - 1;
-  const center = last / 2;
-  let step: number;
-  switch (type) {
-    case "right-to-left":
-      step = last - index;
-      break;
-    case "center-out":
-      step = Math.abs(index - center);
-      break;
-    case "edges-in":
-      step = center - Math.abs(index - center);
-      break;
-    default: // left-to-right
-      step = index;
-  }
-  return step * BAR_STAGGER;
+	if (type === "none" || count <= 0) return 0;
+	const last = count - 1;
+	const center = last / 2;
+	let step: number;
+	switch (type) {
+		case "right-to-left":
+			step = last - index;
+			break;
+		case "center-out":
+			step = Math.abs(index - center);
+			break;
+		case "edges-in":
+			step = center - Math.abs(index - center);
+			break;
+		default: // left-to-right
+			step = index;
+	}
+	return step * BAR_STAGGER;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -730,619 +731,619 @@ function barStaggerDelay(
 // ─────────────────────────────────────────────────────────────────────────────
 
 type OptionBuildContext = {
-  data: Record<string, unknown>[];
-  config: ChartConfig;
-  bars: BarSeriesConfig[];
-  seriesKeys: string[];
-  animationType: BarAnimationType;
-  barRadius: number;
-  isHorizontal: boolean;
-  isStacked: boolean;
-  isPercent: boolean;
-  selectedDataKey: string | null;
-  hasSelection: boolean;
-  showGrid: boolean;
-  // Category axis is x (vertical layout) or y (horizontal); value axis the other.
-  categorySlot: AxisSlot;
-  valueSlot: AxisSlot;
-  tooltipSlot: TooltipSlot;
-  legendSlot: LegendSlot;
-  isLoading: boolean;
-  loadingData: () => number[];
-  showBrush: boolean;
-  brushHeight: number;
-  barGap?: number;
-  barCategoryGap?: number;
-  resolved: ResolvedColors;
-  categories: string[];
-  brushRange: BrushRange; // zoom window carried through rebuilds
-  valuePxPerUnit: number | null; // measured value-axis pixels-per-unit (null pre-layout)
-  barWidthPx: number | null; // measured bar width — sizes the blocks variant's squares (null pre-layout)
-  // Openness per bar index for the expandable variant, plus which one the pointer
-  // is on — driven by the hover rAF, read at build.
-  expand: {
-    key: string | null;
-    hovered: number | null;
-    progress: Map<number, number>;
-  };
-  maxHighlightIndex: number | null; // column to keep colored under enableMaxValueHighlight
+	data: Record<string, unknown>[];
+	config: ChartConfig;
+	bars: BarSeriesConfig[];
+	seriesKeys: string[];
+	animationType: BarAnimationType;
+	barRadius: number;
+	isHorizontal: boolean;
+	isStacked: boolean;
+	isPercent: boolean;
+	selectedDataKey: string | null;
+	hasSelection: boolean;
+	showGrid: boolean;
+	// Category axis is x (vertical layout) or y (horizontal); value axis the other.
+	categorySlot: AxisSlot;
+	valueSlot: AxisSlot;
+	tooltipSlot: TooltipSlot;
+	legendSlot: LegendSlot;
+	isLoading: boolean;
+	loadingData: () => number[];
+	showBrush: boolean;
+	brushHeight: number;
+	barGap?: number;
+	barCategoryGap?: number;
+	resolved: ResolvedColors;
+	categories: string[];
+	brushRange: BrushRange; // zoom window carried through rebuilds
+	valuePxPerUnit: number | null; // measured value-axis pixels-per-unit (null pre-layout)
+	barWidthPx: number | null; // measured bar width — sizes the blocks variant's squares (null pre-layout)
+	// Openness per bar index for the expandable variant, plus which one the pointer
+	// is on — driven by the hover rAF, read at build.
+	expand: {
+		key: string | null;
+		hovered: number | null;
+		progress: Map<number, number>;
+	};
+	maxHighlightIndex: number | null; // column to keep colored under enableMaxValueHighlight
 };
 
 // Grid insets plus the footer band reserved for the brush. ECharts 6 contains axis
 // labels automatically (the legacy `containLabel` flag only warns now).
 function buildChartLayout({
-  legendSlot,
-  showBrush,
-  brushHeight,
-  isHorizontal,
-  categorySlot,
-  valueSlot,
+	legendSlot,
+	showBrush,
+	brushHeight,
+	isHorizontal,
+	categorySlot,
+	valueSlot,
 }: OptionBuildContext): {
-  grid: GridComponentOption;
-  brushBottom: number;
+	grid: GridComponentOption;
+	brushBottom: number;
 } {
-  const legendTop = legendSlot.present && legendSlot.verticalAlign === "top";
-  const legendBottom =
-    legendSlot.present && legendSlot.verticalAlign === "bottom";
-  // Clearance covers the axis labels plus the Recharts twin's brush breathing room;
-  // a bottom-axis TITLE renders below the labels (nameGap), so it needs its own band
-  // above the brush frame. The brush is vertical-layout only.
-  const bottomAxisLabel = isHorizontal ? valueSlot.label : categorySlot.label;
-  const brushGap = showBrush
-    ? brushHeight + 30 + (bottomAxisLabel ? 22 : 0)
-    : 0;
+	const legendTop = legendSlot.present && legendSlot.verticalAlign === "top";
+	const legendBottom =
+		legendSlot.present && legendSlot.verticalAlign === "bottom";
+	// Clearance covers the axis labels plus the Recharts twin's brush breathing room;
+	// a bottom-axis TITLE renders below the labels (nameGap), so it needs its own band
+	// above the brush frame. The brush is vertical-layout only.
+	const bottomAxisLabel = isHorizontal ? valueSlot.label : categorySlot.label;
+	const brushGap = showBrush
+		? brushHeight + 30 + (bottomAxisLabel ? 22 : 0)
+		: 0;
 
-  return {
-    grid: {
-      left: 8,
-      right: 8,
-      top: legendTop ? 42 : 16,
-      bottom: 8 + brushGap + (legendBottom ? 34 : 0),
-    },
-    brushBottom: legendBottom ? 34 : 6,
-  };
+	return {
+		grid: {
+			left: 8,
+			right: 8,
+			top: legendTop ? 42 : 16,
+			bottom: 8 + brushGap + (legendBottom ? 34 : 0),
+		},
+		brushBottom: legendBottom ? 34 : 6,
+	};
 }
 
 // The category + value axes, laid onto x/y per layout. Vertical bars → x is
 // category, y is value; horizontal bars → x is value, y is category.
 function buildMainAxes(ctx: OptionBuildContext): {
-  xAxis: XAxisOption;
-  yAxis: YAxisOption;
+	xAxis: XAxisOption;
+	yAxis: YAxisOption;
 } {
-  const {
-    isHorizontal,
-    showGrid,
-    isLoading,
-    isPercent,
-    categories,
-    loadingData,
-    categorySlot,
-    valueSlot,
-  } = ctx;
-  const { tokens } = ctx.resolved;
+	const {
+		isHorizontal,
+		showGrid,
+		isLoading,
+		isPercent,
+		categories,
+		loadingData,
+		categorySlot,
+		valueSlot,
+	} = ctx;
+	const { tokens } = ctx.resolved;
 
-  const axisLabelColor = tokens.mutedForeground;
-  const splitLineColor = withAlpha(tokens.border, GRID_LINE_OPACITY);
-  // Gridline gray as an opaque color — see flattenColor.
-  const tickDotColor = flattenColor(splitLineColor, tokens.background);
-  const catData = isLoading ? loadingData().map((_, i) => i) : categories;
-  const catFormatter = categorySlot.tickFormatter;
-  const valFormatter = valueSlot.tickFormatter;
+	const axisLabelColor = tokens.mutedForeground;
+	const splitLineColor = withAlpha(tokens.border, GRID_LINE_OPACITY);
+	// Gridline gray as an opaque color — see flattenColor.
+	const tickDotColor = flattenColor(splitLineColor, tokens.background);
+	const catData = isLoading ? loadingData().map((_, i) => i) : categories;
+	const catFormatter = categorySlot.tickFormatter;
+	const valFormatter = valueSlot.tickFormatter;
 
-  // The axis title follows the axis PART, not its category/value role: whichever
-  // <XAxis>/<YAxis> child renders it wears it per layout. nameGap is 30 for the
-  // bottom axis and 38 for the side one, so it swaps with the layout.
-  const categoryNameGap = isHorizontal ? 38 : 30;
-  const valueNameGap = isHorizontal ? 30 : 38;
+	// The axis title follows the axis PART, not its category/value role: whichever
+	// <XAxis>/<YAxis> child renders it wears it per layout. nameGap is 30 for the
+	// bottom axis and 38 for the side one, so it swaps with the layout.
+	const categoryNameGap = isHorizontal ? 38 : 30;
+	const valueNameGap = isHorizontal ? 30 : 38;
 
-  // NOTE: left un-annotated so the inferred literal type carries no `position` —
-  // XAxisOption and YAxisOption disagree on it, so a fixed annotation would reject
-  // the horizontal swap below; `type` is pinned with `as const`.
-  const categoryAxis = {
-    type: "category" as const,
-    // Bars sit BETWEEN ticks — the opposite of the area chart's boundaryGap:false.
-    boundaryGap: true,
-    show: true,
-    // The Recharts YAxis lists its first category at the TOP; ECharts' y category
-    // axis defaults to bottom-up, so flip it when the category axis is on y.
-    inverse: isHorizontal,
-    data: catData,
-    // Axis title — same size/color as the tick labels, pushed clear of them.
-    name: isLoading ? undefined : categorySlot.label,
-    nameLocation: "middle" as const,
-    nameGap: categoryNameGap,
-    nameTextStyle: { color: axisLabelColor, fontSize: 10 },
-    axisLine: { show: false },
-    // Tick DOTS: a near-zero-length tick whose round caps form a true circle, in
-    // the gridline gray (flattened opaque so the caps don't stack).
-    axisTick: {
-      show: !isLoading && categorySlot.present && !categorySlot.hideDots,
-      length: 0.5,
-      // boundaryGap would drop each tick on the BOUNDARY between categories — a dot
-      // floating between labels; align them to the labels instead.
-      alignWithLabel: true,
-      lineStyle: { color: tickDotColor, width: 3, cap: "round" as const },
-    },
-    splitLine: { show: false },
-    axisLabel: {
-      show: !isLoading && categorySlot.present,
-      color: axisLabelColor,
-      fontSize: 10,
-      margin: 8,
-      formatter: catFormatter
-        ? (value: string, index: number) => catFormatter(value, index)
-        : undefined,
-    },
-  };
+	// NOTE: left un-annotated so the inferred literal type carries no `position` —
+	// XAxisOption and YAxisOption disagree on it, so a fixed annotation would reject
+	// the horizontal swap below; `type` is pinned with `as const`.
+	const categoryAxis = {
+		type: "category" as const,
+		// Bars sit BETWEEN ticks — the opposite of the area chart's boundaryGap:false.
+		boundaryGap: true,
+		show: true,
+		// The Recharts YAxis lists its first category at the TOP; ECharts' y category
+		// axis defaults to bottom-up, so flip it when the category axis is on y.
+		inverse: isHorizontal,
+		data: catData,
+		// Axis title — same size/color as the tick labels, pushed clear of them.
+		name: isLoading ? undefined : categorySlot.label,
+		nameLocation: "middle" as const,
+		nameGap: categoryNameGap,
+		nameTextStyle: { color: axisLabelColor, fontSize: 10 },
+		axisLine: { show: false },
+		// Tick DOTS: a near-zero-length tick whose round caps form a true circle, in
+		// the gridline gray (flattened opaque so the caps don't stack).
+		axisTick: {
+			show: !isLoading && categorySlot.present && !categorySlot.hideDots,
+			length: 0.5,
+			// boundaryGap would drop each tick on the BOUNDARY between categories — a dot
+			// floating between labels; align them to the labels instead.
+			alignWithLabel: true,
+			lineStyle: { color: tickDotColor, width: 3, cap: "round" as const },
+		},
+		splitLine: { show: false },
+		axisLabel: {
+			show: !isLoading && categorySlot.present,
+			color: axisLabelColor,
+			fontSize: 10,
+			margin: 8,
+			formatter: catFormatter
+				? (value: string, index: number) => catFormatter(value, index)
+				: undefined,
+		},
+	};
 
-  // An axis with `show: false` hides its splitLines too, but Recharts'
-  // <CartesianGrid> draws without a visible value axis — keep the axis on for
-  // <Grid/>, gate only the labels.
-  const valueAxis = {
-    type: "value" as const,
-    show: valueSlot.present || showGrid,
-    max: isPercent ? 1 : undefined,
-    // Axis title — same styling as the category axis's.
-    name: isLoading ? undefined : valueSlot.label,
-    nameLocation: "middle" as const,
-    nameGap: valueNameGap,
-    nameTextStyle: { color: axisLabelColor, fontSize: 10 },
-    axisLine: { show: false },
-    // Same tick dots as the category axis, beside each value label.
-    axisTick: {
-      show: valueSlot.present && !isLoading && !valueSlot.hideDots,
-      length: 0.5,
-      // Inert here — ECharts only honors it for CATEGORY ticks, and this axis is
-      // always type:"value". Carried so both axes' tick config stays identical.
-      lineStyle: { color: tickDotColor, width: 3, cap: "round" as const },
-    },
-    splitLine: {
-      // Hidden while loading — the skeleton floats on a clean canvas.
-      show: showGrid && !isLoading,
-      lineStyle: {
-        color: splitLineColor,
-        type: [3, 3] as [number, number],
-        width: 1,
-      },
-    },
-    axisLabel: {
-      // Hidden while loading — skeleton values are meaningless (the Recharts axes unmount too).
-      show: valueSlot.present && !isLoading,
-      color: axisLabelColor,
-      fontSize: 10,
-      margin: 8,
-      formatter: isPercent
-        ? (value: number) => `${Math.round(value * 100)}%`
-        : valFormatter
-          ? (value: number, index: number) => valFormatter(String(value), index)
-          : undefined,
-    },
-  };
+	// An axis with `show: false` hides its splitLines too, but Recharts'
+	// <CartesianGrid> draws without a visible value axis — keep the axis on for
+	// <Grid/>, gate only the labels.
+	const valueAxis = {
+		type: "value" as const,
+		show: valueSlot.present || showGrid,
+		max: isPercent ? 1 : undefined,
+		// Axis title — same styling as the category axis's.
+		name: isLoading ? undefined : valueSlot.label,
+		nameLocation: "middle" as const,
+		nameGap: valueNameGap,
+		nameTextStyle: { color: axisLabelColor, fontSize: 10 },
+		axisLine: { show: false },
+		// Same tick dots as the category axis, beside each value label.
+		axisTick: {
+			show: valueSlot.present && !isLoading && !valueSlot.hideDots,
+			length: 0.5,
+			// Inert here — ECharts only honors it for CATEGORY ticks, and this axis is
+			// always type:"value". Carried so both axes' tick config stays identical.
+			lineStyle: { color: tickDotColor, width: 3, cap: "round" as const },
+		},
+		splitLine: {
+			// Hidden while loading — the skeleton floats on a clean canvas.
+			show: showGrid && !isLoading,
+			lineStyle: {
+				color: splitLineColor,
+				type: [3, 3] as [number, number],
+				width: 1,
+			},
+		},
+		axisLabel: {
+			// Hidden while loading — skeleton values are meaningless (the Recharts axes unmount too).
+			show: valueSlot.present && !isLoading,
+			color: axisLabelColor,
+			fontSize: 10,
+			margin: 8,
+			formatter: isPercent
+				? (value: number) => `${Math.round(value * 100)}%`
+				: valFormatter
+					? (value: number, index: number) => valFormatter(String(value), index)
+					: undefined,
+		},
+	};
 
-  return isHorizontal
-    ? { xAxis: valueAxis, yAxis: categoryAxis }
-    : { xAxis: categoryAxis, yAxis: valueAxis };
+	return isHorizontal
+		? { xAxis: valueAxis, yAxis: categoryAxis }
+		: { xAxis: categoryAxis, yAxis: valueAxis };
 }
 
 // Tooltip HTML closed over the build context. Dims by click selection only — the
 // twin's `cursor={false}` means no axis-pointer line and hover never touches it.
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, selectedDataKey, tooltipSlot } = ctx;
+	const { config, selectedDataKey, tooltipSlot } = ctx;
 
-  return (params: unknown): string => {
-    const rows = Array.isArray(params) ? params : [params];
-    if (!rows.length) return "";
+	return (params: unknown): string => {
+		const rows = Array.isArray(params) ? params : [params];
+		if (!rows.length) return "";
 
-    const first = rows[0] as { axisValue?: string | number; name?: string };
-    // Label shows the RAW axis value — matches ChartTooltipContent (no tick formatter).
-    const axisValue = first.axisValue ?? first.name ?? "";
-    const label = String(axisValue);
+		const first = rows[0] as { axisValue?: string | number; name?: string };
+		// Label shows the RAW axis value — matches ChartTooltipContent (no tick formatter).
+		const axisValue = first.axisValue ?? first.name ?? "";
+		const label = String(axisValue);
 
-    const body = rows
-      .map((param) => {
-        const p = param as {
-          seriesId?: string;
-          seriesName?: string;
-          value?: number | string;
-        };
-        // Internal series (the brush mini chart, the skeleton) never surface in tooltips.
-        if (String(p.seriesId ?? "").startsWith("__")) return "";
-        const key = p.seriesId ?? p.seriesName ?? "";
-        const item = config[key];
-        const colorsCount = item ? getColorsCount(item) : 1;
-        const labelText =
-          typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
-        const dimmed =
-          selectedDataKey != null && selectedDataKey !== key
-            ? " opacity-30"
-            : "";
-        const value =
-          typeof p.value === "number"
-            ? p.value.toLocaleString()
-            : String(p.value ?? "");
+		const body = rows
+			.map((param) => {
+				const p = param as {
+					seriesId?: string;
+					seriesName?: string;
+					value?: number | string;
+				};
+				// Internal series (the brush mini chart, the skeleton) never surface in tooltips.
+				if (String(p.seriesId ?? "").startsWith("__")) return "";
+				const key = p.seriesId ?? p.seriesName ?? "";
+				const item = config[key];
+				const colorsCount = item ? getColorsCount(item) : 1;
+				const labelText =
+					typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+				const dimmed =
+					selectedDataKey != null && selectedDataKey !== key
+						? " opacity-30"
+						: "";
+				const value =
+					typeof p.value === "number"
+						? p.value.toLocaleString()
+						: String(p.value ?? "");
 
-        return tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
-          labelText,
-          valueText: value,
-          dimmed,
-        });
-      })
-      .join("");
+				return tooltipRow({
+					indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
+					labelText,
+					valueText: value,
+					dimmed,
+				});
+			})
+			.join("");
 
-    return tooltipShell({
-      label,
-      body,
-      roundness: tooltipSlot.roundness,
-      variant: tooltipSlot.variant,
-    });
-  };
+		return tooltipShell({
+			label,
+			body,
+			roundness: tooltipSlot.roundness,
+			variant: tooltipSlot.variant,
+		});
+	};
 }
 
 function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
-  const { tooltipSlot, isLoading } = ctx;
-  const { tokens } = ctx.resolved;
+	const { tooltipSlot, isLoading } = ctx;
+	const { tokens } = ctx.resolved;
 
-  return {
-    ...tooltipBaseOption({
-      present: tooltipSlot.present && !isLoading,
-      // The twin disables the cursor (`cursor={false}`) — no shadow, no line —
-      // so the axisPointer color/width below go unused; only `position` applies.
-      cursor: false,
-      tokens,
-      position: tooltipSlot.position,
-      axisPointerColor: tokens.border,
-      strokeWidth: STROKE_WIDTH,
-    }),
-    formatter: createTooltipFormatter(ctx),
-  };
+	return {
+		...tooltipBaseOption({
+			present: tooltipSlot.present && !isLoading,
+			// The twin disables the cursor (`cursor={false}`) — no shadow, no line —
+			// so the axisPointer color/width below go unused; only `position` applies.
+			cursor: false,
+			tokens,
+			position: tooltipSlot.position,
+			axisPointerColor: tokens.border,
+			strokeWidth: STROKE_WIDTH,
+		}),
+		formatter: createTooltipFormatter(ctx),
+	};
 }
 
 // ── Brush — the evil-brush "bar" look: a real mini chart of the full data in a
 // second grid with a transparent slider dataZoom over it. Both zoom entries target
 // only the MAIN x-axis (vertical layout only, where the category axis is x).
 function buildBrushOption(
-  ctx: OptionBuildContext,
-  brushBottom: number,
+	ctx: OptionBuildContext,
+	brushBottom: number,
 ): {
-  miniGrid: GridComponentOption;
-  miniXAxis: XAxisOption;
-  miniYAxis: YAxisOption;
-  miniSeries: BarSeriesOption[];
-  dataZoom: DataZoomComponentOption[];
+	miniGrid: GridComponentOption;
+	miniXAxis: XAxisOption;
+	miniYAxis: YAxisOption;
+	miniSeries: BarSeriesOption[];
+	dataZoom: DataZoomComponentOption[];
 } {
-  const {
-    data,
-    bars,
-    isStacked,
-    selectedDataKey,
-    hasSelection,
-    brushHeight,
-    categories,
-  } = ctx;
-  const { tokens } = ctx.resolved;
+	const {
+		data,
+		bars,
+		isStacked,
+		selectedDataKey,
+		hasSelection,
+		brushHeight,
+		categories,
+	} = ctx;
+	const { tokens } = ctx.resolved;
 
-  const miniGrid: GridComponentOption = {
-    left: 8,
-    right: 8,
-    bottom: brushBottom,
-    height: brushHeight,
-    // No visible axes — opt out of label containment so the mini chart spans the frame.
-    outerBoundsMode: "none",
-  };
+	const miniGrid: GridComponentOption = {
+		left: 8,
+		right: 8,
+		bottom: brushBottom,
+		height: brushHeight,
+		// No visible axes — opt out of label containment so the mini chart spans the frame.
+		outerBoundsMode: "none",
+	};
 
-  const miniXAxis: XAxisOption = {
-    type: "category",
-    gridIndex: 1,
-    boundaryGap: true,
-    show: false,
-    data: categories,
-    axisPointer: { show: false },
-  };
+	const miniXAxis: XAxisOption = {
+		type: "category",
+		gridIndex: 1,
+		boundaryGap: true,
+		show: false,
+		data: categories,
+		axisPointer: { show: false },
+	};
 
-  const miniYAxis: YAxisOption = { type: "value", gridIndex: 1, show: false };
+	const miniYAxis: YAxisOption = { type: "value", gridIndex: 1, show: false };
 
-  const miniSeries: BarSeriesOption[] = bars.map((bar) => {
-    const key = bar.dataKey;
-    const base = (ctx.resolved.series[key] ?? [])[0] ?? GRAY;
-    // The mini chart mirrors the click selection: unselected series recede.
-    const dim = hasSelection && selectedDataKey !== key ? SELECTION_DIM : 1;
+	const miniSeries: BarSeriesOption[] = bars.map((bar) => {
+		const key = bar.dataKey;
+		const base = (ctx.resolved.series[key] ?? [])[0] ?? GRAY;
+		// The mini chart mirrors the click selection: unselected series recede.
+		const dim = hasSelection && selectedDataKey !== key ? SELECTION_DIM : 1;
 
-    return {
-      id: `__mini-${key}`,
-      type: "bar",
-      xAxisIndex: 1,
-      yAxisIndex: 1,
-      data: data.map((row) => Number(row[key]) || 0),
-      stack: isStacked ? "__mini-total" : undefined,
-      silent: true,
-      barCategoryGap: "20%",
-      emphasis: { disabled: true },
-      tooltip: { show: false },
-      itemStyle: {
-        color: base,
-        opacity: BRUSH_FILL_OPACITY * dim,
-        borderRadius: 1,
-      },
-      z: 0,
-      animation: false,
-    };
-  });
+		return {
+			id: `__mini-${key}`,
+			type: "bar",
+			xAxisIndex: 1,
+			yAxisIndex: 1,
+			data: data.map((row) => Number(row[key]) || 0),
+			stack: isStacked ? "__mini-total" : undefined,
+			silent: true,
+			barCategoryGap: "20%",
+			emphasis: { disabled: true },
+			tooltip: { show: false },
+			itemStyle: {
+				color: base,
+				opacity: BRUSH_FILL_OPACITY * dim,
+				borderRadius: 1,
+			},
+			z: 0,
+			animation: false,
+		};
+	});
 
-  const dataZoom = buildBrushDataZoom({
-    brushBottom,
-    brushHeight,
-    brushRange: ctx.brushRange,
-    fillerColor: withAlpha(tokens.foreground, BRUSH_FILLER_OPACITY),
-  });
+	const dataZoom = buildBrushDataZoom({
+		brushBottom,
+		brushHeight,
+		brushRange: ctx.brushRange,
+		fillerColor: withAlpha(tokens.foreground, BRUSH_FILLER_OPACITY),
+	});
 
-  return { miniGrid, miniXAxis, miniYAxis, miniSeries, dataZoom };
+	return { miniGrid, miniXAxis, miniYAxis, miniSeries, dataZoom };
 }
 
 // Loading skeleton — ONE gray row of bars regardless of declared series (Recharts
 // parity: its skeleton is a single LoadingBar), swept by the shimmer rAF.
 function buildLoadingOption(
-  ctx: OptionBuildContext,
-  frame: { grid: GridComponentOption; xAxis: XAxisOption; yAxis: YAxisOption },
+	ctx: OptionBuildContext,
+	frame: { grid: GridComponentOption; xAxis: XAxisOption; yAxis: YAxisOption },
 ): EChartsOption {
-  const { tokens } = ctx.resolved;
+	const { tokens } = ctx.resolved;
 
-  return {
-    animation: false,
-    grid: frame.grid,
-    xAxis: frame.xAxis,
-    yAxis: frame.yAxis,
-    tooltip: { show: false },
-    series: [
-      {
-        id: "__loading",
-        type: "bar",
-        data: ctx.loadingData(),
-        barCategoryGap: "30%",
-        silent: true,
-        // Invisible until the first shimmer tick positions the clip window.
-        itemStyle: {
-          color: withAlpha(tokens.foreground, 0),
-          borderRadius: barBorderRadius(
-            DEFAULT_BAR_RADIUS,
-            "default",
-            ctx.isHorizontal,
-          ),
-        },
-        z: 1,
-      },
-    ],
-  };
+	return {
+		animation: false,
+		grid: frame.grid,
+		xAxis: frame.xAxis,
+		yAxis: frame.yAxis,
+		tooltip: { show: false },
+		series: [
+			{
+				id: "__loading",
+				type: "bar",
+				data: ctx.loadingData(),
+				barCategoryGap: "30%",
+				silent: true,
+				// Invisible until the first shimmer tick positions the clip window.
+				itemStyle: {
+					color: withAlpha(tokens.foreground, 0),
+					borderRadius: barBorderRadius(
+						DEFAULT_BAR_RADIUS,
+						"default",
+						ctx.isHorizontal,
+					),
+				},
+				z: 1,
+			},
+		],
+	};
 }
 
 function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
-  const {
-    data,
-    config,
-    bars,
-    seriesKeys,
-    animationType,
-    isHorizontal,
-    isStacked,
-    isPercent,
-    selectedDataKey,
-    hasSelection,
-    barGap,
-    barCategoryGap,
-    resolved,
-  } = ctx;
+	const {
+		data,
+		config,
+		bars,
+		seriesKeys,
+		animationType,
+		isHorizontal,
+		isStacked,
+		isPercent,
+		selectedDataKey,
+		hasSelection,
+		barGap,
+		barCategoryGap,
+		resolved,
+	} = ctx;
 
-  const lastIndex = data.length - 1;
+	const lastIndex = data.length - 1;
 
-  // Optional per-row normalization for the percent (100%) stack.
-  const rowTotals = isPercent
-    ? data.map((row) =>
-        seriesKeys.reduce((sum, key) => sum + (Number(row[key]) || 0), 0),
-      )
-    : [];
+	// Optional per-row normalization for the percent (100%) stack.
+	const rowTotals = isPercent
+		? data.map((row) =>
+				seriesKeys.reduce((sum, key) => sum + (Number(row[key]) || 0), 0),
+			)
+		: [];
 
-  const series: BarSeriesOption[] = bars.map((bar) => {
-    const key = bar.dataKey;
-    const slots = resolved.series[key] ?? [GRAY];
-    const base = slots[0] ?? GRAY;
-    const isSelected = selectedDataKey === key;
-    const dim = selectionOpacity(selectedDataKey, key);
-    const resolvedRadius = bar.radius ?? ctx.barRadius;
-    const borderRadius = barBorderRadius(
-      resolvedRadius,
-      bar.variant,
-      isHorizontal,
-    );
-    // Square segments — tile height matches the measured bar width; BLOCK_SIZE before layout.
-    const blockSize = ctx.barWidthPx ?? BLOCK_SIZE;
-    const fill = barFillPaint(bar.variant, slots, isHorizontal, blockSize);
-    const barAnim = bar.animationType ?? animationType;
-    const isStripped = bar.variant === "stripped";
-    const isExpandable = bar.variant === "expandable";
-    // Under enableMaxValueHighlight every column except the tallest is muted, so a
-    // single flat tone replaces whatever fill the variant would have painted.
-    const mutedFill = withAlpha(
-      resolved.tokens.mutedForeground,
-      MAX_HIGHLIGHT_DIM,
-    );
-    const isMuted = (i: number) =>
-      ctx.maxHighlightIndex != null && i !== ctx.maxHighlightIndex;
+	const series: BarSeriesOption[] = bars.map((bar) => {
+		const key = bar.dataKey;
+		const slots = resolved.series[key] ?? [GRAY];
+		const base = slots[0] ?? GRAY;
+		const isSelected = selectedDataKey === key;
+		const dim = selectionOpacity(selectedDataKey, key);
+		const resolvedRadius = bar.radius ?? ctx.barRadius;
+		const borderRadius = barBorderRadius(
+			resolvedRadius,
+			bar.variant,
+			isHorizontal,
+		);
+		// Square segments — tile height matches the measured bar width; BLOCK_SIZE before layout.
+		const blockSize = ctx.barWidthPx ?? BLOCK_SIZE;
+		const fill = barFillPaint(bar.variant, slots, isHorizontal, blockSize);
+		const barAnim = bar.animationType ?? animationType;
+		const isStripped = bar.variant === "stripped";
+		const isExpandable = bar.variant === "expandable";
+		// Under enableMaxValueHighlight every column except the tallest is muted, so a
+		// single flat tone replaces whatever fill the variant would have painted.
+		const mutedFill = withAlpha(
+			resolved.tokens.mutedForeground,
+			MAX_HIGHLIGHT_DIM,
+		);
+		const isMuted = (i: number) =>
+			ctx.maxHighlightIndex != null && i !== ctx.maxHighlightIndex;
 
-    // Openness per datum, driven by the hover rAF. Bars not in the map are shut.
-    const expandOf = (i: number) =>
-      ctx.expand.key === key
-        ? (ctx.expand.progress.get(i) ?? EXPAND_COLLAPSED)
-        : EXPAND_COLLAPSED;
-    const expandHovered = ctx.expand.key === key ? ctx.expand.hovered : null;
-    // The unfilled part of a blocks bar: the same tile in a muted tone, drawn by
-    // ECharts' own bar background so it spans the column's full height.
-    const isBlocks = bar.variant === "blocks";
-    const blockTrack = isBlocks
-      ? patternFill(
-          "blocks",
-          withAlpha(resolved.tokens.mutedForeground, BLOCK_TRACK_OPACITY),
-          blockSize,
-        )
-      : null;
+		// Openness per datum, driven by the hover rAF. Bars not in the map are shut.
+		const expandOf = (i: number) =>
+			ctx.expand.key === key
+				? (ctx.expand.progress.get(i) ?? EXPAND_COLLAPSED)
+				: EXPAND_COLLAPSED;
+		const expandHovered = ctx.expand.key === key ? ctx.expand.hovered : null;
+		// The unfilled part of a blocks bar: the same tile in a muted tone, drawn by
+		// ECharts' own bar background so it spans the column's full height.
+		const isBlocks = bar.variant === "blocks";
+		const blockTrack = isBlocks
+			? patternFill(
+					"blocks",
+					withAlpha(resolved.tokens.mutedForeground, BLOCK_TRACK_OPACITY),
+					blockSize,
+				)
+			: null;
 
-    const values = data.map((row, i) => {
-      const value = Number(row[key]) || 0;
-      if (!isPercent) return value;
-      const total = rowTotals[i];
-      return total ? value / total : 0;
-    });
+		const values = data.map((row, i) => {
+			const value = Number(row[key]) || 0;
+			if (!isPercent) return value;
+			const total = rowTotals[i];
+			return total ? value / total : 0;
+		});
 
-    // Buffer bar: the last datum becomes a bare hatched rectangle with a
-    // series-colored outline, marking projected/incomplete data.
-    const bufferStyle = bar.bufferBar
-      ? {
-          color: patternFill("buffer", base) ?? "transparent",
-          borderColor: base,
-          borderWidth: STROKE_WIDTH,
-          borderRadius,
-        }
-      : null;
+		// Buffer bar: the last datum becomes a bare hatched rectangle with a
+		// series-colored outline, marking projected/incomplete data.
+		const bufferStyle = bar.bufferBar
+			? {
+					color: patternFill("buffer", base) ?? "transparent",
+					borderColor: base,
+					borderWidth: STROKE_WIDTH,
+					borderRadius,
+				}
+			: null;
 
-    // A canvas shape carries one shadow, so the sample is per bar, not within it —
-    // `glowing` haloes every bar while enableMaxValueHighlight haloes only the winner
-    // (muted columns stay flat); same shadow either way, so one builder serves both.
-    const glowAt = (i: number) => ({
-      shadowBlur: GLOW_BLUR,
-      shadowColor: withAlpha(
-        sampleGradient(slots, values.length > 1 ? i / (values.length - 1) : 0),
-        GLOW_OPACITY,
-      ),
-    });
-    const glowFor = bar.glowing
-      ? glowAt
-      : ctx.maxHighlightIndex != null
-        ? (i: number) => (i === ctx.maxHighlightIndex ? glowAt(i) : {})
-        : null;
+		// A canvas shape carries one shadow, so the sample is per bar, not within it —
+		// `glowing` haloes every bar while enableMaxValueHighlight haloes only the winner
+		// (muted columns stay flat); same shadow either way, so one builder serves both.
+		const glowAt = (i: number) => ({
+			shadowBlur: GLOW_BLUR,
+			shadowColor: withAlpha(
+				sampleGradient(slots, values.length > 1 ? i / (values.length - 1) : 0),
+				GLOW_OPACITY,
+			),
+		});
+		const glowFor = bar.glowing
+			? glowAt
+			: ctx.maxHighlightIndex != null
+				? (i: number) => (i === ctx.maxHighlightIndex ? glowAt(i) : {})
+				: null;
 
-    // Wrap a datum in an object only for per-point overrides (stripped cap, buffer
-    // tip, glow) — else keep the bare number so the series itemStyle applies.
-    // Stripped and glow touch every datum; buffer only the last one.
-    const dataPoints =
-      isStripped ||
-      isExpandable ||
-      glowFor ||
-      ctx.maxHighlightIndex != null ||
-      (bufferStyle && lastIndex >= 0)
-        ? values.map((value, i) => {
-            const isBuffer = !!bufferStyle && i === lastIndex;
-            if (
-              !isBuffer &&
-              !glowFor &&
-              !isStripped &&
-              !isExpandable &&
-              !isMuted(i)
-            )
-              return value;
-            return {
-              value,
-              ...(isExpandable ? { label: { show: i === expandHovered } } : {}),
-              itemStyle: {
-                // The stripped cap is per datum: a fixed-pixel cap as a fraction of
-                // THIS bar's own height (see STRIPPED_CAP_HEIGHT); the buffer tip wins last.
-                ...(isStripped && !isBuffer
-                  ? {
-                      color: strippedDatumPaint(
-                        slots,
-                        isHorizontal,
-                        strippedCapFraction(value, ctx.valuePxPerUnit),
-                      ),
-                    }
-                  : {}),
-                ...(isExpandable && !isBuffer
-                  ? { color: expandableDatumPaint(slots, expandOf(i)) }
-                  : {}),
-                ...(isBuffer && bufferStyle ? bufferStyle : {}),
-                ...(glowFor ? glowFor(i) : {}),
-                // Last so it overrides the variant's own paint.
-                ...(isMuted(i) ? { color: mutedFill } : {}),
-              },
-            };
-          })
-        : values;
+		// Wrap a datum in an object only for per-point overrides (stripped cap, buffer
+		// tip, glow) — else keep the bare number so the series itemStyle applies.
+		// Stripped and glow touch every datum; buffer only the last one.
+		const dataPoints =
+			isStripped ||
+			isExpandable ||
+			glowFor ||
+			ctx.maxHighlightIndex != null ||
+			(bufferStyle && lastIndex >= 0)
+				? values.map((value, i) => {
+						const isBuffer = !!bufferStyle && i === lastIndex;
+						if (
+							!isBuffer &&
+							!glowFor &&
+							!isStripped &&
+							!isExpandable &&
+							!isMuted(i)
+						)
+							return value;
+						return {
+							value,
+							...(isExpandable ? { label: { show: i === expandHovered } } : {}),
+							itemStyle: {
+								// The stripped cap is per datum: a fixed-pixel cap as a fraction of
+								// THIS bar's own height (see STRIPPED_CAP_HEIGHT); the buffer tip wins last.
+								...(isStripped && !isBuffer
+									? {
+											color: strippedDatumPaint(
+												slots,
+												isHorizontal,
+												strippedCapFraction(value, ctx.valuePxPerUnit),
+											),
+										}
+									: {}),
+								...(isExpandable && !isBuffer
+									? { color: expandableDatumPaint(slots, expandOf(i)) }
+									: {}),
+								...(isBuffer && bufferStyle ? bufferStyle : {}),
+								...(glowFor ? glowFor(i) : {}),
+								// Last so it overrides the variant's own paint.
+								...(isMuted(i) ? { color: mutedFill } : {}),
+							},
+						};
+					})
+				: values;
 
-    return {
-      id: key,
-      name: typeof config[key]?.label === "string" ? config[key]?.label : key,
-      type: "bar",
-      data: dataPoints,
-      stack: isStacked ? "total" : undefined,
-      barGap,
-      barCategoryGap,
-      cursor: bar.isClickable ? "pointer" : "default",
-      // Selected series ride on top; when a selection is active the rest sink below.
-      z: isSelected ? 3 : hasSelection ? 1 : 2,
-      // The hovered bar names its value above itself (Recharts twin parity).
-      label: isExpandable
-        ? {
-            show: false,
-            position: "top",
-            color: resolved.tokens.foreground,
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: 11,
-          }
-        : undefined,
-      showBackground: isBlocks,
-      backgroundStyle: blockTrack
-        ? { color: blockTrack, borderRadius }
-        : undefined,
-      itemStyle: {
-        color: fill,
-        borderRadius,
-        opacity: dim,
-        // Glow lives per datum — a series-level shadowColor can't follow a gradient.
-      },
-      // Hover-highlight = native focus/blur (`self` lights only the hovered bar,
-      // matching the twin). A click-selection owns the dim while active, so hover
-      // stays off until it clears (each rebuild's notMerge push clears the live blur).
-      emphasis:
-        bar.enableHoverHighlight && !hasSelection
-          ? { focus: "self" as const, blurScope: "coordinateSystem" as const }
-          : { disabled: true },
-      blur:
-        bar.enableHoverHighlight && !hasSelection
-          ? { itemStyle: { opacity: HOVER_BLUR } }
-          : undefined,
-      // The grow-in envelope — only takes effect on the reveal push (top-level
-      // `animation: true`); later pushes send `animation: false`, so it stays dormant.
-      animationDuration: BAR_GROW_DURATION,
-      animationEasing: "cubicOut",
-      animationDelay: (idx: number) =>
-        barStaggerDelay(barAnim, idx, data.length),
-    };
-  });
+		return {
+			id: key,
+			name: typeof config[key]?.label === "string" ? config[key]?.label : key,
+			type: "bar",
+			data: dataPoints,
+			stack: isStacked ? "total" : undefined,
+			barGap,
+			barCategoryGap,
+			cursor: bar.isClickable ? "pointer" : "default",
+			// Selected series ride on top; when a selection is active the rest sink below.
+			z: isSelected ? 3 : hasSelection ? 1 : 2,
+			// The hovered bar names its value above itself (Recharts twin parity).
+			label: isExpandable
+				? {
+						show: false,
+						position: "top",
+						color: resolved.tokens.foreground,
+						fontFamily: "var(--font-mono, monospace)",
+						fontSize: 11,
+					}
+				: undefined,
+			showBackground: isBlocks,
+			backgroundStyle: blockTrack
+				? { color: blockTrack, borderRadius }
+				: undefined,
+			itemStyle: {
+				color: fill,
+				borderRadius,
+				opacity: dim,
+				// Glow lives per datum — a series-level shadowColor can't follow a gradient.
+			},
+			// Hover-highlight = native focus/blur (`self` lights only the hovered bar,
+			// matching the twin). A click-selection owns the dim while active, so hover
+			// stays off until it clears (each rebuild's notMerge push clears the live blur).
+			emphasis:
+				bar.enableHoverHighlight && !hasSelection
+					? { focus: "self" as const, blurScope: "coordinateSystem" as const }
+					: { disabled: true },
+			blur:
+				bar.enableHoverHighlight && !hasSelection
+					? { itemStyle: { opacity: HOVER_BLUR } }
+					: undefined,
+			// The grow-in envelope — only takes effect on the reveal push (top-level
+			// `animation: true`); later pushes send `animation: false`, so it stays dormant.
+			animationDuration: BAR_GROW_DURATION,
+			animationEasing: "cubicOut",
+			animationDelay: (idx: number) =>
+				barStaggerDelay(barAnim, idx, data.length),
+		};
+	});
 
-  // Spacer value is in DATA units — derived from the measured pixels-per-unit so
-  // the gap stays a constant pixel height; skipped until that measurement exists.
-  const gapUnits =
-    (isStacked || isPercent) && series.length > 1 && ctx.valuePxPerUnit
-      ? STACK_SEGMENT_GAP / ctx.valuePxPerUnit
-      : 0;
-  if (!gapUnits) return series;
+	// Spacer value is in DATA units — derived from the measured pixels-per-unit so
+	// the gap stays a constant pixel height; skipped until that measurement exists.
+	const gapUnits =
+		(isStacked || isPercent) && series.length > 1 && ctx.valuePxPerUnit
+			? STACK_SEGMENT_GAP / ctx.valuePxPerUnit
+			: 0;
+	if (!gapUnits) return series;
 
-  const spaced: BarSeriesOption[] = [];
-  series.forEach((entry, i) => {
-    spaced.push(entry);
-    if (i === series.length - 1) return;
-    spaced.push({
-      id: `__stackgap-${i}`,
-      type: "bar",
-      stack: isStacked ? "total" : undefined,
-      data: data.map(() => gapUnits),
-      itemStyle: { color: "transparent" },
-      silent: true,
-      tooltip: { show: false },
-      legendHoverLink: false,
-      emphasis: { disabled: true },
-      animation: false,
-      z: 1,
-    });
-  });
-  return spaced;
+	const spaced: BarSeriesOption[] = [];
+	series.forEach((entry, i) => {
+		spaced.push(entry);
+		if (i === series.length - 1) return;
+		spaced.push({
+			id: `__stackgap-${i}`,
+			type: "bar",
+			stack: isStacked ? "total" : undefined,
+			data: data.map(() => gapUnits),
+			itemStyle: { color: "transparent" },
+			silent: true,
+			tooltip: { show: false },
+			legendHoverLink: false,
+			emphasis: { disabled: true },
+			animation: false,
+			z: 1,
+		});
+	});
+	return spaced;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1353,46 +1354,46 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type LiveState = {
-  resolved: ResolvedColors | null; // colors read off the live DOM — feeds builds and rAF loops
-  hasRevealed: boolean; // the intro grow-in already played on this chart instance
-  revealEndsAt: number; // performance.now() the entrance settles — gates the stripped-cap correction
-  valuePxPerUnit: number | null; // measured value-axis pixels-per-unit — sizes the stripped cap
-  barWidthPx: number | null; // measured bar width — sizes the blocks variant's squares
-  // Openness per bar index for the expandable variant. Per-index so a bar being
-  // left keeps easing shut while the next opens — a shared value snapped it shut.
-  expand: {
-    key: string | null;
-    hovered: number | null;
-    progress: Map<number, number>;
-  };
-  expandRaf: number; // in-flight expand animation frame
-  animateExpand: (key: string | null, index: number | null) => void;
-  loadingRows: number[] | null; // skeleton data, lazily rolled and re-rolled per shimmer sweep
-  categories: string[]; // x labels of the last build, for the brush label pills
-  dataLength: number; // row count, for the datazoom index math
-  brushRange: BrushRange; // live zoom window — carried through every rebuild
-  brushGeom: BrushGeometry | null; // brush footer layout of the last build
-  brushOverlay: BrushOverlayElements | null; // zrender elements, owned by syncBrushOverlay
-  brushHover: { inside: boolean; left: boolean; right: boolean };
-  // Latest callbacks/flags for the imperative ECharts event handlers.
-  handlers: {
-    onBrushChange?: (range: { startIndex: number; endIndex: number }) => void;
-    clickableKeys: Set<string>;
-    brushFormatLabel?: (value: string, index: number) => string;
-    seriesKeys: string[];
-    hasStripped: boolean; // any visible stripped bar → run the post-layout cap correction
-    hasBlocks: boolean; // any blocks bar → re-push once the bar width is measurable
-    hasStackGap: boolean; // stacked with >1 series → the segment gap needs the axis scale
-    expandableKey: string | null; // the expandable series, if any — drives the column hover
-    barCategoryGap?: number; // consumer's category gap, needed to derive the bar width
-    isHorizontal: boolean; // layout, for measuring the value axis in the finished handler
-  };
-  // Update-style re-push for paths that bypass React entirely (theme flips,
-  // resizes) — set by the sync effect.
-  repush: () => void;
-  // Rebuilds ONLY the stripped series (fresh cap fractions) and merges them with
-  // a silent lazyUpdate — never notMerge, so the dataZoom drag and entrance survive.
-  patchStrippedCaps: () => void;
+	resolved: ResolvedColors | null; // colors read off the live DOM — feeds builds and rAF loops
+	hasRevealed: boolean; // the intro grow-in already played on this chart instance
+	revealEndsAt: number; // performance.now() the entrance settles — gates the stripped-cap correction
+	valuePxPerUnit: number | null; // measured value-axis pixels-per-unit — sizes the stripped cap
+	barWidthPx: number | null; // measured bar width — sizes the blocks variant's squares
+	// Openness per bar index for the expandable variant. Per-index so a bar being
+	// left keeps easing shut while the next opens — a shared value snapped it shut.
+	expand: {
+		key: string | null;
+		hovered: number | null;
+		progress: Map<number, number>;
+	};
+	expandRaf: number; // in-flight expand animation frame
+	animateExpand: (key: string | null, index: number | null) => void;
+	loadingRows: number[] | null; // skeleton data, lazily rolled and re-rolled per shimmer sweep
+	categories: string[]; // x labels of the last build, for the brush label pills
+	dataLength: number; // row count, for the datazoom index math
+	brushRange: BrushRange; // live zoom window — carried through every rebuild
+	brushGeom: BrushGeometry | null; // brush footer layout of the last build
+	brushOverlay: BrushOverlayElements | null; // zrender elements, owned by syncBrushOverlay
+	brushHover: { inside: boolean; left: boolean; right: boolean };
+	// Latest callbacks/flags for the imperative ECharts event handlers.
+	handlers: {
+		onBrushChange?: (range: { startIndex: number; endIndex: number }) => void;
+		clickableKeys: Set<string>;
+		brushFormatLabel?: (value: string, index: number) => string;
+		seriesKeys: string[];
+		hasStripped: boolean; // any visible stripped bar → run the post-layout cap correction
+		hasBlocks: boolean; // any blocks bar → re-push once the bar width is measurable
+		hasStackGap: boolean; // stacked with >1 series → the segment gap needs the axis scale
+		expandableKey: string | null; // the expandable series, if any — drives the column hover
+		barCategoryGap?: number; // consumer's category gap, needed to derive the bar width
+		isHorizontal: boolean; // layout, for measuring the value axis in the finished handler
+	};
+	// Update-style re-push for paths that bypass React entirely (theme flips,
+	// resizes) — set by the sync effect.
+	repush: () => void;
+	// Rebuilds ONLY the stripped series (fresh cap fractions) and merges them with
+	// a silent lazyUpdate — never notMerge, so the dataZoom drag and entrance survive.
+	patchStrippedCaps: () => void;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1410,803 +1411,803 @@ type LiveState = {
  * `react`, `echarts`, and `motion`.
  */
 export function EChartsBarChart<TData extends Record<string, unknown>>({
-  data,
-  config,
-  xDataKey,
-  className,
-  stackType = "default",
-  layout = "vertical",
-  barRadius = DEFAULT_BAR_RADIUS,
-  animation = true,
-  animationType = "left-to-right",
-  barGap,
-  barCategoryGap,
-  defaultSelectedDataKey = null,
-  onSelectionChange,
-  enableMaxValueHighlight = false,
-  isLoading = false,
-  loadingBars = LOADING_DEFAULT_BARS,
-  chartOptions,
-  children,
+	data,
+	config,
+	xDataKey,
+	className,
+	stackType = "default",
+	layout = "vertical",
+	barRadius = DEFAULT_BAR_RADIUS,
+	animation = true,
+	animationType = "left-to-right",
+	barGap,
+	barCategoryGap,
+	defaultSelectedDataKey = null,
+	onSelectionChange,
+	enableMaxValueHighlight = false,
+	isLoading = false,
+	loadingBars = LOADING_DEFAULT_BARS,
+	chartOptions,
+	children,
 }: EChartsBarChartProps<TData>) {
-  const rawId = useId();
-  const chartId = `chart-${rawId.replace(/:/g, "")}`;
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mountRef = useRef<HTMLDivElement>(null);
-  const echartsRef = useRef<EChartsInstance | null>(null);
-
-  // NOTE: `resolved` lives in this ref rather than state — as state it would
-  // force an extra render pass plus an effect just to trigger the option push.
-  const live = useRef<LiveState>({
-    resolved: null,
-    hasRevealed: false,
-    revealEndsAt: 0,
-    valuePxPerUnit: null,
-    barWidthPx: null,
-    expand: { key: null, hovered: null, progress: new Map<number, number>() },
-    expandRaf: 0,
-    animateExpand: () => {},
-    loadingRows: null,
-    categories: [],
-    dataLength: 0,
-    brushRange: { start: 0, end: 100 },
-    brushGeom: null,
-    brushOverlay: null,
-    brushHover: { inside: false, left: false, right: false },
-    handlers: {
-      onBrushChange: undefined, // set per-render from the <Brush> child's onChange
-      clickableKeys: new Set<string>(),
-      brushFormatLabel: undefined, // set per-render from the <Brush> child's formatLabel
-      seriesKeys: [],
-      hasStripped: false,
-      hasBlocks: false,
-      hasStackGap: false,
-      expandableKey: null,
-      isHorizontal: false,
-    },
-    repush: () => {},
-    patchStrippedCaps: () => {},
-  }).current;
-
-  // Skeleton rows roll lazily on first use — an impure useRef initializer would
-  // re-roll Math.random() on every render.
-  const loadingData = useCallback(
-    () => (live.loadingRows ??= getLoadingBarData(loadingBars)),
-    [live, loadingBars],
-  );
-  const shouldReduceMotion = useReducedMotion();
-
-  const [selectedDataKey, setSelectedDataKey] = useState<string | null>(
-    defaultSelectedDataKey,
-  );
-
-  // ── Declarative config, collected from children by reference ─────────────────
-  const collected = useMemo(() => collectConfig(children), [children]);
-  const {
-    bars,
-    xAxis: xAxisSlot,
-    yAxis: yAxisSlot,
-    showGrid,
-    tooltip: tooltipSlot,
-    legend: legendSlot,
-    brush: brushSlot,
-  } = collected;
-  // Brush presence turns it on; height/formatLabel/onChange come from the child.
-  const showBrush = brushSlot.present;
-  const brushHeight = brushSlot.height ?? 56;
-
-  const isHorizontal = layout === "horizontal";
-  const isPercent = stackType === "percent";
-  const isStacked = stackType === "stacked" || isPercent;
-
-  // Category axis is x when vertical, y when horizontal; value axis the other.
-  const categorySlot = isHorizontal ? yAxisSlot : xAxisSlot;
-  const valueSlot = isHorizontal ? xAxisSlot : yAxisSlot;
-
-  const seriesKeys = useMemo(() => bars.map((bar) => bar.dataKey), [bars]);
-
-  // category key: category axis dataKey → root xDataKey → first data column no <Bar> claims.
-  const categoryKey = useMemo(() => {
-    if (categorySlot.dataKey) return categorySlot.dataKey;
-    if (xDataKey) return xDataKey as string;
-    const firstRow = data[0];
-    if (firstRow) {
-      const claimed = new Set(seriesKeys);
-      const found = Object.keys(firstRow).find((key) => !claimed.has(key));
-      if (found) return found;
-    }
-    return "";
-  }, [categorySlot.dataKey, xDataKey, data, seriesKeys]);
-
-  // The intro grow-in follows the first bar's setting, falling back to the root default.
-  const effectiveAnimation = bars[0]?.animationType ?? animationType;
-
-  // The tallest COLUMN, comparing totals across every series so a stack or group
-  // wins together rather than one bar inside it. Null when the flag is off.
-  const maxHighlightIndex = useMemo(() => {
-    if (!enableMaxValueHighlight || !data.length || !seriesKeys.length)
-      return null;
-    let best = 0;
-    let bestTotal = -Infinity;
-    data.forEach((row, i) => {
-      const total = seriesKeys.reduce(
-        (sum, key) => sum + (Number(row[key]) || 0),
-        0,
-      );
-      if (total > bestTotal) {
-        bestTotal = total;
-        best = i;
-      }
-    });
-    return best;
-  }, [enableMaxValueHighlight, data, seriesKeys]);
-
-  const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
-
-  const hasSelection = selectedDataKey !== null;
-
-  // Which series may be clicked to toggle selection (consulted by the click handler).
-  const clickableKeys = useMemo(
-    () =>
-      new Set(bars.filter((bar) => bar.isClickable).map((bar) => bar.dataKey)),
-    [bars],
-  );
-
-  // Any visible stripped bar? (never while loading — the skeleton has no stripped
-  // series.) Gates the post-layout cap correction in the `finished` handler.
-  const hasStrippedBars =
-    !isLoading && bars.some((bar) => bar.variant === "stripped");
-
-  // Refresh the handlers' snapshot of the latest callbacks/flags every render.
-  live.handlers = {
-    onBrushChange: brushSlot.onChange,
-    clickableKeys,
-    brushFormatLabel: brushSlot.formatLabel,
-    seriesKeys,
-    hasStripped: hasStrippedBars,
-    hasBlocks: bars.some((bar) => bar.variant === "blocks"),
-    hasStackGap:
-      (stackType === "stacked" || stackType === "percent") && bars.length > 1,
-    expandableKey:
-      bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
-    barCategoryGap,
-    isHorizontal,
-  };
-  live.dataLength = data.length;
-
-  const toggleSelection = useCallback(
-    (key: string) => {
-      setSelectedDataKey((prev) => {
-        const next = prev === key ? null : key;
-        onSelectionChange?.(next);
-        return next;
-      });
-    },
-    [onSelectionChange],
-  );
-
-  // The brush is meaningful only when the category axis is on x (vertical layout).
-  const brushEnabled = showBrush && !isHorizontal;
-
-  // Reposition the brush overlays from the live refs — safe to call from drag
-  // events, hover tracking, and pushes alike, since it never touches setOption.
-  const syncBrushOverlayNow = useCallback(() => {
-    const chart = echartsRef.current;
-    if (!chart) return;
-
-    const geom = live.brushGeom;
-    const tokens = live.resolved?.tokens;
-    if (!geom || !tokens) {
-      syncBrushOverlay(chart, live, null);
-      return;
-    }
-
-    const range = live.brushRange;
-    const categories = live.categories;
-    const format = live.handlers.brushFormatLabel;
-    const lastIndex = Math.max(categories.length - 1, 0);
-    const startIndex = Math.round((range.start / 100) * lastIndex);
-    const endIndex = Math.round((range.end / 100) * lastIndex);
-    const labels =
-      format && categories.length
-        ? {
-            start: format(categories[startIndex] ?? "", startIndex),
-            end: format(categories[endIndex] ?? "", endIndex),
-          }
-        : null;
-
-    syncBrushOverlay(chart, live, {
-      range,
-      geom,
-      size: { width: chart.getWidth(), height: chart.getHeight() },
-      tokens,
-      labels,
-      showLabels: live.brushHover.inside,
-      hover: live.brushHover,
-    });
-  }, [live]);
-
-  // ── Option builder ─────────────────────────────────────────────────────────
-  const buildOption = useCallback((): EChartsOption => {
-    const resolved = live.resolved;
-    if (!resolved) return {};
-
-    const categories = data.map((row) => String(row[categoryKey]));
-    live.categories = categories;
-
-    const ctx: OptionBuildContext = {
-      data,
-      config,
-      bars,
-      seriesKeys,
-      animationType,
-      barRadius,
-      isHorizontal,
-      isStacked,
-      isPercent,
-      selectedDataKey,
-      hasSelection,
-      showGrid,
-      categorySlot,
-      valueSlot,
-      tooltipSlot,
-      legendSlot,
-      isLoading,
-      loadingData,
-      showBrush: brushEnabled,
-      brushHeight,
-      barGap,
-      barCategoryGap,
-      resolved,
-      categories,
-      brushRange: live.brushRange,
-      valuePxPerUnit: live.valuePxPerUnit,
-      barWidthPx: live.barWidthPx,
-      expand: live.expand,
-      maxHighlightIndex,
-    };
-
-    const { grid, brushBottom } = buildChartLayout(ctx);
-    live.brushGeom = brushEnabled
-      ? { bottom: brushBottom, height: brushHeight }
-      : null;
-
-    const { xAxis, yAxis } = buildMainAxes(ctx);
-
-    if (isLoading) return buildLoadingOption(ctx, { grid, xAxis, yAxis });
-
-    const brush = brushEnabled ? buildBrushOption(ctx, brushBottom) : null;
-
-    return {
-      animation: false,
-      grid: brush ? [grid, brush.miniGrid] : grid,
-      xAxis: brush ? [xAxis, brush.miniXAxis] : xAxis,
-      yAxis: brush ? [yAxis, brush.miniYAxis] : yAxis,
-      tooltip: buildTooltipOption(ctx),
-      dataZoom: brush?.dataZoom,
-      series: [...buildBarSeries(ctx), ...(brush?.miniSeries ?? [])],
-    };
-  }, [
-    live,
-    data,
-    config,
-    bars,
-    seriesKeys,
-    categoryKey,
-    animationType,
-    barRadius,
-    isHorizontal,
-    isStacked,
-    isPercent,
-    selectedDataKey,
-    hasSelection,
-    showGrid,
-    categorySlot,
-    valueSlot,
-    tooltipSlot,
-    legendSlot,
-    isLoading,
-    loadingData,
-    brushEnabled,
-    brushHeight,
-    barGap,
-    barCategoryGap,
-    maxHighlightIndex,
-  ]);
-
-  // ── Init + resize + theme observer (once) ────────────────────────────────────
-  useEffect(() => {
-    const mount = mountRef.current;
-    const container = containerRef.current;
-    if (!mount || !container) return;
-
-    const chart = echarts.init(mount);
-    echartsRef.current = chart;
-
-    const resizeObserver = new ResizeObserver(() => {
-      // Observers always fire once after observe(); repushing on that no-op fire
-      // would stomp the grow-in — only react to a real size change.
-      if (
-        mount.clientWidth === chart.getWidth() &&
-        mount.clientHeight === chart.getHeight()
-      ) {
-        return;
-      }
-      chart.resize();
-      live.repush();
-    });
-    resizeObserver.observe(mount);
-
-    // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
-      live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    // Expandable hover targets the whole COLUMN — a hairline bar is only a couple
-    // of pixels wide, and converting the pointer to a category index matches the
-    // tooltip. Registered ONCE here; the sync effect would stack duplicate listeners.
-    chart
-      .getZr()
-      .on("mousemove", (event: { offsetX: number; offsetY: number }) => {
-        const { expandableKey } = live.handlers;
-        if (!expandableKey) return;
-        const point = [event.offsetX, event.offsetY];
-        if (!chart.containPixel({ gridIndex: 0 }, point)) {
-          live.animateExpand(expandableKey, null);
-          return;
-        }
-        // A grid finder returns [xValue, yValue] — the category index is x on
-        // vertical bars, y on horizontal; an xAxisIndex finder returns null for 2D.
-        const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
-        const index = Array.isArray(converted)
-          ? converted[live.handlers.isHorizontal ? 1 : 0]
-          : converted;
-        live.animateExpand(
-          expandableKey,
-          typeof index === "number" ? Math.round(index) : null,
-        );
-      });
-    chart.getZr().on("globalout", () => {
-      const { expandableKey } = live.handlers;
-      if (expandableKey) live.animateExpand(expandableKey, null);
-    });
-
-    chart.on("click", (params) => {
-      const { clickableKeys: clickable, seriesKeys: keys } = live.handlers;
-      const p = params as { seriesId?: string; seriesIndex?: number };
-      // Bar clicks carry seriesId; keep the seriesIndex fallback — main series
-      // come first, so the index maps directly.
-      const id =
-        p.seriesId ??
-        (typeof p.seriesIndex === "number" ? keys[p.seriesIndex] : undefined);
-      if (typeof id === "string" && clickable.has(id)) toggleSelection(id);
-    });
-
-    chart.on("datazoom", () => {
-      const option = chart.getOption() as {
-        dataZoom?: { start?: number; end?: number }[];
-      };
-      const zoom = option.dataZoom?.[0];
-      if (!zoom) return;
-
-      // Ride the selection — pure zrender updates, so the drag stays 1:1.
-      live.brushRange = { start: zoom.start ?? 0, end: zoom.end ?? 100 };
-      syncBrushOverlayNow();
-
-      const { onBrushChange: onChange } = live.handlers;
-      if (!onChange) return;
-      const len = live.dataLength;
-      const startIndex = Math.round(((zoom.start ?? 0) / 100) * (len - 1));
-      const endIndex = Math.round(((zoom.end ?? 100) / 100) * (len - 1));
-      onChange({ startIndex, endIndex });
-    });
-
-    // Only catches rescales that BYPASS push — a dataZoom drag re-ranging the value
-    // axis. The correction is a silent series-only merge (can't reset the drag),
-    // held off until the entrance finishes and epsilon-guarded against a loop.
-    chart.on("finished", () => {
-      const { hasStripped, isHorizontal: horiz } = live.handlers;
-      if (!hasStripped || performance.now() < live.revealEndsAt) return;
-      const measured = measureValuePxPerUnit(chart, horiz);
-      if (measured == null) return;
-      if (
-        live.valuePxPerUnit != null &&
-        Math.abs(measured - live.valuePxPerUnit) < 0.5
-      )
-        return;
-      live.valuePxPerUnit = measured;
-      live.patchStrippedCaps();
-    });
-
-    // Hover tracking for the overlay: labels show while the pointer is over the
-    // brush, and each pill brightens when the pointer is near its edge.
-    const zr = chart.getZr();
-    const applyHover = (next: {
-      inside: boolean;
-      left: boolean;
-      right: boolean;
-    }) => {
-      const prev = live.brushHover;
-      if (
-        prev.inside === next.inside &&
-        prev.left === next.left &&
-        prev.right === next.right
-      ) {
-        return;
-      }
-      live.brushHover = next;
-      syncBrushOverlayNow();
-    };
-    const onZrMove = (event: { offsetX?: number; offsetY?: number }) => {
-      const geom = live.brushGeom;
-      if (!geom) return;
-      const x = event.offsetX ?? -1;
-      const y = event.offsetY ?? -1;
-      const top = chart.getHeight() - geom.bottom - geom.height;
-      const inside = y >= top - 4 && y <= top + geom.height + 4;
-      const trackLeft = 8;
-      const trackWidth = Math.max(chart.getWidth() - 16, 1);
-      const { start, end } = live.brushRange;
-      const selectionLeft = trackLeft + (trackWidth * start) / 100;
-      const selectionRight = trackLeft + (trackWidth * end) / 100;
-      applyHover({
-        inside,
-        left: inside && Math.abs(x - selectionLeft) <= 8,
-        right: inside && Math.abs(x - selectionRight) <= 8,
-      });
-    };
-    const onZrOut = () =>
-      applyHover({ inside: false, left: false, right: false });
-    zr.on("mousemove", onZrMove);
-    zr.on("globalout", onZrOut);
-
-    return () => {
-      zr.off("mousemove", onZrMove);
-      zr.off("globalout", onZrOut);
-      resizeObserver.disconnect();
-      themeObserver.disconnect();
-      chart.dispose();
-      echartsRef.current = null;
-      // The overlay elements died with the zrender instance.
-      live.brushOverlay = null;
-      // NOTE: the reveal guard belongs to the chart instance — without this reset,
-      // StrictMode's dev remount would skip the entrance on the surviving instance.
-      live.hasRevealed = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
-  useEffect(() => {
-    const chart = echartsRef.current;
-    const container = containerRef.current;
-    if (!chart || !container) return;
-
-    // Colors come from the <style> committed just before this effect ran — read
-    // them here, right before the push, rather than round-tripping through state.
-    live.resolved = resolveColors(container, config, seriesKeys);
-
-    const push = (withEntrance: boolean) => {
-      // Measure the value-axis scale before building so stripped caps get the
-      // right per-bar fraction on this push. Null before the first push and stale
-      // when it rescales the axis — the post-apply re-measure corrects both.
-      const measured = measureValuePxPerUnit(chart, isHorizontal);
-      if (measured != null) live.valuePxPerUnit = measured;
-
-      const apply = () => {
-        const option = buildOption();
-        const merged = chartOptions ? { ...option, ...chartOptions } : option;
-        Object.assign(merged, {
-          animation: withEntrance,
-          animationDuration: BAR_GROW_DURATION,
-          animationDurationUpdate: 0,
-        });
-        // chartOptions is an untyped escape hatch — the spread erases the option's
-        // shape, so re-assert it. The only cast in the file.
-        chart.setOption(merged as EChartsOption, { notMerge: true });
-      };
-
-      apply();
-
-      // Some sizes only exist after layout (block width, stack gap, stripped cap),
-      // so measure and rebuild IMMEDIATELY — in this task, before paint — so only
-      // the corrected chart is shown; the async `finished` route flickered late.
-      let needsRebuild = false;
-      if (live.handlers.hasBlocks) {
-        const width = measureBarWidthPx(chart, isHorizontal, barCategoryGap);
-        if (
-          width != null &&
-          (live.barWidthPx == null || Math.abs(width - live.barWidthPx) > 0.5)
-        ) {
-          live.barWidthPx = width;
-          needsRebuild = true;
-        }
-      }
-      if (live.handlers.hasStackGap || live.handlers.hasStripped) {
-        const scale = measureValuePxPerUnit(chart, isHorizontal);
-        if (
-          scale != null &&
-          (live.valuePxPerUnit == null || live.valuePxPerUnit !== scale)
-        ) {
-          live.valuePxPerUnit = scale;
-          needsRebuild = true;
-        }
-      }
-      if (needsRebuild) apply();
-      // Mark when the entrance settles, so the stripped-cap correction holds off
-      // until the grow finishes (0 = nothing animating, correct immediately).
-      const maxStagger = data.length > 1 ? (data.length - 1) * BAR_STAGGER : 0;
-      live.revealEndsAt = withEntrance
-        ? performance.now() + BAR_GROW_DURATION + maxStagger
-        : 0;
-      // Overlays live outside the option — reposition them after every push.
-      syncBrushOverlayNow();
-    };
-
-    // `animateExpand` and `patchStrippedCaps` below are series-scoped silent
-    // merges — never a full notMerge push, which would fight the entrance, a brush
-    // drag, or the hover state being animated. This one eases progress per frame.
-    live.animateExpand = (key: string | null, index: number | null) => {
-      const expandKeys = new Set(
-        bars
-          .filter((bar) => bar.variant === "expandable")
-          .map((bar) => bar.dataKey),
-      );
-      if (!expandKeys.size) return;
-
-      const next = index != null && key != null ? index : null;
-      if (
-        live.expand.hovered === next &&
-        (key == null || live.expand.key === key)
-      )
-        return;
-      if (key != null) live.expand.key = key;
-      live.expand.hovered = next;
-      // Seed the newly hovered bar so it has something to ease from.
-      if (next != null && !live.expand.progress.has(next)) {
-        live.expand.progress.set(next, EXPAND_COLLAPSED);
-      }
-      if (live.expandRaf) return; // a loop is already running; it picks up the new target
-
-      const patchOnce = () => {
-        const option = buildOption();
-        const series = Array.isArray(option.series)
-          ? option.series
-          : option.series
-            ? [option.series]
-            : [];
-        const patch = series.filter(
-          (s): s is BarSeriesOption =>
-            typeof s?.id === "string" && expandKeys.has(s.id),
-        );
-        if (patch.length)
-          chart.setOption(
-            { series: patch },
-            { silent: true, lazyUpdate: true },
-          );
-      };
-
-      let last = performance.now();
-      const step = () => {
-        const now = performance.now();
-        const dt = Math.min(64, now - last);
-        last = now;
-        // Exponential approach — every bar eases toward its own target, so the one
-        // being left keeps animating shut while the next one opens.
-        const k = 1 - Math.exp(-dt / EXPAND_TAU);
-        let moving = false;
-        for (const [i, value] of live.expand.progress) {
-          const target = i === live.expand.hovered ? 1 : EXPAND_COLLAPSED;
-          const eased = value + (target - value) * k;
-          if (Math.abs(target - eased) < 0.004) {
-            if (target === EXPAND_COLLAPSED) live.expand.progress.delete(i);
-            else live.expand.progress.set(i, target);
-          } else {
-            live.expand.progress.set(i, eased);
-            moving = true;
-          }
-        }
-        patchOnce();
-        live.expandRaf = moving ? requestAnimationFrame(step) : 0;
-      };
-      live.expandRaf = requestAnimationFrame(step);
-    };
-
-    live.patchStrippedCaps = () => {
-      const option = buildOption();
-      const series = Array.isArray(option.series)
-        ? option.series
-        : option.series
-          ? [option.series]
-          : [];
-      const strippedKeys = new Set(
-        bars
-          .filter((bar) => bar.variant === "stripped")
-          .map((bar) => bar.dataKey),
-      );
-      const patch = series.filter(
-        (s): s is BarSeriesOption =>
-          typeof s?.id === "string" && strippedKeys.has(s.id),
-      );
-      if (patch.length)
-        chart.setOption({ series: patch }, { silent: true, lazyUpdate: true });
-    };
-
-    // Intro grow-in — ECharts' native bar entrance, staggered per-datum, on the
-    // first real render only (later pushes send `animation: false`, else notMerge
-    // replays it). A loading cycle re-arms it: the Recharts twin remounts <Bar>s.
-    if (isLoading) live.hasRevealed = false;
-    const shouldReveal = !live.hasRevealed && !isLoading;
-    if (shouldReveal) live.hasRevealed = true;
-    const revealEnabled =
-      animation &&
-      shouldReveal &&
-      effectiveAnimation !== "none" &&
-      !shouldReduceMotion;
-    push(revealEnabled);
-
-    // Theme flips and resizes re-enter here without touching React: re-read the
-    // tokens (.dark class changed, textures need rebakes) and push an update.
-    live.repush = () => {
-      live.resolved = resolveColors(container, config, seriesKeys);
-      push(false);
-    };
-  }, [
-    live,
-    buildOption,
-    chartOptions,
-    isLoading,
-    animation,
-    effectiveAnimation,
-    shouldReduceMotion,
-    config,
-    seriesKeys,
-    data.length,
-    bars,
-    isHorizontal,
-    barCategoryGap,
-    syncBrushOverlayNow,
-  ]);
-
-  // ── Default tooltip — show the tooltip at `defaultIndex` with no hover ────────
-  // Recharts' `defaultIndex` keeps a tooltip open on load; ECharts has no static
-  // equivalent, so dispatch `showTip` once the layout has settled.
-  useEffect(() => {
-    const chart = echartsRef.current;
-    const index = tooltipSlot.defaultIndex;
-    if (!chart || isLoading || !tooltipSlot.present || index == null) return;
-    const timer = setTimeout(() => {
-      chart.dispatchAction({
-        type: "showTip",
-        seriesIndex: 0,
-        dataIndex: index,
-      });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [
-    tooltipSlot.present,
-    tooltipSlot.defaultIndex,
-    isLoading,
-    data.length,
-    seriesKeys.length,
-  ]);
-
-  // ── Loading shimmer — rAF sweeps a bright band across the gray bars ──────────
-  useEffect(() => {
-    const chart = echartsRef.current;
-    if (!chart || !isLoading) return;
-
-    let raf = 0;
-    let lastPhase = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const phase =
-        ((((now - start) / LOADING_ANIMATION_DURATION) % 1) + 1) % 1;
-      // Wrapped past 1 → the band is off-screen; swap in fresh random heights.
-      if (phase < lastPhase) live.loadingRows = getLoadingBarData(loadingBars);
-      lastPhase = phase;
-
-      // Read tokens per frame, so a theme flip mid-loading retints the shimmer.
-      const foreground = live.resolved?.tokens.foreground ?? GRAY;
-      const w = chart.getWidth();
-      const h = chart.getHeight();
-      if (!w || !h) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-      // The clip gradient runs on ABSOLUTE pixels (0,0)→(w,w) shared by every bar,
-      // so each brightens as the 45°-leaned band sweeps over it; `maxT` projects
-      // the farthest plot corner so the sweep never dawdles off-plot each loop.
-      const maxT = (w + h) / (2 * w);
-      const center =
-        phase * (maxT + 2 * LOADING_SHIMMER_BAND) - LOADING_SHIMMER_BAND;
-      const fill = new echarts.graphic.LinearGradient(
-        0,
-        0,
-        w,
-        w,
-        shimmerWindowStops(center, foreground, LOADING_SHIMMER_MAX_OPACITY),
-        true,
-      );
-      chart.setOption(
-        {
-          series: [
-            {
-              id: "__loading",
-              data: loadingData(),
-              itemStyle: { color: fill },
-            },
-          ],
-        },
-        { silent: true, lazyUpdate: true },
-      );
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [live, isLoading, loadingBars, loadingData]);
-
-  // ── Legend overlay position ──────────────────────────────────────────────────
-  // Insets match the Recharts legend's breathing room inside the plot frame.
-  const legendStyle: CSSProperties = {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    pointerEvents: "auto",
-    ...(legendSlot.verticalAlign === "top"
-      ? { top: 12 }
-      : legendSlot.verticalAlign === "bottom"
-        ? { bottom: brushEnabled ? brushHeight + 16 : 12 }
-        : { top: "50%", transform: "translateY(-50%)" }),
-  };
-
-  return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
-
-      <div className="relative min-h-0 w-full flex-1">
-        <div ref={mountRef} className="h-full min-h-0 w-full" />
-      </div>
-
-      {legendSlot.present && !isLoading && (
-        <LegendOverlay
-          seriesKeys={seriesKeys}
-          config={config}
-          variant={legendSlot.variant}
-          align={legendSlot.align}
-          verticalAlign={legendSlot.verticalAlign}
-          selectedKey={selectedDataKey}
-          hoveredKey={null}
-          isClickable={legendSlot.isClickable}
-          onToggle={toggleSelection}
-          style={legendStyle}
-        />
-      )}
-
-      {isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
-          >
-            <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
-            <span>Loading</span>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
+	const rawId = useId();
+	const chartId = `chart-${rawId.replace(/:/g, "")}`;
+
+	const containerRef = useRef<HTMLDivElement>(null);
+	const mountRef = useRef<HTMLDivElement>(null);
+	const echartsRef = useRef<EChartsInstance | null>(null);
+
+	// NOTE: `resolved` lives in this ref rather than state — as state it would
+	// force an extra render pass plus an effect just to trigger the option push.
+	const live = useRef<LiveState>({
+		resolved: null,
+		hasRevealed: false,
+		revealEndsAt: 0,
+		valuePxPerUnit: null,
+		barWidthPx: null,
+		expand: { key: null, hovered: null, progress: new Map<number, number>() },
+		expandRaf: 0,
+		animateExpand: () => {},
+		loadingRows: null,
+		categories: [],
+		dataLength: 0,
+		brushRange: { start: 0, end: 100 },
+		brushGeom: null,
+		brushOverlay: null,
+		brushHover: { inside: false, left: false, right: false },
+		handlers: {
+			onBrushChange: undefined, // set per-render from the <Brush> child's onChange
+			clickableKeys: new Set<string>(),
+			brushFormatLabel: undefined, // set per-render from the <Brush> child's formatLabel
+			seriesKeys: [],
+			hasStripped: false,
+			hasBlocks: false,
+			hasStackGap: false,
+			expandableKey: null,
+			isHorizontal: false,
+		},
+		repush: () => {},
+		patchStrippedCaps: () => {},
+	}).current;
+
+	// Skeleton rows roll lazily on first use — an impure useRef initializer would
+	// re-roll Math.random() on every render.
+	const loadingData = useCallback(
+		() => (live.loadingRows ??= getLoadingBarData(loadingBars)),
+		[live, loadingBars],
+	);
+	const shouldReduceMotion = useReducedMotion();
+
+	const [selectedDataKey, setSelectedDataKey] = useState<string | null>(
+		defaultSelectedDataKey,
+	);
+
+	// ── Declarative config, collected from children by reference ─────────────────
+	const collected = useMemo(() => collectConfig(children), [children]);
+	const {
+		bars,
+		xAxis: xAxisSlot,
+		yAxis: yAxisSlot,
+		showGrid,
+		tooltip: tooltipSlot,
+		legend: legendSlot,
+		brush: brushSlot,
+	} = collected;
+	// Brush presence turns it on; height/formatLabel/onChange come from the child.
+	const showBrush = brushSlot.present;
+	const brushHeight = brushSlot.height ?? 56;
+
+	const isHorizontal = layout === "horizontal";
+	const isPercent = stackType === "percent";
+	const isStacked = stackType === "stacked" || isPercent;
+
+	// Category axis is x when vertical, y when horizontal; value axis the other.
+	const categorySlot = isHorizontal ? yAxisSlot : xAxisSlot;
+	const valueSlot = isHorizontal ? xAxisSlot : yAxisSlot;
+
+	const seriesKeys = useMemo(() => bars.map((bar) => bar.dataKey), [bars]);
+
+	// category key: category axis dataKey → root xDataKey → first data column no <Bar> claims.
+	const categoryKey = useMemo(() => {
+		if (categorySlot.dataKey) return categorySlot.dataKey;
+		if (xDataKey) return xDataKey as string;
+		const firstRow = data[0];
+		if (firstRow) {
+			const claimed = new Set(seriesKeys);
+			const found = Object.keys(firstRow).find((key) => !claimed.has(key));
+			if (found) return found;
+		}
+		return "";
+	}, [categorySlot.dataKey, xDataKey, data, seriesKeys]);
+
+	// The intro grow-in follows the first bar's setting, falling back to the root default.
+	const effectiveAnimation = bars[0]?.animationType ?? animationType;
+
+	// The tallest COLUMN, comparing totals across every series so a stack or group
+	// wins together rather than one bar inside it. Null when the flag is off.
+	const maxHighlightIndex = useMemo(() => {
+		if (!enableMaxValueHighlight || !data.length || !seriesKeys.length)
+			return null;
+		let best = 0;
+		let bestTotal = -Infinity;
+		data.forEach((row, i) => {
+			const total = seriesKeys.reduce(
+				(sum, key) => sum + (Number(row[key]) || 0),
+				0,
+			);
+			if (total > bestTotal) {
+				bestTotal = total;
+				best = i;
+			}
+		});
+		return best;
+	}, [enableMaxValueHighlight, data, seriesKeys]);
+
+	const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
+
+	const hasSelection = selectedDataKey !== null;
+
+	// Which series may be clicked to toggle selection (consulted by the click handler).
+	const clickableKeys = useMemo(
+		() =>
+			new Set(bars.filter((bar) => bar.isClickable).map((bar) => bar.dataKey)),
+		[bars],
+	);
+
+	// Any visible stripped bar? (never while loading — the skeleton has no stripped
+	// series.) Gates the post-layout cap correction in the `finished` handler.
+	const hasStrippedBars =
+		!isLoading && bars.some((bar) => bar.variant === "stripped");
+
+	// Refresh the handlers' snapshot of the latest callbacks/flags every render.
+	live.handlers = {
+		onBrushChange: brushSlot.onChange,
+		clickableKeys,
+		brushFormatLabel: brushSlot.formatLabel,
+		seriesKeys,
+		hasStripped: hasStrippedBars,
+		hasBlocks: bars.some((bar) => bar.variant === "blocks"),
+		hasStackGap:
+			(stackType === "stacked" || stackType === "percent") && bars.length > 1,
+		expandableKey:
+			bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
+		barCategoryGap,
+		isHorizontal,
+	};
+	live.dataLength = data.length;
+
+	const toggleSelection = useCallback(
+		(key: string) => {
+			setSelectedDataKey((prev) => {
+				const next = prev === key ? null : key;
+				onSelectionChange?.(next);
+				return next;
+			});
+		},
+		[onSelectionChange],
+	);
+
+	// The brush is meaningful only when the category axis is on x (vertical layout).
+	const brushEnabled = showBrush && !isHorizontal;
+
+	// Reposition the brush overlays from the live refs — safe to call from drag
+	// events, hover tracking, and pushes alike, since it never touches setOption.
+	const syncBrushOverlayNow = useCallback(() => {
+		const chart = echartsRef.current;
+		if (!chart) return;
+
+		const geom = live.brushGeom;
+		const tokens = live.resolved?.tokens;
+		if (!geom || !tokens) {
+			syncBrushOverlay(chart, live, null);
+			return;
+		}
+
+		const range = live.brushRange;
+		const categories = live.categories;
+		const format = live.handlers.brushFormatLabel;
+		const lastIndex = Math.max(categories.length - 1, 0);
+		const startIndex = Math.round((range.start / 100) * lastIndex);
+		const endIndex = Math.round((range.end / 100) * lastIndex);
+		const labels =
+			format && categories.length
+				? {
+						start: format(categories[startIndex] ?? "", startIndex),
+						end: format(categories[endIndex] ?? "", endIndex),
+					}
+				: null;
+
+		syncBrushOverlay(chart, live, {
+			range,
+			geom,
+			size: { width: chart.getWidth(), height: chart.getHeight() },
+			tokens,
+			labels,
+			showLabels: live.brushHover.inside,
+			hover: live.brushHover,
+		});
+	}, [live]);
+
+	// ── Option builder ─────────────────────────────────────────────────────────
+	const buildOption = useCallback((): EChartsOption => {
+		const resolved = live.resolved;
+		if (!resolved) return {};
+
+		const categories = data.map((row) => String(row[categoryKey]));
+		live.categories = categories;
+
+		const ctx: OptionBuildContext = {
+			data,
+			config,
+			bars,
+			seriesKeys,
+			animationType,
+			barRadius,
+			isHorizontal,
+			isStacked,
+			isPercent,
+			selectedDataKey,
+			hasSelection,
+			showGrid,
+			categorySlot,
+			valueSlot,
+			tooltipSlot,
+			legendSlot,
+			isLoading,
+			loadingData,
+			showBrush: brushEnabled,
+			brushHeight,
+			barGap,
+			barCategoryGap,
+			resolved,
+			categories,
+			brushRange: live.brushRange,
+			valuePxPerUnit: live.valuePxPerUnit,
+			barWidthPx: live.barWidthPx,
+			expand: live.expand,
+			maxHighlightIndex,
+		};
+
+		const { grid, brushBottom } = buildChartLayout(ctx);
+		live.brushGeom = brushEnabled
+			? { bottom: brushBottom, height: brushHeight }
+			: null;
+
+		const { xAxis, yAxis } = buildMainAxes(ctx);
+
+		if (isLoading) return buildLoadingOption(ctx, { grid, xAxis, yAxis });
+
+		const brush = brushEnabled ? buildBrushOption(ctx, brushBottom) : null;
+
+		return {
+			animation: false,
+			grid: brush ? [grid, brush.miniGrid] : grid,
+			xAxis: brush ? [xAxis, brush.miniXAxis] : xAxis,
+			yAxis: brush ? [yAxis, brush.miniYAxis] : yAxis,
+			tooltip: buildTooltipOption(ctx),
+			dataZoom: brush?.dataZoom,
+			series: [...buildBarSeries(ctx), ...(brush?.miniSeries ?? [])],
+		};
+	}, [
+		live,
+		data,
+		config,
+		bars,
+		seriesKeys,
+		categoryKey,
+		animationType,
+		barRadius,
+		isHorizontal,
+		isStacked,
+		isPercent,
+		selectedDataKey,
+		hasSelection,
+		showGrid,
+		categorySlot,
+		valueSlot,
+		tooltipSlot,
+		legendSlot,
+		isLoading,
+		loadingData,
+		brushEnabled,
+		brushHeight,
+		barGap,
+		barCategoryGap,
+		maxHighlightIndex,
+	]);
+
+	// ── Init + resize + theme observer (once) ────────────────────────────────────
+	useEffect(() => {
+		const mount = mountRef.current;
+		const container = containerRef.current;
+		if (!mount || !container) return;
+
+		const chart = echarts.init(mount);
+		echartsRef.current = chart;
+
+		const resizeObserver = new ResizeObserver(() => {
+			// Observers always fire once after observe(); repushing on that no-op fire
+			// would stomp the grow-in — only react to a real size change.
+			if (
+				mount.clientWidth === chart.getWidth() &&
+				mount.clientHeight === chart.getHeight()
+			) {
+				return;
+			}
+			chart.resize();
+			live.repush();
+		});
+		resizeObserver.observe(mount);
+
+		// Light/dark flips change no React state — re-resolve and push directly.
+		const themeObserver = new MutationObserver(() => {
+			live.repush();
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+
+		// Expandable hover targets the whole COLUMN — a hairline bar is only a couple
+		// of pixels wide, and converting the pointer to a category index matches the
+		// tooltip. Registered ONCE here; the sync effect would stack duplicate listeners.
+		chart
+			.getZr()
+			.on("mousemove", (event: { offsetX: number; offsetY: number }) => {
+				const { expandableKey } = live.handlers;
+				if (!expandableKey) return;
+				const point = [event.offsetX, event.offsetY];
+				if (!chart.containPixel({ gridIndex: 0 }, point)) {
+					live.animateExpand(expandableKey, null);
+					return;
+				}
+				// A grid finder returns [xValue, yValue] — the category index is x on
+				// vertical bars, y on horizontal; an xAxisIndex finder returns null for 2D.
+				const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
+				const index = Array.isArray(converted)
+					? converted[live.handlers.isHorizontal ? 1 : 0]
+					: converted;
+				live.animateExpand(
+					expandableKey,
+					typeof index === "number" ? Math.round(index) : null,
+				);
+			});
+		chart.getZr().on("globalout", () => {
+			const { expandableKey } = live.handlers;
+			if (expandableKey) live.animateExpand(expandableKey, null);
+		});
+
+		chart.on("click", (params) => {
+			const { clickableKeys: clickable, seriesKeys: keys } = live.handlers;
+			const p = params as { seriesId?: string; seriesIndex?: number };
+			// Bar clicks carry seriesId; keep the seriesIndex fallback — main series
+			// come first, so the index maps directly.
+			const id =
+				p.seriesId ??
+				(typeof p.seriesIndex === "number" ? keys[p.seriesIndex] : undefined);
+			if (typeof id === "string" && clickable.has(id)) toggleSelection(id);
+		});
+
+		chart.on("datazoom", () => {
+			const option = chart.getOption() as {
+				dataZoom?: { start?: number; end?: number }[];
+			};
+			const zoom = option.dataZoom?.[0];
+			if (!zoom) return;
+
+			// Ride the selection — pure zrender updates, so the drag stays 1:1.
+			live.brushRange = { start: zoom.start ?? 0, end: zoom.end ?? 100 };
+			syncBrushOverlayNow();
+
+			const { onBrushChange: onChange } = live.handlers;
+			if (!onChange) return;
+			const len = live.dataLength;
+			const startIndex = Math.round(((zoom.start ?? 0) / 100) * (len - 1));
+			const endIndex = Math.round(((zoom.end ?? 100) / 100) * (len - 1));
+			onChange({ startIndex, endIndex });
+		});
+
+		// Only catches rescales that BYPASS push — a dataZoom drag re-ranging the value
+		// axis. The correction is a silent series-only merge (can't reset the drag),
+		// held off until the entrance finishes and epsilon-guarded against a loop.
+		chart.on("finished", () => {
+			const { hasStripped, isHorizontal: horiz } = live.handlers;
+			if (!hasStripped || performance.now() < live.revealEndsAt) return;
+			const measured = measureValuePxPerUnit(chart, horiz);
+			if (measured == null) return;
+			if (
+				live.valuePxPerUnit != null &&
+				Math.abs(measured - live.valuePxPerUnit) < 0.5
+			)
+				return;
+			live.valuePxPerUnit = measured;
+			live.patchStrippedCaps();
+		});
+
+		// Hover tracking for the overlay: labels show while the pointer is over the
+		// brush, and each pill brightens when the pointer is near its edge.
+		const zr = chart.getZr();
+		const applyHover = (next: {
+			inside: boolean;
+			left: boolean;
+			right: boolean;
+		}) => {
+			const prev = live.brushHover;
+			if (
+				prev.inside === next.inside &&
+				prev.left === next.left &&
+				prev.right === next.right
+			) {
+				return;
+			}
+			live.brushHover = next;
+			syncBrushOverlayNow();
+		};
+		const onZrMove = (event: { offsetX?: number; offsetY?: number }) => {
+			const geom = live.brushGeom;
+			if (!geom) return;
+			const x = event.offsetX ?? -1;
+			const y = event.offsetY ?? -1;
+			const top = chart.getHeight() - geom.bottom - geom.height;
+			const inside = y >= top - 4 && y <= top + geom.height + 4;
+			const trackLeft = 8;
+			const trackWidth = Math.max(chart.getWidth() - 16, 1);
+			const { start, end } = live.brushRange;
+			const selectionLeft = trackLeft + (trackWidth * start) / 100;
+			const selectionRight = trackLeft + (trackWidth * end) / 100;
+			applyHover({
+				inside,
+				left: inside && Math.abs(x - selectionLeft) <= 8,
+				right: inside && Math.abs(x - selectionRight) <= 8,
+			});
+		};
+		const onZrOut = () =>
+			applyHover({ inside: false, left: false, right: false });
+		zr.on("mousemove", onZrMove);
+		zr.on("globalout", onZrOut);
+
+		return () => {
+			zr.off("mousemove", onZrMove);
+			zr.off("globalout", onZrOut);
+			resizeObserver.disconnect();
+			themeObserver.disconnect();
+			chart.dispose();
+			echartsRef.current = null;
+			// The overlay elements died with the zrender instance.
+			live.brushOverlay = null;
+			// NOTE: the reveal guard belongs to the chart instance — without this reset,
+			// StrictMode's dev remount would skip the entrance on the surviving instance.
+			live.hasRevealed = false;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
+	useEffect(() => {
+		const chart = echartsRef.current;
+		const container = containerRef.current;
+		if (!chart || !container) return;
+
+		// Colors come from the <style> committed just before this effect ran — read
+		// them here, right before the push, rather than round-tripping through state.
+		live.resolved = resolveColors(container, config, seriesKeys);
+
+		const push = (withEntrance: boolean) => {
+			// Measure the value-axis scale before building so stripped caps get the
+			// right per-bar fraction on this push. Null before the first push and stale
+			// when it rescales the axis — the post-apply re-measure corrects both.
+			const measured = measureValuePxPerUnit(chart, isHorizontal);
+			if (measured != null) live.valuePxPerUnit = measured;
+
+			const apply = () => {
+				const option = buildOption();
+				const merged = chartOptions ? { ...option, ...chartOptions } : option;
+				Object.assign(merged, {
+					animation: withEntrance,
+					animationDuration: BAR_GROW_DURATION,
+					animationDurationUpdate: 0,
+				});
+				// chartOptions is an untyped escape hatch — the spread erases the option's
+				// shape, so re-assert it. The only cast in the file.
+				chart.setOption(merged as EChartsOption, { notMerge: true });
+			};
+
+			apply();
+
+			// Some sizes only exist after layout (block width, stack gap, stripped cap),
+			// so measure and rebuild IMMEDIATELY — in this task, before paint — so only
+			// the corrected chart is shown; the async `finished` route flickered late.
+			let needsRebuild = false;
+			if (live.handlers.hasBlocks) {
+				const width = measureBarWidthPx(chart, isHorizontal, barCategoryGap);
+				if (
+					width != null &&
+					(live.barWidthPx == null || Math.abs(width - live.barWidthPx) > 0.5)
+				) {
+					live.barWidthPx = width;
+					needsRebuild = true;
+				}
+			}
+			if (live.handlers.hasStackGap || live.handlers.hasStripped) {
+				const scale = measureValuePxPerUnit(chart, isHorizontal);
+				if (
+					scale != null &&
+					(live.valuePxPerUnit == null || live.valuePxPerUnit !== scale)
+				) {
+					live.valuePxPerUnit = scale;
+					needsRebuild = true;
+				}
+			}
+			if (needsRebuild) apply();
+			// Mark when the entrance settles, so the stripped-cap correction holds off
+			// until the grow finishes (0 = nothing animating, correct immediately).
+			const maxStagger = data.length > 1 ? (data.length - 1) * BAR_STAGGER : 0;
+			live.revealEndsAt = withEntrance
+				? performance.now() + BAR_GROW_DURATION + maxStagger
+				: 0;
+			// Overlays live outside the option — reposition them after every push.
+			syncBrushOverlayNow();
+		};
+
+		// `animateExpand` and `patchStrippedCaps` below are series-scoped silent
+		// merges — never a full notMerge push, which would fight the entrance, a brush
+		// drag, or the hover state being animated. This one eases progress per frame.
+		live.animateExpand = (key: string | null, index: number | null) => {
+			const expandKeys = new Set(
+				bars
+					.filter((bar) => bar.variant === "expandable")
+					.map((bar) => bar.dataKey),
+			);
+			if (!expandKeys.size) return;
+
+			const next = index != null && key != null ? index : null;
+			if (
+				live.expand.hovered === next &&
+				(key == null || live.expand.key === key)
+			)
+				return;
+			if (key != null) live.expand.key = key;
+			live.expand.hovered = next;
+			// Seed the newly hovered bar so it has something to ease from.
+			if (next != null && !live.expand.progress.has(next)) {
+				live.expand.progress.set(next, EXPAND_COLLAPSED);
+			}
+			if (live.expandRaf) return; // a loop is already running; it picks up the new target
+
+			const patchOnce = () => {
+				const option = buildOption();
+				const series = Array.isArray(option.series)
+					? option.series
+					: option.series
+						? [option.series]
+						: [];
+				const patch = series.filter(
+					(s): s is BarSeriesOption =>
+						typeof s?.id === "string" && expandKeys.has(s.id),
+				);
+				if (patch.length)
+					chart.setOption(
+						{ series: patch },
+						{ silent: true, lazyUpdate: true },
+					);
+			};
+
+			let last = performance.now();
+			const step = () => {
+				const now = performance.now();
+				const dt = Math.min(64, now - last);
+				last = now;
+				// Exponential approach — every bar eases toward its own target, so the one
+				// being left keeps animating shut while the next one opens.
+				const k = 1 - Math.exp(-dt / EXPAND_TAU);
+				let moving = false;
+				for (const [i, value] of live.expand.progress) {
+					const target = i === live.expand.hovered ? 1 : EXPAND_COLLAPSED;
+					const eased = value + (target - value) * k;
+					if (Math.abs(target - eased) < 0.004) {
+						if (target === EXPAND_COLLAPSED) live.expand.progress.delete(i);
+						else live.expand.progress.set(i, target);
+					} else {
+						live.expand.progress.set(i, eased);
+						moving = true;
+					}
+				}
+				patchOnce();
+				live.expandRaf = moving ? requestAnimationFrame(step) : 0;
+			};
+			live.expandRaf = requestAnimationFrame(step);
+		};
+
+		live.patchStrippedCaps = () => {
+			const option = buildOption();
+			const series = Array.isArray(option.series)
+				? option.series
+				: option.series
+					? [option.series]
+					: [];
+			const strippedKeys = new Set(
+				bars
+					.filter((bar) => bar.variant === "stripped")
+					.map((bar) => bar.dataKey),
+			);
+			const patch = series.filter(
+				(s): s is BarSeriesOption =>
+					typeof s?.id === "string" && strippedKeys.has(s.id),
+			);
+			if (patch.length)
+				chart.setOption({ series: patch }, { silent: true, lazyUpdate: true });
+		};
+
+		// Intro grow-in — ECharts' native bar entrance, staggered per-datum, on the
+		// first real render only (later pushes send `animation: false`, else notMerge
+		// replays it). A loading cycle re-arms it: the Recharts twin remounts <Bar>s.
+		if (isLoading) live.hasRevealed = false;
+		const shouldReveal = !live.hasRevealed && !isLoading;
+		if (shouldReveal) live.hasRevealed = true;
+		const revealEnabled =
+			animation &&
+			shouldReveal &&
+			effectiveAnimation !== "none" &&
+			!shouldReduceMotion;
+		push(revealEnabled);
+
+		// Theme flips and resizes re-enter here without touching React: re-read the
+		// tokens (.dark class changed, textures need rebakes) and push an update.
+		live.repush = () => {
+			live.resolved = resolveColors(container, config, seriesKeys);
+			push(false);
+		};
+	}, [
+		live,
+		buildOption,
+		chartOptions,
+		isLoading,
+		animation,
+		effectiveAnimation,
+		shouldReduceMotion,
+		config,
+		seriesKeys,
+		data.length,
+		bars,
+		isHorizontal,
+		barCategoryGap,
+		syncBrushOverlayNow,
+	]);
+
+	// ── Default tooltip — show the tooltip at `defaultIndex` with no hover ────────
+	// Recharts' `defaultIndex` keeps a tooltip open on load; ECharts has no static
+	// equivalent, so dispatch `showTip` once the layout has settled.
+	useEffect(() => {
+		const chart = echartsRef.current;
+		const index = tooltipSlot.defaultIndex;
+		if (!chart || isLoading || !tooltipSlot.present || index == null) return;
+		const timer = setTimeout(() => {
+			chart.dispatchAction({
+				type: "showTip",
+				seriesIndex: 0,
+				dataIndex: index,
+			});
+		}, 300);
+		return () => clearTimeout(timer);
+	}, [
+		tooltipSlot.present,
+		tooltipSlot.defaultIndex,
+		isLoading,
+		data.length,
+		seriesKeys.length,
+	]);
+
+	// ── Loading shimmer — rAF sweeps a bright band across the gray bars ──────────
+	useEffect(() => {
+		const chart = echartsRef.current;
+		if (!chart || !isLoading) return;
+
+		let raf = 0;
+		let lastPhase = 0;
+		const start = performance.now();
+		const tick = (now: number) => {
+			const phase =
+				((((now - start) / LOADING_ANIMATION_DURATION) % 1) + 1) % 1;
+			// Wrapped past 1 → the band is off-screen; swap in fresh random heights.
+			if (phase < lastPhase) live.loadingRows = getLoadingBarData(loadingBars);
+			lastPhase = phase;
+
+			// Read tokens per frame, so a theme flip mid-loading retints the shimmer.
+			const foreground = live.resolved?.tokens.foreground ?? GRAY;
+			const w = chart.getWidth();
+			const h = chart.getHeight();
+			if (!w || !h) {
+				raf = requestAnimationFrame(tick);
+				return;
+			}
+			// The clip gradient runs on ABSOLUTE pixels (0,0)→(w,w) shared by every bar,
+			// so each brightens as the 45°-leaned band sweeps over it; `maxT` projects
+			// the farthest plot corner so the sweep never dawdles off-plot each loop.
+			const maxT = (w + h) / (2 * w);
+			const center =
+				phase * (maxT + 2 * LOADING_SHIMMER_BAND) - LOADING_SHIMMER_BAND;
+			const fill = new echarts.graphic.LinearGradient(
+				0,
+				0,
+				w,
+				w,
+				shimmerWindowStops(center, foreground, LOADING_SHIMMER_MAX_OPACITY),
+				true,
+			);
+			chart.setOption(
+				{
+					series: [
+						{
+							id: "__loading",
+							data: loadingData(),
+							itemStyle: { color: fill },
+						},
+					],
+				},
+				{ silent: true, lazyUpdate: true },
+			);
+			raf = requestAnimationFrame(tick);
+		};
+		raf = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(raf);
+	}, [live, isLoading, loadingBars, loadingData]);
+
+	// ── Legend overlay position ──────────────────────────────────────────────────
+	// Insets match the Recharts legend's breathing room inside the plot frame.
+	const legendStyle: CSSProperties = {
+		position: "absolute",
+		left: 16,
+		right: 16,
+		pointerEvents: "auto",
+		...(legendSlot.verticalAlign === "top"
+			? { top: 12 }
+			: legendSlot.verticalAlign === "bottom"
+				? { bottom: brushEnabled ? brushHeight + 16 : 12 }
+				: { top: "50%", transform: "translateY(-50%)" }),
+	};
+
+	return (
+		<div
+			ref={containerRef}
+			data-chart={chartId}
+			className={`relative flex flex-col text-xs ${className ?? ""}`}
+		>
+			<style dangerouslySetInnerHTML={{ __html: css }} />
+
+			<div className="relative min-h-0 w-full flex-1">
+				<div ref={mountRef} className="h-full min-h-0 w-full" />
+			</div>
+
+			{legendSlot.present && !isLoading && (
+				<LegendOverlay
+					seriesKeys={seriesKeys}
+					config={config}
+					variant={legendSlot.variant}
+					align={legendSlot.align}
+					verticalAlign={legendSlot.verticalAlign}
+					selectedKey={selectedDataKey}
+					hoveredKey={null}
+					isClickable={legendSlot.isClickable}
+					onToggle={toggleSelection}
+					style={legendStyle}
+				/>
+			)}
+
+			{isLoading && (
+				<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+					<motion.div
+						initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ duration: 0.25, ease: "easeOut" }}
+						className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
+					>
+						<div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
+						<span>Loading</span>
+					</motion.div>
+				</div>
+			)}
+		</div>
+	);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2216,51 +2217,51 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
 // Skeleton bar heights as a smooth random walk in a comfortable band — reads
 // like a resting chart instead of raw noise spikes.
 function getLoadingBarData(bars: number): number[] {
-  const rows: number[] = [];
-  let value = 40 + Math.random() * 25;
-  for (let i = 0; i < bars; i++) {
-    value = Math.min(85, Math.max(20, value + (Math.random() - 0.5) * 30));
-    rows.push(Math.round(value));
-  }
-  return rows;
+	const rows: number[] = [];
+	let value = 40 + Math.random() * 25;
+	for (let i = 0; i < bars; i++) {
+		value = Math.min(85, Math.max(20, value + (Math.random() - 0.5) * 30));
+		rows.push(Math.round(value));
+	}
+	return rows;
 }
 
 // Hard clip window around `center`: full `peak` alpha inside, zero outside, a
 // small feather so the edge isn't aliased; `center` may run outside [0, 1] so the
 // window fully enters and exits the frame.
 function shimmerWindowStops(center: number, color: string, peak: number) {
-  const half = LOADING_SHIMMER_BAND;
-  const feather = LOADING_SHIMMER_FEATHER;
+	const half = LOADING_SHIMMER_BAND;
+	const feather = LOADING_SHIMMER_FEATHER;
 
-  const alphaAt = (x: number) => {
-    const dist = Math.abs(x - center);
-    if (dist <= half - feather) return peak;
-    if (dist >= half) return 0;
-    // Sine-eased falloff — a linear ramp still reads as a hard cut.
-    return (
-      peak * Math.sin(((1 - (dist - (half - feather)) / feather) * Math.PI) / 2)
-    );
-  };
+	const alphaAt = (x: number) => {
+		const dist = Math.abs(x - center);
+		if (dist <= half - feather) return peak;
+		if (dist >= half) return 0;
+		// Sine-eased falloff — a linear ramp still reads as a hard cut.
+		return (
+			peak * Math.sin(((1 - (dist - (half - feather)) / feather) * Math.PI) / 2)
+		);
+	};
 
-  const offsets = [
-    0,
-    center - half,
-    center - half + feather,
-    center,
-    center + half - feather,
-    center + half,
-    1,
-  ]
-    .filter((x) => x >= 0 && x <= 1)
-    .sort((a, b) => a - b);
+	const offsets = [
+		0,
+		center - half,
+		center - half + feather,
+		center,
+		center + half - feather,
+		center + half,
+		1,
+	]
+		.filter((x) => x >= 0 && x <= 1)
+		.sort((a, b) => a - b);
 
-  const stops: { offset: number; color: string }[] = [];
-  for (const offset of offsets) {
-    if (stops.length === 0 || offset - stops[stops.length - 1].offset > 1e-4) {
-      stops.push({ offset, color: withAlpha(color, alphaAt(offset)) });
-    }
-  }
-  return stops;
+	const stops: { offset: number; color: string }[] = [];
+	for (const offset of offsets) {
+		if (stops.length === 0 || offset - stops[stops.length - 1].offset > 1e-4) {
+			stops.push({ offset, color: withAlpha(color, alphaAt(offset)) });
+		}
+	}
+	return stops;
 }
 
 // Compound API: parts hang off the root as static members, so a consumer writes

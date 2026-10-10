@@ -5,5 +5,5 @@ import { redirect } from "next/navigation";
  * upload moved there). Keep this redirect while old bookmarks exist.
  */
 export default function FacultyPage() {
-  redirect("/forms/clo-raw-data");
+	redirect("/forms/clo-raw-data");
 }

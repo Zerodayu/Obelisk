@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { assertCanManagePlos, PloForbiddenError } from "@v1/plan/compute";
 
 describe("PLO management role guard", () => {

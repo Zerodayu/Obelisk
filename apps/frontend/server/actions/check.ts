@@ -12,11 +12,11 @@ import { CHECK_FORM_SLUGS, type CheckFormCode } from "@/lib/check-slugs";
 import { actionApi, serverApi } from "@/server/api-client";
 
 export type ActionResult<TData = void> =
-  | { ok: true; data: TData }
-  | { ok: false; error: string };
+	| { ok: true; data: TData }
+	| { ok: false; error: string };
 
 function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
+	return err instanceof ApiError ? err.message : fallback;
 }
 
 // NOTE: the code→slug map lives in lib/check-slugs.ts — this file is
@@ -27,53 +27,53 @@ function errorMessage(err: unknown, fallback: string): string {
 // ---------------------------------------------------------------------------
 
 export async function initCheckForm(
-  formCode: CheckFormCode,
-  params: { programId: string; termId: string },
+	formCode: CheckFormCode,
+	params: { programId: string; termId: string },
 ): Promise<ActionResult<{ id: string }>> {
-  const slug = CHECK_FORM_SLUGS[formCode];
-  try {
-    const data = await actionApi.post<{ id: string }>(
-      `/check/${slug}/init`,
-      params,
-    );
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to initialize form. Please try again."),
-    };
-  }
+	const slug = CHECK_FORM_SLUGS[formCode];
+	try {
+		const data = await actionApi.post<{ id: string }>(
+			`/check/${slug}/init`,
+			params,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to initialize form. Please try again."),
+		};
+	}
 }
 
 export async function getCheckForm<T>(
-  formCode: CheckFormCode,
-  id: string,
+	formCode: CheckFormCode,
+	id: string,
 ): Promise<ActionResult<T>> {
-  const slug = CHECK_FORM_SLUGS[formCode];
-  try {
-    const data = await serverApi.get<T>(`/check/${slug}/${id}`);
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to load form data. Please try again."),
-    };
-  }
+	const slug = CHECK_FORM_SLUGS[formCode];
+	try {
+		const data = await serverApi.get<T>(`/check/${slug}/${id}`);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to load form data. Please try again."),
+		};
+	}
 }
 
 export async function saveCheckForm<T>(
-  formCode: CheckFormCode,
-  id: string,
-  body: Record<string, unknown>,
+	formCode: CheckFormCode,
+	id: string,
+	body: Record<string, unknown>,
 ): Promise<ActionResult<T>> {
-  const slug = CHECK_FORM_SLUGS[formCode];
-  try {
-    const data = await actionApi.put<T>(`/check/${slug}/${id}`, body);
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to save. Please try again."),
-    };
-  }
+	const slug = CHECK_FORM_SLUGS[formCode];
+	try {
+		const data = await actionApi.put<T>(`/check/${slug}/${id}`, body);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to save. Please try again."),
+		};
+	}
 }

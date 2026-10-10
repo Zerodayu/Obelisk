@@ -4,15 +4,16 @@ import { useAtomValue } from "jotai";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+
 import { Badge } from "@/components/reui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api-client";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
-  FORM_STATUS_LABELS,
-  FORM_STATUS_TONES,
-  type FormSubmissionRecord,
+	FORM_STATUS_LABELS,
+	FORM_STATUS_TONES,
+	type FormSubmissionRecord,
 } from "@/lib/store/atoms/forms";
 import { userAtom } from "@/lib/store/atoms/user";
 
@@ -27,89 +28,89 @@ import { userAtom } from "@/lib/store/atoms/user";
  * approval screen.
  */
 export function SubmissionStatusCard({
-  submissionId,
+	submissionId,
 }: {
-  submissionId: string | null | undefined;
+	submissionId: string | null | undefined;
 }) {
-  const user = useAtomValue(userAtom);
-  const [submission, setSubmission] = useState<FormSubmissionRecord | null>(
-    null,
-  );
-  // NOTE: start "loading" for an id so SSR/first paint shows the spinner
-  // instead of rendering nothing until the effect fires.
-  const [loading, setLoading] = useState(Boolean(submissionId));
+	const user = useAtomValue(userAtom);
+	const [submission, setSubmission] = useState<FormSubmissionRecord | null>(
+		null,
+	);
+	// NOTE: start "loading" for an id so SSR/first paint shows the spinner
+	// instead of rendering nothing until the effect fires.
+	const [loading, setLoading] = useState(Boolean(submissionId));
 
-  const load = useCallback(async () => {
-    if (!submissionId) return;
-    setLoading(true);
-    try {
-      setSubmission(
-        await api.get<FormSubmissionRecord>(`/forms/${submissionId}`),
-      );
-    } catch {
-      // A missing/invisible submission leaves the card in its empty state —
-      // the form screen already carries its own load errors.
-      setSubmission(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [submissionId]);
+	const load = useCallback(async () => {
+		if (!submissionId) return;
+		setLoading(true);
+		try {
+			setSubmission(
+				await api.get<FormSubmissionRecord>(`/forms/${submissionId}`),
+			);
+		} catch {
+			// A missing/invisible submission leaves the card in its empty state —
+			// the form screen already carries its own load errors.
+			setSubmission(null);
+		} finally {
+			setLoading(false);
+		}
+	}, [submissionId]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+	useEffect(() => {
+		void load();
+	}, [load]);
 
-  if (!submissionId) {
-    return (
-      <section className="rounded-xl border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
-        Approval workflow activates once this form has a submission record.
-      </section>
-    );
-  }
+	if (!submissionId) {
+		return (
+			<section className="bg-muted/30 text-muted-foreground rounded-xl border border-dashed p-4 text-sm">
+				Approval workflow activates once this form has a submission record.
+			</section>
+		);
+	}
 
-  if (loading && !submission) {
-    return (
-      <section className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner className="size-4" /> Loading approval status…
-        </div>
-      </section>
-    );
-  }
+	if (loading && !submission) {
+		return (
+			<section className="bg-card rounded-xl border p-4 shadow-sm">
+				<div className="text-muted-foreground flex items-center gap-2 text-sm">
+					<Spinner className="size-4" /> Loading approval status…
+				</div>
+			</section>
+		);
+	}
 
-  if (!submission) return null;
+	if (!submission) return null;
 
-  const status = submission.status;
-  const pendingStep = (submission.approvalSteps ?? []).find(
-    (step) => step.decision === "pending",
-  );
-  const submitterLine =
-    submission.submittedBy && submission.submittedBy.id !== user?.id
-      ? `Submitted by ${submission.submittedBy.name}`
-      : null;
+	const status = submission.status;
+	const pendingStep = (submission.approvalSteps ?? []).find(
+		(step) => step.decision === "pending",
+	);
+	const submitterLine =
+		submission.submittedBy && submission.submittedBy.id !== user?.id
+			? `Submitted by ${submission.submittedBy.name}`
+			: null;
 
-  return (
-    <section className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold">Approval</span>
-        <Badge variant={FORM_STATUS_TONES[status]}>
-          {FORM_STATUS_LABELS[status]}
-        </Badge>
-        {status === "submitted" && pendingStep ? (
-          <Badge variant="outline">
-            Waiting on {roleLabel(pendingStep.approverRole as UserRole)}
-          </Badge>
-        ) : null}
-        {submitterLine ? (
-          <span className="text-xs text-muted-foreground">{submitterLine}</span>
-        ) : null}
-      </div>
+	return (
+		<section className="bg-card flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4 shadow-sm">
+			<div className="flex flex-wrap items-center gap-2">
+				<span className="text-sm font-semibold">Approval</span>
+				<Badge variant={FORM_STATUS_TONES[status]}>
+					{FORM_STATUS_LABELS[status]}
+				</Badge>
+				{status === "submitted" && pendingStep ? (
+					<Badge variant="outline">
+						Waiting on {roleLabel(pendingStep.approverRole as UserRole)}
+					</Badge>
+				) : null}
+				{submitterLine ? (
+					<span className="text-muted-foreground text-xs">{submitterLine}</span>
+				) : null}
+			</div>
 
-      <Button asChild size="sm" variant="ghost">
-        <Link href={`/submissions/${submission.id}`}>
-          Open approval screen <ArrowRightIcon />
-        </Link>
-      </Button>
-    </section>
-  );
+			<Button asChild size="sm" variant="ghost">
+				<Link href={`/submissions/${submission.id}`}>
+					Open approval screen <ArrowRightIcon />
+				</Link>
+			</Button>
+		</section>
+	);
 }

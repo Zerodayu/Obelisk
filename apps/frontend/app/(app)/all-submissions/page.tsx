@@ -10,17 +10,17 @@ import { requireRole } from "@/server/auth";
  * replaces "My Submissions" for the VPAA, which never prepares submissions.
  */
 export default async function AllSubmissionsPage() {
-  await requireRole(ARCHIVE_ROLES);
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">Submissions</h2>
-        <p className="text-sm text-muted-foreground">
-          Every submission across the institution. Approved forms can be
-          archived straight from this list.
-        </p>
-      </div>
-      <SubmissionInbox devPreview={isDevMode} scope="all" />
-    </div>
-  );
+	await requireRole(ARCHIVE_ROLES);
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">Submissions</h2>
+				<p className="text-muted-foreground text-sm">
+					Every submission across the institution. Approved forms can be
+					archived straight from this list.
+				</p>
+			</div>
+			<SubmissionInbox devPreview={isDevMode} scope="all" />
+		</div>
+	);
 }

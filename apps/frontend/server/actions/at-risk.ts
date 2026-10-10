@@ -15,11 +15,11 @@ import { ApiError } from "@/lib/api-client";
 import { actionApi, serverApi } from "@/server/api-client";
 
 export type ActionResult<TData = void> =
-  | { ok: true; data: TData }
-  | { ok: false; error: string };
+	| { ok: true; data: TData }
+	| { ok: false; error: string };
 
 function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
+	return err instanceof ApiError ? err.message : fallback;
 }
 
 // ---------------------------------------------------------------------------
@@ -28,26 +28,26 @@ function errorMessage(err: unknown, fallback: string): string {
 
 /** One `AtRiskFlag` row with its student + the CLO/section it points at. */
 export interface AtRiskFlagRow {
-  id: string;
-  studentId: string;
-  reason: string;
-  flaggedAt: string;
-  student: {
-    id: string;
-    studentNumber: string;
-    firstName: string;
-    lastName: string;
-  };
-  cloAttainment: {
-    classSectionId: string | null;
-    clo: { code: string };
-  } | null;
+	id: string;
+	studentId: string;
+	reason: string;
+	flaggedAt: string;
+	student: {
+		id: string;
+		studentNumber: string;
+		firstName: string;
+		lastName: string;
+	};
+	cloAttainment: {
+		classSectionId: string | null;
+		clo: { code: string };
+	} | null;
 }
 
 /** The action-taken payload stored in `FormSubmission.formData`. */
 export interface ActionTakenData {
-  studentIds: string[];
-  actionTaken: string;
+	studentIds: string[];
+	actionTaken: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -56,23 +56,23 @@ export interface ActionTakenData {
 
 /** List at-risk flags, optionally scoped to one class section. */
 export async function listAtRiskFlags(
-  classSectionId?: string,
+	classSectionId?: string,
 ): Promise<ActionResult<AtRiskFlagRow[]>> {
-  try {
-    const qs = classSectionId
-      ? `?classSectionId=${encodeURIComponent(classSectionId)}`
-      : "";
-    const data = await serverApi.get<AtRiskFlagRow[]>(`/atrisk/flags${qs}`);
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(
-        err,
-        "Failed to load at-risk students. Please try again.",
-      ),
-    };
-  }
+	try {
+		const qs = classSectionId
+			? `?classSectionId=${encodeURIComponent(classSectionId)}`
+			: "";
+		const data = await serverApi.get<AtRiskFlagRow[]>(`/atrisk/flags${qs}`);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(
+				err,
+				"Failed to load at-risk students. Please try again.",
+			),
+		};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -81,46 +81,46 @@ export async function listAtRiskFlags(
 
 /** Open (or reuse) the action-taken draft for a class section. */
 export async function initActionTaken(
-  classSectionId: string,
+	classSectionId: string,
 ): Promise<ActionResult<{ id: string }>> {
-  try {
-    const data = await actionApi.post<{ id: string }>("/atrisk/action/init", {
-      classSectionId,
-    });
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to open the form. Please try again."),
-    };
-  }
+	try {
+		const data = await actionApi.post<{ id: string }>("/atrisk/action/init", {
+			classSectionId,
+		});
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to open the form. Please try again."),
+		};
+	}
 }
 
 /** Load the full action-taken submission (status + steps + formData). */
 export async function getActionTaken<T>(id: string): Promise<ActionResult<T>> {
-  try {
-    const data = await serverApi.get<T>(`/atrisk/action/${id}`);
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to load the form. Please try again."),
-    };
-  }
+	try {
+		const data = await serverApi.get<T>(`/atrisk/action/${id}`);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to load the form. Please try again."),
+		};
+	}
 }
 
 /** Save the student selection + intervention note (draft/returned only). */
 export async function saveActionTaken<T>(
-  id: string,
-  body: ActionTakenData,
+	id: string,
+	body: ActionTakenData,
 ): Promise<ActionResult<T>> {
-  try {
-    const data = await actionApi.put<T>(`/atrisk/action/${id}`, body);
-    return { ok: true, data };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Failed to save. Please try again."),
-    };
-  }
+	try {
+		const data = await actionApi.put<T>(`/atrisk/action/${id}`, body);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to save. Please try again."),
+		};
+	}
 }

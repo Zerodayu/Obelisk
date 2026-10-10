@@ -25,11 +25,11 @@ import { requireRole } from "@/server/auth";
 
 /** Serializable result every server action returns to the client. */
 export type ActionResult<TData = void> =
-  | { ok: true; data: TData }
-  | { ok: false; error: string };
+	| { ok: true; data: TData }
+	| { ok: false; error: string };
 
 function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
+	return err instanceof ApiError ? err.message : fallback;
 }
 
 /**
@@ -37,23 +37,23 @@ function errorMessage(err: unknown, fallback: string): string {
  * session cookies are relayed to the browser and the user is redirected.
  */
 export async function signInWithEmail(input: {
-  email: string;
-  password: string;
-  /** Frontend path to land on after sign-in. */
-  next?: string;
+	email: string;
+	password: string;
+	/** Frontend path to land on after sign-in. */
+	next?: string;
 }): Promise<ActionResult> {
-  try {
-    await actionApi.post("/auth/sign-in/email", {
-      email: input.email,
-      password: input.password,
-    });
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Sign-in failed. Please try again."),
-    };
-  }
-  redirect(input.next?.startsWith("/") ? input.next : "/dashboard");
+	try {
+		await actionApi.post("/auth/sign-in/email", {
+			email: input.email,
+			password: input.password,
+		});
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Sign-in failed. Please try again."),
+		};
+	}
+	redirect(input.next?.startsWith("/") ? input.next : "/dashboard");
 }
 
 /** File (or re-file) a role request for the signed-in user. `scope` carries
@@ -61,53 +61,53 @@ export async function signInWithEmail(input: {
  * faculty/program_chair, a `departmentId` for dean, neither for aqau/vpaa —
  * and the backend validates the combination. */
 export async function fileRoleRequest(
-  requestedRole: string,
-  scope?: { programId?: string; departmentId?: string },
+	requestedRole: string,
+	scope?: { programId?: string; departmentId?: string },
 ): Promise<ActionResult> {
-  try {
-    await actionApi.post("/auth/role-request", {
-      requestedRole,
-      ...(scope?.programId ? { programId: scope.programId } : {}),
-      ...(scope?.departmentId ? { departmentId: scope.departmentId } : {}),
-    });
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(
-        err,
-        "Could not submit your role request. Please try again.",
-      ),
-    };
-  }
+	try {
+		await actionApi.post("/auth/role-request", {
+			requestedRole,
+			...(scope?.programId ? { programId: scope.programId } : {}),
+			...(scope?.departmentId ? { departmentId: scope.departmentId } : {}),
+		});
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(
+				err,
+				"Could not submit your role request. Please try again.",
+			),
+		};
+	}
 }
 
 /** Approve or deny a pending role request (`manageRoleRequests` — system_admin only). */
 export async function decideRoleRequest(
-  userId: string,
-  decision: "approve" | "deny",
+	userId: string,
+	decision: "approve" | "deny",
 ): Promise<ActionResult> {
-  await requireRole(featureRoles("manageRoleRequests"));
-  try {
-    await actionApi.post(`/auth/role-requests/${userId}/${decision}`);
-    return { ok: true, data: undefined };
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Action failed. Please retry."),
-    };
-  }
+	await requireRole(featureRoles("manageRoleRequests"));
+	try {
+		await actionApi.post(`/auth/role-requests/${userId}/${decision}`);
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Action failed. Please retry."),
+		};
+	}
 }
 
 /** Sign the current user out; clears session cookies and redirects to `/login`. */
 export async function signOut(): Promise<ActionResult> {
-  try {
-    await actionApi.post("/auth/sign-out");
-  } catch (err) {
-    return {
-      ok: false,
-      error: errorMessage(err, "Could not sign out. Please try again."),
-    };
-  }
-  redirect("/login");
+	try {
+		await actionApi.post("/auth/sign-out");
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Could not sign out. Please try again."),
+		};
+	}
+	redirect("/login");
 }

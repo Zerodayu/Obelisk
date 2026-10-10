@@ -1,23 +1,23 @@
 import {
-  CohortTrendLines,
-  PloAttainmentBars,
+	CohortTrendLines,
+	PloAttainmentBars,
 } from "@/components/charts/attainment-charts";
 import {
-  CqiActionsBars,
-  GapAnalysisBars,
+	CqiActionsBars,
+	GapAnalysisBars,
 } from "@/components/charts/cqi-charts";
 import { ApprovalFlowBars } from "@/components/charts/governance-charts";
 import {
-  AssessmentTypeDonut,
-  CurriculumCoverageBars,
-  PloToPeoCoverageBars,
+	AssessmentTypeDonut,
+	CurriculumCoverageBars,
+	PloToPeoCoverageBars,
 } from "@/components/charts/plan-charts";
 import {
-  Frame,
-  FrameDescription,
-  FrameHeader,
-  FramePanel,
-  FrameTitle,
+	Frame,
+	FrameDescription,
+	FrameHeader,
+	FramePanel,
+	FrameTitle,
 } from "@/components/reui/frame";
 
 /**
@@ -27,115 +27,115 @@ import {
  * backend has submissions to show.
  */
 export function ProgramChairDashboard() {
-  return (
-    <section className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Program attainment (PLO)</FrameTitle>
-            <FrameDescription>
-              Attained vs target per PLO. Target is the ≥70% hard floor.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <PloAttainmentBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Attainment trend by cohort</FrameTitle>
-            <FrameDescription>
-              Longitudinal composite across terms.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <CohortTrendLines />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Curriculum map coverage</FrameTitle>
-            <FrameDescription>
-              Number of CLOs mapped to each PLO in the matrix.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <CurriculumCoverageBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>PLO-PEO coverage</FrameTitle>
-            <FrameDescription>
-              Number of PEOs mapped to each PLO.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <PloToPeoCoverageBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Assessment items by type</FrameTitle>
-            <FrameDescription>
-              Direct vs indirect assessment-item counts.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <AssessmentTypeDonut />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>Approval decisions across my chain</FrameTitle>
-            <FrameDescription>
-              Pending / approved / returned over everything prepared at or below
-              your program.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <ApprovalFlowBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>PLO gap analysis</FrameTitle>
-            <FrameDescription>
-              Gap rows for NOT-MET PLO-cohort combinations (root-cause flagged).
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <GapAnalysisBars />
-            </div>
-          </FramePanel>
-        </Frame>
-        <Frame className="w-full">
-          <FrameHeader>
-            <FrameTitle>CQI action plans</FrameTitle>
-            <FrameDescription>
-              Planned vs completed actions per root-cause category.
-            </FrameDescription>
-          </FrameHeader>
-          <FramePanel>
-            <div className="h-72">
-              <CqiActionsBars />
-            </div>
-          </FramePanel>
-        </Frame>
-      </div>
-    </section>
-  );
+	return (
+		<section className="space-y-6">
+			<div className="grid gap-4 sm:grid-cols-2">
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Program attainment (PLO)</FrameTitle>
+						<FrameDescription>
+							Attained vs target per PLO. Target is the ≥70% hard floor.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<PloAttainmentBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Attainment trend by cohort</FrameTitle>
+						<FrameDescription>
+							Longitudinal composite across terms.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<CohortTrendLines />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Curriculum map coverage</FrameTitle>
+						<FrameDescription>
+							Number of CLOs mapped to each PLO in the matrix.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<CurriculumCoverageBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>PLO-PEO coverage</FrameTitle>
+						<FrameDescription>
+							Number of PEOs mapped to each PLO.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<PloToPeoCoverageBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Assessment items by type</FrameTitle>
+						<FrameDescription>
+							Direct vs indirect assessment-item counts.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<AssessmentTypeDonut />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Approval decisions across my chain</FrameTitle>
+						<FrameDescription>
+							Pending / approved / returned over everything prepared at or below
+							your program.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<ApprovalFlowBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>PLO gap analysis</FrameTitle>
+						<FrameDescription>
+							Gap rows for NOT-MET PLO-cohort combinations (root-cause flagged).
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<GapAnalysisBars />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>CQI action plans</FrameTitle>
+						<FrameDescription>
+							Planned vs completed actions per root-cause category.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<CqiActionsBars />
+						</div>
+					</FramePanel>
+				</Frame>
+			</div>
+		</section>
+	);
 }

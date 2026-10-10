@@ -12,11 +12,11 @@ import { userAtom } from "@/lib/store/atoms/user";
  * atom in step with the server-computed session.
  */
 export function SessionInitializer({ user }: { user: ApiUser | null }) {
-  const setUser = useSetAtom(userAtom);
+	const setUser = useSetAtom(userAtom);
 
-  useEffect(() => {
-    setUser(user);
-  }, [user, setUser]);
+	useEffect(() => {
+		setUser(user);
+	}, [user, setUser]);
 
-  return null;
+	return null;
 }

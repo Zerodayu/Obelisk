@@ -16,20 +16,20 @@ import { type Atom, atom, type Getter, type WritableAtom } from "jotai";
 import { unwrap } from "jotai/utils";
 
 export type AsyncState<T> =
-  | { status: "loading"; data: T }
-  | { status: "ready"; data: T }
-  | { status: "error"; data: T; error: unknown };
+	| { status: "loading"; data: T }
+	| { status: "ready"; data: T }
+	| { status: "error"; data: T; error: unknown };
 
 export interface AsyncDataAtoms<T> {
-  /**
-   * Current data. Falls back to `initial` while the first fetch is pending
-   * and on error; keeps the last good value during a refresh.
-   */
-  dataAtom: Atom<T>;
-  /** Full async state — `status` ("loading" | "ready" | "error") plus data/error. */
-  stateAtom: Atom<AsyncState<T>>;
-  /** Write-only action atom. `useSetAtom` re-runs the fetcher. */
-  refreshAtom: WritableAtom<null, [], void>;
+	/**
+	 * Current data. Falls back to `initial` while the first fetch is pending
+	 * and on error; keeps the last good value during a refresh.
+	 */
+	dataAtom: Atom<T>;
+	/** Full async state — `status` ("loading" | "ready" | "error") plus data/error. */
+	stateAtom: Atom<AsyncState<T>>;
+	/** Write-only action atom. `useSetAtom` re-runs the fetcher. */
+	refreshAtom: WritableAtom<null, [], void>;
 }
 
 /**
@@ -44,47 +44,47 @@ export interface AsyncDataAtoms<T> {
  *   status/class-section) — changing one invalidates and re-runs the fetch.
  */
 export function atomWithAsyncData<T>(
-  initial: T,
-  fetcher: (get: Getter, signal?: AbortSignal) => Promise<T>,
+	initial: T,
+	fetcher: (get: Getter, signal?: AbortSignal) => Promise<T>,
 ): AsyncDataAtoms<T> {
-  const refreshKeyAtom = atom(0);
+	const refreshKeyAtom = atom(0);
 
-  const fetchAtom = atom(async (get, { signal }) => {
-    get(refreshKeyAtom);
-    // NOTE: never fetch during SSR — the browser-only `api` client needs cookies
-    // the server render can't read; skipping keeps the atom non-ready so consumers
-    // render `initial`, matching first client paint (no hydration mismatch).
-    if (typeof window === "undefined") throw new Error("skip fetch during SSR");
-    return fetcher(get, signal);
-  });
+	const fetchAtom = atom(async (get, { signal }) => {
+		get(refreshKeyAtom);
+		// NOTE: never fetch during SSR — the browser-only `api` client needs cookies
+		// the server render can't read; skipping keeps the atom non-ready so consumers
+		// render `initial`, matching first client paint (no hydration mismatch).
+		if (typeof window === "undefined") throw new Error("skip fetch during SSR");
+		return fetcher(get, signal);
+	});
 
-  const resultAtom = atom(async (get): Promise<AsyncState<T>> => {
-    try {
-      return { status: "ready", data: await get(fetchAtom) };
-    } catch (error) {
-      return { status: "error", data: initial, error };
-    }
-  });
+	const resultAtom = atom(async (get): Promise<AsyncState<T>> => {
+		try {
+			return { status: "ready", data: await get(fetchAtom) };
+		} catch (error) {
+			return { status: "error", data: initial, error };
+		}
+	});
 
-  const stateAtom = unwrap(resultAtom, (previous): AsyncState<T> => {
-    if (previous) return previous;
-    return { status: "loading", data: initial };
-  });
+	const stateAtom = unwrap(resultAtom, (previous): AsyncState<T> => {
+		if (previous) return previous;
+		return { status: "loading", data: initial };
+	});
 
-  const dataAtom = atom((get) => get(stateAtom).data);
+	const dataAtom = atom((get) => get(stateAtom).data);
 
-  const refreshAtom = atom(null, (_get, set) => {
-    set(refreshKeyAtom, (key) => key + 1);
-  });
+	const refreshAtom = atom(null, (_get, set) => {
+		set(refreshKeyAtom, (key) => key + 1);
+	});
 
-  return { dataAtom, stateAtom, refreshAtom };
+	return { dataAtom, stateAtom, refreshAtom };
 }
 
 export interface MockDataAtoms<T> {
-  /** The mock/sample data — swap to `atomWithAsyncData` when an endpoint lands. */
-  dataAtom: Atom<T>;
-  /** No-op until the real endpoint exists; keeps the refresh contract uniform. */
-  refreshAtom: WritableAtom<null, [], void>;
+	/** The mock/sample data — swap to `atomWithAsyncData` when an endpoint lands. */
+	dataAtom: Atom<T>;
+	/** No-op until the real endpoint exists; keeps the refresh contract uniform. */
+	refreshAtom: WritableAtom<null, [], void>;
 }
 
 /**
@@ -94,8 +94,8 @@ export interface MockDataAtoms<T> {
  * change: replace `atomWithMockData(seed)` with `atomWithAsyncData(seed, fetch)`.
  */
 export function atomWithMockData<T>(initial: T): MockDataAtoms<T> {
-  const dataAtom = atom(initial);
-  // TODO: wire to the real rollup endpoint once it lands (then use atomWithAsyncData).
-  const refreshAtom = atom(null, () => {});
-  return { dataAtom, refreshAtom };
+	const dataAtom = atom(initial);
+	// TODO: wire to the real rollup endpoint once it lands (then use atomWithAsyncData).
+	const refreshAtom = atom(null, () => {});
+	return { dataAtom, refreshAtom };
 }

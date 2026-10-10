@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import { carService } from "@v1/car/service";

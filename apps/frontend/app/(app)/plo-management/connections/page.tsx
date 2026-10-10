@@ -8,19 +8,19 @@ import { PloManagementNav } from "@/components/outcomes/plo-management-nav";
  * grouped by course, columns are PLOs; dean-only via `../layout.tsx`.
  */
 export default function CloPloConnectionsPage() {
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">
-          CLO–PLO Connections
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          See which Program Learning Outcome each Course Learning Outcome maps
-          to — weight, I-P-D stage, and coverage gaps at a glance.
-        </p>
-      </div>
-      <PloManagementNav />
-      <CloPloMatrixPanel />
-    </div>
-  );
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">
+					CLO–PLO Connections
+				</h2>
+				<p className="text-muted-foreground text-sm">
+					See which Program Learning Outcome each Course Learning Outcome maps
+					to — weight, I-P-D stage, and coverage gaps at a glance.
+				</p>
+			</div>
+			<PloManagementNav />
+			<CloPloMatrixPanel />
+		</div>
+	);
 }

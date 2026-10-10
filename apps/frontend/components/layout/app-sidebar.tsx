@@ -2,18 +2,19 @@
 
 import { FolderIcon } from "lucide-react";
 import Link from "next/link";
+
 import { ObeliskLogo } from "@/components/branding/obelisk-logo";
 import { NavSecondary } from "@/components/layout/nav-secondary";
 import { NavUser } from "@/components/layout/nav-user";
 import { SidebarNav } from "@/components/layout/nav-workspace";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarHeader,
+	SidebarMenu,
+	SidebarMenuButton,
+	SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { ApiUser } from "@/lib/api-client";
 import { roleLabel } from "@/lib/roles";
@@ -30,46 +31,46 @@ import { app } from "@/utils/app-info";
  * `departmentLabel` is resolved server-side in `(app)/layout.tsx`.
  */
 export function AppSidebar({
-  user,
-  departmentLabel,
-  ...props
+	user,
+	departmentLabel,
+	...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: ApiUser;
-  departmentLabel?: string;
+	user: ApiUser;
+	departmentLabel?: string;
 }) {
-  return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="hover:bg-sidebar active:bg-sidebar"
-              render={
-                <Link href="/dashboard" aria-label={`${app.title} dashboard`} />
-              }
-            >
-              <ObeliskLogo className="size-9" />
-              <div className="grid flex-1 leading-tight">
-                <span className="text-base font-bold">{app.title}</span>
-                <span className="truncate font-mono font-bold text-xs text-foreground/70">
-                  — {departmentLabel ? `${departmentLabel}: ` : ""}
-                  {roleLabel(user.role)}
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarNav role={user.role} />
-        <NavSecondary
-          items={[{ title: "Get Help", url: "#", icon: <FolderIcon /> }]}
-          className="mt-auto"
-        />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter>
-    </Sidebar>
-  );
+	return (
+		<Sidebar collapsible="offcanvas" {...props}>
+			<SidebarHeader>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<SidebarMenuButton
+							className="hover:bg-sidebar active:bg-sidebar"
+							render={
+								<Link href="/dashboard" aria-label={`${app.title} dashboard`} />
+							}
+						>
+							<ObeliskLogo className="size-9" />
+							<div className="grid flex-1 leading-tight">
+								<span className="text-base font-bold">{app.title}</span>
+								<span className="text-foreground/70 truncate font-mono text-xs font-bold">
+									— {departmentLabel ? `${departmentLabel}: ` : ""}
+									{roleLabel(user.role)}
+								</span>
+							</div>
+						</SidebarMenuButton>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarHeader>
+			<SidebarContent>
+				<SidebarNav role={user.role} />
+				<NavSecondary
+					items={[{ title: "Get Help", url: "#", icon: <FolderIcon /> }]}
+					className="mt-auto"
+				/>
+			</SidebarContent>
+			<SidebarFooter>
+				<NavUser user={user} />
+			</SidebarFooter>
+		</Sidebar>
+	);
 }

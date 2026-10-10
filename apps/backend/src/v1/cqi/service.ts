@@ -12,6 +12,7 @@ import { isRootCauseCategory } from "@lib/validators/root-cause";
 import type { Prisma } from "@prisma/generated/prisma/client";
 import { meanPct } from "@v1/car/compute";
 import { submissionService } from "@v1/forms/service";
+
 import {
 	type CohortAttainmentInput,
 	computeCohortAttainment,
@@ -612,8 +613,7 @@ export class CqiActionPlanService {
 			select: { id: true, formData: true },
 		});
 		for (const car of cars) {
-			const part5 = ((car.formData ?? {}) as { part5?: CarPart5Entry[] })
-				.part5;
+			const part5 = ((car.formData ?? {}) as { part5?: CarPart5Entry[] }).part5;
 			if (!part5?.length) continue;
 			for (const [ploId, codes] of cloCodesByPlo) {
 				if (result.has(ploId)) continue;

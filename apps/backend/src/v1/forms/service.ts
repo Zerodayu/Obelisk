@@ -36,6 +36,7 @@ import {
 	unitScopeOf,
 } from "@lib/unit-scope";
 import type { ApproverRole, Prisma } from "@prisma/generated/prisma/client";
+
 import type {
 	CreateFormSubmission,
 	DecideApprovalStep,
@@ -469,10 +470,7 @@ export class SubmissionService {
 		// NOTE: Setup/Record-tagged forms are filed, not approved — no steps,
 		// straight to `approved` (see lib/forms/form-tags.ts).
 		const approvalFree = !needsApproval(existing.formType.code);
-		assertTransition(
-			existing.status,
-			approvalFree ? "approved" : "submitted",
-		);
+		assertTransition(existing.status, approvalFree ? "approved" : "submitted");
 		const steps = approvalFree ? [] : chainSteps(route.chain);
 
 		await assertSubmitGate(existing.formTypeId, {

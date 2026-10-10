@@ -10,19 +10,19 @@ import { requireRole } from "@/server/auth";
  * per-step role match on every decision.
  */
 export default async function PendingApprovalsPage() {
-  await requireRole(APPROVER_ROLES);
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">
-          Pending Approvals
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Forms waiting for your decision. Approve to advance the chain, or
-          return with a comment.
-        </p>
-      </div>
-      <SubmissionInbox devPreview={isDevMode} scope="pending" />
-    </div>
-  );
+	await requireRole(APPROVER_ROLES);
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">
+					Pending Approvals
+				</h2>
+				<p className="text-muted-foreground text-sm">
+					Forms waiting for your decision. Approve to advance the chain, or
+					return with a comment.
+				</p>
+			</div>
+			<SubmissionInbox devPreview={isDevMode} scope="pending" />
+		</div>
+	);
 }

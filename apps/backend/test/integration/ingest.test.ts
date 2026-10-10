@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import { submissionService } from "@v1/forms/service";
@@ -1160,7 +1161,12 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			},
 		});
 		await prisma.clo.create({
-			data: { id: "it-ingest-clo-1", courseId: IDS.course, code: "CLO1", description: "CLO 1" },
+			data: {
+				id: "it-ingest-clo-1",
+				courseId: IDS.course,
+				code: "CLO1",
+				description: "CLO 1",
+			},
 		});
 
 		const etlLoadedData: TypedEtlLoadedData = {
@@ -1206,7 +1212,9 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 
 			// NOTE: the preview must stay read-only — only saveJob persists.
 			expect(
-				await prisma.computationRun.count({ where: { scope: IDS.classSection } }),
+				await prisma.computationRun.count({
+					where: { scope: IDS.classSection },
+				}),
 			).toBe(0);
 			expect(
 				await prisma.cloAttainment.count({
@@ -1299,8 +1307,11 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				ingestService.discardJob("it-ingest-queued-job-1", IDS.classSection),
 			).resolves.toEqual({ status: "discarded" });
 			expect(
-				(await prisma.uploadRecord.findUniqueOrThrow({ where: { id: queued.id } }))
-					.status,
+				(
+					await prisma.uploadRecord.findUniqueOrThrow({
+						where: { id: queued.id },
+					})
+				).status,
 			).toBe("discarded");
 
 			// NOTE: a discard never downgrades an upload that was already saved.
@@ -1308,8 +1319,11 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				ingestService.discardJob("it-ingest-saved-job-1", IDS.classSection),
 			).resolves.toEqual({ status: "discarded" });
 			expect(
-				(await prisma.uploadRecord.findUniqueOrThrow({ where: { id: saved.id } }))
-					.status,
+				(
+					await prisma.uploadRecord.findUniqueOrThrow({
+						where: { id: saved.id },
+					})
+				).status,
 			).toBe("completed");
 
 			await expect(

@@ -1,26 +1,27 @@
 "use client";
 
 import {
-  applyTheme,
-  type ColorMode,
-  type GeneratedTheme,
-  generateTheme,
-  hexFromArgb,
-  resolveColorMode,
-  sourceColorFromImage,
-  tokensToCssVars,
-  Variant,
+	applyTheme,
+	type ColorMode,
+	type GeneratedTheme,
+	generateTheme,
+	hexFromArgb,
+	resolveColorMode,
+	sourceColorFromImage,
+	tokensToCssVars,
+	Variant,
 } from "material-shadcn";
 import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactNode,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
+	type ComponentPropsWithoutRef,
+	createContext,
+	type ReactNode,
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useState,
 } from "react";
+
 import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 
 // ---------------------------------------------------------------------------
@@ -28,16 +29,16 @@ import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 // ---------------------------------------------------------------------------
 
 interface ThemeContextValue {
-  seed: string;
-  variant: Variant;
-  colorMode: ColorMode;
-  resolvedDark: boolean;
-  hydrated: boolean;
-  theme: GeneratedTheme;
-  setSeed: (seed: string | HTMLImageElement) => void;
-  setVariant: (variant: Variant) => void;
-  setColorMode: (mode: ColorMode) => void;
-  cycleColorMode: () => void;
+	seed: string;
+	variant: Variant;
+	colorMode: ColorMode;
+	resolvedDark: boolean;
+	hydrated: boolean;
+	theme: GeneratedTheme;
+	setSeed: (seed: string | HTMLImageElement) => void;
+	setVariant: (variant: Variant) => void;
+	setColorMode: (mode: ColorMode) => void;
+	cycleColorMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -47,11 +48,11 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 function useTheme(): ThemeContextValue {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) {
-    throw new Error("useTheme must be used within a <Theme> provider");
-  }
-  return ctx;
+	const ctx = useContext(ThemeContext);
+	if (!ctx) {
+		throw new Error("useTheme must be used within a <Theme> provider");
+	}
+	return ctx;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,35 +60,35 @@ function useTheme(): ThemeContextValue {
 // ---------------------------------------------------------------------------
 
 interface StoredSettings {
-  seed: string;
-  variant: Variant;
-  colorMode: ColorMode;
+	seed: string;
+	variant: Variant;
+	colorMode: ColorMode;
 }
 
 function loadSettings(
-  key: string | null,
-  defaults: StoredSettings,
+	key: string | null,
+	defaults: StoredSettings,
 ): StoredSettings {
-  if (!key || typeof window === "undefined") return defaults;
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return {
-        seed: parsed.seed ?? defaults.seed,
-        variant: parsed.variant ?? defaults.variant,
-        colorMode: parsed.colorMode ?? defaults.colorMode,
-      };
-    }
-  } catch {}
-  return defaults;
+	if (!key || typeof window === "undefined") return defaults;
+	try {
+		const raw = localStorage.getItem(key);
+		if (raw) {
+			const parsed = JSON.parse(raw);
+			return {
+				seed: parsed.seed ?? defaults.seed,
+				variant: parsed.variant ?? defaults.variant,
+				colorMode: parsed.colorMode ?? defaults.colorMode,
+			};
+		}
+	} catch {}
+	return defaults;
 }
 
 function saveSettings(key: string | null, settings: StoredSettings) {
-  if (!key || typeof window === "undefined") return;
-  try {
-    localStorage.setItem(key, JSON.stringify(settings));
-  } catch {}
+	if (!key || typeof window === "undefined") return;
+	try {
+		localStorage.setItem(key, JSON.stringify(settings));
+	} catch {}
 }
 
 // ---------------------------------------------------------------------------
@@ -95,28 +96,28 @@ function saveSettings(key: string | null, settings: StoredSettings) {
 // ---------------------------------------------------------------------------
 
 function useSeedResolver(
-  input: string | HTMLImageElement,
-  fallback: string,
+	input: string | HTMLImageElement,
+	fallback: string,
 ): string {
-  const [resolved, setResolved] = useState(
-    typeof input === "string" ? input : fallback,
-  );
+	const [resolved, setResolved] = useState(
+		typeof input === "string" ? input : fallback,
+	);
 
-  useEffect(() => {
-    if (typeof input === "string") {
-      setResolved(input);
-      return;
-    }
-    let cancelled = false;
-    sourceColorFromImage(input).then((argb) => {
-      if (!cancelled) setResolved(hexFromArgb(argb));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [input]);
+	useEffect(() => {
+		if (typeof input === "string") {
+			setResolved(input);
+			return;
+		}
+		let cancelled = false;
+		sourceColorFromImage(input).then((argb) => {
+			if (!cancelled) setResolved(hexFromArgb(argb));
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [input]);
 
-  return resolved;
+	return resolved;
 }
 
 // ---------------------------------------------------------------------------
@@ -124,30 +125,30 @@ function useSeedResolver(
 // ---------------------------------------------------------------------------
 
 interface ThemeRootProps {
-  seed?: string | HTMLImageElement;
-  variant?: Variant;
-  contrast?: number;
-  colorMode?: ColorMode;
-  storageKey?: string | null;
-  children: ReactNode;
+	seed?: string | HTMLImageElement;
+	variant?: Variant;
+	contrast?: number;
+	colorMode?: ColorMode;
+	storageKey?: string | null;
+	children: ReactNode;
 }
 
 type ThemeScopedProps = ComponentPropsWithoutRef<"div"> & {
-  seed: string | HTMLImageElement;
-  variant?: Variant;
-  contrast?: number;
-  dark?: boolean;
-  children: ReactNode;
+	seed: string | HTMLImageElement;
+	variant?: Variant;
+	contrast?: number;
+	dark?: boolean;
+	children: ReactNode;
 };
 
 type ThemeProps = ThemeRootProps | ThemeScopedProps;
 
 function Theme(props: ThemeProps) {
-  const parent = useContext(ThemeContext);
-  if (parent) {
-    return <ScopedTheme {...(props as ThemeScopedProps)} />;
-  }
-  return <RootTheme {...(props as ThemeRootProps)} />;
+	const parent = useContext(ThemeContext);
+	if (parent) {
+		return <ScopedTheme {...(props as ThemeScopedProps)} />;
+	}
+	return <RootTheme {...(props as ThemeRootProps)} />;
 }
 
 // ---------------------------------------------------------------------------
@@ -155,143 +156,143 @@ function Theme(props: ThemeProps) {
 // ---------------------------------------------------------------------------
 
 function RootTheme({
-  seed: seedProp = "#6750A4",
-  variant: variantProp = Variant.TONAL_SPOT,
-  contrast = 0,
-  colorMode: colorModeProp = "system",
-  storageKey = THEME_STORAGE_KEY,
-  children,
+	seed: seedProp = "#6750A4",
+	variant: variantProp = Variant.TONAL_SPOT,
+	contrast = 0,
+	colorMode: colorModeProp = "system",
+	storageKey = THEME_STORAGE_KEY,
+	children,
 }: ThemeRootProps) {
-  const defaults: StoredSettings = {
-    seed: typeof seedProp === "string" ? seedProp : "#6750A4",
-    variant: variantProp,
-    colorMode: colorModeProp,
-  };
+	const defaults: StoredSettings = {
+		seed: typeof seedProp === "string" ? seedProp : "#6750A4",
+		variant: variantProp,
+		colorMode: colorModeProp,
+	};
 
-  // NOTE: initialize synchronously from localStorage on the client so the first
-  // paint matches the persisted theme (no flash); SSR starts from defaults.
-  const [settings, setSettings] = useState<StoredSettings>(() => {
-    const stored = loadSettings(storageKey, defaults);
-    // No material-shadcn settings yet — migrate the legacy `theme` key.
-    if (
-      stored.seed === defaults.seed &&
-      stored.variant === defaults.variant &&
-      stored.colorMode === defaults.colorMode
-    ) {
-      try {
-        if (typeof window !== "undefined") {
-          const legacy = window.localStorage.getItem("theme");
-          if (legacy === "light" || legacy === "dark" || legacy === "system") {
-            return {
-              seed: defaults.seed,
-              variant: defaults.variant,
-              colorMode: legacy,
-            };
-          }
-        }
-      } catch {}
-    }
-    return stored;
-  });
-  const [hydrated] = useState(true);
-  const resolvedSeed = useSeedResolver(settings.seed, defaults.seed);
-  const [resolvedDark, setResolvedDark] = useState(() =>
-    resolveColorMode(settings.colorMode),
-  );
+	// NOTE: initialize synchronously from localStorage on the client so the first
+	// paint matches the persisted theme (no flash); SSR starts from defaults.
+	const [settings, setSettings] = useState<StoredSettings>(() => {
+		const stored = loadSettings(storageKey, defaults);
+		// No material-shadcn settings yet — migrate the legacy `theme` key.
+		if (
+			stored.seed === defaults.seed &&
+			stored.variant === defaults.variant &&
+			stored.colorMode === defaults.colorMode
+		) {
+			try {
+				if (typeof window !== "undefined") {
+					const legacy = window.localStorage.getItem("theme");
+					if (legacy === "light" || legacy === "dark" || legacy === "system") {
+						return {
+							seed: defaults.seed,
+							variant: defaults.variant,
+							colorMode: legacy,
+						};
+					}
+				}
+			} catch {}
+		}
+		return stored;
+	});
+	const [hydrated] = useState(true);
+	const resolvedSeed = useSeedResolver(settings.seed, defaults.seed);
+	const [resolvedDark, setResolvedDark] = useState(() =>
+		resolveColorMode(settings.colorMode),
+	);
 
-  const theme = useMemo(
-    () =>
-      generateTheme({
-        seed: resolvedSeed,
-        variant: settings.variant,
-        contrast,
-      }),
-    [resolvedSeed, settings.variant, contrast],
-  );
+	const theme = useMemo(
+		() =>
+			generateTheme({
+				seed: resolvedSeed,
+				variant: settings.variant,
+				contrast,
+			}),
+		[resolvedSeed, settings.variant, contrast],
+	);
 
-  useEffect(() => {
-    applyTheme(document.documentElement, theme, resolvedDark);
-  }, [theme, resolvedDark]);
+	useEffect(() => {
+		applyTheme(document.documentElement, theme, resolvedDark);
+	}, [theme, resolvedDark]);
 
-  useEffect(() => {
-    setResolvedDark(resolveColorMode(settings.colorMode));
+	useEffect(() => {
+		setResolvedDark(resolveColorMode(settings.colorMode));
 
-    if (settings.colorMode === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = () => setResolvedDark(mq.matches);
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    }
-  }, [settings.colorMode]);
+		if (settings.colorMode === "system") {
+			const mq = window.matchMedia("(prefers-color-scheme: dark)");
+			const handler = () => setResolvedDark(mq.matches);
+			mq.addEventListener("change", handler);
+			return () => mq.removeEventListener("change", handler);
+		}
+	}, [settings.colorMode]);
 
-  useEffect(() => {
-    saveSettings(storageKey, settings);
-  }, [settings, storageKey]);
+	useEffect(() => {
+		saveSettings(storageKey, settings);
+	}, [settings, storageKey]);
 
-  const setSeed = useCallback((s: string | HTMLImageElement) => {
-    if (typeof s === "string") {
-      setSettings((prev) => ({ ...prev, seed: s }));
-    } else {
-      sourceColorFromImage(s).then((argb) => {
-        setSettings((prev) => ({ ...prev, seed: hexFromArgb(argb) }));
-      });
-    }
-  }, []);
+	const setSeed = useCallback((s: string | HTMLImageElement) => {
+		if (typeof s === "string") {
+			setSettings((prev) => ({ ...prev, seed: s }));
+		} else {
+			sourceColorFromImage(s).then((argb) => {
+				setSettings((prev) => ({ ...prev, seed: hexFromArgb(argb) }));
+			});
+		}
+	}, []);
 
-  const setVariant = useCallback(
-    (v: Variant) => setSettings((prev) => ({ ...prev, variant: v })),
-    [],
-  );
+	const setVariant = useCallback(
+		(v: Variant) => setSettings((prev) => ({ ...prev, variant: v })),
+		[],
+	);
 
-  const setColorMode = useCallback(
-    (m: ColorMode) => setSettings((prev) => ({ ...prev, colorMode: m })),
-    [],
-  );
+	const setColorMode = useCallback(
+		(m: ColorMode) => setSettings((prev) => ({ ...prev, colorMode: m })),
+		[],
+	);
 
-  const cycleColorMode = useCallback(
-    () =>
-      setSettings((prev) => ({
-        ...prev,
-        colorMode:
-          prev.colorMode === "system"
-            ? "light"
-            : prev.colorMode === "light"
-              ? "dark"
-              : "system",
-      })),
-    [],
-  );
+	const cycleColorMode = useCallback(
+		() =>
+			setSettings((prev) => ({
+				...prev,
+				colorMode:
+					prev.colorMode === "system"
+						? "light"
+						: prev.colorMode === "light"
+							? "dark"
+							: "system",
+			})),
+		[],
+	);
 
-  const value = useMemo<ThemeContextValue>(
-    () => ({
-      seed: resolvedSeed,
-      variant: settings.variant,
-      colorMode: settings.colorMode,
-      resolvedDark,
-      hydrated,
-      theme,
-      setSeed,
-      setVariant,
-      setColorMode,
-      cycleColorMode,
-    }),
-    [
-      resolvedSeed,
-      settings.variant,
-      settings.colorMode,
-      resolvedDark,
-      hydrated,
-      theme,
-      setSeed,
-      setVariant,
-      setColorMode,
-      cycleColorMode,
-    ],
-  );
+	const value = useMemo<ThemeContextValue>(
+		() => ({
+			seed: resolvedSeed,
+			variant: settings.variant,
+			colorMode: settings.colorMode,
+			resolvedDark,
+			hydrated,
+			theme,
+			setSeed,
+			setVariant,
+			setColorMode,
+			cycleColorMode,
+		}),
+		[
+			resolvedSeed,
+			settings.variant,
+			settings.colorMode,
+			resolvedDark,
+			hydrated,
+			theme,
+			setSeed,
+			setVariant,
+			setColorMode,
+			cycleColorMode,
+		],
+	);
 
-  return (
-    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-  );
+	return (
+		<ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -299,36 +300,36 @@ function RootTheme({
 // ---------------------------------------------------------------------------
 
 function ScopedTheme({
-  seed,
-  variant,
-  contrast,
-  dark: darkOverride,
-  style,
-  children,
-  ...divProps
+	seed,
+	variant,
+	contrast,
+	dark: darkOverride,
+	style,
+	children,
+	...divProps
 }: ThemeScopedProps) {
-  const parent = useTheme();
-  const resolvedSeed = useSeedResolver(seed, parent.seed);
-  const dark = darkOverride ?? parent.resolvedDark;
+	const parent = useTheme();
+	const resolvedSeed = useSeedResolver(seed, parent.seed);
+	const dark = darkOverride ?? parent.resolvedDark;
 
-  const theme = useMemo(
-    () =>
-      generateTheme({
-        seed: resolvedSeed,
-        variant: variant ?? parent.variant,
-        contrast,
-      }),
-    [resolvedSeed, variant, contrast, parent.variant],
-  );
+	const theme = useMemo(
+		() =>
+			generateTheme({
+				seed: resolvedSeed,
+				variant: variant ?? parent.variant,
+				contrast,
+			}),
+		[resolvedSeed, variant, contrast, parent.variant],
+	);
 
-  const tokens = dark ? theme.dark : theme.light;
-  const cssVars = useMemo(() => tokensToCssVars(tokens), [tokens]);
+	const tokens = dark ? theme.dark : theme.light;
+	const cssVars = useMemo(() => tokensToCssVars(tokens), [tokens]);
 
-  return (
-    <div {...divProps} style={{ ...cssVars, ...style }}>
-      {children}
-    </div>
-  );
+	return (
+		<div {...divProps} style={{ ...cssVars, ...style }}>
+			{children}
+		</div>
+	);
 }
 
 export type { ThemeContextValue, ThemeProps, ThemeRootProps, ThemeScopedProps };

@@ -1,4 +1,5 @@
 import { type NextProxy, NextResponse } from "next/server";
+
 import { isDevMode } from "@/lib/dev-mode";
 
 /**
@@ -25,49 +26,49 @@ const AUTH_COOKIE_PREFIX = "obelisk-app";
 const PROTECTED_PREFIXES = ["/dashboard", "/forms", "/archives"];
 
 export default function nextProxy(
-  request: Parameters<NextProxy>[0],
-  _event: Parameters<NextProxy>[1],
+	request: Parameters<NextProxy>[0],
+	_event: Parameters<NextProxy>[1],
 ) {
-  const { pathname } = request.nextUrl;
+	const { pathname } = request.nextUrl;
 
-  const isProtected = PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-  );
-  const isStatic =
-    pathname.startsWith("/_next/") ||
-    pathname.startsWith("/images/") ||
-    pathname === "/favicon.ico";
+	const isProtected = PROTECTED_PREFIXES.some(
+		(prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+	);
+	const isStatic =
+		pathname.startsWith("/_next/") ||
+		pathname.startsWith("/images/") ||
+		pathname === "/favicon.ico";
 
-  // NOTE: one line per request → container stdout → Dozzle; `pass` vs
-  // `redirect` is all proxy can know (final status lives in the caddy log)
-  const log = (decision: string) =>
-    console.log(`[frontend] ${request.method} ${pathname} ${decision}`);
+	// NOTE: one line per request → container stdout → Dozzle; `pass` vs
+	// `redirect` is all proxy can know (final status lives in the caddy log)
+	const log = (decision: string) =>
+		console.log(`[frontend] ${request.method} ${pathname} ${decision}`);
 
-  if (isStatic) return NextResponse.next();
+	if (isStatic) return NextResponse.next();
 
-  if (!isProtected || isDevMode) {
-    log("pass");
-    return NextResponse.next();
-  }
+	if (!isProtected || isDevMode) {
+		log("pass");
+		return NextResponse.next();
+	}
 
-  const hasSessionCookie = request.cookies
-    .getAll()
-    .some((cookie) => cookie.name.startsWith(`${AUTH_COOKIE_PREFIX}.session`));
+	const hasSessionCookie = request.cookies
+		.getAll()
+		.some((cookie) => cookie.name.startsWith(`${AUTH_COOKIE_PREFIX}.session`));
 
-  if (!hasSessionCookie && request.method === "GET") {
-    log("redirect /login");
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("next", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+	if (!hasSessionCookie && request.method === "GET") {
+		log("redirect /login");
+		const loginUrl = new URL("/login", request.url);
+		loginUrl.searchParams.set("next", pathname);
+		return NextResponse.redirect(loginUrl);
+	}
 
-  log("pass");
-  return NextResponse.next();
+	log("pass");
+	return NextResponse.next();
 }
 
 export const config = {
-  // NOTE: the auth gate only fires on the protected prefixes below, but the
-  // access log should see every page visit (incl. /login) — the negative
-  // lookahead keeps static assets out of both
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|images/).*)"],
+	// NOTE: the auth gate only fires on the protected prefixes below, but the
+	// access log should see every page visit (incl. /login) — the negative
+	// lookahead keeps static assets out of both
+	matcher: ["/((?!_next/static|_next/image|favicon\\.ico|images/).*)"],
 };

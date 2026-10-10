@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import {
 	APPROVAL_ROUTES,
 	ApprovalForbiddenError,
@@ -186,9 +187,12 @@ describe("workflow authorization", () => {
 
 		// A submission nobody prepared yet (null owner) can be decided.
 		expect(() =>
-			assertNotSelfApproval({ id: "chair-1", role: "program_chair" }, {
-				submittedByUserId: null,
-			}),
+			assertNotSelfApproval(
+				{ id: "chair-1", role: "program_chair" },
+				{
+					submittedByUserId: null,
+				},
+			),
 		).not.toThrow();
 
 		// system_admin keeps its override.

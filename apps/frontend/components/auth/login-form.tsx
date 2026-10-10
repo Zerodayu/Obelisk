@@ -5,6 +5,7 @@ import { Mail } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -12,102 +13,102 @@ import { toastError } from "@/components/ui/toast";
 import { signInWithEmail } from "@/server/actions/auth";
 
 const formSchema = z.object({
-  email: z.email({
-    message: "Invalid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }),
+	email: z.email({
+		message: "Invalid email address.",
+	}),
+	password: z.string().min(8, {
+		message: "Password must be at least 8 characters.",
+	}),
 });
 
 interface LoginFormProps {
-  /** Route to redirect to after a successful sign-in. */
-  next?: string;
+	/** Route to redirect to after a successful sign-in. */
+	next?: string;
 }
 
 export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+	const [submitting, setSubmitting] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
+	const form = useForm<z.infer<typeof formSchema>>({
+		resolver: zodResolver(formSchema),
+		defaultValues: {
+			email: "",
+			password: "",
+		},
+	});
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    setSubmitting(true);
-    setError(null);
-    const result = await signInWithEmail({
-      email: values.email,
-      password: values.password,
-      next,
-    });
-    if (!result.ok) {
-      setError(result.error);
-      setSubmitting(false);
-      toastError({
-        scope: "auth:login",
-        title: "Sign-in failed",
-        description: result.error,
-      });
-    }
-  }
+	async function onSubmit(values: z.infer<typeof formSchema>) {
+		setSubmitting(true);
+		setError(null);
+		const result = await signInWithEmail({
+			email: values.email,
+			password: values.password,
+			next,
+		});
+		if (!result.ok) {
+			setError(result.error);
+			setSubmitting(false);
+			toastError({
+				scope: "auth:login",
+				title: "Sign-in failed",
+				description: result.error,
+			});
+		}
+	}
 
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="space-y-6">
-        <Controller
-          control={form.control}
-          name="email"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>Email</FieldLabel>
-              <Input
-                aria-invalid={fieldState.invalid}
-                autoComplete="email"
-                className="bg-background"
-                placeholder="Enter your email"
-                type="email"
-                {...field}
-              />
-              <FieldError errors={[fieldState.error]} />
-            </Field>
-          )}
-        />
+	return (
+		<form onSubmit={form.handleSubmit(onSubmit)}>
+			<div className="space-y-6">
+				<Controller
+					control={form.control}
+					name="email"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel>Email</FieldLabel>
+							<Input
+								aria-invalid={fieldState.invalid}
+								autoComplete="email"
+								className="bg-background"
+								placeholder="Enter your email"
+								type="email"
+								{...field}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
 
-        <Controller
-          control={form.control}
-          name="password"
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>Password</FieldLabel>
-              <Input
-                aria-invalid={fieldState.invalid}
-                autoComplete="current-password"
-                className="bg-background"
-                placeholder="Enter your password"
-                type="password"
-                {...field}
-              />
-              <FieldError errors={[fieldState.error]} />
-            </Field>
-          )}
-        />
-      </div>
+				<Controller
+					control={form.control}
+					name="password"
+					render={({ field, fieldState }) => (
+						<Field data-invalid={fieldState.invalid}>
+							<FieldLabel>Password</FieldLabel>
+							<Input
+								aria-invalid={fieldState.invalid}
+								autoComplete="current-password"
+								className="bg-background"
+								placeholder="Enter your password"
+								type="password"
+								{...field}
+							/>
+							<FieldError errors={[fieldState.error]} />
+						</Field>
+					)}
+				/>
+			</div>
 
-      {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
+			{error && <p className="text-destructive mt-4 text-sm">{error}</p>}
 
-      <Button
-        className="mt-6 w-full hover:cursor-pointer"
-        disabled={submitting}
-        type="submit"
-      >
-        <Mail className="mr-2" />
-        {submitting ? "Signing in…" : "Continue with Email"}
-      </Button>
-    </form>
-  );
+			<Button
+				className="mt-6 w-full hover:cursor-pointer"
+				disabled={submitting}
+				type="submit"
+			>
+				<Mail className="mr-2" />
+				{submitting ? "Signing in…" : "Continue with Email"}
+			</Button>
+		</form>
+	);
 };

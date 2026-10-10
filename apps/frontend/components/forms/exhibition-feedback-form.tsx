@@ -2,15 +2,16 @@
 
 import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+
 import { ContextRequired } from "@/components/forms/context-required";
 import { GeneratingState } from "@/components/forms/generating";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
-  Frame,
-  FrameDescription,
-  FrameHeader,
-  FramePanel,
-  FrameTitle,
+	Frame,
+	FrameDescription,
+	FrameHeader,
+	FramePanel,
+	FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -20,383 +21,383 @@ import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
 import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import {
-  selectedProgramIdAtom,
-  selectedTermIdAtom,
+	selectedProgramIdAtom,
+	selectedTermIdAtom,
 } from "@/lib/store/atoms/academic";
 import {
-  getCheckForm,
-  initCheckForm,
-  saveCheckForm,
+	getCheckForm,
+	initCheckForm,
+	saveCheckForm,
 } from "@/server/actions/check";
 
 const FORM_CODE: CheckFormCode = "exhibition_feedback";
 
 interface GuestRow {
-  id?: string;
-  guestName: string;
-  guestAffiliation?: string;
-  ploRatings: Record<string, number>;
-  overallComments?: string;
+	id?: string;
+	guestName: string;
+	guestAffiliation?: string;
+	ploRatings: Record<string, number>;
+	overallComments?: string;
 }
 
 interface Payload {
-  id: string;
-  status: string;
-  header: {
-    exhibitionTitle?: string;
-    exhibitionDate?: string;
-    venueMode?: string;
-    program?: string;
-    studentExhibitorsCount?: number;
-    guestsCount?: number;
-  };
-  guests: GuestRow[];
-  qualitativeFeedback: string | null;
+	id: string;
+	status: string;
+	header: {
+		exhibitionTitle?: string;
+		exhibitionDate?: string;
+		venueMode?: string;
+		program?: string;
+		studentExhibitorsCount?: number;
+		guestsCount?: number;
+	};
+	guests: GuestRow[];
+	qualitativeFeedback: string | null;
 }
 
 export default function ExhibitionFeedbackForm() {
-  // NOTE: academic context comes from the dashboard picker, not local state.
-  const programId = useAtomValue(selectedProgramIdAtom);
-  const termId = useAtomValue(selectedTermIdAtom);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [payload, setPayload] = useState<Payload | null>(null);
-  const [guestRatings, setGuestRatings] = useState<Record<number, string>>({});
+	// NOTE: academic context comes from the dashboard picker, not local state.
+	const programId = useAtomValue(selectedProgramIdAtom);
+	const termId = useAtomValue(selectedTermIdAtom);
+	const [loading, setLoading] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [payload, setPayload] = useState<Payload | null>(null);
+	const [guestRatings, setGuestRatings] = useState<Record<number, string>>({});
 
-  const handleInit = useCallback(async () => {
-    setLoading(true);
-    try {
-      const result = await initCheckForm(FORM_CODE, { programId, termId });
-      if (result.ok) {
-        const data = await getCheckForm<Payload>(FORM_CODE, result.data.id);
-        if (data.ok) {
-          setPayload(data.data);
-          const ratingsInit: Record<number, string> = {};
-          data.data.guests?.forEach((g, i) => {
-            ratingsInit[i] = JSON.stringify(g.ploRatings ?? {}, null, 2);
-          });
-          setGuestRatings(ratingsInit);
-        } else {
-          toastError({
-            title: "Load failed",
-            description: data.error,
-            scope: "check:load",
-          });
-        }
-      } else {
-        toastError({
-          title: "Init failed",
-          description: result.error,
-          scope: "check:init",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [programId, termId]);
+	const handleInit = useCallback(async () => {
+		setLoading(true);
+		try {
+			const result = await initCheckForm(FORM_CODE, { programId, termId });
+			if (result.ok) {
+				const data = await getCheckForm<Payload>(FORM_CODE, result.data.id);
+				if (data.ok) {
+					setPayload(data.data);
+					const ratingsInit: Record<number, string> = {};
+					data.data.guests?.forEach((g, i) => {
+						ratingsInit[i] = JSON.stringify(g.ploRatings ?? {}, null, 2);
+					});
+					setGuestRatings(ratingsInit);
+				} else {
+					toastError({
+						title: "Load failed",
+						description: data.error,
+						scope: "check:load",
+					});
+				}
+			} else {
+				toastError({
+					title: "Init failed",
+					description: result.error,
+					scope: "check:init",
+				});
+			}
+		} finally {
+			setLoading(false);
+		}
+	}, [programId, termId]);
 
-  const auto = useAutoGenerate([programId, termId], handleInit);
+	const auto = useAutoGenerate([programId, termId], handleInit);
 
-  const handleSave = useCallback(async () => {
-    if (!payload) return;
-    setSaving(true);
-    try {
-      const guests = payload.guests.map((g, i) => ({
-        ...g,
-        ploRatings: JSON.parse(guestRatings[i] || "{}"),
-      }));
-      await saveCheckForm(FORM_CODE, payload.id, {
-        guests,
-        header: payload.header,
-        qualitativeFeedback: payload.qualitativeFeedback,
-      });
-      toast.create({ title: "Saved successfully", type: "success" });
-    } catch {
-      toastError({
-        title: "Save failed",
-        description: "Failed to save form.",
-        scope: "check:save",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [payload, guestRatings]);
+	const handleSave = useCallback(async () => {
+		if (!payload) return;
+		setSaving(true);
+		try {
+			const guests = payload.guests.map((g, i) => ({
+				...g,
+				ploRatings: JSON.parse(guestRatings[i] || "{}"),
+			}));
+			await saveCheckForm(FORM_CODE, payload.id, {
+				guests,
+				header: payload.header,
+				qualitativeFeedback: payload.qualitativeFeedback,
+			});
+			toast.create({ title: "Saved successfully", type: "success" });
+		} catch {
+			toastError({
+				title: "Save failed",
+				description: "Failed to save form.",
+				scope: "check:save",
+			});
+		} finally {
+			setSaving(false);
+		}
+	}, [payload, guestRatings]);
 
-  function updateHeader<K extends keyof Payload["header"]>(
-    key: K,
-    value: Payload["header"][K],
-  ) {
-    setPayload((prev) => {
-      if (!prev) return prev;
-      return { ...prev, header: { ...prev.header, [key]: value } };
-    });
-  }
+	function updateHeader<K extends keyof Payload["header"]>(
+		key: K,
+		value: Payload["header"][K],
+	) {
+		setPayload((prev) => {
+			if (!prev) return prev;
+			return { ...prev, header: { ...prev.header, [key]: value } };
+		});
+	}
 
-  function addGuestRow() {
-    setPayload((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        guests: [
-          ...prev.guests,
-          {
-            guestName: "",
-            guestAffiliation: "",
-            ploRatings: {},
-            overallComments: "",
-          },
-        ],
-      };
-    });
-    setGuestRatings((prev) => {
-      const next = { ...prev };
-      const keys = Object.keys(next).map(Number);
-      next[Math.max(...keys, -1) + 1] = "{}";
-      return next;
-    });
-  }
+	function addGuestRow() {
+		setPayload((prev) => {
+			if (!prev) return prev;
+			return {
+				...prev,
+				guests: [
+					...prev.guests,
+					{
+						guestName: "",
+						guestAffiliation: "",
+						ploRatings: {},
+						overallComments: "",
+					},
+				],
+			};
+		});
+		setGuestRatings((prev) => {
+			const next = { ...prev };
+			const keys = Object.keys(next).map(Number);
+			next[Math.max(...keys, -1) + 1] = "{}";
+			return next;
+		});
+	}
 
-  function removeGuestRow(idx: number) {
-    setPayload((prev) => {
-      if (!prev) return prev;
-      return { ...prev, guests: prev.guests.filter((_, i) => i !== idx) };
-    });
-    setGuestRatings((prev) => {
-      const next: Record<number, string> = {};
-      const entries = Object.entries(prev).filter(([k]) => Number(k) !== idx);
-      entries.forEach(([k, v], i) => {
-        next[i] = v;
-      });
-      return next;
-    });
-  }
+	function removeGuestRow(idx: number) {
+		setPayload((prev) => {
+			if (!prev) return prev;
+			return { ...prev, guests: prev.guests.filter((_, i) => i !== idx) };
+		});
+		setGuestRatings((prev) => {
+			const next: Record<number, string> = {};
+			const entries = Object.entries(prev).filter(([k]) => Number(k) !== idx);
+			entries.forEach(([k, v], i) => {
+				next[i] = v;
+			});
+			return next;
+		});
+	}
 
-  function updateGuestRating(idx: number, value: string) {
-    setGuestRatings((prev) => ({ ...prev, [idx]: value }));
-  }
+	function updateGuestRating(idx: number, value: string) {
+		setGuestRatings((prev) => ({ ...prev, [idx]: value }));
+	}
 
-  if (!payload) {
-    return (
-      <Frame>
-        <FrameHeader>
-          <FrameTitle>Exhibition Feedback</FrameTitle>
-          <FrameDescription>
-            F11 — loaded automatically for the current academic context.
-          </FrameDescription>
-        </FrameHeader>
-        <FramePanel>
-          {!programId || !termId ? (
-            <ContextRequired scope="program-term" />
-          ) : (
-            <GeneratingState busy={loading || auto.busy} retry={auto.retry} />
-          )}
-        </FramePanel>
-      </Frame>
-    );
-  }
+	if (!payload) {
+		return (
+			<Frame>
+				<FrameHeader>
+					<FrameTitle>Exhibition Feedback</FrameTitle>
+					<FrameDescription>
+						F11 — loaded automatically for the current academic context.
+					</FrameDescription>
+				</FrameHeader>
+				<FramePanel>
+					{!programId || !termId ? (
+						<ContextRequired scope="program-term" />
+					) : (
+						<GeneratingState busy={loading || auto.busy} retry={auto.retry} />
+					)}
+				</FramePanel>
+			</Frame>
+		);
+	}
 
-  // NOTE: mirrors backend EDITABLE_STATUSES — saves are rejected outside draft/returned anyway.
-  const editable = payload.status === "draft" || payload.status === "returned";
+	// NOTE: mirrors backend EDITABLE_STATUSES — saves are rejected outside draft/returned anyway.
+	const editable = payload.status === "draft" || payload.status === "returned";
 
-  return (
-    <div className="space-y-6">
-      <SubmissionStatusCard submissionId={payload.id} />
-      <Frame>
-        <FrameHeader>
-          <FrameTitle>Exhibition Feedback</FrameTitle>
-          <FrameDescription>F11</FrameDescription>
-        </FrameHeader>
-        <FramePanel>
-          <div className="grid grid-cols-3 gap-4">
-            <Field>
-              <FieldLabel>Exhibition Title</FieldLabel>
-              <Input
-                value={payload.header.exhibitionTitle ?? ""}
-                onChange={(e) =>
-                  updateHeader("exhibitionTitle", e.target.value)
-                }
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Exhibition Date</FieldLabel>
-              <Input
-                type="date"
-                value={payload.header.exhibitionDate ?? ""}
-                onChange={(e) => updateHeader("exhibitionDate", e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Venue / Mode</FieldLabel>
-              <Input
-                value={payload.header.venueMode ?? ""}
-                onChange={(e) => updateHeader("venueMode", e.target.value)}
-              />
-            </Field>
-          </div>
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <Field>
-              <FieldLabel>Program</FieldLabel>
-              <Input
-                value={payload.header.program ?? ""}
-                onChange={(e) => updateHeader("program", e.target.value)}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Student Exhibitors</FieldLabel>
-              <Input
-                type="number"
-                min="0"
-                value={payload.header.studentExhibitorsCount ?? ""}
-                onChange={(e) =>
-                  updateHeader(
-                    "studentExhibitorsCount",
-                    Number(e.target.value) || undefined,
-                  )
-                }
-              />
-            </Field>
-            <Field>
-              <FieldLabel>Guests Count</FieldLabel>
-              <Input
-                type="number"
-                min="0"
-                value={payload.header.guestsCount ?? ""}
-                onChange={(e) =>
-                  updateHeader(
-                    "guestsCount",
-                    Number(e.target.value) || undefined,
-                  )
-                }
-              />
-            </Field>
-          </div>
-        </FramePanel>
-      </Frame>
+	return (
+		<div className="space-y-6">
+			<SubmissionStatusCard submissionId={payload.id} />
+			<Frame>
+				<FrameHeader>
+					<FrameTitle>Exhibition Feedback</FrameTitle>
+					<FrameDescription>F11</FrameDescription>
+				</FrameHeader>
+				<FramePanel>
+					<div className="grid grid-cols-3 gap-4">
+						<Field>
+							<FieldLabel>Exhibition Title</FieldLabel>
+							<Input
+								value={payload.header.exhibitionTitle ?? ""}
+								onChange={(e) =>
+									updateHeader("exhibitionTitle", e.target.value)
+								}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel>Exhibition Date</FieldLabel>
+							<Input
+								type="date"
+								value={payload.header.exhibitionDate ?? ""}
+								onChange={(e) => updateHeader("exhibitionDate", e.target.value)}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel>Venue / Mode</FieldLabel>
+							<Input
+								value={payload.header.venueMode ?? ""}
+								onChange={(e) => updateHeader("venueMode", e.target.value)}
+							/>
+						</Field>
+					</div>
+					<div className="mt-4 grid grid-cols-3 gap-4">
+						<Field>
+							<FieldLabel>Program</FieldLabel>
+							<Input
+								value={payload.header.program ?? ""}
+								onChange={(e) => updateHeader("program", e.target.value)}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel>Student Exhibitors</FieldLabel>
+							<Input
+								type="number"
+								min="0"
+								value={payload.header.studentExhibitorsCount ?? ""}
+								onChange={(e) =>
+									updateHeader(
+										"studentExhibitorsCount",
+										Number(e.target.value) || undefined,
+									)
+								}
+							/>
+						</Field>
+						<Field>
+							<FieldLabel>Guests Count</FieldLabel>
+							<Input
+								type="number"
+								min="0"
+								value={payload.header.guestsCount ?? ""}
+								onChange={(e) =>
+									updateHeader(
+										"guestsCount",
+										Number(e.target.value) || undefined,
+									)
+								}
+							/>
+						</Field>
+					</div>
+				</FramePanel>
+			</Frame>
 
-      <Frame>
-        <FrameHeader>
-          <FrameTitle>Guest Register</FrameTitle>
-          <FrameDescription>
-            Add each guest and their PLO ratings as JSON.
-          </FrameDescription>
-        </FrameHeader>
-        <FramePanel>
-          <table className="w-full text-sm">
-            <thead className="border-b">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Guest Name</th>
-                <th className="px-3 py-2 text-left font-medium">Affiliation</th>
-                <th className="px-3 py-2 text-left font-medium">
-                  PLO Ratings (JSON)
-                </th>
-                <th className="px-3 py-2 text-left font-medium">
-                  Overall Comments
-                </th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {payload.guests.map((g, i) => (
-                <tr key={i} className="border-b">
-                  <td className="px-3 py-2">
-                    <Input
-                      value={g.guestName}
-                      onChange={(e) => {
-                        const rows = [...payload.guests];
-                        rows[i] = { ...rows[i], guestName: e.target.value };
-                        setPayload({ ...payload, guests: rows });
-                      }}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <Input
-                      value={g.guestAffiliation ?? ""}
-                      onChange={(e) => {
-                        const rows = [...payload.guests];
-                        rows[i] = {
-                          ...rows[i],
-                          guestAffiliation: e.target.value,
-                        };
-                        setPayload({ ...payload, guests: rows });
-                      }}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <Input
-                      value={guestRatings[i] ?? "{}"}
-                      onChange={(e) => updateGuestRating(i, e.target.value)}
-                      placeholder='{"PLO1": 8, "PLO2": 7}'
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <Input
-                      value={g.overallComments ?? ""}
-                      onChange={(e) => {
-                        const rows = [...payload.guests];
-                        rows[i] = {
-                          ...rows[i],
-                          overallComments: e.target.value,
-                        };
-                        setPayload({ ...payload, guests: rows });
-                      }}
-                    />
-                  </td>
-                  <td className="px-3 py-2">
-                    <Button
-                      variant="ghost"
-                      onClick={() => removeGuestRow(i)}
-                      className="text-destructive"
-                    >
-                      ✕
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <Button variant="outline" onClick={addGuestRow} className="mt-2">
-            + Add Row
-          </Button>
-        </FramePanel>
-      </Frame>
+			<Frame>
+				<FrameHeader>
+					<FrameTitle>Guest Register</FrameTitle>
+					<FrameDescription>
+						Add each guest and their PLO ratings as JSON.
+					</FrameDescription>
+				</FrameHeader>
+				<FramePanel>
+					<table className="w-full text-sm">
+						<thead className="border-b">
+							<tr>
+								<th className="px-3 py-2 text-left font-medium">Guest Name</th>
+								<th className="px-3 py-2 text-left font-medium">Affiliation</th>
+								<th className="px-3 py-2 text-left font-medium">
+									PLO Ratings (JSON)
+								</th>
+								<th className="px-3 py-2 text-left font-medium">
+									Overall Comments
+								</th>
+								<th className="px-3 py-2" />
+							</tr>
+						</thead>
+						<tbody>
+							{payload.guests.map((g, i) => (
+								<tr key={i} className="border-b">
+									<td className="px-3 py-2">
+										<Input
+											value={g.guestName}
+											onChange={(e) => {
+												const rows = [...payload.guests];
+												rows[i] = { ...rows[i], guestName: e.target.value };
+												setPayload({ ...payload, guests: rows });
+											}}
+										/>
+									</td>
+									<td className="px-3 py-2">
+										<Input
+											value={g.guestAffiliation ?? ""}
+											onChange={(e) => {
+												const rows = [...payload.guests];
+												rows[i] = {
+													...rows[i],
+													guestAffiliation: e.target.value,
+												};
+												setPayload({ ...payload, guests: rows });
+											}}
+										/>
+									</td>
+									<td className="px-3 py-2">
+										<Input
+											value={guestRatings[i] ?? "{}"}
+											onChange={(e) => updateGuestRating(i, e.target.value)}
+											placeholder='{"PLO1": 8, "PLO2": 7}'
+										/>
+									</td>
+									<td className="px-3 py-2">
+										<Input
+											value={g.overallComments ?? ""}
+											onChange={(e) => {
+												const rows = [...payload.guests];
+												rows[i] = {
+													...rows[i],
+													overallComments: e.target.value,
+												};
+												setPayload({ ...payload, guests: rows });
+											}}
+										/>
+									</td>
+									<td className="px-3 py-2">
+										<Button
+											variant="ghost"
+											onClick={() => removeGuestRow(i)}
+											className="text-destructive"
+										>
+											✕
+										</Button>
+									</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+					<Button variant="outline" onClick={addGuestRow} className="mt-2">
+						+ Add Row
+					</Button>
+				</FramePanel>
+			</Frame>
 
-      <Frame>
-        <FrameHeader>
-          <FrameTitle>Qualitative Feedback</FrameTitle>
-        </FrameHeader>
-        <FramePanel>
-          <Textarea
-            rows={5}
-            value={payload.qualitativeFeedback ?? ""}
-            onChange={(e) =>
-              setPayload({
-                ...payload,
-                qualitativeFeedback: e.target.value || null,
-              })
-            }
-            placeholder="General qualitative feedback from guests…"
-          />
-        </FramePanel>
-      </Frame>
+			<Frame>
+				<FrameHeader>
+					<FrameTitle>Qualitative Feedback</FrameTitle>
+				</FrameHeader>
+				<FramePanel>
+					<Textarea
+						rows={5}
+						value={payload.qualitativeFeedback ?? ""}
+						onChange={(e) =>
+							setPayload({
+								...payload,
+								qualitativeFeedback: e.target.value || null,
+							})
+						}
+						placeholder="General qualitative feedback from guests…"
+					/>
+				</FramePanel>
+			</Frame>
 
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          onClick={auto.retry}
-          disabled={loading || auto.busy}
-        >
-          Re-generate
-        </Button>
-        <Button onClick={handleSave} disabled={saving || !editable}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
-        {!editable ? (
-          <p className="text-xs text-muted-foreground">
-            Locked — editing is only allowed while the form is draft or
-            returned.
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
+			<div className="flex items-center gap-3">
+				<Button
+					variant="outline"
+					onClick={auto.retry}
+					disabled={loading || auto.busy}
+				>
+					Re-generate
+				</Button>
+				<Button onClick={handleSave} disabled={saving || !editable}>
+					{saving ? "Saving…" : "Save"}
+				</Button>
+				{!editable ? (
+					<p className="text-muted-foreground text-xs">
+						Locked — editing is only allowed while the form is draft or
+						returned.
+					</p>
+				) : null}
+			</div>
+		</div>
+	);
 }

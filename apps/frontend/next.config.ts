@@ -5,14 +5,14 @@ import type { NextConfig } from "next";
 // this file (the justfile exports the flag legitimately), so the command name
 // is checked too and a plain `next dev` never throws.
 const isProductionRun =
-  process.argv.includes("build") ||
-  process.argv.includes("start") ||
-  process.env.NODE_ENV === "production";
+	process.argv.includes("build") ||
+	process.argv.includes("start") ||
+	process.env.NODE_ENV === "production";
 if (isProductionRun && process.env.DEV_SESSION_ENABLED === "true") {
-  throw new Error(
-    "DEV_SESSION_ENABLED must not be set for `next build`/`next start` " +
-      "— app/dev/session would ship.",
-  );
+	throw new Error(
+		"DEV_SESSION_ENABLED must not be set for `next build`/`next start` " +
+			"— app/dev/session would ship.",
+	);
 }
 
 /**
@@ -26,28 +26,28 @@ if (isProductionRun && process.env.DEV_SESSION_ENABLED === "true") {
  * local builds leave it unset and keep the public origin as before.
  */
 const authBackend = (
-  process.env.API_INTERNAL_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  "http://localhost:8080"
+	process.env.API_INTERNAL_URL ??
+	process.env.NEXT_PUBLIC_API_URL ??
+	"http://localhost:8080"
 ).replace(/\/$/, "");
 
 // TODO: remove once the pre-existing type errors in components/ui (ark
 // `render` prop, login-form FieldError, scrollFade) are fixed — otherwise
 // `next build` (Vercel) fails before producing a bundle.
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  // NOTE: workspace packages ship raw .ts (no build step) — transpile them so
-  // the client bundle also inlines `process.env.NEXT_PUBLIC_*` read in
-  // @obelisk/env/client.
-  transpilePackages: ["@obelisk/env", "@obelisk/app-info"],
-  rewrites: async () => [
-    {
-      source: "/api/v1/auth/:path*",
-      destination: `${authBackend}/api/v1/auth/:path*`,
-    },
-  ],
+	typescript: {
+		ignoreBuildErrors: true,
+	},
+	// NOTE: workspace packages ship raw .ts (no build step) — transpile them so
+	// the client bundle also inlines `process.env.NEXT_PUBLIC_*` read in
+	// @obelisk/env/client.
+	transpilePackages: ["@obelisk/env", "@obelisk/app-info"],
+	rewrites: async () => [
+		{
+			source: "/api/v1/auth/:path*",
+			destination: `${authBackend}/api/v1/auth/:path*`,
+		},
+	],
 };
 
 export default nextConfig;

@@ -12,19 +12,19 @@ import { requireRole } from "@/server/auth";
  * `/connections` view shows the resulting mapping as a matrix.
  */
 export default async function PloManagementPage() {
-  await requireRole(PLO_MANAGEMENT_ROLES);
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">PLO Management</h2>
-        <p className="text-sm text-muted-foreground">
-          Manage Program Learning Outcomes per program. Targets must clear the
-          70% institutional hard floor; the CLO–PLO Connections tab shows which
-          CLOs each PLO maps to.
-        </p>
-      </div>
-      <PloManagementNav />
-      <PloManagementPanel />
-    </div>
-  );
+	await requireRole(PLO_MANAGEMENT_ROLES);
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="space-y-1">
+				<h2 className="text-xl font-semibold tracking-tight">PLO Management</h2>
+				<p className="text-muted-foreground text-sm">
+					Manage Program Learning Outcomes per program. Targets must clear the
+					70% institutional hard floor; the CLO–PLO Connections tab shows which
+					CLOs each PLO maps to.
+				</p>
+			</div>
+			<PloManagementNav />
+			<PloManagementPanel />
+		</div>
+	);
 }

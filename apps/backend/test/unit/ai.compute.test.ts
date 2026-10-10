@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import type { AnalyticsSummaryResponse } from "@lib/ingest/ingest-client";
 import {
 	buildSectionAlignment,

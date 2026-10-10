@@ -6,6 +6,7 @@ import {
 } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
+
 import {
 	GenerateCarParamsSchema,
 	ListCarsQuerySchema,

@@ -12,15 +12,14 @@
  */
 
 import "server-only";
-
 import { cookies, headers } from "next/headers";
 
 import {
-  API_ROOT,
-  ApiError,
-  type ApiSession,
-  type ApiUser,
-  type MeResponse,
+	API_ROOT,
+	ApiError,
+	type ApiSession,
+	type ApiUser,
+	type MeResponse,
 } from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
 import type { UserRole } from "@/lib/roles";
@@ -39,32 +38,32 @@ export const DEV_ROLE = "faculty" satisfies UserRole;
 
 /** Fixed session presented when DEVELOPMENT=true (auth disabled, frontend-only). */
 export const DEV_USER: ApiUser = {
-  id: "dev-user",
-  name: "Development User",
-  email: "dev@obelisk.local",
-  emailVerified: true,
-  image: null,
-  role: DEV_ROLE,
-  requestedRole: null,
-  roleRequestStatus: "none",
-  employeeId: null,
-  programId: null,
-  // Matches `SAMPLE_DEPARTMENTS` (dev-mode `listDepartments()`), so the
-  // sidebar header renders its "— CITE: <role>" prefix without a real account.
-  departmentId: "dept-1",
-  isActive: true,
-  createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-  updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+	id: "dev-user",
+	name: "Development User",
+	email: "dev@obelisk.local",
+	emailVerified: true,
+	image: null,
+	role: DEV_ROLE,
+	requestedRole: null,
+	roleRequestStatus: "none",
+	employeeId: null,
+	programId: null,
+	// Matches `SAMPLE_DEPARTMENTS` (dev-mode `listDepartments()`), so the
+	// sidebar header renders its "— CITE: <role>" prefix without a real account.
+	departmentId: "dept-1",
+	isActive: true,
+	createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+	updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
 };
 
 const DEV_SESSION: ApiSession = {
-  id: "dev-session",
-  userId: DEV_USER.id,
-  expiresAt: new Date("2099-01-01T00:00:00.000Z").toISOString(),
-  createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-  updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
-  ipAddress: null,
-  userAgent: null,
+	id: "dev-session",
+	userId: DEV_USER.id,
+	expiresAt: new Date("2099-01-01T00:00:00.000Z").toISOString(),
+	createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+	updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+	ipAddress: null,
+	userAgent: null,
 };
 
 /**
@@ -74,52 +73,52 @@ const DEV_SESSION: ApiSession = {
  * Origin".
  */
 async function forwardedOrigin(): Promise<string | undefined> {
-  const requestHeaders = await headers();
-  return (
-    requestHeaders.get("origin") ?? requestHeaders.get("referer") ?? undefined
-  );
+	const requestHeaders = await headers();
+	return (
+		requestHeaders.get("origin") ?? requestHeaders.get("referer") ?? undefined
+	);
 }
 
 async function serverFetch<T>(
-  path: string,
-  init: RequestInit = {},
+	path: string,
+	init: RequestInit = {},
 ): Promise<T> {
-  const store = await cookies();
-  const cookieHeader = store
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
-  const origin = await forwardedOrigin();
+	const store = await cookies();
+	const cookieHeader = store
+		.getAll()
+		.map((cookie) => `${cookie.name}=${cookie.value}`)
+		.join("; ");
+	const origin = await forwardedOrigin();
 
-  const res = await fetch(`${API_ROOT}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      ...(origin ? { Origin: origin } : {}),
-      ...(init.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+	const res = await fetch(`${API_ROOT}${path}`, {
+		...init,
+		headers: {
+			"Content-Type": "application/json",
+			...(cookieHeader ? { Cookie: cookieHeader } : {}),
+			...(origin ? { Origin: origin } : {}),
+			...(init.headers ?? {}),
+		},
+		cache: "no-store",
+	});
 
-  if (!res.ok) {
-    throw new Error(`Server request failed (${res.status}) for ${path}`);
-  }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+	if (!res.ok) {
+		throw new Error(`Server request failed (${res.status}) for ${path}`);
+	}
+	if (res.status === 204) return undefined as T;
+	return (await res.json()) as T;
 }
 
 export interface RelayCookie {
-  name: string;
-  value: string;
-  options: {
-    path?: string;
-    maxAge?: number;
-    expires?: Date;
-    secure?: boolean;
-    httpOnly?: boolean;
-    sameSite?: "lax" | "strict" | "none";
-  };
+	name: string;
+	value: string;
+	options: {
+		path?: string;
+		maxAge?: number;
+		expires?: Date;
+		secure?: boolean;
+		httpOnly?: boolean;
+		sameSite?: "lax" | "strict" | "none";
+	};
 }
 
 /**
@@ -129,62 +128,62 @@ export interface RelayCookie {
  * otherwise the browser stores a double-encoded value the backend can't parse.
  */
 function safeDecode(value: string): string {
-  try {
-    return decodeURIComponent(value);
-  } catch {
-    return value;
-  }
+	try {
+		return decodeURIComponent(value);
+	} catch {
+		return value;
+	}
 }
 
 /** Parse a raw `Set-Cookie` header into name/value + the options `cookies()` accepts. */
 export function parseSetCookie(header: string): RelayCookie | null {
-  const parts = header.split(";");
-  const [nameValue = "", ...rest] = parts;
-  const eq = nameValue.indexOf("=");
-  if (eq <= 0) return null;
-  const name = nameValue.slice(0, eq).trim();
-  const value = safeDecode(nameValue.slice(eq + 1).trim());
-  const options: RelayCookie["options"] = {};
+	const parts = header.split(";");
+	const [nameValue = "", ...rest] = parts;
+	const eq = nameValue.indexOf("=");
+	if (eq <= 0) return null;
+	const name = nameValue.slice(0, eq).trim();
+	const value = safeDecode(nameValue.slice(eq + 1).trim());
+	const options: RelayCookie["options"] = {};
 
-  for (const part of rest) {
-    const [rawKey, ...rawValueParts] = part.split("=");
-    const key = rawKey.trim().toLowerCase();
-    const rawValue = rawValueParts.join("=").trim();
-    switch (key) {
-      case "path":
-        options.path = rawValue || "/";
-        break;
-      case "max-age": {
-        const maxAge = Number(rawValue);
-        if (Number.isFinite(maxAge)) options.maxAge = maxAge;
-        break;
-      }
-      case "expires": {
-        const expires = new Date(rawValue);
-        if (!Number.isNaN(expires.getTime())) options.expires = expires;
-        break;
-      }
-      case "secure":
-        options.secure = true;
-        break;
-      case "httponly":
-        options.httpOnly = true;
-        break;
-      case "samesite": {
-        const sameSite = rawValue.toLowerCase();
-        if (
-          sameSite === "lax" ||
-          sameSite === "strict" ||
-          sameSite === "none"
-        ) {
-          options.sameSite = sameSite;
-        }
-        break;
-      }
-    }
-  }
+	for (const part of rest) {
+		const [rawKey, ...rawValueParts] = part.split("=");
+		const key = rawKey.trim().toLowerCase();
+		const rawValue = rawValueParts.join("=").trim();
+		switch (key) {
+			case "path":
+				options.path = rawValue || "/";
+				break;
+			case "max-age": {
+				const maxAge = Number(rawValue);
+				if (Number.isFinite(maxAge)) options.maxAge = maxAge;
+				break;
+			}
+			case "expires": {
+				const expires = new Date(rawValue);
+				if (!Number.isNaN(expires.getTime())) options.expires = expires;
+				break;
+			}
+			case "secure":
+				options.secure = true;
+				break;
+			case "httponly":
+				options.httpOnly = true;
+				break;
+			case "samesite": {
+				const sameSite = rawValue.toLowerCase();
+				if (
+					sameSite === "lax" ||
+					sameSite === "strict" ||
+					sameSite === "none"
+				) {
+					options.sameSite = sameSite;
+				}
+				break;
+			}
+		}
+	}
 
-  return { name, value, options };
+	return { name, value, options };
 }
 
 /**
@@ -194,12 +193,12 @@ export function parseSetCookie(header: string): RelayCookie | null {
  * server-to-server fetch.
  */
 async function forwardSetCookies(res: Response): Promise<void> {
-  const store = await cookies();
-  for (const header of res.headers.getSetCookie()) {
-    const cookie = parseSetCookie(header);
-    if (!cookie) continue;
-    store.set(cookie.name, cookie.value, cookie.options);
-  }
+	const store = await cookies();
+	for (const header of res.headers.getSetCookie()) {
+		const cookie = parseSetCookie(header);
+		if (!cookie) continue;
+		store.set(cookie.name, cookie.value, cookie.options);
+	}
 }
 
 /**
@@ -212,58 +211,58 @@ async function forwardSetCookies(res: Response): Promise<void> {
  * that way and only append the query here.
  */
 function withQuery(
-  path: string,
-  query?: Record<string, string | number | boolean | null | undefined>,
+	path: string,
+	query?: Record<string, string | number | boolean | null | undefined>,
 ): string {
-  if (!query) return path;
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null) continue;
-    params.set(key, String(value));
-  }
-  const search = params.toString();
-  if (!search) return path;
-  return `${path}${path.includes("?") ? "&" : "?"}${search}`;
+	if (!query) return path;
+	const params = new URLSearchParams();
+	for (const [key, value] of Object.entries(query)) {
+		if (value === undefined || value === null) continue;
+		params.set(key, String(value));
+	}
+	const search = params.toString();
+	if (!search) return path;
+	return `${path}${path.includes("?") ? "&" : "?"}${search}`;
 }
 
 async function actionFetch<T>(
-  path: string,
-  init: RequestInit = {},
+	path: string,
+	init: RequestInit = {},
 ): Promise<T> {
-  const store = await cookies();
-  const cookieHeader = store
-    .getAll()
-    .map((cookie) => `${cookie.name}=${cookie.value}`)
-    .join("; ");
-  const origin = await forwardedOrigin();
+	const store = await cookies();
+	const cookieHeader = store
+		.getAll()
+		.map((cookie) => `${cookie.name}=${cookie.value}`)
+		.join("; ");
+	const origin = await forwardedOrigin();
 
-  const res = await fetch(`${API_ROOT}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
-      ...(origin ? { Origin: origin } : {}),
-      ...(init.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+	const res = await fetch(`${API_ROOT}${path}`, {
+		...init,
+		headers: {
+			"Content-Type": "application/json",
+			...(cookieHeader ? { Cookie: cookieHeader } : {}),
+			...(origin ? { Origin: origin } : {}),
+			...(init.headers ?? {}),
+		},
+		cache: "no-store",
+	});
 
-  await forwardSetCookies(res);
+	await forwardSetCookies(res);
 
-  if (!res.ok) {
-    let payload: { error?: string; message?: string } | undefined;
-    try {
-      payload = (await res.json()) as { error?: string; message?: string };
-    } catch {
-      payload = undefined;
-    }
-    throw new ApiError(
-      payload?.message ?? payload?.error ?? `Request failed (${res.status})`,
-      { status: res.status, payload },
-    );
-  }
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+	if (!res.ok) {
+		let payload: { error?: string; message?: string } | undefined;
+		try {
+			payload = (await res.json()) as { error?: string; message?: string };
+		} catch {
+			payload = undefined;
+		}
+		throw new ApiError(
+			payload?.message ?? payload?.error ?? `Request failed (${res.status})`,
+			{ status: res.status, payload },
+		);
+	}
+	if (res.status === 204) return undefined as T;
+	return (await res.json()) as T;
 }
 
 /**
@@ -273,21 +272,21 @@ async function actionFetch<T>(
  * (with the backend's message) so actions can surface them to the UI.
  */
 export const actionApi = {
-  get: <T>(
-    path: string,
-    query?: Record<string, string | number | boolean | null | undefined>,
-  ) => actionFetch<T>(withQuery(path, query)),
-  post: <T>(path: string, body?: unknown) =>
-    actionFetch<T>(path, {
-      method: "POST",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    }),
-  put: <T>(path: string, body?: unknown) =>
-    actionFetch<T>(path, {
-      method: "PUT",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    }),
-  delete: <T>(path: string) => actionFetch<T>(path, { method: "DELETE" }),
+	get: <T>(
+		path: string,
+		query?: Record<string, string | number | boolean | null | undefined>,
+	) => actionFetch<T>(withQuery(path, query)),
+	post: <T>(path: string, body?: unknown) =>
+		actionFetch<T>(path, {
+			method: "POST",
+			body: body === undefined ? undefined : JSON.stringify(body),
+		}),
+	put: <T>(path: string, body?: unknown) =>
+		actionFetch<T>(path, {
+			method: "PUT",
+			body: body === undefined ? undefined : JSON.stringify(body),
+		}),
+	delete: <T>(path: string) => actionFetch<T>(path, { method: "DELETE" }),
 };
 
 /**
@@ -295,22 +294,22 @@ export const actionApi = {
  * request is unauthenticated (rather than throwing) so layouts can redirect.
  */
 export async function getMe(): Promise<MeResponse | null> {
-  if (isDevMode) return { user: DEV_USER, session: DEV_SESSION };
-  try {
-    return await serverFetch<MeResponse>("/auth/me");
-  } catch {
-    return null;
-  }
+	if (isDevMode) return { user: DEV_USER, session: DEV_SESSION };
+	try {
+		return await serverFetch<MeResponse>("/auth/me");
+	} catch {
+		return null;
+	}
 }
 
 export const serverApi = {
-  get: <T>(
-    path: string,
-    query?: Record<string, string | number | boolean | null | undefined>,
-  ) => serverFetch<T>(withQuery(path, query)),
-  post: <T>(path: string, body?: unknown) =>
-    serverFetch<T>(path, {
-      method: "POST",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    }),
+	get: <T>(
+		path: string,
+		query?: Record<string, string | number | boolean | null | undefined>,
+	) => serverFetch<T>(withQuery(path, query)),
+	post: <T>(path: string, body?: unknown) =>
+		serverFetch<T>(path, {
+			method: "POST",
+			body: body === undefined ? undefined : JSON.stringify(body),
+		}),
 };

@@ -1,4 +1,5 @@
 import { prisma } from "@lib/prisma";
+
 import { isDbReachable } from "./db-gate";
 
 /** Every table in the schema (snake_case `@@map` names), kept in sync with prisma/schema. */

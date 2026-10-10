@@ -3,6 +3,7 @@ import { hasRole, ROLE_REQUEST_ROLES } from "@lib/role-access";
 import type { UserRole } from "@prisma/generated/prisma/enums";
 import type { Session, User } from "better-auth";
 import { Elysia, t } from "elysia";
+
 import {
 	RoleRequestError,
 	type RoleRequestScope,

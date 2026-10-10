@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import {
 	REQUESTED_SCOPE,
 	requestedScopeForRole,
@@ -7,6 +8,7 @@ import {
 	SELF_SELECTABLE_ROLES,
 	validateRoleRequest,
 } from "@v1/auth/model";
+
 import { REQUESTED_SCOPE as FRONTEND_REQUESTED_SCOPE } from "../../../frontend/lib/roles";
 
 const PROGRAM_ID = "program-bsit";

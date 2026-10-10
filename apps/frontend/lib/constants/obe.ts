@@ -1,21 +1,21 @@
 /** Fixed 6 root-cause categories used across CQI, gap analysis, and CAR forms. */
 export const ROOT_CAUSES = [
-  "1-Curriculum Design",
-  "2-Instruction & Pedagogy",
-  "3-Assessment Design",
-  "4-Student Factors",
-  "5-Resources & Tools",
-  "6-Industry & Field Alignment",
+	"1-Curriculum Design",
+	"2-Instruction & Pedagogy",
+	"3-Assessment Design",
+	"4-Student Factors",
+	"5-Resources & Tools",
+	"6-Industry & Field Alignment",
 ] as const;
 
 /** Bloom's taxonomy levels — CAR P1 CLO mapping table. */
 export const BLOOMS_LEVELS = [
-  "Remember",
-  "Understand",
-  "Apply",
-  "Analyze",
-  "Evaluate",
-  "Create",
+	"Remember",
+	"Understand",
+	"Apply",
+	"Analyze",
+	"Evaluate",
+	"Create",
 ] as const;
 
 /**
@@ -24,9 +24,9 @@ export const BLOOMS_LEVELS = [
  * (`apps/backend/lib/forms/justification.ts`).
  */
 export const IPD_STAGES: Record<string, { letter: string; label: string }> = {
-  i: { letter: "I", label: "Introduction" },
-  p: { letter: "P", label: "Proficiency" },
-  d: { letter: "D", label: "Demonstration" },
+	i: { letter: "I", label: "Introduction" },
+	p: { letter: "P", label: "Proficiency" },
+	d: { letter: "D", label: "Demonstration" },
 };
 
 /**
@@ -36,8 +36,8 @@ export const IPD_STAGES: Record<string, { letter: string; label: string }> = {
  * approval card renders exactly what the CAR form recorded.
  */
 export const ASSESSMENT_TYPES = [
-  "Exam",
-  "Rubric",
-  "Perf.Task",
-  "Portfolio",
+	"Exam",
+	"Rubric",
+	"Perf.Task",
+	"Portfolio",
 ] as const;

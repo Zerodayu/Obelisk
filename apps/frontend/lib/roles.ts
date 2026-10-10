@@ -17,25 +17,25 @@
 import { ALL_ROLES, USER_ROLES, type UserRole } from "./role-access";
 
 export {
-  ACADEMIC_ROLES,
-  ADMIN_ROLES,
-  ALL_ROLES,
-  ANY_AUTHENTICATED_ROLES,
-  APPROVER_ROLES,
-  ARCHIVE_ROLES,
-  CLASS_RECORD_ROLES,
-  CLASS_RECORD_SCREEN_ROLES,
-  canAccess,
-  FEATURE_ACCESS,
-  type FeatureKey,
-  FORM_ACCESS,
-  featureRoles,
-  formRoles,
-  PLO_MANAGEMENT_ROLES,
-  QA_ROLES,
-  screenRoles,
-  USER_ROLES,
-  type UserRole,
+	ACADEMIC_ROLES,
+	ADMIN_ROLES,
+	ALL_ROLES,
+	ANY_AUTHENTICATED_ROLES,
+	APPROVER_ROLES,
+	ARCHIVE_ROLES,
+	CLASS_RECORD_ROLES,
+	CLASS_RECORD_SCREEN_ROLES,
+	canAccess,
+	FEATURE_ACCESS,
+	type FeatureKey,
+	FORM_ACCESS,
+	featureRoles,
+	formRoles,
+	PLO_MANAGEMENT_ROLES,
+	QA_ROLES,
+	screenRoles,
+	USER_ROLES,
+	type UserRole,
 } from "./role-access";
 
 /**
@@ -44,30 +44,30 @@ export {
  * it; the VPAA reads the institution-wide list at `/all-submissions` instead.
  */
 export const MY_SUBMISSIONS_ROLES: readonly UserRole[] = ALL_ROLES.filter(
-  (role) => role !== "vpaa",
+	(role) => role !== "vpaa",
 );
 
 export function isUserRole(value: unknown): value is UserRole {
-  return (
-    typeof value === "string" &&
-    (USER_ROLES as readonly string[]).includes(value)
-  );
+	return (
+		typeof value === "string" &&
+		(USER_ROLES as readonly string[]).includes(value)
+	);
 }
 
 /** Human-friendly display label for a role (used in nav, badges, dashboards). */
 export const ROLE_LABELS: Record<UserRole, string> = {
-  user: "User",
-  faculty: "Faculty",
-  program_chair: "Program Chair",
-  dean: "Dean",
-  aqau: "AQAU",
-  vpaa: "VPAA",
-  system_admin: "System Admin",
+	user: "User",
+	faculty: "Faculty",
+	program_chair: "Program Chair",
+	dean: "Dean",
+	aqau: "AQAU",
+	vpaa: "VPAA",
+	system_admin: "System Admin",
 };
 
 export function roleLabel(role: UserRole | undefined): string {
-  if (!role) return "User";
-  return ROLE_LABELS[role] ?? role;
+	if (!role) return "User";
+	return ROLE_LABELS[role] ?? role;
 }
 
 /**
@@ -75,12 +75,12 @@ export function roleLabel(role: UserRole | undefined): string {
  * An empty/undefined allow-list means "any authenticated role".
  */
 export function hasAccess(
-  role: UserRole | undefined,
-  allowed?: readonly UserRole[],
+	role: UserRole | undefined,
+	allowed?: readonly UserRole[],
 ): boolean {
-  if (role === undefined) return false;
-  if (!allowed || allowed.length === 0) return true;
-  return (allowed as readonly string[]).includes(role);
+	if (role === undefined) return false;
+	if (!allowed || allowed.length === 0) return true;
+	return (allowed as readonly string[]).includes(role);
 }
 
 /**
@@ -90,10 +90,10 @@ export function hasAccess(
  * not applicable for the role).
  */
 export interface UserScope {
-  /** One program this user is restricted to (program_chair). */
-  programId?: string;
-  /** One department this user is restricted to (dean). */
-  departmentId?: string;
+	/** One program this user is restricted to (program_chair). */
+	programId?: string;
+	/** One department this user is restricted to (dean). */
+	departmentId?: string;
 }
 
 /**
@@ -101,16 +101,16 @@ export interface UserScope {
  * (aqau/vpaa/system_admin) are not scoped to a single unit.
  */
 export function scopeForRole(role: UserRole | undefined): UserScope {
-  switch (role) {
-    case "program_chair":
-    case "faculty":
-      // NOTE: faculty are actually scoped to their own class sections, but the program id is the useful coarse filter for nav/dashboards — the backend narrows further to the current user's sections.
-      return { programId: undefined };
-    case "dean":
-      return { departmentId: undefined };
-    default:
-      return {};
-  }
+	switch (role) {
+		case "program_chair":
+		case "faculty":
+			// NOTE: faculty are actually scoped to their own class sections, but the program id is the useful coarse filter for nav/dashboards — the backend narrows further to the current user's sections.
+			return { programId: undefined };
+		case "dean":
+			return { departmentId: undefined };
+		default:
+			return {};
+	}
 }
 
 /**
@@ -127,30 +127,30 @@ export function scopeForRole(role: UserRole | undefined): UserScope {
 export type RequestedScopeKind = "program" | "department";
 
 export const REQUESTED_SCOPE = {
-  faculty: "program",
-  program_chair: "program",
-  dean: "department",
+	faculty: "program",
+	program_chair: "program",
+	dean: "department",
 } as const satisfies Partial<Record<UserRole, RequestedScopeKind>>;
 
 /** The scope a request for `role` must carry, or `null` for none. */
 export function requestedScopeForRole(
-  role: UserRole | string | undefined,
+	role: UserRole | string | undefined,
 ): RequestedScopeKind | null {
-  if (typeof role !== "string") return null;
-  return (
-    (REQUESTED_SCOPE as Record<string, RequestedScopeKind | undefined>)[role] ??
-    null
-  );
+	if (typeof role !== "string") return null;
+	return (
+		(REQUESTED_SCOPE as Record<string, RequestedScopeKind | undefined>)[role] ??
+		null
+	);
 }
 
 /** Does a request for `role` have to carry a program? */
 export function roleNeedsProgram(role: UserRole | string | undefined): boolean {
-  return requestedScopeForRole(role) === "program";
+	return requestedScopeForRole(role) === "program";
 }
 
 /** Does a request for `role` have to carry a department? */
 export function roleNeedsDepartment(
-  role: UserRole | string | undefined,
+	role: UserRole | string | undefined,
 ): boolean {
-  return requestedScopeForRole(role) === "department";
+	return requestedScopeForRole(role) === "department";
 }

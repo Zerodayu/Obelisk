@@ -4,15 +4,15 @@ import { formRoles } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
 
 export default async function PloGapAnalysisPage() {
-  await requireRole(formRoles("plo_gap_analysis"));
-  return (
-    <FormPlaceholder
-      title="PLO Attainment Report with Gap Analysis"
-      code="plo_gap_analysis"
-      pdcaStage="ACT"
-      description="Identify NOT-MET PLO-cohort gaps and assign root-cause categories with owners."
-    >
-      <PloGapAnalysisForm />
-    </FormPlaceholder>
-  );
+	await requireRole(formRoles("plo_gap_analysis"));
+	return (
+		<FormPlaceholder
+			title="PLO Attainment Report with Gap Analysis"
+			code="plo_gap_analysis"
+			pdcaStage="ACT"
+			description="Identify NOT-MET PLO-cohort gaps and assign root-cause categories with owners."
+		>
+			<PloGapAnalysisForm />
+		</FormPlaceholder>
+	);
 }

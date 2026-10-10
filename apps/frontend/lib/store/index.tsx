@@ -9,5 +9,5 @@ import type { ReactNode } from "react";
  * `lib/store/atoms/*`; most use the default store, this only scopes the graph.
  */
 export function StoreProvider({ children }: { children: ReactNode }) {
-  return <Provider>{children}</Provider>;
+	return <Provider>{children}</Provider>;
 }

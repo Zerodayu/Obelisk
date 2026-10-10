@@ -1,4 +1,5 @@
 import Elysia from "elysia";
+
 import { academicPlugin } from "./v1/academic/controller";
 import { aiPlugin } from "./v1/ai/controller";
 import { atRiskPlugin } from "./v1/atrisk/controller";

@@ -7,6 +7,6 @@ import { requireUser } from "@/server/auth";
  * `role-dashboard.tsx`.
  */
 export default async function DashboardPage() {
-  const user = await requireUser();
-  return <RoleDashboard user={user} />;
+	const user = await requireUser();
+	return <RoleDashboard user={user} />;
 }

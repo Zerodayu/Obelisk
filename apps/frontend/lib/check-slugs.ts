@@ -8,13 +8,13 @@
  */
 
 export const CHECK_FORM_SLUGS = {
-  mid_cycle_attainment: "mid-cycle-attainment",
-  peer_observation: "peer-observation",
-  exhibition_feedback: "exhibition-feedback",
-  clo_perception_survey: "clo-perception-survey",
-  student_exit_survey: "student-exit-survey",
-  portfolio_assessment_record: "portfolio-assessment",
-  capstone_panel_evaluation: "capstone-panel",
+	mid_cycle_attainment: "mid-cycle-attainment",
+	peer_observation: "peer-observation",
+	exhibition_feedback: "exhibition-feedback",
+	clo_perception_survey: "clo-perception-survey",
+	student_exit_survey: "student-exit-survey",
+	portfolio_assessment_record: "portfolio-assessment",
+	capstone_panel_evaluation: "capstone-panel",
 } as const;
 
 export type CheckFormCode = keyof typeof CHECK_FORM_SLUGS;

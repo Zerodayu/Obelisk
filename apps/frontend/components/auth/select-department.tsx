@@ -1,12 +1,13 @@
 "use client";
 
 import { createListCollection } from "@ark-ui/react";
+
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
 } from "@/components/ui/select";
 import type { AcademicDepartment } from "@/lib/store/atoms/academic";
 
@@ -17,49 +18,49 @@ import type { AcademicDepartment } from "@/lib/store/atoms/academic";
  * `department` table via `GET /academic/departments`.
  */
 interface SelectDepartmentProps {
-  /** Departments to pick from (`listDepartments()` server action). */
-  departments: AcademicDepartment[];
-  value?: string;
-  onValueChange?: (value: string) => void;
-  className?: string;
-  placeholder?: string;
-  disabled?: boolean;
+	/** Departments to pick from (`listDepartments()` server action). */
+	departments: AcademicDepartment[];
+	value?: string;
+	onValueChange?: (value: string) => void;
+	className?: string;
+	placeholder?: string;
+	disabled?: boolean;
 }
 
 export const SelectDepartment = ({
-  departments,
-  value,
-  onValueChange,
-  className,
-  placeholder = "Select a department",
-  disabled,
+	departments,
+	value,
+	onValueChange,
+	className,
+	placeholder = "Select a department",
+	disabled,
 }: SelectDepartmentProps) => {
-  const collection = createListCollection({
-    items: departments.map((department) => ({
-      // Departments are read by their name (CITE …); fall back to the code.
-      label: department.name || department.code,
-      value: department.id,
-    })),
-  });
+	const collection = createListCollection({
+		items: departments.map((department) => ({
+			// Departments are read by their name (CITE …); fall back to the code.
+			label: department.name || department.code,
+			value: department.id,
+		})),
+	});
 
-  return (
-    <Select
-      collection={collection}
-      disabled={disabled}
-      onValueChange={(details) => onValueChange?.(details.value[0])}
-      value={value ? [value] : []}
-    >
-      <SelectTrigger className={className}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
+	return (
+		<Select
+			collection={collection}
+			disabled={disabled}
+			onValueChange={(details) => onValueChange?.(details.value[0])}
+			value={value ? [value] : []}
+		>
+			<SelectTrigger className={className}>
+				<SelectValue placeholder={placeholder} />
+			</SelectTrigger>
 
-      <SelectContent>
-        {collection.items.map((item) => (
-          <SelectItem item={item} key={item.value}>
-            {item.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
+			<SelectContent>
+				{collection.items.map((item) => (
+					<SelectItem item={item} key={item.value}>
+						{item.label}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	);
 };

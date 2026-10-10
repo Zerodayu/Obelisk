@@ -2,58 +2,59 @@
 
 import { PieChart, type PieSeriesOption } from "echarts/charts";
 import {
-  TooltipComponent,
-  type TooltipComponentOption,
+	TooltipComponent,
+	type TooltipComponentOption,
 } from "echarts/components";
 import type { ComposeOption } from "echarts/core";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { motion, useReducedMotion } from "motion/react";
 import {
-  Children,
-  type CSSProperties,
-  type FC,
-  isValidElement,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
+	Children,
+	type CSSProperties,
+	type FC,
+	isValidElement,
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useId,
+	useMemo,
+	useRef,
+	useState,
 } from "react";
+
 import {
-  buildChartCss,
-  type ChartConfig,
-  getColorsCount,
-  type ResolvedColors,
-  resolveColors,
-  resolveCssColor,
-  withAlpha,
+	buildChartCss,
+	type ChartConfig,
+	getColorsCount,
+	type ResolvedColors,
+	resolveColors,
+	resolveCssColor,
+	withAlpha,
 } from "@/components/evilcharts/ui/echarts-chart";
 import {
-  LegendOverlay,
-  type LegendVariant,
+	LegendOverlay,
+	type LegendVariant,
 } from "@/components/evilcharts/ui/echarts-legend";
 import {
-  resolveTooltipPosition,
-  roundnessClass,
-  type TooltipPosition,
-  type TooltipRoundness,
-  type TooltipVariant,
-  tooltipIndicatorHtml,
-  tooltipRow,
-  tooltipVariantClass,
+	resolveTooltipPosition,
+	roundnessClass,
+	type TooltipPosition,
+	type TooltipRoundness,
+	type TooltipVariant,
+	tooltipIndicatorHtml,
+	tooltipRow,
+	tooltipVariantClass,
 } from "@/components/evilcharts/ui/echarts-tooltip";
 
 // Shared types re-exported here so existing consumers keep importing them from
 // the chart module.
 export type {
-  ChartConfig,
-  LegendVariant,
-  TooltipPosition,
-  TooltipRoundness,
-  TooltipVariant,
+	ChartConfig,
+	LegendVariant,
+	TooltipPosition,
+	TooltipRoundness,
+	TooltipVariant,
 };
 
 // NOTE: register only what this chart uses — a pie has no grid/axes. Never add
@@ -69,11 +70,11 @@ type EChartsOption = ComposeOption<PieSeriesOption | TooltipComponentOption>;
 // Sector paint — structurally assignable to a pie datum's itemStyle; the border
 // fields carry the constant-width gap / overlap separator.
 type PieItemStyle = {
-  color: string | echarts.graphic.LinearGradient;
-  opacity: number;
-  borderRadius: number;
-  borderColor?: string;
-  borderWidth?: number;
+	color: string | echarts.graphic.LinearGradient;
+	opacity: number;
+	borderRadius: number;
+	borderColor?: string;
+	borderWidth?: number;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -112,36 +113,36 @@ const DIMMED_OPACITY = 0.15;
 // — an angular pad tapers to a wedge toward the center; a border stays parallel
 // rim-to-center. Width tracks the requested `paddingAngle`.
 function gapBorderWidth(paddingAngle: number): number {
-  return Math.max(paddingAngle, 0);
+	return Math.max(paddingAngle, 0);
 }
 
 // Negative paddingAngle → wide overlap separator, positive → constant gap, zero →
 // no border. `color` is already resolved to a concrete canvas-safe value.
 function sectorBorder(
-  paddingAngle: number,
-  color: string,
+	paddingAngle: number,
+	color: string,
 ): { borderColor: string; borderWidth: number } | null {
-  if (paddingAngle < 0)
-    return { borderColor: color, borderWidth: OVERLAP_BORDER_WIDTH };
-  const width = gapBorderWidth(paddingAngle);
-  if (width > 0) return { borderColor: color, borderWidth: width };
-  return null;
+	if (paddingAngle < 0)
+		return { borderColor: color, borderWidth: OVERLAP_BORDER_WIDTH };
+	const width = gapBorderWidth(paddingAngle);
+	if (width > 0) return { borderColor: color, borderWidth: width };
+	return null;
 }
 
 // Separator color from the live DOM: an explicit `<Pie borderColor>` wins, else the
 // enclosing frame panel's `--frame-panel-bg`, else the chart's background token.
 function resolveBorderColor(
-  pie: PieSlot | null,
-  container: HTMLElement,
-  background: string,
+	pie: PieSlot | null,
+	container: HTMLElement,
+	background: string,
 ): string {
-  if (pie?.borderColor) return resolveCssColor(pie.borderColor, container);
-  const panelBg = getComputedStyle(container)
-    .getPropertyValue("--frame-panel-bg")
-    .trim();
-  return panelBg
-    ? resolveCssColor("var(--frame-panel-bg)", container)
-    : background;
+	if (pie?.borderColor) return resolveCssColor(pie.borderColor, container);
+	const panelBg = getComputedStyle(container)
+		.getPropertyValue("--frame-panel-bg")
+		.trim();
+	return panelBg
+		? resolveCssColor("var(--frame-panel-bg)", container)
+		: background;
 }
 
 // Shimmer opacities (× the foreground token's alpha): a sine-feathered window
@@ -164,35 +165,35 @@ export type LabelPosition = "inside" | "outside";
 // Tooltip/legend/config types live in the shared echarts modules — imported and
 // re-exported at the top of this file.
 export type BackgroundVariant =
-  | "dots"
-  | "grid"
-  | "cross-hatch"
-  | "diagonal-lines"
-  | "plus"
-  | "falling-triangles"
-  | "4-pointed-star"
-  | "tiny-checkers"
-  | "overlapping-circles"
-  | "wiggle-lines"
-  | "bubbles";
+	| "dots"
+	| "grid"
+	| "cross-hatch"
+	| "diagonal-lines"
+	| "plus"
+	| "falling-triangles"
+	| "4-pointed-star"
+	| "tiny-checkers"
+	| "overlapping-circles"
+	| "wiggle-lines"
+	| "bubbles";
 
 export interface EChartsPieChartProps<TData extends Record<string, unknown>> {
-  data: TData[]; // rows rendered by the chart — one sector each
-  config: ChartConfig; // sector colors + labels, keyed by the sector name
-  dataKey: keyof TData & string; // key holding each sector's numeric value
-  nameKey: keyof TData & string; // key holding each sector's name
-  className?: string; // extra classes for the chart container
-  // Master switch for the intro draw-in (canvas counterpart of the Recharts twin's
-  // hardcoded animation). OS reduce-motion also disables it.
-  animation?: boolean;
-  defaultSelectedSector?: string | null; // sector selected on first render
-  selectedSector?: string | null; // controlled selection — overrides internal state when set
-  onSelectionChange?: (
-    selection: { dataKey: string; value: number } | null,
-  ) => void; // fires when the selected sector changes
-  isLoading?: boolean; // shows the animated loading skeleton
-  chartOptions?: Record<string, unknown>; // escape hatch merged over the built ECharts option
-  children?: ReactNode; // declarative config — <Pie>, <Tooltip>, <Legend>, <Background>
+	data: TData[]; // rows rendered by the chart — one sector each
+	config: ChartConfig; // sector colors + labels, keyed by the sector name
+	dataKey: keyof TData & string; // key holding each sector's numeric value
+	nameKey: keyof TData & string; // key holding each sector's name
+	className?: string; // extra classes for the chart container
+	// Master switch for the intro draw-in (canvas counterpart of the Recharts twin's
+	// hardcoded animation). OS reduce-motion also disables it.
+	animation?: boolean;
+	defaultSelectedSector?: string | null; // sector selected on first render
+	selectedSector?: string | null; // controlled selection — overrides internal state when set
+	onSelectionChange?: (
+		selection: { dataKey: string; value: number } | null,
+	) => void; // fires when the selected sector changes
+	isLoading?: boolean; // shows the animated loading skeleton
+	chartOptions?: Record<string, unknown>; // escape hatch merged over the built ECharts option
+	children?: ReactNode; // declarative config — <Pie>, <Tooltip>, <Legend>, <Background>
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -203,16 +204,16 @@ export interface EChartsPieChartProps<TData extends Record<string, unknown>> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface PieProps {
-  variant?: PieVariant; // fill style for the pie's sectors
-  innerRadius?: number | string; // inner radius — set above 0 for a donut
-  outerRadius?: number | string; // outer radius of the pie
-  cornerRadius?: number; // border-radius of each sector in pixels
-  paddingAngle?: number; // gap between sectors in degrees — negative overlaps them
-  borderColor?: string; // sector separator color — any CSS color or `var(--…)` theme token; defaults to the enclosing frame panel's background so gaps are invisible on it
-  startAngle?: number; // angle the pie starts drawing from
-  endAngle?: number; // angle the pie stops drawing at
-  isClickable?: boolean; // lets sectors be selected by clicking them — the selected sector pops outward
-  children?: ReactNode; // optional <Label> composition for sector labels
+	variant?: PieVariant; // fill style for the pie's sectors
+	innerRadius?: number | string; // inner radius — set above 0 for a donut
+	outerRadius?: number | string; // outer radius of the pie
+	cornerRadius?: number; // border-radius of each sector in pixels
+	paddingAngle?: number; // gap between sectors in degrees — negative overlaps them
+	borderColor?: string; // sector separator color — any CSS color or `var(--…)` theme token; defaults to the enclosing frame panel's background so gaps are invisible on it
+	startAngle?: number; // angle the pie starts drawing from
+	endAngle?: number; // angle the pie stops drawing at
+	isClickable?: boolean; // lets sectors be selected by clicking them — the selected sector pops outward
+	children?: ReactNode; // optional <Label> composition for sector labels
 }
 
 /**
@@ -224,35 +225,35 @@ export interface PieProps {
 const Pie: FC<PieProps> = () => null;
 
 export interface LabelProps {
-  dataKey?: string; // data key for the label text — defaults to the pie's value key
-  position?: LabelPosition; // "inside" (value on the sector) or "outside" (name past the rim, with a leader line)
+	dataKey?: string; // data key for the label text — defaults to the pie's value key
+	position?: LabelPosition; // "inside" (value on the sector) or "outside" (name past the rim, with a leader line)
 }
 
 /** Declares per-sector labels for the enclosing <Pie>. Renders nothing. */
 const Label: FC<LabelProps> = () => null;
 
 export interface TooltipProps {
-  variant?: TooltipVariant; // visual style of the tooltip surface
-  roundness?: TooltipRoundness; // border-radius of the tooltip
-  defaultIndex?: number; // sector index shown by default with no hover
-  position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and tracks the pointer's X
+	variant?: TooltipVariant; // visual style of the tooltip surface
+	roundness?: TooltipRoundness; // border-radius of the tooltip
+	defaultIndex?: number; // sector index shown by default with no hover
+	position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and tracks the pointer's X
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
 const Tooltip: FC<TooltipProps> = () => null;
 
 export interface LegendProps {
-  variant?: LegendVariant; // visual style of the legend indicators
-  align?: "left" | "center" | "right"; // horizontal placement
-  verticalAlign?: "top" | "middle" | "bottom"; // vertical placement
-  isClickable?: boolean; // lets each entry toggle selection of its sector
+	variant?: LegendVariant; // visual style of the legend indicators
+	align?: "left" | "center" | "right"; // horizontal placement
+	verticalAlign?: "top" | "middle" | "bottom"; // vertical placement
+	isClickable?: boolean; // lets each entry toggle selection of its sector
 }
 
 /** Presence enables the HTML legend overlay. Renders nothing. */
 const Legend: FC<LegendProps> = () => null;
 
 export interface BackgroundProps {
-  variant?: BackgroundVariant; // background pattern style
+	variant?: BackgroundVariant; // background pattern style
 }
 
 /** Presence draws a decorative SVG pattern behind the pie. Renders nothing. */
@@ -264,112 +265,112 @@ const Background: FC<BackgroundProps> = () => null;
 // ─────────────────────────────────────────────────────────────────────────────
 
 type PieSlot = {
-  variant: PieVariant;
-  innerRadius: number | string;
-  outerRadius: number | string;
-  cornerRadius: number;
-  paddingAngle: number;
-  borderColor: string | null; // explicit separator color — null falls back to the frame panel background
-  startAngle: number;
-  endAngle: number;
-  isClickable: boolean;
-  labelDataKey: string | null; // null when no <Label> child is present
-  labelPosition: LabelPosition; // where the <Label> sits — only meaningful when labelDataKey !== null
+	variant: PieVariant;
+	innerRadius: number | string;
+	outerRadius: number | string;
+	cornerRadius: number;
+	paddingAngle: number;
+	borderColor: string | null; // explicit separator color — null falls back to the frame panel background
+	startAngle: number;
+	endAngle: number;
+	isClickable: boolean;
+	labelDataKey: string | null; // null when no <Label> child is present
+	labelPosition: LabelPosition; // where the <Label> sits — only meaningful when labelDataKey !== null
 };
 
 type TooltipSlot = {
-  present: boolean;
-  variant: TooltipVariant;
-  roundness: TooltipRoundness;
-  defaultIndex?: number;
-  position: TooltipPosition;
+	present: boolean;
+	variant: TooltipVariant;
+	roundness: TooltipRoundness;
+	defaultIndex?: number;
+	position: TooltipPosition;
 };
 type LegendSlot = {
-  present: boolean;
-  variant: LegendVariant;
-  align: "left" | "center" | "right";
-  verticalAlign: "top" | "middle" | "bottom";
-  isClickable: boolean;
+	present: boolean;
+	variant: LegendVariant;
+	align: "left" | "center" | "right";
+	verticalAlign: "top" | "middle" | "bottom";
+	isClickable: boolean;
 };
 type BackgroundSlot = { present: boolean; variant: BackgroundVariant };
 
 type CollectedConfig = {
-  pie: PieSlot | null;
-  tooltip: TooltipSlot;
-  legend: LegendSlot;
-  background: BackgroundSlot;
+	pie: PieSlot | null;
+	tooltip: TooltipSlot;
+	legend: LegendSlot;
+	background: BackgroundSlot;
 };
 
 function collectConfig(children: ReactNode): CollectedConfig {
-  let pie: PieSlot | null = null;
-  let tooltip: TooltipSlot = {
-    present: false,
-    variant: "default",
-    roundness: "lg",
-    position: "variable",
-  };
-  // Pie legend defaults differ from the area chart's: centered along the bottom.
-  let legend: LegendSlot = {
-    present: false,
-    variant: "rounded-square",
-    align: "center",
-    verticalAlign: "bottom",
-    isClickable: false,
-  };
-  let background: BackgroundSlot = { present: false, variant: "dots" };
+	let pie: PieSlot | null = null;
+	let tooltip: TooltipSlot = {
+		present: false,
+		variant: "default",
+		roundness: "lg",
+		position: "variable",
+	};
+	// Pie legend defaults differ from the area chart's: centered along the bottom.
+	let legend: LegendSlot = {
+		present: false,
+		variant: "rounded-square",
+		align: "center",
+		verticalAlign: "bottom",
+		isClickable: false,
+	};
+	let background: BackgroundSlot = { present: false, variant: "dots" };
 
-  Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return;
-    const type = child.type;
+	Children.forEach(children, (child) => {
+		if (!isValidElement(child)) return;
+		const type = child.type;
 
-    if (type === Pie) {
-      const props = child.props as PieProps;
-      let labelDataKey: string | null = null;
-      let labelPosition: LabelPosition = "inside";
-      Children.forEach(props.children, (labelChild) => {
-        if (!isValidElement(labelChild) || labelChild.type !== Label) return;
-        const labelProps = labelChild.props as LabelProps;
-        labelDataKey = labelProps.dataKey ?? "";
-        labelPosition = labelProps.position ?? "inside";
-      });
-      pie = {
-        variant: props.variant ?? "gradient",
-        innerRadius: props.innerRadius ?? DEFAULT_INNER_RADIUS,
-        outerRadius: props.outerRadius ?? DEFAULT_OUTER_RADIUS,
-        cornerRadius: props.cornerRadius ?? DEFAULT_CORNER_RADIUS,
-        paddingAngle: props.paddingAngle ?? DEFAULT_PADDING_ANGLE,
-        borderColor: props.borderColor ?? null,
-        startAngle: props.startAngle ?? DEFAULT_START_ANGLE,
-        endAngle: props.endAngle ?? DEFAULT_END_ANGLE,
-        isClickable: props.isClickable ?? false,
-        labelDataKey,
-        labelPosition,
-      };
-    } else if (type === Tooltip) {
-      const props = child.props as TooltipProps;
-      tooltip = {
-        present: true,
-        variant: props.variant ?? "default",
-        roundness: props.roundness ?? "lg",
-        defaultIndex: props.defaultIndex,
-        position: props.position ?? "variable",
-      };
-    } else if (type === Legend) {
-      const props = child.props as LegendProps;
-      legend = {
-        present: true,
-        variant: props.variant ?? "rounded-square",
-        align: props.align ?? "center",
-        verticalAlign: props.verticalAlign ?? "bottom",
-        isClickable: props.isClickable ?? false,
-      };
-    } else if (type === Background) {
-      const props = child.props as BackgroundProps;
-      background = { present: true, variant: props.variant ?? "dots" };
-    }
-  });
+		if (type === Pie) {
+			const props = child.props as PieProps;
+			let labelDataKey: string | null = null;
+			let labelPosition: LabelPosition = "inside";
+			Children.forEach(props.children, (labelChild) => {
+				if (!isValidElement(labelChild) || labelChild.type !== Label) return;
+				const labelProps = labelChild.props as LabelProps;
+				labelDataKey = labelProps.dataKey ?? "";
+				labelPosition = labelProps.position ?? "inside";
+			});
+			pie = {
+				variant: props.variant ?? "gradient",
+				innerRadius: props.innerRadius ?? DEFAULT_INNER_RADIUS,
+				outerRadius: props.outerRadius ?? DEFAULT_OUTER_RADIUS,
+				cornerRadius: props.cornerRadius ?? DEFAULT_CORNER_RADIUS,
+				paddingAngle: props.paddingAngle ?? DEFAULT_PADDING_ANGLE,
+				borderColor: props.borderColor ?? null,
+				startAngle: props.startAngle ?? DEFAULT_START_ANGLE,
+				endAngle: props.endAngle ?? DEFAULT_END_ANGLE,
+				isClickable: props.isClickable ?? false,
+				labelDataKey,
+				labelPosition,
+			};
+		} else if (type === Tooltip) {
+			const props = child.props as TooltipProps;
+			tooltip = {
+				present: true,
+				variant: props.variant ?? "default",
+				roundness: props.roundness ?? "lg",
+				defaultIndex: props.defaultIndex,
+				position: props.position ?? "variable",
+			};
+		} else if (type === Legend) {
+			const props = child.props as LegendProps;
+			legend = {
+				present: true,
+				variant: props.variant ?? "rounded-square",
+				align: props.align ?? "center",
+				verticalAlign: props.verticalAlign ?? "bottom",
+				isClickable: props.isClickable ?? false,
+			};
+		} else if (type === Background) {
+			const props = child.props as BackgroundProps;
+			background = { present: true, variant: props.variant ?? "dots" };
+		}
+	});
 
-  return { pie, tooltip, legend, background };
+	return { pie, tooltip, legend, background };
 }
 
 // Color plumbing (buildChartCss, resolveColors, withAlpha, …) is shared from
@@ -384,12 +385,12 @@ function collectConfig(children: ReactNode): CollectedConfig {
 // gradient over the sector's own bbox (mirrors Recharts' RadialColorGradient) —
 // ECharts gradients are bbox-relative by default, so no `global` override.
 function sectorPaint(slots: string[]): string | echarts.graphic.LinearGradient {
-  if (slots.length <= 1) return slots[0] ?? FALLBACK_COLOR;
-  const stops = slots.map((color, i) => ({
-    offset: i / (slots.length - 1),
-    color,
-  }));
-  return new echarts.graphic.LinearGradient(0, 0, 1, 1, stops);
+	if (slots.length <= 1) return slots[0] ?? FALLBACK_COLOR;
+	const stops = slots.map((color, i) => ({
+		offset: i / (slots.length - 1),
+		color,
+	}));
+	return new echarts.graphic.LinearGradient(0, 0, 1, 1, stops);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -400,19 +401,19 @@ function sectorPaint(slots: string[]): string | echarts.graphic.LinearGradient {
 // [0,1)): inside → peak opacity, outside → base, sine falloff across the feather
 // so the sweep edge isn't a hard cut; distance wraps the ring for continuity.
 function loadingSectorAlpha(pos: number, center: number): number {
-  const raw = Math.abs(pos - center);
-  const dist = Math.min(raw, 1 - raw); // shortest way around the ring
-  const half = LOADING_SHIMMER_BAND;
-  const feather = LOADING_SHIMMER_FEATHER;
+	const raw = Math.abs(pos - center);
+	const dist = Math.min(raw, 1 - raw); // shortest way around the ring
+	const half = LOADING_SHIMMER_BAND;
+	const feather = LOADING_SHIMMER_FEATHER;
 
-  if (dist >= half) return LOADING_BASE_OPACITY;
-  if (dist <= half - feather) return LOADING_PEAK_OPACITY;
-  // Sine-eased ramp — a linear one still reads as a hard cut.
-  const t = 1 - (dist - (half - feather)) / feather;
-  const eased = Math.sin((t * Math.PI) / 2);
-  return (
-    LOADING_BASE_OPACITY + (LOADING_PEAK_OPACITY - LOADING_BASE_OPACITY) * eased
-  );
+	if (dist >= half) return LOADING_BASE_OPACITY;
+	if (dist <= half - feather) return LOADING_PEAK_OPACITY;
+	// Sine-eased ramp — a linear one still reads as a hard cut.
+	const t = 1 - (dist - (half - feather)) / feather;
+	const eased = Math.sin((t * Math.PI) / 2);
+	return (
+		LOADING_BASE_OPACITY + (LOADING_PEAK_OPACITY - LOADING_BASE_OPACITY) * eased
+	);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -424,244 +425,244 @@ function loadingSectorAlpha(pos: number, center: number): number {
 type PatternProps = { id: string };
 
 const BACKGROUND_PATTERNS: Record<BackgroundVariant, FC<PatternProps>> = {
-  dots: ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="20"
-      height="20"
-      patternUnits="userSpaceOnUse"
-    >
-      <circle className="text-border" cx="2" cy="2" r="1" fill="currentColor" />
-    </pattern>
-  ),
-  grid: ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="20"
-      height="20"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border"
-        d="M 20 0 L 0 0 0 20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      />
-    </pattern>
-  ),
-  "cross-hatch": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="20"
-      height="20"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border/60 dark:text-border/50"
-        d="M 0 0 L 20 20 M 20 0 L 0 20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      />
-    </pattern>
-  ),
-  "diagonal-lines": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="6"
-      height="6"
-      patternUnits="userSpaceOnUse"
-      patternTransform="rotate(45)"
-    >
-      <line
-        className="text-border"
-        x1="0"
-        y1="0"
-        x2="0"
-        y2="6"
-        stroke="currentColor"
-        strokeWidth="0.5"
-      />
-    </pattern>
-  ),
-  plus: ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="16"
-      height="16"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border"
-        d="M 8 4 L 8 12 M 4 8 L 12 8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="0.5"
-        strokeLinecap="round"
-      />
-    </pattern>
-  ),
-  "falling-triangles": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="18"
-      height="36"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border"
-        d="M2 6h12L8 18 2 6zm18 36h12l-6 12-6-12z"
-        transform="scale(0.5)"
-        fill="currentColor"
-        fillOpacity="0.4"
-      />
-    </pattern>
-  ),
-  "4-pointed-star": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="16"
-      height="16"
-      patternUnits="userSpaceOnUse"
-    >
-      <polygon
-        className="text-border"
-        fillRule="evenodd"
-        points="5 3 8 4 5 5 4 8 3 5 0 4 3 3 4 0 5 3"
-        fill="currentColor"
-        fillOpacity="0.4"
-      />
-    </pattern>
-  ),
-  "tiny-checkers": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="8"
-      height="8"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border"
-        fillRule="evenodd"
-        d="M0 0h4v4H0V0zm4 4h4v4H4V4z"
-        fill="currentColor"
-        fillOpacity="0.2"
-      />
-    </pattern>
-  ),
-  "overlapping-circles": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="40"
-      height="40"
-      patternUnits="userSpaceOnUse"
-    >
-      <path
-        className="text-border"
-        fillRule="evenodd"
-        d="M25 25c0-2.762 2.238-5 5-5s5 2.238 5 5-2.238 5-5 5c0 2.762-2.238 5-5 5s-5-2.238-5-5 2.238-5 5-5zM5 5c0-2.762 2.238-5 5-5s5 2.238 5 5-2.238 5-5 5c0 2.762-2.238 5-5 5S0 12.762 0 10s2.238-5 5-5zm5 4c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4zm20 20c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z"
-        fill="currentColor"
-        fillOpacity="0.4"
-      />
-    </pattern>
-  ),
-  "wiggle-lines": ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="52"
-      height="26"
-      patternUnits="userSpaceOnUse"
-      patternTransform="scale(0.6)"
-    >
-      <path
-        className="text-border"
-        d="M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z"
-        fill="currentColor"
-        fillOpacity="0.4"
-      />
-    </pattern>
-  ),
-  bubbles: ({ id }) => (
-    <pattern
-      id={id}
-      x="0"
-      y="0"
-      width="100"
-      height="100"
-      patternUnits="userSpaceOnUse"
-      patternTransform="scale(0.6667)"
-    >
-      <path
-        className="text-border"
-        d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z"
-        fill="currentColor"
-        fillOpacity="0.4"
-        fillRule="evenodd"
-      />
-    </pattern>
-  ),
+	dots: ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="20"
+			height="20"
+			patternUnits="userSpaceOnUse"
+		>
+			<circle className="text-border" cx="2" cy="2" r="1" fill="currentColor" />
+		</pattern>
+	),
+	grid: ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="20"
+			height="20"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border"
+				d="M 20 0 L 0 0 0 20"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="0.5"
+			/>
+		</pattern>
+	),
+	"cross-hatch": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="20"
+			height="20"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border/60 dark:text-border/50"
+				d="M 0 0 L 20 20 M 20 0 L 0 20"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="0.5"
+			/>
+		</pattern>
+	),
+	"diagonal-lines": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="6"
+			height="6"
+			patternUnits="userSpaceOnUse"
+			patternTransform="rotate(45)"
+		>
+			<line
+				className="text-border"
+				x1="0"
+				y1="0"
+				x2="0"
+				y2="6"
+				stroke="currentColor"
+				strokeWidth="0.5"
+			/>
+		</pattern>
+	),
+	plus: ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="16"
+			height="16"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border"
+				d="M 8 4 L 8 12 M 4 8 L 12 8"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth="0.5"
+				strokeLinecap="round"
+			/>
+		</pattern>
+	),
+	"falling-triangles": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="18"
+			height="36"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border"
+				d="M2 6h12L8 18 2 6zm18 36h12l-6 12-6-12z"
+				transform="scale(0.5)"
+				fill="currentColor"
+				fillOpacity="0.4"
+			/>
+		</pattern>
+	),
+	"4-pointed-star": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="16"
+			height="16"
+			patternUnits="userSpaceOnUse"
+		>
+			<polygon
+				className="text-border"
+				fillRule="evenodd"
+				points="5 3 8 4 5 5 4 8 3 5 0 4 3 3 4 0 5 3"
+				fill="currentColor"
+				fillOpacity="0.4"
+			/>
+		</pattern>
+	),
+	"tiny-checkers": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="8"
+			height="8"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border"
+				fillRule="evenodd"
+				d="M0 0h4v4H0V0zm4 4h4v4H4V4z"
+				fill="currentColor"
+				fillOpacity="0.2"
+			/>
+		</pattern>
+	),
+	"overlapping-circles": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="40"
+			height="40"
+			patternUnits="userSpaceOnUse"
+		>
+			<path
+				className="text-border"
+				fillRule="evenodd"
+				d="M25 25c0-2.762 2.238-5 5-5s5 2.238 5 5-2.238 5-5 5c0 2.762-2.238 5-5 5s-5-2.238-5-5 2.238-5 5-5zM5 5c0-2.762 2.238-5 5-5s5 2.238 5 5-2.238 5-5 5c0 2.762-2.238 5-5 5S0 12.762 0 10s2.238-5 5-5zm5 4c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4zm20 20c2.209 0 4-1.791 4-4s-1.791-4-4-4-4 1.791-4 4 1.791 4 4 4z"
+				fill="currentColor"
+				fillOpacity="0.4"
+			/>
+		</pattern>
+	),
+	"wiggle-lines": ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="52"
+			height="26"
+			patternUnits="userSpaceOnUse"
+			patternTransform="scale(0.6)"
+		>
+			<path
+				className="text-border"
+				d="M10 10c0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6h2c0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4 3.314 0 6 2.686 6 6 0 2.21 1.79 4 4 4v2c-3.314 0-6-2.686-6-6 0-2.21-1.79-4-4-4-3.314 0-6-2.686-6-6zm25.464-1.95l8.486 8.486-1.414 1.414-8.486-8.486 1.414-1.414z"
+				fill="currentColor"
+				fillOpacity="0.4"
+			/>
+		</pattern>
+	),
+	bubbles: ({ id }) => (
+		<pattern
+			id={id}
+			x="0"
+			y="0"
+			width="100"
+			height="100"
+			patternUnits="userSpaceOnUse"
+			patternTransform="scale(0.6667)"
+		>
+			<path
+				className="text-border"
+				d="M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z"
+				fill="currentColor"
+				fillOpacity="0.4"
+				fillRule="evenodd"
+			/>
+		</pattern>
+	),
 };
 
 function BackgroundLayer({ variant }: { variant: BackgroundVariant }) {
-  const baseId = useId().replace(/:/g, "");
-  const patternId = `${baseId}-bg-${variant}`;
-  const maskId = `${baseId}-bg-edge-fade`;
-  const filterId = `${baseId}-bg-blur`;
-  const PatternComponent = BACKGROUND_PATTERNS[variant];
+	const baseId = useId().replace(/:/g, "");
+	const patternId = `${baseId}-bg-${variant}`;
+	const maskId = `${baseId}-bg-edge-fade`;
+	const filterId = `${baseId}-bg-blur`;
+	const PatternComponent = BACKGROUND_PATTERNS[variant];
 
-  return (
-    <svg
-      className="pointer-events-none absolute inset-0 h-full w-full"
-      aria-hidden
-      preserveAspectRatio="none"
-    >
-      <defs>
-        <PatternComponent id={patternId} />
-        {/* Gaussian blur for a soft edge fade — a slightly inset white rect blurred
+	return (
+		<svg
+			className="pointer-events-none absolute inset-0 h-full w-full"
+			aria-hidden
+			preserveAspectRatio="none"
+		>
+			<defs>
+				<PatternComponent id={patternId} />
+				{/* Gaussian blur for a soft edge fade — a slightly inset white rect blurred
             into a mask leaves smooth transparent edges. */}
-        <filter id={filterId}>
-          <feGaussianBlur stdDeviation="25" />
-        </filter>
-        <mask id={maskId} maskUnits="userSpaceOnUse">
-          <rect
-            x="8%"
-            y="20%"
-            width="85%"
-            height="60%"
-            fill="white"
-            filter={`url(#${filterId})`}
-          />
-        </mask>
-      </defs>
-      <rect
-        width="100%"
-        height="100%"
-        fill={`url(#${patternId})`}
-        mask={`url(#${maskId})`}
-      />
-    </svg>
-  );
+				<filter id={filterId}>
+					<feGaussianBlur stdDeviation="25" />
+				</filter>
+				<mask id={maskId} maskUnits="userSpaceOnUse">
+					<rect
+						x="8%"
+						y="20%"
+						width="85%"
+						height="60%"
+						fill="white"
+						filter={`url(#${filterId})`}
+					/>
+				</mask>
+			</defs>
+			<rect
+				width="100%"
+				height="100%"
+				fill={`url(#${patternId})`}
+				mask={`url(#${maskId})`}
+			/>
+		</svg>
+	);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -670,267 +671,267 @@ function BackgroundLayer({ variant }: { variant: BackgroundVariant }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type OptionBuildContext = {
-  data: Record<string, unknown>[];
-  config: ChartConfig;
-  nameKey: string;
-  dataKey: string;
-  pie: PieSlot | null;
-  selectedSector: string | null;
-  tooltipSlot: TooltipSlot;
-  legendSlot: LegendSlot;
-  isLoading: boolean;
-  resolved: ResolvedColors;
-  borderColor: string | null; // resolved separator color — null falls back to the panel background
+	data: Record<string, unknown>[];
+	config: ChartConfig;
+	nameKey: string;
+	dataKey: string;
+	pie: PieSlot | null;
+	selectedSector: string | null;
+	tooltipSlot: TooltipSlot;
+	legendSlot: LegendSlot;
+	isLoading: boolean;
+	resolved: ResolvedColors;
+	borderColor: string | null; // resolved separator color — null falls back to the panel background
 };
 
 // Room for the HTML legend overlay: a bottom legend nudges the pie up, a top one
 // down. Percentage so it tracks the container size (the legend is fixed-height).
 function pieCenterY(legendSlot: LegendSlot): string {
-  if (!legendSlot.present) return "50%";
-  if (legendSlot.verticalAlign === "bottom") return "45%";
-  if (legendSlot.verticalAlign === "top") return "55%";
-  return "50%";
+	if (!legendSlot.present) return "50%";
+	if (legendSlot.verticalAlign === "bottom") return "45%";
+	if (legendSlot.verticalAlign === "top") return "55%";
+	return "50%";
 }
 
 // Tooltip HTML closed over the build context. Item-triggered, so each hover
 // surfaces exactly one sector — indicator + label + value, no header.
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, selectedSector, tooltipSlot } = ctx;
+	const { config, selectedSector, tooltipSlot } = ctx;
 
-  return (params: unknown): string => {
-    const p = (Array.isArray(params) ? params[0] : params) as {
-      name?: string;
-      value?: number | string;
-      seriesId?: string;
-    } | null;
-    // The loading skeleton is a `__`-prefixed series and never surfaces a tooltip.
-    if (!p || String(p.seriesId ?? "").startsWith("__")) return "";
+	return (params: unknown): string => {
+		const p = (Array.isArray(params) ? params[0] : params) as {
+			name?: string;
+			value?: number | string;
+			seriesId?: string;
+		} | null;
+		// The loading skeleton is a `__`-prefixed series and never surfaces a tooltip.
+		if (!p || String(p.seriesId ?? "").startsWith("__")) return "";
 
-    const name = String(p.name ?? "");
-    const item = config[name];
-    const colorsCount = item ? getColorsCount(item) : 1;
-    const labelText = typeof item?.label === "string" ? item.label : name;
-    const value =
-      typeof p.value === "number"
-        ? p.value.toLocaleString()
-        : String(p.value ?? "");
-    const dimmed =
-      selectedSector != null && selectedSector !== name ? " opacity-30" : "";
+		const name = String(p.name ?? "");
+		const item = config[name];
+		const colorsCount = item ? getColorsCount(item) : 1;
+		const labelText = typeof item?.label === "string" ? item.label : name;
+		const value =
+			typeof p.value === "number"
+				? p.value.toLocaleString()
+				: String(p.value ?? "");
+		const dimmed =
+			selectedSector != null && selectedSector !== name ? " opacity-30" : "";
 
-    // Reuses the shared tooltipRow/tooltipIndicatorHtml (same row shape as the area
-    // chart). Own no-header shell — the pie tooltip is item-triggered with no
-    // header, so the header-carrying tooltipShell doesn't apply.
-    const row = tooltipRow({
-      indicatorHtml: tooltipIndicatorHtml(name, colorsCount),
-      labelText,
-      valueText: value,
-      dimmed,
-    });
+		// Reuses the shared tooltipRow/tooltipIndicatorHtml (same row shape as the area
+		// chart). Own no-header shell — the pie tooltip is item-triggered with no
+		// header, so the header-carrying tooltipShell doesn't apply.
+		const row = tooltipRow({
+			indicatorHtml: tooltipIndicatorHtml(name, colorsCount),
+			labelText,
+			valueText: value,
+			dimmed,
+		});
 
-    return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[tooltipSlot.roundness]} ${tooltipVariantClass[tooltipSlot.variant]}">
+		return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[tooltipSlot.roundness]} ${tooltipVariantClass[tooltipSlot.variant]}">
       <div class="grid gap-1.5">${row}</div>
     </div>`;
-  };
+	};
 }
 
 function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
-  const { tooltipSlot, isLoading } = ctx;
-  // Item-triggered, so it can't use the shared tooltipBaseOption (axis-triggered
-  // with an axisPointer). Position goes straight through resolveTooltipPosition.
-  return {
-    show: tooltipSlot.present && !isLoading,
-    trigger: "item",
-    confine: true,
-    backgroundColor: "transparent",
-    borderWidth: 0,
-    padding: 0,
-    extraCssText: "box-shadow:none;",
-    position: resolveTooltipPosition(tooltipSlot.position),
-    formatter: createTooltipFormatter(ctx),
-  };
+	const { tooltipSlot, isLoading } = ctx;
+	// Item-triggered, so it can't use the shared tooltipBaseOption (axis-triggered
+	// with an axisPointer). Position goes straight through resolveTooltipPosition.
+	return {
+		show: tooltipSlot.present && !isLoading,
+		trigger: "item",
+		confine: true,
+		backgroundColor: "transparent",
+		borderWidth: 0,
+		padding: 0,
+		extraCssText: "box-shadow:none;",
+		position: resolveTooltipPosition(tooltipSlot.position),
+		formatter: createTooltipFormatter(ctx),
+	};
 }
 
 // The pie series: one sector per row, each with its own gradient fill, dimmed when
 // another sector is selected, separated by a constant-width border (sectorBorder).
 function buildPieSeries(ctx: OptionBuildContext): PieSeriesOption[] {
-  const {
-    data,
-    config,
-    nameKey,
-    dataKey,
-    pie,
-    selectedSector,
-    legendSlot,
-    resolved,
-    borderColor,
-  } = ctx;
-  if (!pie) return [];
-  const { tokens } = resolved;
-  const hasSelection = selectedSector !== null;
-  // Border defaults to the enclosing frame panel's background (invisible on it);
-  // an explicit `<Pie borderColor>` wins.
-  const border = sectorBorder(
-    pie.paddingAngle,
-    borderColor ?? tokens.background,
-  );
+	const {
+		data,
+		config,
+		nameKey,
+		dataKey,
+		pie,
+		selectedSector,
+		legendSlot,
+		resolved,
+		borderColor,
+	} = ctx;
+	if (!pie) return [];
+	const { tokens } = resolved;
+	const hasSelection = selectedSector !== null;
+	// Border defaults to the enclosing frame panel's background (invisible on it);
+	// an explicit `<Pie borderColor>` wins.
+	const border = sectorBorder(
+		pie.paddingAngle,
+		borderColor ?? tokens.background,
+	);
 
-  const sectors = data.map((row) => {
-    const name = String(row[nameKey]);
-    const slots = resolved.series[name] ?? [FALLBACK_COLOR];
-    // Only a clickable pie dims — a static one never has a selection to dim from.
-    const isSelected = pie.isClickable && selectedSector === name;
-    const isDimmed = pie.isClickable && hasSelection && selectedSector !== name;
+	const sectors = data.map((row) => {
+		const name = String(row[nameKey]);
+		const slots = resolved.series[name] ?? [FALLBACK_COLOR];
+		// Only a clickable pie dims — a static one never has a selection to dim from.
+		const isSelected = pie.isClickable && selectedSector === name;
+		const isDimmed = pie.isClickable && hasSelection && selectedSector !== name;
 
-    const itemStyle: PieItemStyle = {
-      color: sectorPaint(slots),
-      opacity: isDimmed ? DIMMED_OPACITY : 1,
-      borderRadius: pie.cornerRadius,
-    };
-    // Constant-width separator gap (positive paddingAngle) or overlap separator
-    // (negative) — parallel-edged rim to center, no wedge taper.
-    if (border) {
-      itemStyle.borderColor = border.borderColor;
-      itemStyle.borderWidth = border.borderWidth;
-    }
+		const itemStyle: PieItemStyle = {
+			color: sectorPaint(slots),
+			opacity: isDimmed ? DIMMED_OPACITY : 1,
+			borderRadius: pie.cornerRadius,
+		};
+		// Constant-width separator gap (positive paddingAngle) or overlap separator
+		// (negative) — parallel-edged rim to center, no wedge taper.
+		if (border) {
+			itemStyle.borderColor = border.borderColor;
+			itemStyle.borderWidth = border.borderWidth;
+		}
 
-    // The `selected` flag drives the native offset — React selection is the single
-    // source of truth, re-applied on every notMerge push so it survives rebuilds.
-    return {
-      name,
-      value: Number(row[dataKey]) || 0,
-      itemStyle,
-      selected: isSelected,
-    };
-  });
+		// The `selected` flag drives the native offset — React selection is the single
+		// source of truth, re-applied on every notMerge push so it survives rebuilds.
+		return {
+			name,
+			value: Number(row[dataKey]) || 0,
+			itemStyle,
+			selected: isSelected,
+		};
+	});
 
-  const showLabel = pie.labelDataKey !== null;
-  const isOutside = pie.labelPosition === "outside";
-  // An explicit <Label dataKey> wins; else inside labels show the value (Recharts
-  // parity) and outside labels the name/config label (classic pie-simple).
-  const explicitKey = pie.labelDataKey ? pie.labelDataKey : null;
-  const labelFormatter = (labelParams: {
-    dataIndex: number;
-    name?: string;
-    value?: unknown;
-  }) => {
-    if (explicitKey)
-      return String(data[labelParams.dataIndex]?.[explicitKey] ?? "");
-    if (isOutside) {
-      const item = config[String(labelParams.name ?? "")];
-      return typeof item?.label === "string"
-        ? item.label
-        : String(labelParams.name ?? "");
-    }
-    return String(
-      data[labelParams.dataIndex]?.[dataKey] ?? labelParams.value ?? "",
-    );
-  };
+	const showLabel = pie.labelDataKey !== null;
+	const isOutside = pie.labelPosition === "outside";
+	// An explicit <Label dataKey> wins; else inside labels show the value (Recharts
+	// parity) and outside labels the name/config label (classic pie-simple).
+	const explicitKey = pie.labelDataKey ? pie.labelDataKey : null;
+	const labelFormatter = (labelParams: {
+		dataIndex: number;
+		name?: string;
+		value?: unknown;
+	}) => {
+		if (explicitKey)
+			return String(data[labelParams.dataIndex]?.[explicitKey] ?? "");
+		if (isOutside) {
+			const item = config[String(labelParams.name ?? "")];
+			return typeof item?.label === "string"
+				? item.label
+				: String(labelParams.name ?? "");
+		}
+		return String(
+			data[labelParams.dataIndex]?.[dataKey] ?? labelParams.value ?? "",
+		);
+	};
 
-  const label = {
-    show: showLabel,
-    // Inner value labels sit on the colored sector (background-colored text);
-    // outer name labels sit past the rim in muted-foreground with a leader.
-    position: (isOutside ? "outside" : "inner") as "outside" | "inner",
-    color: isOutside ? tokens.mutedForeground : tokens.background,
-    fontSize: 12,
-    fontWeight: 500,
-    formatter: labelFormatter,
-  };
+	const label = {
+		show: showLabel,
+		// Inner value labels sit on the colored sector (background-colored text);
+		// outer name labels sit past the rim in muted-foreground with a leader.
+		position: (isOutside ? "outside" : "inner") as "outside" | "inner",
+		color: isOutside ? tokens.mutedForeground : tokens.background,
+		fontSize: 12,
+		fontWeight: 500,
+		formatter: labelFormatter,
+	};
 
-  return [
-    {
-      id: "pie",
-      type: "pie",
-      center: ["50%", pieCenterY(legendSlot)],
-      radius: [pie.innerRadius, pie.outerRadius],
-      startAngle: pie.startAngle,
-      endAngle: pie.endAngle,
-      // Recharts sweeps counterclockwise from 3 o'clock, so `clockwise: false`
-      // reproduces the twin's sector order.
-      clockwise: false,
-      // Only a NEGATIVE paddingAngle reaches padAngle; positive gaps draw as
-      // constant-width borders instead (an angular pad would taper to a wedge).
-      padAngle: Math.min(pie.paddingAngle, 0),
-      cursor: pie.isClickable ? "pointer" : "default",
-      // No hover scale on any variant — the selection pop-out below is the sole
-      // affordance; hovering only surfaces the tooltip.
-      emphasis: { scale: false },
-      // Native select state: the chosen sector translates SELECTED_OFFSET px along
-      // its bisector; each datum's `selected` flag drives it, deselecting returns it.
-      selectedMode: pie.isClickable ? "single" : false,
-      selectedOffset: SELECTED_OFFSET,
-      // Neutralize default select styling — the selected sector keeps its paint;
-      // only its position moves.
-      select: { itemStyle: {} },
-      label,
-      labelLine: isOutside
-        ? {
-            show: true,
-            length: 14,
-            length2: 14,
-            smooth: false,
-            // Leader lines drawn in a muted token, matching the docs aesthetic.
-            lineStyle: {
-              color: withAlpha(tokens.mutedForeground, 0.45),
-              width: 1,
-            },
-          }
-        : { show: false },
-      data: sectors,
-    },
-  ];
+	return [
+		{
+			id: "pie",
+			type: "pie",
+			center: ["50%", pieCenterY(legendSlot)],
+			radius: [pie.innerRadius, pie.outerRadius],
+			startAngle: pie.startAngle,
+			endAngle: pie.endAngle,
+			// Recharts sweeps counterclockwise from 3 o'clock, so `clockwise: false`
+			// reproduces the twin's sector order.
+			clockwise: false,
+			// Only a NEGATIVE paddingAngle reaches padAngle; positive gaps draw as
+			// constant-width borders instead (an angular pad would taper to a wedge).
+			padAngle: Math.min(pie.paddingAngle, 0),
+			cursor: pie.isClickable ? "pointer" : "default",
+			// No hover scale on any variant — the selection pop-out below is the sole
+			// affordance; hovering only surfaces the tooltip.
+			emphasis: { scale: false },
+			// Native select state: the chosen sector translates SELECTED_OFFSET px along
+			// its bisector; each datum's `selected` flag drives it, deselecting returns it.
+			selectedMode: pie.isClickable ? "single" : false,
+			selectedOffset: SELECTED_OFFSET,
+			// Neutralize default select styling — the selected sector keeps its paint;
+			// only its position moves.
+			select: { itemStyle: {} },
+			label,
+			labelLine: isOutside
+				? {
+						show: true,
+						length: 14,
+						length2: 14,
+						smooth: false,
+						// Leader lines drawn in a muted token, matching the docs aesthetic.
+						lineStyle: {
+							color: withAlpha(tokens.mutedForeground, 0.45),
+							width: 1,
+						},
+					}
+				: { show: false },
+			data: sectors,
+		},
+	];
 }
 
 // Loading skeleton — ONE gray ring of equal sectors regardless of the real data
 // (Recharts parity), swept by the shimmer rAF. Shape follows the pie, so a donut
 // skeleton stays a donut; the rAF loop retints each sector per frame.
 function buildLoadingOption(ctx: OptionBuildContext): EChartsOption {
-  const { pie, legendSlot, resolved, borderColor } = ctx;
-  const { tokens } = resolved;
+	const { pie, legendSlot, resolved, borderColor } = ctx;
+	const { tokens } = resolved;
 
-  const innerRadius = pie?.innerRadius ?? DEFAULT_INNER_RADIUS;
-  const outerRadius = pie?.outerRadius ?? DEFAULT_OUTER_RADIUS;
-  const cornerRadius = pie?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
-  const paddingAngle = pie?.paddingAngle ?? DEFAULT_PADDING_ANGLE;
-  const startAngle = pie?.startAngle ?? DEFAULT_START_ANGLE;
-  const endAngle = pie?.endAngle ?? DEFAULT_END_ANGLE;
+	const innerRadius = pie?.innerRadius ?? DEFAULT_INNER_RADIUS;
+	const outerRadius = pie?.outerRadius ?? DEFAULT_OUTER_RADIUS;
+	const cornerRadius = pie?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
+	const paddingAngle = pie?.paddingAngle ?? DEFAULT_PADDING_ANGLE;
+	const startAngle = pie?.startAngle ?? DEFAULT_START_ANGLE;
+	const endAngle = pie?.endAngle ?? DEFAULT_END_ANGLE;
 
-  const border = sectorBorder(paddingAngle, borderColor ?? tokens.background);
-  const sectors = Array.from({ length: LOADING_SECTORS }, (_, i) => {
-    const itemStyle: PieItemStyle = {
-      color: withAlpha(tokens.foreground, LOADING_BASE_OPACITY),
-      opacity: 1,
-      borderRadius: cornerRadius,
-    };
-    // Same constant-width gap / overlap separator as the real pie.
-    if (border) {
-      itemStyle.borderColor = border.borderColor;
-      itemStyle.borderWidth = border.borderWidth;
-    }
-    return { name: `__loading-${i}`, value: 1, itemStyle };
-  });
+	const border = sectorBorder(paddingAngle, borderColor ?? tokens.background);
+	const sectors = Array.from({ length: LOADING_SECTORS }, (_, i) => {
+		const itemStyle: PieItemStyle = {
+			color: withAlpha(tokens.foreground, LOADING_BASE_OPACITY),
+			opacity: 1,
+			borderRadius: cornerRadius,
+		};
+		// Same constant-width gap / overlap separator as the real pie.
+		if (border) {
+			itemStyle.borderColor = border.borderColor;
+			itemStyle.borderWidth = border.borderWidth;
+		}
+		return { name: `__loading-${i}`, value: 1, itemStyle };
+	});
 
-  return {
-    animation: false,
-    tooltip: { show: false },
-    series: [
-      {
-        id: "__loading",
-        type: "pie",
-        center: ["50%", pieCenterY(legendSlot)],
-        radius: [innerRadius, outerRadius],
-        startAngle,
-        endAngle,
-        clockwise: false,
-        padAngle: Math.min(paddingAngle, 0),
-        silent: true,
-        emphasis: { scale: false },
-        label: { show: false },
-        labelLine: { show: false },
-        data: sectors,
-      },
-    ],
-  };
+	return {
+		animation: false,
+		tooltip: { show: false },
+		series: [
+			{
+				id: "__loading",
+				type: "pie",
+				center: ["50%", pieCenterY(legendSlot)],
+				radius: [innerRadius, outerRadius],
+				startAngle,
+				endAngle,
+				clockwise: false,
+				padAngle: Math.min(paddingAngle, 0),
+				silent: true,
+				emphasis: { scale: false },
+				label: { show: false },
+				labelLine: { show: false },
+				data: sectors,
+			},
+		],
+	};
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -940,18 +941,18 @@ function buildLoadingOption(ctx: OptionBuildContext): EChartsOption {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type LiveState = {
-  resolved: ResolvedColors | null; // colors read off the live DOM — feeds builds and rAF loops
-  borderColor: string | null; // resolved sector separator color — read off the DOM so `var(--…)` works
-  hasRevealed: boolean; // the intro draw-in already played on this chart instance
-  // Latest callbacks/flags for the imperative ECharts click handler.
-  handlers: {
-    isClickable: boolean;
-    selectedSector: string | null;
-    selectSector: (name: string | null) => void;
-  };
-  // Update-style re-push for paths that bypass React entirely (theme flips) —
-  // set by the sync effect.
-  repush: () => void;
+	resolved: ResolvedColors | null; // colors read off the live DOM — feeds builds and rAF loops
+	borderColor: string | null; // resolved sector separator color — read off the DOM so `var(--…)` works
+	hasRevealed: boolean; // the intro draw-in already played on this chart instance
+	// Latest callbacks/flags for the imperative ECharts click handler.
+	handlers: {
+		isClickable: boolean;
+		selectedSector: string | null;
+		selectSector: (name: string | null) => void;
+	};
+	// Update-style re-push for paths that bypass React entirely (theme flips) —
+	// set by the sync effect.
+	repush: () => void;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -968,378 +969,378 @@ type LiveState = {
  * dependencies are `react`, `echarts`, and `motion`.
  */
 export function EChartsPieChart<TData extends Record<string, unknown>>({
-  data,
-  config,
-  dataKey,
-  nameKey,
-  className,
-  animation = true,
-  defaultSelectedSector = null,
-  selectedSector: selectedSectorProp,
-  onSelectionChange,
-  isLoading = false,
-  chartOptions,
-  children,
+	data,
+	config,
+	dataKey,
+	nameKey,
+	className,
+	animation = true,
+	defaultSelectedSector = null,
+	selectedSector: selectedSectorProp,
+	onSelectionChange,
+	isLoading = false,
+	chartOptions,
+	children,
 }: EChartsPieChartProps<TData>) {
-  const rawId = useId();
-  const chartId = `chart-${rawId.replace(/:/g, "")}`;
+	const rawId = useId();
+	const chartId = `chart-${rawId.replace(/:/g, "")}`;
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mountRef = useRef<HTMLDivElement>(null);
-  const echartsRef = useRef<EChartsInstance | null>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const mountRef = useRef<HTMLDivElement>(null);
+	const echartsRef = useRef<EChartsInstance | null>(null);
 
-  // NOTE: `resolved` lives in this ref rather than state — as state it would force
-  // an extra render pass plus an effect just to trigger the option push.
-  const live = useRef<LiveState>({
-    resolved: null,
-    borderColor: null,
-    hasRevealed: false,
-    handlers: {
-      isClickable: false,
-      selectedSector: defaultSelectedSector,
-      selectSector: () => {},
-    },
-    repush: () => {},
-  }).current;
+	// NOTE: `resolved` lives in this ref rather than state — as state it would force
+	// an extra render pass plus an effect just to trigger the option push.
+	const live = useRef<LiveState>({
+		resolved: null,
+		borderColor: null,
+		hasRevealed: false,
+		handlers: {
+			isClickable: false,
+			selectedSector: defaultSelectedSector,
+			selectSector: () => {},
+		},
+		repush: () => {},
+	}).current;
 
-  const shouldReduceMotion = useReducedMotion();
+	const shouldReduceMotion = useReducedMotion();
 
-  // Controlled when the `selectedSector` prop is provided; internal state (seeded
-  // by defaultSelectedSector) otherwise.
-  const [internalSelectedSector, setSelectedSector] = useState<string | null>(
-    defaultSelectedSector,
-  );
-  const selectedSector =
-    selectedSectorProp !== undefined
-      ? selectedSectorProp
-      : internalSelectedSector;
+	// Controlled when the `selectedSector` prop is provided; internal state (seeded
+	// by defaultSelectedSector) otherwise.
+	const [internalSelectedSector, setSelectedSector] = useState<string | null>(
+		defaultSelectedSector,
+	);
+	const selectedSector =
+		selectedSectorProp !== undefined
+			? selectedSectorProp
+			: internalSelectedSector;
 
-  // ── Declarative config, collected from children by reference ─────────────────
-  const collected = useMemo(() => collectConfig(children), [children]);
-  const {
-    pie,
-    tooltip: tooltipSlot,
-    legend: legendSlot,
-    background: backgroundSlot,
-  } = collected;
+	// ── Declarative config, collected from children by reference ─────────────────
+	const collected = useMemo(() => collectConfig(children), [children]);
+	const {
+		pie,
+		tooltip: tooltipSlot,
+		legend: legendSlot,
+		background: backgroundSlot,
+	} = collected;
 
-  // Sector names in data order — color resolution, legend, and click handler all
-  // agree on these keys; config is keyed by the same names.
-  const sectorKeys = useMemo(
-    () => data.map((row) => String(row[nameKey as string])),
-    [data, nameKey],
-  );
+	// Sector names in data order — color resolution, legend, and click handler all
+	// agree on these keys; config is keyed by the same names.
+	const sectorKeys = useMemo(
+		() => data.map((row) => String(row[nameKey as string])),
+		[data, nameKey],
+	);
 
-  const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
+	const css = useMemo(() => buildChartCss(chartId, config), [chartId, config]);
 
-  // Sets selection state and notifies the parent with the sector's value.
-  const selectSector = useCallback(
-    (name: string | null) => {
-      setSelectedSector(name);
-      if (name === null) {
-        onSelectionChange?.(null);
-        return;
-      }
-      const item = data.find((row) => String(row[nameKey as string]) === name);
-      onSelectionChange?.(
-        item
-          ? { dataKey: name, value: Number(item[dataKey as string]) || 0 }
-          : null,
-      );
-    },
-    [data, dataKey, nameKey, onSelectionChange],
-  );
+	// Sets selection state and notifies the parent with the sector's value.
+	const selectSector = useCallback(
+		(name: string | null) => {
+			setSelectedSector(name);
+			if (name === null) {
+				onSelectionChange?.(null);
+				return;
+			}
+			const item = data.find((row) => String(row[nameKey as string]) === name);
+			onSelectionChange?.(
+				item
+					? { dataKey: name, value: Number(item[dataKey as string]) || 0 }
+					: null,
+			);
+		},
+		[data, dataKey, nameKey, onSelectionChange],
+	);
 
-  // Refresh the click handler's snapshot of the latest callbacks/flags every render.
-  live.handlers = {
-    isClickable: pie?.isClickable ?? false,
-    selectedSector,
-    selectSector,
-  };
+	// Refresh the click handler's snapshot of the latest callbacks/flags every render.
+	live.handlers = {
+		isClickable: pie?.isClickable ?? false,
+		selectedSector,
+		selectSector,
+	};
 
-  // ── Option builder ───────────────────────────────────────────────────────────
-  // Snapshot the resolved colors into an OptionBuildContext, then assemble.
-  const buildOption = useCallback((): EChartsOption => {
-    const resolved = live.resolved;
-    if (!resolved) return {};
+	// ── Option builder ───────────────────────────────────────────────────────────
+	// Snapshot the resolved colors into an OptionBuildContext, then assemble.
+	const buildOption = useCallback((): EChartsOption => {
+		const resolved = live.resolved;
+		if (!resolved) return {};
 
-    const ctx: OptionBuildContext = {
-      data,
-      config,
-      nameKey: nameKey as string,
-      dataKey: dataKey as string,
-      pie,
-      selectedSector,
-      tooltipSlot,
-      legendSlot,
-      isLoading,
-      resolved,
-      borderColor: live.borderColor,
-    };
+		const ctx: OptionBuildContext = {
+			data,
+			config,
+			nameKey: nameKey as string,
+			dataKey: dataKey as string,
+			pie,
+			selectedSector,
+			tooltipSlot,
+			legendSlot,
+			isLoading,
+			resolved,
+			borderColor: live.borderColor,
+		};
 
-    if (isLoading) return buildLoadingOption(ctx);
+		if (isLoading) return buildLoadingOption(ctx);
 
-    return {
-      animation: false,
-      tooltip: buildTooltipOption(ctx),
-      series: buildPieSeries(ctx),
-    };
-  }, [
-    live,
-    data,
-    config,
-    nameKey,
-    dataKey,
-    pie,
-    selectedSector,
-    tooltipSlot,
-    legendSlot,
-    isLoading,
-  ]);
+		return {
+			animation: false,
+			tooltip: buildTooltipOption(ctx),
+			series: buildPieSeries(ctx),
+		};
+	}, [
+		live,
+		data,
+		config,
+		nameKey,
+		dataKey,
+		pie,
+		selectedSector,
+		tooltipSlot,
+		legendSlot,
+		isLoading,
+	]);
 
-  // ── Init + resize + theme observer (once) ────────────────────────────────────
-  useEffect(() => {
-    const mount = mountRef.current;
-    const container = containerRef.current;
-    if (!mount || !container) return;
+	// ── Init + resize + theme observer (once) ────────────────────────────────────
+	useEffect(() => {
+		const mount = mountRef.current;
+		const container = containerRef.current;
+		if (!mount || !container) return;
 
-    const chart = echarts.init(mount);
-    echartsRef.current = chart;
+		const chart = echarts.init(mount);
+		echartsRef.current = chart;
 
-    const resizeObserver = new ResizeObserver(() => {
-      // Observers fire once right after observe(); repushing on that no-op fire
-      // would stomp the intro reveal — only react to a real size change. The pie
-      // has no renderer-sized textures, so a plain resize() is all it needs.
-      if (
-        mount.clientWidth === chart.getWidth() &&
-        mount.clientHeight === chart.getHeight()
-      ) {
-        return;
-      }
-      chart.resize();
-    });
-    resizeObserver.observe(mount);
+		const resizeObserver = new ResizeObserver(() => {
+			// Observers fire once right after observe(); repushing on that no-op fire
+			// would stomp the intro reveal — only react to a real size change. The pie
+			// has no renderer-sized textures, so a plain resize() is all it needs.
+			if (
+				mount.clientWidth === chart.getWidth() &&
+				mount.clientHeight === chart.getHeight()
+			) {
+				return;
+			}
+			chart.resize();
+		});
+		resizeObserver.observe(mount);
 
-    // Light/dark flips change no React state — re-resolve and push directly.
-    const themeObserver = new MutationObserver(() => {
-      live.repush();
-    });
-    themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
+		// Light/dark flips change no React state — re-resolve and push directly.
+		const themeObserver = new MutationObserver(() => {
+			live.repush();
+		});
+		themeObserver.observe(document.documentElement, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
 
-    chart.on("click", (params) => {
-      const {
-        isClickable,
-        selectedSector: selected,
-        selectSector: select,
-      } = live.handlers;
-      if (!isClickable) return;
-      const p = params as { name?: string; seriesId?: string };
-      // Ignore the loading skeleton's `__`-prefixed series.
-      if (String(p.seriesId ?? "").startsWith("__")) return;
-      const name = p.name;
-      if (typeof name !== "string") return;
-      // Clicking the selected sector clears the selection, otherwise selects it.
-      select(selected === name ? null : name);
-    });
+		chart.on("click", (params) => {
+			const {
+				isClickable,
+				selectedSector: selected,
+				selectSector: select,
+			} = live.handlers;
+			if (!isClickable) return;
+			const p = params as { name?: string; seriesId?: string };
+			// Ignore the loading skeleton's `__`-prefixed series.
+			if (String(p.seriesId ?? "").startsWith("__")) return;
+			const name = p.name;
+			if (typeof name !== "string") return;
+			// Clicking the selected sector clears the selection, otherwise selects it.
+			select(selected === name ? null : name);
+		});
 
-    return () => {
-      resizeObserver.disconnect();
-      themeObserver.disconnect();
-      chart.dispose();
-      echartsRef.current = null;
-      // NOTE: the reveal guard belongs to the chart instance — without this reset,
-      // StrictMode's dev remount would skip the entrance on the surviving instance.
-      live.hasRevealed = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+		return () => {
+			resizeObserver.disconnect();
+			themeObserver.disconnect();
+			chart.dispose();
+			echartsRef.current = null;
+			// NOTE: the reveal guard belongs to the chart instance — without this reset,
+			// StrictMode's dev remount would skip the entrance on the surviving instance.
+			live.hasRevealed = false;
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
-  // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
-  useEffect(() => {
-    const chart = echartsRef.current;
-    const container = containerRef.current;
-    if (!chart || !container) return;
+	// ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
+	useEffect(() => {
+		const chart = echartsRef.current;
+		const container = containerRef.current;
+		if (!chart || !container) return;
 
-    // Colors come from the <style> committed just before this effect — read them
-    // here, right before the push, rather than round-tripping through state.
-    live.resolved = resolveColors(container, config, sectorKeys);
-    live.borderColor = resolveBorderColor(
-      pie,
-      container,
-      live.resolved.tokens.background,
-    );
+		// Colors come from the <style> committed just before this effect — read them
+		// here, right before the push, rather than round-tripping through state.
+		live.resolved = resolveColors(container, config, sectorKeys);
+		live.borderColor = resolveBorderColor(
+			pie,
+			container,
+			live.resolved.tokens.background,
+		);
 
-    const push = (withEntrance: boolean) => {
-      const option = buildOption();
-      const merged = chartOptions ? { ...option, ...chartOptions } : option;
-      Object.assign(merged, {
-        animation: withEntrance,
-        animationDuration: REVEAL_DURATION,
-        animationDurationUpdate: 0,
-      });
-      // chartOptions is untyped — the spread erases the option's shape, so
-      // re-assert it. The only cast in the file.
-      chart.setOption(merged as EChartsOption, { notMerge: true });
-    };
+		const push = (withEntrance: boolean) => {
+			const option = buildOption();
+			const merged = chartOptions ? { ...option, ...chartOptions } : option;
+			Object.assign(merged, {
+				animation: withEntrance,
+				animationDuration: REVEAL_DURATION,
+				animationDurationUpdate: 0,
+			});
+			// chartOptions is untyped — the spread erases the option's shape, so
+			// re-assert it. The only cast in the file.
+			chart.setOption(merged as EChartsOption, { notMerge: true });
+		};
 
-    // Intro reveal — native pie expansion, first real render only: every later
-    // push (selection, theme) must apply instantly or notMerge would replay it.
-    // A loading cycle re-arms it, matching the Recharts twin's remount-and-replay.
-    if (isLoading) live.hasRevealed = false;
-    const shouldReveal = !live.hasRevealed && !isLoading;
-    if (shouldReveal) live.hasRevealed = true;
-    const revealEnabled = animation && shouldReveal && !shouldReduceMotion;
-    push(revealEnabled);
+		// Intro reveal — native pie expansion, first real render only: every later
+		// push (selection, theme) must apply instantly or notMerge would replay it.
+		// A loading cycle re-arms it, matching the Recharts twin's remount-and-replay.
+		if (isLoading) live.hasRevealed = false;
+		const shouldReveal = !live.hasRevealed && !isLoading;
+		if (shouldReveal) live.hasRevealed = true;
+		const revealEnabled = animation && shouldReveal && !shouldReduceMotion;
+		push(revealEnabled);
 
-    // Theme flips re-enter here without touching React: re-read the tokens (the
-    // .dark class changed) and push an update-style option.
-    live.repush = () => {
-      live.resolved = resolveColors(container, config, sectorKeys);
-      live.borderColor = resolveBorderColor(
-        pie,
-        container,
-        live.resolved.tokens.background,
-      );
-      push(false);
-    };
-  }, [
-    live,
-    buildOption,
-    chartOptions,
-    isLoading,
-    animation,
-    shouldReduceMotion,
-    config,
-    sectorKeys,
-    pie,
-  ]);
+		// Theme flips re-enter here without touching React: re-read the tokens (the
+		// .dark class changed) and push an update-style option.
+		live.repush = () => {
+			live.resolved = resolveColors(container, config, sectorKeys);
+			live.borderColor = resolveBorderColor(
+				pie,
+				container,
+				live.resolved.tokens.background,
+			);
+			push(false);
+		};
+	}, [
+		live,
+		buildOption,
+		chartOptions,
+		isLoading,
+		animation,
+		shouldReduceMotion,
+		config,
+		sectorKeys,
+		pie,
+	]);
 
-  // ── Default tooltip index — show a sector's tooltip with no hover ─────────────
-  useEffect(() => {
-    const chart = echartsRef.current;
-    if (
-      !chart ||
-      isLoading ||
-      !tooltipSlot.present ||
-      tooltipSlot.defaultIndex == null
-    )
-      return;
-    // Dispatch after paint so the sector geometry exists to anchor the tooltip.
-    const raf = requestAnimationFrame(() => {
-      chart.dispatchAction({
-        type: "showTip",
-        seriesIndex: 0,
-        dataIndex: tooltipSlot.defaultIndex,
-      });
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [isLoading, tooltipSlot.present, tooltipSlot.defaultIndex]);
+	// ── Default tooltip index — show a sector's tooltip with no hover ─────────────
+	useEffect(() => {
+		const chart = echartsRef.current;
+		if (
+			!chart ||
+			isLoading ||
+			!tooltipSlot.present ||
+			tooltipSlot.defaultIndex == null
+		)
+			return;
+		// Dispatch after paint so the sector geometry exists to anchor the tooltip.
+		const raf = requestAnimationFrame(() => {
+			chart.dispatchAction({
+				type: "showTip",
+				seriesIndex: 0,
+				dataIndex: tooltipSlot.defaultIndex,
+			});
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [isLoading, tooltipSlot.present, tooltipSlot.defaultIndex]);
 
-  // ── Loading shimmer — rAF sweeps a bright window around the ring ──────────────
-  useEffect(() => {
-    const chart = echartsRef.current;
-    if (!chart || !isLoading) return;
+	// ── Loading shimmer — rAF sweeps a bright window around the ring ──────────────
+	useEffect(() => {
+		const chart = echartsRef.current;
+		if (!chart || !isLoading) return;
 
-    const cornerRadius = pie?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
-    const paddingAngle = pie?.paddingAngle ?? DEFAULT_PADDING_ANGLE;
+		const cornerRadius = pie?.cornerRadius ?? DEFAULT_CORNER_RADIUS;
+		const paddingAngle = pie?.paddingAngle ?? DEFAULT_PADDING_ANGLE;
 
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const phase =
-        ((((now - start) / LOADING_ANIMATION_DURATION) % 1) + 1) % 1;
-      // Read tokens per frame so a theme flip mid-loading retints the shimmer.
-      const foreground = live.resolved?.tokens.foreground ?? FALLBACK_COLOR;
-      const background = live.resolved?.tokens.background ?? FALLBACK_COLOR;
+		let raf = 0;
+		const start = performance.now();
+		const tick = (now: number) => {
+			const phase =
+				((((now - start) / LOADING_ANIMATION_DURATION) % 1) + 1) % 1;
+			// Read tokens per frame so a theme flip mid-loading retints the shimmer.
+			const foreground = live.resolved?.tokens.foreground ?? FALLBACK_COLOR;
+			const background = live.resolved?.tokens.background ?? FALLBACK_COLOR;
 
-      // Rebuild full itemStyle per sector — setOption replaces a series' data
-      // array wholesale, so a partial datum would drop the border/rounding.
-      const border = sectorBorder(paddingAngle, background);
-      const sectors = Array.from({ length: LOADING_SECTORS }, (_, i) => {
-        const pos = (i + 0.5) / LOADING_SECTORS;
-        const itemStyle: PieItemStyle = {
-          color: withAlpha(foreground, loadingSectorAlpha(pos, phase)),
-          opacity: 1,
-          borderRadius: cornerRadius,
-        };
-        if (border) {
-          itemStyle.borderColor = border.borderColor;
-          itemStyle.borderWidth = border.borderWidth;
-        }
-        return { value: 1, itemStyle };
-      });
+			// Rebuild full itemStyle per sector — setOption replaces a series' data
+			// array wholesale, so a partial datum would drop the border/rounding.
+			const border = sectorBorder(paddingAngle, background);
+			const sectors = Array.from({ length: LOADING_SECTORS }, (_, i) => {
+				const pos = (i + 0.5) / LOADING_SECTORS;
+				const itemStyle: PieItemStyle = {
+					color: withAlpha(foreground, loadingSectorAlpha(pos, phase)),
+					opacity: 1,
+					borderRadius: cornerRadius,
+				};
+				if (border) {
+					itemStyle.borderColor = border.borderColor;
+					itemStyle.borderWidth = border.borderWidth;
+				}
+				return { value: 1, itemStyle };
+			});
 
-      chart.setOption(
-        { series: [{ id: "__loading", data: sectors }] },
-        { silent: true, lazyUpdate: true },
-      );
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [live, isLoading, pie]);
+			chart.setOption(
+				{ series: [{ id: "__loading", data: sectors }] },
+				{ silent: true, lazyUpdate: true },
+			);
+			raf = requestAnimationFrame(tick);
+		};
+		raf = requestAnimationFrame(tick);
+		return () => cancelAnimationFrame(raf);
+	}, [live, isLoading, pie]);
 
-  // ── Legend overlay position ──────────────────────────────────────────────────
-  const legendStyle: CSSProperties = {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    pointerEvents: "auto",
-    ...(legendSlot.verticalAlign === "top"
-      ? { top: 12 }
-      : legendSlot.verticalAlign === "bottom"
-        ? { bottom: 12 }
-        : { top: "50%", transform: "translateY(-50%)" }),
-  };
+	// ── Legend overlay position ──────────────────────────────────────────────────
+	const legendStyle: CSSProperties = {
+		position: "absolute",
+		left: 16,
+		right: 16,
+		pointerEvents: "auto",
+		...(legendSlot.verticalAlign === "top"
+			? { top: 12 }
+			: legendSlot.verticalAlign === "bottom"
+				? { bottom: 12 }
+				: { top: "50%", transform: "translateY(-50%)" }),
+	};
 
-  return (
-    <div
-      ref={containerRef}
-      data-chart={chartId}
-      className={`relative flex flex-col text-xs ${className ?? ""}`}
-    >
-      <style dangerouslySetInnerHTML={{ __html: css }} />
+	return (
+		<div
+			ref={containerRef}
+			data-chart={chartId}
+			className={`relative flex flex-col text-xs ${className ?? ""}`}
+		>
+			<style dangerouslySetInnerHTML={{ __html: css }} />
 
-      <div className="relative min-h-0 w-full flex-1">
-        {backgroundSlot.present && !isLoading && (
-          <BackgroundLayer variant={backgroundSlot.variant} />
-        )}
-        <div ref={mountRef} className="relative h-full min-h-0 w-full" />
-      </div>
+			<div className="relative min-h-0 w-full flex-1">
+				{backgroundSlot.present && !isLoading && (
+					<BackgroundLayer variant={backgroundSlot.variant} />
+				)}
+				<div ref={mountRef} className="relative h-full min-h-0 w-full" />
+			</div>
 
-      {legendSlot.present && !isLoading && (
-        <LegendOverlay
-          seriesKeys={sectorKeys}
-          config={config}
-          variant={legendSlot.variant}
-          align={legendSlot.align}
-          verticalAlign={legendSlot.verticalAlign}
-          selectedKey={selectedSector}
-          hoveredKey={null}
-          isClickable={legendSlot.isClickable}
-          onToggle={(key) => selectSector(selectedSector === key ? null : key)}
-          style={legendStyle}
-        />
-      )}
+			{legendSlot.present && !isLoading && (
+				<LegendOverlay
+					seriesKeys={sectorKeys}
+					config={config}
+					variant={legendSlot.variant}
+					align={legendSlot.align}
+					verticalAlign={legendSlot.verticalAlign}
+					selectedKey={selectedSector}
+					hoveredKey={null}
+					isClickable={legendSlot.isClickable}
+					onToggle={(key) => selectSector(selectedSector === key ? null : key)}
+					style={legendStyle}
+				/>
+			)}
 
-      {isLoading && (
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-          <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
-          >
-            <div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
-            <span>Loading</span>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
+			{isLoading && (
+				<div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+					<motion.div
+						initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
+						animate={{ opacity: 1, scale: 1 }}
+						transition={{ duration: 0.25, ease: "easeOut" }}
+						className="text-primary bg-background flex items-center justify-center gap-2 rounded-md border px-2 py-0.5 text-sm"
+					>
+						<div className="border-border border-t-primary h-3 w-3 animate-spin rounded-full border" />
+						<span>Loading</span>
+					</motion.div>
+				</div>
+			)}
+		</div>
+	);
 }
 
 // Compound API: parts hang off the root as static members, so a consumer writes

@@ -9,11 +9,11 @@
  */
 
 import type {
-  CloAttainmentDatum,
-  CohortTrendDatum,
-  PeoAttainmentDatum,
-  PloAttainmentDatum,
-  ScoreBandDatum,
+	CloAttainmentDatum,
+	CohortTrendDatum,
+	PeoAttainmentDatum,
+	PloAttainmentDatum,
+	ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
@@ -24,42 +24,42 @@ const COHORT_TRACKING = "/rollup/cohort-tracking";
 
 /** Payload subset of `GET /rollup/clo-attainment-summary/:id` (`rollup/model.ts`). */
 interface CloSummaryPayload {
-  rows: {
-    cloCode: string;
-    cloDescription: string;
-    weightedAvgPct: number;
-    status: "MET" | "NOT MET";
-  }[];
+	rows: {
+		cloCode: string;
+		cloDescription: string;
+		weightedAvgPct: number;
+		status: "MET" | "NOT MET";
+	}[];
 }
 
 /** Payload subset of `GET /rollup/plo-attainment-summary/:id` (`rollup/model.ts`). */
 interface PloSummaryPayload {
-  plos: {
-    ploCode: string;
-    ploDescription: string;
-    targetAttainmentPct: number;
-    attainedPct: number;
-    studentsBelowTargetCount: number;
-  }[];
+	plos: {
+		ploCode: string;
+		ploDescription: string;
+		targetAttainmentPct: number;
+		attainedPct: number;
+		studentsBelowTargetCount: number;
+	}[];
 }
 
 /** Payload subset of `GET /rollup/cohort-tracking/:id` (`rollup/model.ts`). */
 interface CohortPayload {
-  lines: {
-    yearLevel: number | null;
-    terms: {
-      schoolYear: string;
-      semester: string;
-      averagePct: number | null;
-    }[];
-  }[];
+	lines: {
+		yearLevel: number | null;
+		terms: {
+			schoolYear: string;
+			semester: string;
+			averagePct: number | null;
+		}[];
+	}[];
 }
 
 /** `"2025-2026" + "1"` → `"2025-2026-1"`; a named semester keeps its text. */
 function termLabel(schoolYear: string, semester: string): string {
-  return /^[12]$/.test(semester)
-    ? `${schoolYear}-${semester}`
-    : `${schoolYear} ${semester}`;
+	return /^[12]$/.test(semester)
+		? `${schoolYear}-${semester}`
+		: `${schoolYear} ${semester}`;
 }
 
 /**
@@ -72,43 +72,43 @@ function termLabel(schoolYear: string, semester: string): string {
  * exposes them.
  */
 export const {
-  dataAtom: cloAttainmentsDataAtom,
-  stateAtom: cloAttainmentsStateAtom,
-  refreshAtom: refreshCloAttainmentsAtom,
+	dataAtom: cloAttainmentsDataAtom,
+	stateAtom: cloAttainmentsStateAtom,
+	refreshAtom: refreshCloAttainmentsAtom,
 } = atomWithAsyncData<CloAttainmentDatum[]>([], (_get, signal) =>
-  fetchLatestPayload<CloSummaryPayload>(
-    CLO_SUMMARY,
-    (id) => `${CLO_SUMMARY}/${id}`,
-    signal,
-  ).then((payload) =>
-    (payload?.rows ?? []).map((row) => ({
-      cloCode: row.cloCode,
-      cloDescription: row.cloDescription,
-      compositeScorePct: row.weightedAvgPct,
-      isBelowThreshold: row.status === "NOT MET",
-    })),
-  ),
+	fetchLatestPayload<CloSummaryPayload>(
+		CLO_SUMMARY,
+		(id) => `${CLO_SUMMARY}/${id}`,
+		signal,
+	).then((payload) =>
+		(payload?.rows ?? []).map((row) => ({
+			cloCode: row.cloCode,
+			cloDescription: row.cloDescription,
+			compositeScorePct: row.weightedAvgPct,
+			isBelowThreshold: row.status === "NOT MET",
+		})),
+	),
 );
 
 /** Per-PLO attainment vs target for the newest PLO summary submission. */
 export const {
-  dataAtom: ploAttainmentsDataAtom,
-  stateAtom: ploAttainmentsStateAtom,
-  refreshAtom: refreshPloAttainmentsAtom,
+	dataAtom: ploAttainmentsDataAtom,
+	stateAtom: ploAttainmentsStateAtom,
+	refreshAtom: refreshPloAttainmentsAtom,
 } = atomWithAsyncData<PloAttainmentDatum[]>([], (_get, signal) =>
-  fetchLatestPayload<PloSummaryPayload>(
-    PLO_SUMMARY,
-    (id) => `${PLO_SUMMARY}/${id}`,
-    signal,
-  ).then((payload) =>
-    (payload?.plos ?? []).map((plo) => ({
-      ploCode: plo.ploCode,
-      description: plo.ploDescription,
-      attainedPct: plo.attainedPct,
-      targetAttainmentPct: plo.targetAttainmentPct,
-      studentsBelowTargetCount: plo.studentsBelowTargetCount,
-    })),
-  ),
+	fetchLatestPayload<PloSummaryPayload>(
+		PLO_SUMMARY,
+		(id) => `${PLO_SUMMARY}/${id}`,
+		signal,
+	).then((payload) =>
+		(payload?.plos ?? []).map((plo) => ({
+			ploCode: plo.ploCode,
+			description: plo.ploDescription,
+			attainedPct: plo.attainedPct,
+			targetAttainmentPct: plo.targetAttainmentPct,
+			studentsBelowTargetCount: plo.studentsBelowTargetCount,
+		})),
+	),
 );
 
 /**
@@ -117,31 +117,31 @@ export const {
  * flattened to the chart's `term × cohort` rows here.
  */
 export const {
-  dataAtom: cohortTrendsDataAtom,
-  stateAtom: cohortTrendsStateAtom,
-  refreshAtom: refreshCohortTrendsAtom,
+	dataAtom: cohortTrendsDataAtom,
+	stateAtom: cohortTrendsStateAtom,
+	refreshAtom: refreshCohortTrendsAtom,
 } = atomWithAsyncData<CohortTrendDatum[]>([], (_get, signal) =>
-  fetchLatestPayload<CohortPayload>(
-    COHORT_TRACKING,
-    (id) => `${COHORT_TRACKING}/${id}`,
-    signal,
-  ).then((payload) => {
-    const rows: CohortTrendDatum[] = [];
-    for (const line of payload?.lines ?? []) {
-      // The chart's series are fixed to Y1–Y4; an unattributed cohort has no lane.
-      if (line.yearLevel === null) continue;
-      const cohort = `Y${line.yearLevel}`;
-      for (const term of line.terms) {
-        if (term.averagePct === null) continue;
-        rows.push({
-          term: termLabel(term.schoolYear, term.semester),
-          cohort,
-          compositeScorePct: term.averagePct,
-        });
-      }
-    }
-    return rows;
-  }),
+	fetchLatestPayload<CohortPayload>(
+		COHORT_TRACKING,
+		(id) => `${COHORT_TRACKING}/${id}`,
+		signal,
+	).then((payload) => {
+		const rows: CohortTrendDatum[] = [];
+		for (const line of payload?.lines ?? []) {
+			// The chart's series are fixed to Y1–Y4; an unattributed cohort has no lane.
+			if (line.yearLevel === null) continue;
+			const cohort = `Y${line.yearLevel}`;
+			for (const term of line.terms) {
+				if (term.averagePct === null) continue;
+				rows.push({
+					term: termLabel(term.schoolYear, term.semester),
+					cohort,
+					compositeScorePct: term.averagePct,
+				});
+			}
+		}
+		return rows;
+	}),
 );
 
 /**
@@ -149,8 +149,8 @@ export const {
  * into bands yet (`NO_ENDPOINT`), so the chart renders its empty state.
  */
 export const {
-  dataAtom: scoreBandsDataAtom,
-  refreshAtom: refreshScoreBandsAtom,
+	dataAtom: scoreBandsDataAtom,
+	refreshAtom: refreshScoreBandsAtom,
 } = atomWithMockData<ScoreBandDatum[]>([]);
 
 /**
@@ -158,6 +158,6 @@ export const {
  * not exposed by any route yet, so the chart renders its empty state.
  */
 export const {
-  dataAtom: peoAttainmentsDataAtom,
-  refreshAtom: refreshPeoAttainmentsAtom,
+	dataAtom: peoAttainmentsDataAtom,
+	refreshAtom: refreshPeoAttainmentsAtom,
 } = atomWithMockData<PeoAttainmentDatum[]>([]);

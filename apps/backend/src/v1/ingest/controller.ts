@@ -7,6 +7,7 @@ import {
 import { assertClassSectionInScope, unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
+
 import {
 	CloRawDataSubmissionSchema,
 	InitCloRawDataSchema,
@@ -311,11 +312,7 @@ export const ingestPlugin = new Elysia({
 		"/upload/:jobId/save",
 		async ({ params, body, user }) => {
 			await gateSection(user, body.classSectionId);
-			return ingestService.saveJob(
-				params.jobId,
-				body.classSectionId,
-				user.id,
-			);
+			return ingestService.saveJob(params.jobId, body.classSectionId, user.id);
 		},
 		{
 			auth: true,

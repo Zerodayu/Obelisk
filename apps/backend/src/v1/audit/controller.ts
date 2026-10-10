@@ -1,6 +1,7 @@
 import { RoleAccessForbiddenError } from "@lib/role-access";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
+
 import { AuditLogsQuerySchema } from "./model";
 import { AuditQueryError, auditService } from "./service";
 

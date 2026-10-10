@@ -1,8 +1,10 @@
+import { generateTheme, tokensToCssVars, Variant } from "material-shadcn";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
-import Script from "next/script";
+
 import "./globals.css";
-import { generateTheme, tokensToCssVars, Variant } from "material-shadcn";
+import Script from "next/script";
+
 import { Theme } from "@/components/theme";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,13 +17,13 @@ import { env } from "@/utils/env";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+	variable: "--font-geist-sans",
+	subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+	variable: "--font-geist-mono",
+	subsets: ["latin"],
 });
 
 /**
@@ -34,19 +36,19 @@ const geistMono = Geist_Mono({
  * material-shadcn `<Theme>` provider re-applies identical values (idempotent).
  */
 const theme = generateTheme({
-  seed: "#5a1f4c",
-  variant: Variant.VIBRANT,
-  contrast: 0,
+	seed: "#5a1f4c",
+	variant: Variant.VIBRANT,
+	contrast: 0,
 });
 
 const LIGHT_VARS = tokensToCssVars(theme.light);
 const DARK_VARS = tokensToCssVars(theme.dark);
 
 function varsToCss(selector: string, vars: Record<string, string>): string {
-  const body = Object.entries(vars)
-    .map(([key, value]) => `${key}:${value};`)
-    .join("");
-  return `${selector}{${body}}`;
+	const body = Object.entries(vars)
+		.map(([key, value]) => `${key}:${value};`)
+		.join("");
+	return `${selector}{${body}}`;
 }
 
 // `html:root` / `html.dark` out-specify globals.css's `:root` / `.dark` (both
@@ -86,8 +88,8 @@ const THEME_INIT_SCRIPT = `(function () {
 })();`;
 
 export const metadata: Metadata = {
-  title: app.legalTitle,
-  description: app.description,
+	title: app.legalTitle,
+	description: app.description,
 };
 
 /**
@@ -98,64 +100,64 @@ export const metadata: Metadata = {
  * Unset/empty ⇒ no script, so dev builds and key-less deploys ship none.
  */
 function UmamiTracker() {
-  const domain = env.NEXT_PUBLIC_UMAMI_DOMAIN;
-  const websiteId = env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
-  if (!domain || !websiteId) {
-    return null;
-  }
-  // NOTE: afterInteractive is Next's documented strategy for analytics — the
-  // dashboard on domain stays admin-only at the Caddy layer, the tracker
-  // endpoints (/script.js, /api/send) answer every visitor
-  return (
-    <Script
-      src={`https://${domain}/script.js`}
-      strategy="afterInteractive"
-      data-website-id={websiteId}
-    />
-  );
+	const domain = env.NEXT_PUBLIC_UMAMI_DOMAIN;
+	const websiteId = env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+	if (!domain || !websiteId) {
+		return null;
+	}
+	// NOTE: afterInteractive is Next's documented strategy for analytics — the
+	// dashboard on domain stays admin-only at the Caddy layer, the tracker
+	// endpoints (/script.js, /api/send) answer every visitor
+	return (
+		<Script
+			src={`https://${domain}/script.js`}
+			strategy="afterInteractive"
+			data-website-id={websiteId}
+		/>
+	);
 }
 
 export default function RootLayout({
-  children,
+	children,
 }: Readonly<{
-  children: React.ReactNode;
+	children: React.ReactNode;
 }>) {
-  return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn(
-        "h-full",
-        "antialiased",
-        geistSans.variable,
-        geistMono.variable,
-        "font-sans",
-        inter.variable,
-      )}
-    >
-      <head>
-        {/* Themed tokens for both modes, present in the first HTML paint. */}
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static generated CSS vars, no user input */}
-        <style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
-        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme-init script, no user input */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-      </head>
-      <Theme
-        seed="#5a1f4c"
-        variant={Variant.VIBRANT}
-        colorMode="system"
-        storageKey={THEME_STORAGE_KEY}
-      >
-        <StoreProvider>
-          <TooltipProvider>
-            <body className="min-h-full flex flex-col">
-              <UmamiTracker />
-              <Toaster />
-              {children}
-            </body>
-          </TooltipProvider>
-        </StoreProvider>
-      </Theme>
-    </html>
-  );
+	return (
+		<html
+			lang="en"
+			suppressHydrationWarning
+			className={cn(
+				"h-full",
+				"antialiased",
+				geistSans.variable,
+				geistMono.variable,
+				"font-sans",
+				inter.variable,
+			)}
+		>
+			<head>
+				{/* Themed tokens for both modes, present in the first HTML paint. */}
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: static generated CSS vars, no user input */}
+				<style dangerouslySetInnerHTML={{ __html: THEME_CSS }} />
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: static theme-init script, no user input */}
+				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+			</head>
+			<Theme
+				seed="#5a1f4c"
+				variant={Variant.VIBRANT}
+				colorMode="system"
+				storageKey={THEME_STORAGE_KEY}
+			>
+				<StoreProvider>
+					<TooltipProvider>
+						<body className="flex min-h-full flex-col">
+							<UmamiTracker />
+							<Toaster />
+							{children}
+						</body>
+					</TooltipProvider>
+				</StoreProvider>
+			</Theme>
+		</html>
+	);
 }

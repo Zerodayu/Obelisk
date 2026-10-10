@@ -6,6 +6,7 @@ import { env } from "@utils/env";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import type { OpenAPIV3 } from "openapi-types";
+
 import { apiRoutesV1 } from "./routes";
 import { OpenAPI } from "./v1/auth/controller";
 import { auth } from "./v1/auth/service";

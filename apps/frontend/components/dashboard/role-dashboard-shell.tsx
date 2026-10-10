@@ -13,88 +13,88 @@ import { AiSuggestionsDrawer } from "@/components/dashboard/ai-suggestions-drawe
  */
 
 export interface StatCard {
-  label: string;
-  value: string;
-  hint?: string;
-  tone?: "default" | "warn" | "danger" | "ok";
+	label: string;
+	value: string;
+	hint?: string;
+	tone?: "default" | "warn" | "danger" | "ok";
 }
 
 const toneClasses: Record<NonNullable<StatCard["tone"]>, string> = {
-  default: "bg-card",
-  warn: "bg-card border-amber-500/40",
-  danger: "bg-card border-red-500/50",
-  ok: "bg-card border-emerald-500/40",
+	default: "bg-card",
+	warn: "bg-card border-amber-500/40",
+	danger: "bg-card border-red-500/50",
+	ok: "bg-card border-emerald-500/40",
 };
 
 export function DashboardShell({
-  title,
-  scopeLabel,
-  description,
-  stats,
-  children,
+	title,
+	scopeLabel,
+	description,
+	stats,
+	children,
 }: {
-  title: string;
-  scopeLabel?: string;
-  description?: string;
-  stats?: StatCard[];
-  children?: React.ReactNode;
+	title: string;
+	scopeLabel?: string;
+	description?: string;
+	stats?: StatCard[];
+	children?: React.ReactNode;
 }) {
-  return (
-    <div className="px-4 lg:px-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
-            {scopeLabel ? (
-              <span className="rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                {scopeLabel}
-              </span>
-            ) : null}
-          </div>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
+	return (
+		<div className="space-y-6 px-4 lg:px-6">
+			<div className="flex items-center justify-between">
+				<div className="space-y-1">
+					<div className="flex flex-wrap items-center gap-2">
+						<h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+						{scopeLabel ? (
+							<span className="border-border bg-muted text-muted-foreground rounded-full border px-2.5 py-0.5 text-xs font-medium">
+								{scopeLabel}
+							</span>
+						) : null}
+					</div>
+					{description ? (
+						<p className="text-muted-foreground text-sm">{description}</p>
+					) : null}
+				</div>
 
-        <div className="flex">
-          <AiSuggestionsDrawer />
-        </div>
-      </div>
+				<div className="flex">
+					<AiSuggestionsDrawer />
+				</div>
+			</div>
 
-      {stats && stats.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className={`rounded-xl border p-4 shadow-sm ${toneClasses[stat.tone ?? "default"]}`}
-            >
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
-              <p className="mt-1 text-2xl font-semibold tabular-nums">
-                {stat.value}
-              </p>
-              {stat.hint ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {stat.hint}
-                </p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
+			{stats && stats.length > 0 ? (
+				<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+					{stats.map((stat) => (
+						<div
+							key={stat.label}
+							className={`rounded-xl border p-4 shadow-sm ${toneClasses[stat.tone ?? "default"]}`}
+						>
+							<p className="text-muted-foreground text-xs">{stat.label}</p>
+							<p className="mt-1 text-2xl font-semibold tabular-nums">
+								{stat.value}
+							</p>
+							{stat.hint ? (
+								<p className="text-muted-foreground mt-1 text-xs">
+									{stat.hint}
+								</p>
+							) : null}
+						</div>
+					))}
+				</div>
+			) : null}
 
-      {children}
-    </div>
-  );
+			{children}
+		</div>
+	);
 }
 
 /** Placeholder block explaining that data is server-wired but not yet available. */
 export function PendingSection({ label }: { label: string }) {
-  return (
-    <section className="rounded-xl border border-dashed bg-muted/40 p-8 text-center">
-      <p className="text-sm font-medium">{label}</p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        Wired to the backend API client; renders once the rollup endpoint lands.
-      </p>
-    </section>
-  );
+	return (
+		<section className="bg-muted/40 rounded-xl border border-dashed p-8 text-center">
+			<p className="text-sm font-medium">{label}</p>
+			<p className="text-muted-foreground mt-1 text-xs">
+				Wired to the backend API client; renders once the rollup endpoint lands.
+			</p>
+		</section>
+	);
 }

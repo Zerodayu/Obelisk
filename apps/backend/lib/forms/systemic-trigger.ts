@@ -47,9 +47,13 @@ export interface SystemicTriggerReport {
 export function findSystemicTriggers(
 	snapshots: readonly CohortPloSnapshot[],
 ): SystemicTriggerReport {
-	const byCycle = new Map<string, readonly { ploCode: string; achieved: boolean }[]>();
+	const byCycle = new Map<
+		string,
+		readonly { ploCode: string; achieved: boolean }[]
+	>();
 	for (const snapshot of snapshots) {
-		if (!byCycle.has(snapshot.cycle)) byCycle.set(snapshot.cycle, snapshot.plos);
+		if (!byCycle.has(snapshot.cycle))
+			byCycle.set(snapshot.cycle, snapshot.plos);
 	}
 	const cycles = [...byCycle.values()].filter((plos) => plos.length > 0);
 	if (cycles.length === 0) return { cycles: 0, maxRun: 0, ploCodes: [] };

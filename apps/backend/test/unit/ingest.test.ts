@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+
 import { normalizeName, parseStudentName } from "@lib/ingest/name-utils";
 
 describe("parseStudentName", () => {

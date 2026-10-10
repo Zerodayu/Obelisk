@@ -16,52 +16,52 @@ import { env } from "@/utils/env";
 // one (Docker Compose sets API_INTERNAL_URL on the container); the browser
 // compiles that key to undefined and falls back to the baked public URL.
 export const API_BASE_URL =
-  env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+	env.API_INTERNAL_URL ?? env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export const API_ROOT = `${API_BASE_URL}/api/v1`;
 
 /** mirrors the backend `user` model (better-auth + institutional extensions). */
 export interface ApiUser {
-  id: string;
-  name: string;
-  email: string;
-  emailVerified: boolean;
-  image?: string | null;
-  role: UserRole;
-  /** role the user applied for via `/onboarding`; absent until one is filed. */
-  requestedRole?: UserRole | null;
-  roleRequestStatus: "none" | "pending" | "approved" | "denied";
-  employeeId?: string | null;
-  programId?: string | null;
-  departmentId?: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+	id: string;
+	name: string;
+	email: string;
+	emailVerified: boolean;
+	image?: string | null;
+	role: UserRole;
+	/** role the user applied for via `/onboarding`; absent until one is filed. */
+	requestedRole?: UserRole | null;
+	roleRequestStatus: "none" | "pending" | "approved" | "denied";
+	employeeId?: string | null;
+	programId?: string | null;
+	departmentId?: string | null;
+	isActive: boolean;
+	createdAt: string;
+	updatedAt: string;
 }
 
 /** mirrors `better-auth` Session. */
 export interface ApiSession {
-  id: string;
-  userId: string;
-  expiresAt: string;
-  createdAt: string;
-  updatedAt: string;
-  ipAddress?: string | null;
-  userAgent?: string | null;
+	id: string;
+	userId: string;
+	expiresAt: string;
+	createdAt: string;
+	updatedAt: string;
+	ipAddress?: string | null;
+	userAgent?: string | null;
 }
 
 /** `GET /auth/me` response shape. */
 export interface MeResponse {
-  user: ApiUser;
-  session: ApiSession;
+	user: ApiUser;
+	session: ApiSession;
 }
 
 export interface ApiErrorPayload {
-  error?: string;
-  message?: string;
-  /** structured python-server error type, when applicable (ingest). */
-  error_type?: string;
-  details?: unknown;
+	error?: string;
+	message?: string;
+	/** structured python-server error type, when applicable (ingest). */
+	error_type?: string;
+	details?: unknown;
 }
 
 /**
@@ -69,84 +69,84 @@ export interface ApiErrorPayload {
  * `undefined` for network errors.
  */
 export class ApiError extends Error {
-  readonly status?: number;
-  readonly payload?: ApiErrorPayload;
+	readonly status?: number;
+	readonly payload?: ApiErrorPayload;
 
-  constructor(
-    message: string,
-    opts: { status?: number; payload?: ApiErrorPayload } = {},
-  ) {
-    super(message);
-    this.name = "ApiError";
-    this.status = opts.status;
-    this.payload = opts.payload;
-  }
+	constructor(
+		message: string,
+		opts: { status?: number; payload?: ApiErrorPayload } = {},
+	) {
+		super(message);
+		this.name = "ApiError";
+		this.status = opts.status;
+		this.payload = opts.payload;
+	}
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
-  query?: Record<string, string | number | boolean | undefined | null>;
-  body?: unknown;
-  headers?: HeadersInit;
-  /**
-   * By default the client sends `credentials: "include"` (cookie auth).
-   * Set `credentials: false` for non-authenticated endpoints.
-   */
-  credentials?: boolean;
-  signal?: AbortSignal;
+	method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+	query?: Record<string, string | number | boolean | undefined | null>;
+	body?: unknown;
+	headers?: HeadersInit;
+	/**
+	 * By default the client sends `credentials: "include"` (cookie auth).
+	 * Set `credentials: false` for non-authenticated endpoints.
+	 */
+	credentials?: boolean;
+	signal?: AbortSignal;
 }
 
 /** browser-facing client — sends HTTP-only cookies automatically. */
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
-  const {
-    method = "GET",
-    query,
-    body,
-    headers,
-    credentials = true,
-    signal,
-  } = opts;
+	const {
+		method = "GET",
+		query,
+		body,
+		headers,
+		credentials = true,
+		signal,
+	} = opts;
 
-  const url = new URL(`${API_ROOT}${path}`);
-  if (query) {
-    for (const [key, value] of Object.entries(query)) {
-      if (value === undefined || value === null) continue;
-      url.searchParams.set(key, String(value));
-    }
-  }
+	const url = new URL(`${API_ROOT}${path}`);
+	if (query) {
+		for (const [key, value] of Object.entries(query)) {
+			if (value === undefined || value === null) continue;
+			url.searchParams.set(key, String(value));
+		}
+	}
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(headers ?? {}),
-      },
-      body: body === undefined ? undefined : JSON.stringify(body),
-      credentials: credentials ? "include" : "omit",
-      signal,
-      cache: "no-store",
-    });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    throw new ApiError(message, { status: undefined });
-  }
+	let res: Response;
+	try {
+		res = await fetch(url, {
+			method,
+			headers: {
+				"Content-Type": "application/json",
+				...(headers ?? {}),
+			},
+			body: body === undefined ? undefined : JSON.stringify(body),
+			credentials: credentials ? "include" : "omit",
+			signal,
+			cache: "no-store",
+		});
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		throw new ApiError(message, { status: undefined });
+	}
 
-  if (!res.ok) {
-    let payload: ApiErrorPayload | undefined;
-    try {
-      payload = (await res.json()) as ApiErrorPayload;
-    } catch {
-      payload = undefined;
-    }
-    const message =
-      payload?.message ?? payload?.error ?? `Request failed (${res.status})`;
-    throw new ApiError(message, { status: res.status, payload });
-  }
+	if (!res.ok) {
+		let payload: ApiErrorPayload | undefined;
+		try {
+			payload = (await res.json()) as ApiErrorPayload;
+		} catch {
+			payload = undefined;
+		}
+		const message =
+			payload?.message ?? payload?.error ?? `Request failed (${res.status})`;
+		throw new ApiError(message, { status: res.status, payload });
+	}
 
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+	if (res.status === 204) return undefined as T;
+	return (await res.json()) as T;
 }
 
 /**
@@ -154,82 +154,82 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
  * This is a special-purpose function that bypasses the JSON-stringifying `request` helper.
  */
 async function upload<T>(
-  path: string,
-  file: File,
-  fields: Record<string, string>,
-  opts: Omit<RequestOptions, "method" | "body" | "headers"> = {},
+	path: string,
+	file: File,
+	fields: Record<string, string>,
+	opts: Omit<RequestOptions, "method" | "body" | "headers"> = {},
 ): Promise<T> {
-  const { credentials = true, signal } = opts;
-  const url = new URL(`${API_ROOT}${path}`);
+	const { credentials = true, signal } = opts;
+	const url = new URL(`${API_ROOT}${path}`);
 
-  const formData = new FormData();
-  formData.append("file", file);
-  for (const [key, value] of Object.entries(fields)) {
-    formData.append(key, value);
-  }
+	const formData = new FormData();
+	formData.append("file", file);
+	for (const [key, value] of Object.entries(fields)) {
+		formData.append(key, value);
+	}
 
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: "POST",
-      body: formData,
-      credentials: credentials ? "include" : "omit",
-      signal,
-      cache: "no-store",
-      // NOTE: don't set 'Content-Type' here — the browser sets multipart/form-data with the proper boundary.
-    });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    throw new ApiError(message, { status: undefined });
-  }
+	let res: Response;
+	try {
+		res = await fetch(url, {
+			method: "POST",
+			body: formData,
+			credentials: credentials ? "include" : "omit",
+			signal,
+			cache: "no-store",
+			// NOTE: don't set 'Content-Type' here — the browser sets multipart/form-data with the proper boundary.
+		});
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		throw new ApiError(message, { status: undefined });
+	}
 
-  if (!res.ok) {
-    let payload: ApiErrorPayload | undefined;
-    try {
-      payload = (await res.json()) as ApiErrorPayload;
-    } catch {
-      payload = undefined;
-    }
-    const message =
-      payload?.message ?? payload?.error ?? `Request failed (${res.status})`;
-    throw new ApiError(message, { status: res.status, payload });
-  }
+	if (!res.ok) {
+		let payload: ApiErrorPayload | undefined;
+		try {
+			payload = (await res.json()) as ApiErrorPayload;
+		} catch {
+			payload = undefined;
+		}
+		const message =
+			payload?.message ?? payload?.error ?? `Request failed (${res.status})`;
+		throw new ApiError(message, { status: res.status, payload });
+	}
 
-  return (await res.json()) as T;
+	return (await res.json()) as T;
 }
 
 export const api = {
-  get: <T>(path: string, opts: Omit<RequestOptions, "method" | "body"> = {}) =>
-    request<T>(path, { ...opts, method: "GET" }),
+	get: <T>(path: string, opts: Omit<RequestOptions, "method" | "body"> = {}) =>
+		request<T>(path, { ...opts, method: "GET" }),
 
-  post: <T>(
-    path: string,
-    body?: unknown,
-    opts: Omit<RequestOptions, "method" | "body"> = {},
-  ) => request<T>(path, { ...opts, method: "POST", body }),
+	post: <T>(
+		path: string,
+		body?: unknown,
+		opts: Omit<RequestOptions, "method" | "body"> = {},
+	) => request<T>(path, { ...opts, method: "POST", body }),
 
-  put: <T>(
-    path: string,
-    body?: unknown,
-    opts: Omit<RequestOptions, "method" | "body"> = {},
-  ) => request<T>(path, { ...opts, method: "PUT", body }),
+	put: <T>(
+		path: string,
+		body?: unknown,
+		opts: Omit<RequestOptions, "method" | "body"> = {},
+	) => request<T>(path, { ...opts, method: "PUT", body }),
 
-  patch: <T>(
-    path: string,
-    body?: unknown,
-    opts: Omit<RequestOptions, "method" | "body"> = {},
-  ) => request<T>(path, { ...opts, method: "PATCH", body }),
+	patch: <T>(
+		path: string,
+		body?: unknown,
+		opts: Omit<RequestOptions, "method" | "body"> = {},
+	) => request<T>(path, { ...opts, method: "PATCH", body }),
 
-  delete: <T>(
-    path: string,
-    opts: Omit<RequestOptions, "method" | "body"> = {},
-  ) => request<T>(path, { ...opts, method: "DELETE" }),
+	delete: <T>(
+		path: string,
+		opts: Omit<RequestOptions, "method" | "body"> = {},
+	) => request<T>(path, { ...opts, method: "DELETE" }),
 
-  /** Special-purpose multipart file upload. */
-  upload,
+	/** Special-purpose multipart file upload. */
+	upload,
 
-  me: () => request<MeResponse>("/auth/me"),
+	me: () => request<MeResponse>("/auth/me"),
 };
 
 export const isApiError = (err: unknown): err is ApiError =>
-  err instanceof ApiError;
+	err instanceof ApiError;
