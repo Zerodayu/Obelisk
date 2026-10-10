@@ -157,12 +157,35 @@ export const auditActivityDataAtom = atom<AuditActivityDatum[]>((get) => {
 	return [...counts].map(([module, count]) => ({ module, count }));
 });
 
-// TODO(ai-status): `GET /ai/recommendation/latest` returns a single record, not
-// a status distribution — a list route is needed for this donut.
+/** One status bucket from `GET /ai/recommendations/status-counts`. */
+interface RecommendationStatusDto {
+	status: string;
+	count: number;
+}
+
+/**
+ * AI recommendation review statuses.
+ *
+ * The backend route is unit-scoped exactly like `/recommendation/latest`, and
+ * `generate()` stores institution-wide rows (`programId = null`) — so a
+ * scoped faculty/chair/dean caller gets zero buckets and the donut renders
+ * its empty state, matching the "latest is null for them" behaviour.
+ */
 export const {
 	dataAtom: recommendationsDataAtom,
 	refreshAtom: refreshRecommendationsAtom,
-} = atomWithMockData<RecommendationStatusDatum[]>([]);
+} = atomWithAsyncData<RecommendationStatusDatum[]>([], (_get, signal) =>
+	api
+		.get<RecommendationStatusDto[]>("/ai/recommendations/status-counts", {
+			signal,
+		})
+		.then((rows) =>
+			rows.map((r) => ({
+				status: r.status as RecommendationStatusDatum["status"],
+				count: r.count,
+			})),
+		),
+);
 
 // TODO(archives): the graduation-cluster archival pipeline has no routes yet.
 /** Graduation-cluster composition by archived student status. */
@@ -176,7 +199,16 @@ export const {
 export const {
 	dataAtom: exportFormatsDataAtom,
 	refreshAtom: refreshExportFormatsAtom,
-} = atomWithMockData<ExportFormatDatum[]>([]);
+} = atomWithAsyncData<ExportFormatDatum[]>([], (_get, signal) =>
+	api
+		.get<{ format: string; count: number }[]>("/reports/exports", { signal })
+		.then((rows) =>
+			rows.map((r) => ({
+				format: r.format as ExportFormatDatum["format"],
+				count: r.count,
+			})),
+		),
+);
 
 /** One `FormType` row from `GET /forms/types`. */
 interface FormTypeDto {
@@ -202,11 +234,31 @@ export const {
 
 // TODO(user-roles): `GET /auth/role-requests` is admin-only and filtered by
 // request status, so it cannot seed a platform-wide role distribution.
-/** Platform users by role (`user.role`). */
+
+/** One role bucket from `GET /auth/users/role-counts`. */
+interface UserRoleDto {
+	role: string;
+	userCount: number;
+}
+
+/**
+ * Platform users by role.
+ *
+ * Admin-only and platform-wide by design (an institution-level statistic),
+ * so a non-admin caller gets a 403 — `atomWithAsyncData` keeps the
+ * atom non-ready and the chart shows its empty state rather than an error.
+ */
 export const {
 	dataAtom: userRolesDataAtom,
 	refreshAtom: refreshUserRolesAtom,
-} = atomWithMockData<UserRoleDatum[]>([]);
+} = atomWithAsyncData<UserRoleDatum[]>([], (_get, signal) =>
+	api.get<UserRoleDto[]>("/auth/users/role-counts", { signal }).then((rows) =>
+		rows.map((r) => ({
+			role: r.role as UserRoleDatum["role"],
+			userCount: r.userCount,
+		})),
+	),
+);
 
 /** Graduation-cluster lifecycle statuses (`GraduationCluster.status`). */
 export const {

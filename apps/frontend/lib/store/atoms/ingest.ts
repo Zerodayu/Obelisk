@@ -14,7 +14,7 @@ import type {
 	UploadStatusDatum,
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
-import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
+import { atomWithAsyncData } from "@/lib/store/async-atom";
 
 // NOTE: the target class section moved to the global academic context
 // (`atoms/academic.ts` — localStorage-backed, shared with the sidebar
