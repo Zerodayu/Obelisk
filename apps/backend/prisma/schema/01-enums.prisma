@@ -73,6 +73,8 @@ enum UploadStatus {
   queued
   completed
   failed
+  // NOTE: reviewed but never saved — the user chose to re-upload instead.
+  discarded
 }
 
 enum PloStatus {
