@@ -175,6 +175,8 @@ export function UploadHistoryTable() {
               return <Badge variant="success-outline">Completed</Badge>;
             case "failed":
               return <Badge variant="destructive-outline">Failed</Badge>;
+            case "discarded":
+              return <Badge variant="outline">Discarded</Badge>;
             default:
               return <Badge variant="info-outline">Queued</Badge>;
           }

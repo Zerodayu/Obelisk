@@ -30,6 +30,10 @@ const uploadConfig = {
     label: "Failed",
     colors: { light: ["var(--destructive)"] },
   },
+  discarded: {
+    label: "Discarded",
+    colors: { light: ["var(--muted-foreground)"] },
+  },
 } satisfies ChartConfig;
 
 const runConfig = {

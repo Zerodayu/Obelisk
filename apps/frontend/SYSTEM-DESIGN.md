@@ -178,7 +178,9 @@ mounted by `StoreProvider` in the root layout; atoms live in
   `SessionInitializer` in `app/(app)/layout.tsx`.
 - **Ingest state** (`atoms/ingest.ts`) holds upload/polling/result state as
   atoms + action atoms; `ClassRecordUpload` polls and writes results into them
-  so any consumer can react to a completed import.
+  so any consumer can react to a completed import. The lifecycle is
+  `uploading → processing → review (preview held, nothing saved) → saving →
+  completed | failed`, with `resetIngestAtom` clearing the pre-save states.
 - **Form drafts** (`atoms/car.ts`) hold the in-progress CAR payload
   (`carPayloadAtom` + dirty/reset atoms); other forms keep drafts locally.
 - **Mutations stay server-side**: Server Actions (`server/actions/`) remain the
@@ -212,11 +214,14 @@ decisions.
 
 ```
 CSV/TSV/XLS/XLSX ──> /forms/clo-raw-data (ClassRecordUpload, client validation)
-   ──> backend ingest (auth + persistence) ──> python-server (pure-compute ETL:
-        AUN-OBE v2 template extraction) ──> StudentScore / AssessmentItem rows ──> per-student form
+   ──> backend ingest POST /upload (UploadRecord "queued") ──> python-server
+        (pure-compute ETL: AUN-OBE v2 template extraction)
+   ──> GET /upload/:jobId/status ──> "ready" + preview (nothing persisted yet)
+   ──> review panel ──> Save (POST /upload/:jobId/save → persistence)
+                    └─> Re-upload (POST /upload/:jobId/discard → "discarded")
 ```
 
-The frontend calls the **backend only**; the backend forwards to the python-server ETL. Do not call python-server from the browser.
+The frontend calls the **backend only**; the backend forwards to the python-server ETL. Do not call python-server from the browser. The ETL result is held for review (`ingestPreviewAtom`, status `review`/`saving`) — only **Save** writes `Student`/`CloAttainment`/`AtRiskFlag` rows; **Re-upload** (or resetting the file / changing section mid-review) discards the job best-effort so the history row never stays `queued`.
 
 ### 5.3 Rollups & dashboards
 

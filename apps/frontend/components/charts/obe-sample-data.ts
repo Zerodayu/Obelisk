@@ -193,7 +193,7 @@ export interface PeoAttainmentDatum {
 
 /** Mirrors `UploadRecord.status` distribution (class-record ingestion). */
 export interface UploadStatusDatum {
-  status: "queued" | "completed" | "failed"; // UploadStatus
+  status: "queued" | "completed" | "failed" | "discarded"; // UploadStatus
   count: number;
 }
 

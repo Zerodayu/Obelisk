@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Info,
+  RotateCcw,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -23,13 +24,17 @@ import {
   completeIngestAtom,
   failIngestAtom,
   ingestJobIdAtom,
+  ingestPreviewAtom,
   ingestStatusAtom,
   markProcessingAtom,
+  markReviewAtom,
+  markSavingAtom,
   refreshUploadHistoryAtom,
   resetIngestAtom,
   type SectionComparisonResult,
   selectedClassSectionIdAtom,
   startUploadAtom,
+  type UploadPreview,
 } from "@/lib/store/atoms/ingest";
 
 const ALLOWED_EXTENSIONS = [".csv", ".tsv", ".xls", ".xlsx"];
@@ -49,7 +54,9 @@ interface IngestJobError {
 }
 
 interface StatusResponse {
-  status: "queued" | "running" | "completed" | "failed";
+  status: "queued" | "running" | "ready" | "completed" | "failed";
+  /** Set on `ready` — the pre-save summary; nothing is persisted yet. */
+  preview?: UploadPreview;
   etl?: unknown;
   persistence?: {
     computationRunId: string;
@@ -66,6 +73,16 @@ interface StatusResponse {
   };
   verification?: SectionComparisonResult;
   error?: IngestJobError;
+}
+
+/** One count in the review panel's stats grid. */
+function ReviewStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-lg font-semibold text-foreground">{value}</dd>
+    </div>
+  );
 }
 
 export function ClassRecordUpload() {
@@ -89,9 +106,12 @@ export function ClassRecordUpload() {
 
   const status = useAtomValue(ingestStatusAtom);
   const jobId = useAtomValue(ingestJobIdAtom);
+  const preview = useAtomValue(ingestPreviewAtom);
 
   const setStartUpload = useSetAtom(startUploadAtom);
   const setMarkProcessing = useSetAtom(markProcessingAtom);
+  const setMarkReview = useSetAtom(markReviewAtom);
+  const setMarkSaving = useSetAtom(markSavingAtom);
   const setCompleteIngest = useSetAtom(completeIngestAtom);
   const setFailIngest = useSetAtom(failIngestAtom);
   const setResetIngest = useSetAtom(resetIngestAtom);
@@ -102,7 +122,8 @@ export function ClassRecordUpload() {
   }, []);
 
   const file = items[0]?.file;
-  const isWorking = status === "uploading" || status === "processing";
+  const isWorking =
+    status === "uploading" || status === "processing" || status === "saving";
 
   const patchItem = useCallback((patch: Partial<FileUploadItem>) => {
     setItems((prev) =>
@@ -110,11 +131,27 @@ export function ClassRecordUpload() {
     );
   }, []);
 
+  // NOTE: a reviewed job was never saved — discard it server-side first or its
+  // history row stays `queued` forever (best-effort, section bound at upload).
+  const discardReviewed = useCallback(() => {
+    if (status !== "review" || !jobId) return;
+    void api
+      .post(`/ingest/upload/${jobId}/discard`, {
+        classSectionId: sectionAtUploadRef.current,
+      })
+      .catch(() => {
+        /* best-effort — a failed discard only leaves a stale history row */
+      });
+  }, [status, jobId]);
+
   // NOTE: the section is owned by the dashboard picker now — clear stale
   // verification/ingest state when it changes underneath an idle panel
   // (replaces the old handleSectionChange on the removed local select).
   useEffect(() => {
     if (isWorking) return;
+    // A review in progress was never saved — drop it too, or the history row
+    // would stay `queued`.
+    discardReviewed();
     setVerificationResult(null);
     setMismatchError(null);
     setResetIngest();
@@ -126,13 +163,96 @@ export function ClassRecordUpload() {
     // wipe a just-recorded verification result.
   }, [classSectionId]);
 
-  // Resets the uploaded file so user can pick a different workbook
+  // Resets the uploaded file so user can pick a different workbook.
   const handleResetFile = useCallback(() => {
+    discardReviewed();
     setItems([]);
     setVerificationResult(null);
     setMismatchError(null);
     setResetIngest();
-  }, [setResetIngest]);
+  }, [discardReviewed, setResetIngest]);
+
+  // Applies a saved job's result to the panel — shared by the poll loop and
+  // the save call.
+  const completeJob = useCallback(
+    (res: StatusResponse) => {
+      const summary = res.persistence;
+      const verification = res.verification ?? summary?.verification ?? null;
+
+      patchItem({ status: "success", progress: 100 });
+      setCompleteIngest(summary ?? null);
+      setRefreshHistory();
+      setVerificationResult(verification);
+      setMismatchError(null);
+
+      if (summary) {
+        toast.success({
+          id: "ingest:complete",
+          title: "Processing Complete",
+          description: [
+            `${summary.studentsProcessed} students processed`,
+            `${summary.cloAttainmentsCreated} CLO records recorded`,
+            `${summary.atRiskFlagsCreated} at-risk students flagged`,
+          ].join(" · "),
+        });
+
+        if (summary.cloMatchFailures.length > 0) {
+          toast.warning({
+            id: "ingest:clo-match-warning",
+            title: "CLO Matching Failures",
+            description: `${summary.cloMatchFailures.length} attainment record${summary.cloMatchFailures.length === 1 ? "" : "s"} skipped (unmatched CLO codes).`,
+          });
+        }
+
+        if (verification?.status === "unverified") {
+          toast.warning({
+            id: "ingest:unverified-section-notice",
+            title: "Section Unverified",
+            description:
+              "Workbook section could not be read. Attainments were recorded under the selected section without verification.",
+          });
+        } else if (
+          verification?.warnings &&
+          verification.warnings.length > 0
+        ) {
+          toast.warning({
+            id: "ingest:verification-warnings",
+            title: "Workbook Warnings",
+            description: verification.warnings.join(" · "),
+          });
+        }
+      }
+    },
+    [patchItem, setCompleteIngest, setRefreshHistory],
+  );
+
+  // Shared failure path for upload, poll and save. `mismatches` renders the
+  // section-mismatch panel instead of the plain error notice.
+  const failJob = useCallback(
+    (message: string, opts: { mismatches?: string[]; status?: number } = {}) => {
+      patchItem({ status: "error", error: message });
+      setFailIngest(message);
+      setRefreshHistory();
+
+      if (opts.mismatches) {
+        setMismatchError({ message, mismatches: opts.mismatches });
+        toastError({
+          scope: "ingest:section-mismatch",
+          title: "Section Mismatch",
+          description: message,
+        });
+      } else {
+        setMismatchError(null);
+        toastError({
+          status: opts.status,
+          scope: "ingest",
+          title: "Upload Failed",
+          description: message,
+        });
+      }
+    },
+    [patchItem, setFailIngest, setRefreshHistory],
+  );
 
   // Poll the ETL job while it is `processing`
   useEffect(() => {
@@ -150,78 +270,23 @@ export function ClassRecordUpload() {
 
         if (disposed) return;
 
-        if (res.status === "completed") {
-          const summary = res.persistence;
-          const verification =
-            res.verification ?? summary?.verification ?? null;
-
+        if (res.status === "ready" && res.preview) {
+          // NOTE: nothing was written server-side — the Save/Re-upload step
+          // takes over (the status flip stops this effect).
           patchItem({ status: "success", progress: 100 });
-          setCompleteIngest(summary ?? null);
-          setRefreshHistory();
-          setVerificationResult(verification);
-          setMismatchError(null);
-
-          if (summary) {
-            toast.success({
-              id: "ingest:complete",
-              title: "Processing Complete",
-              description: [
-                `${summary.studentsProcessed} students processed`,
-                `${summary.cloAttainmentsCreated} CLO records recorded`,
-                `${summary.atRiskFlagsCreated} at-risk students flagged`,
-              ].join(" · "),
-            });
-
-            if (summary.cloMatchFailures.length > 0) {
-              toast.warning({
-                id: "ingest:clo-match-warning",
-                title: "CLO Matching Failures",
-                description: `${summary.cloMatchFailures.length} attainment record${summary.cloMatchFailures.length === 1 ? "" : "s"} skipped (unmatched CLO codes).`,
-              });
-            }
-
-            if (verification?.status === "unverified") {
-              toast.warning({
-                id: "ingest:unverified-section-notice",
-                title: "Section Unverified",
-                description:
-                  "Workbook section could not be read. Attainments were recorded under the selected section without verification.",
-              });
-            } else if (
-              verification?.warnings &&
-              verification.warnings.length > 0
-            ) {
-              toast.warning({
-                id: "ingest:verification-warnings",
-                title: "Workbook Warnings",
-                description: verification.warnings.join(" · "),
-              });
-            }
-          }
+          setMarkReview(res.preview);
+        } else if (res.status === "completed") {
+          completeJob(res);
         } else if (res.status === "failed") {
           const isMismatch = res.error?.error_type === "SectionMismatchError";
           const message = res.error?.message || "Processing failed.";
 
-          patchItem({ status: "error", error: message });
-          setFailIngest(message);
-          setRefreshHistory();
-
-          if (isMismatch) {
-            const mismatches = res.error?.verification?.mismatches ?? [message];
-            setMismatchError({ message, mismatches });
-            toastError({
-              scope: "ingest:section-mismatch",
-              title: "Section Mismatch",
-              description: message,
-            });
-          } else {
-            setMismatchError(null);
-            toastError({
-              scope: "ingest",
-              title: "Upload Failed",
-              description: message,
-            });
-          }
+          failJob(
+            message,
+            isMismatch
+              ? { mismatches: res.error?.verification?.mismatches ?? [message] }
+              : {},
+          );
         }
         // If 'queued' or 'running', keep polling.
       } catch (error) {
@@ -248,15 +313,7 @@ export function ClassRecordUpload() {
           }
         }
 
-        patchItem({ status: "error", error: message });
-        setFailIngest(message);
-        setRefreshHistory();
-        toastError({
-          status: errStatus,
-          scope: "ingest",
-          title: "Upload Failed",
-          description: message,
-        });
+        failJob(message, { status: errStatus });
       }
     }, POLL_INTERVAL_MS);
 
@@ -264,14 +321,7 @@ export function ClassRecordUpload() {
       disposed = true;
       clearInterval(interval);
     };
-  }, [
-    jobId,
-    status,
-    patchItem,
-    setCompleteIngest,
-    setFailIngest,
-    setRefreshHistory,
-  ]);
+  }, [jobId, status, patchItem, completeJob, failJob, setMarkReview]);
 
   async function handleUpload() {
     if (!file || !classSectionId.trim()) return;
@@ -313,14 +363,59 @@ export function ClassRecordUpload() {
         }
       }
 
-      patchItem({ status: "error", error: message });
-      setFailIngest(message);
-      toastError({
-        status: errStatus,
-        scope: "ingest",
-        title: "Upload Failed",
-        description: message,
-      });
+      failJob(message, { status: errStatus });
+      console.error(error);
+    }
+  }
+
+  // Saves the reviewed job — the backend writes the DB rows exactly once.
+  async function handleSave() {
+    if (!jobId || !sectionAtUploadRef.current) return;
+
+    const jobToSave = jobId;
+    setMarkSaving();
+    setVerificationResult(null);
+    setMismatchError(null);
+
+    try {
+      const res = await api.post<StatusResponse>(
+        `/ingest/upload/${jobToSave}/save`,
+        { classSectionId: sectionAtUploadRef.current },
+      );
+
+      if (res.status === "completed") {
+        completeJob(res);
+      } else if (res.status === "failed") {
+        const isMismatch = res.error?.error_type === "SectionMismatchError";
+        const message = res.error?.message || "Saving failed.";
+
+        failJob(
+          message,
+          isMismatch
+            ? { mismatches: res.error?.verification?.mismatches ?? [message] }
+            : {},
+        );
+      } else {
+        // Still running server-side (e.g. another save in flight) — poll it out.
+        setMarkProcessing(jobToSave);
+      }
+    } catch (error) {
+      let message = "An unexpected error occurred while saving.";
+      let errStatus: number | undefined;
+
+      if (isApiError(error)) {
+        errStatus = error.status;
+        if (error.status === 400 || error.status === 404) {
+          message =
+            error.payload?.error || error.payload?.message || error.message;
+        } else {
+          message = `Save failed (status ${error.status}): ${
+            error.payload?.error || error.payload?.message || error.message
+          }`;
+        }
+      }
+
+      failJob(message, { status: errStatus });
       console.error(error);
     }
   }
@@ -334,9 +429,12 @@ export function ClassRecordUpload() {
   }
 
   const isUploading = status === "uploading";
-  const progressLabel = isUploading
-    ? "Uploading class record…"
-    : "Processing class record…";
+  const progressLabel =
+    status === "saving"
+      ? "Saving class record…"
+      : isUploading
+        ? "Uploading class record…"
+        : "Processing class record…";
   const buttonText =
     status === "uploading"
       ? "Uploading..."
@@ -444,8 +542,105 @@ export function ClassRecordUpload() {
           </div>
         )}
 
+      {/* Review step: ETL finished, DB untouched — Save or Re-upload */}
+      {status === "review" && preview && (
+        <div className="space-y-4 rounded-xl border border-border bg-background p-4 text-sm">
+          <div className="space-y-1">
+            <p className="flex items-center gap-2 font-semibold text-foreground">
+              <CheckCircle2 className="size-5 text-success" />
+              Ready to save
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Parsed class record — nothing is written until you save it.
+            </p>
+            {preview.setup &&
+              (preview.setup.course_code ||
+                preview.setup.term ||
+                preview.setup.faculty_name) && (
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    preview.setup.course_code,
+                    preview.setup.term,
+                    preview.setup.faculty_name,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+          </div>
+
+          {/* Parsed counts */}
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ReviewStat label="Students" value={preview.students} />
+            <ReviewStat label="CLO rows" value={preview.rows} />
+            <ReviewStat label="At-risk" value={preview.atRisk} />
+            <ReviewStat
+              label="Skipped rows"
+              value={preview.unmatchedClos.reduce((sum, c) => sum + c.rows, 0)}
+            />
+          </dl>
+
+          {/* Verification outcome — the same rule the save enforces */}
+          {preview.verification.status === "mismatch" ? (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 dark:bg-destructive/20">
+              <p className="flex items-center gap-2 font-semibold text-foreground">
+                <AlertCircle className="size-4 text-destructive" />
+                Section mismatch — saving is blocked
+              </p>
+              <ul className="mt-1 list-inside list-disc text-xs text-muted-foreground">
+                {preview.verification.mismatches.map((m, idx) => (
+                  <li key={idx}>{m}</li>
+                ))}
+              </ul>
+            </div>
+          ) : preview.verification.status === "unverified" ? (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Info className="size-4 shrink-0 text-warning" />
+              Workbook section could not be verified — it will be saved under
+              the selected section.
+            </p>
+          ) : (
+            <p className="flex items-center gap-2 text-xs text-success">
+              <CheckCircle2 className="size-4 shrink-0" />
+              Workbook section matches the selected section.
+            </p>
+          )}
+
+          {preview.verification.warnings.length > 0 && (
+            <ul className="list-inside list-disc space-y-0.5 text-xs text-muted-foreground">
+              {preview.verification.warnings.map((w, idx) => (
+                <li key={idx}>{w}</li>
+              ))}
+            </ul>
+          )}
+
+          {preview.unmatchedClos.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Unmatched CLO codes (rows skipped on save):{" "}
+              {preview.unmatchedClos
+                .map((c) => `${c.cloCode} (${c.rows})`)
+                .join(", ")}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={handleResetFile}>
+              <RotateCcw className="size-4 mr-1.5" />
+              Re-upload
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={preview.verification.status === "mismatch"}
+            >
+              <CheckCircle2 className="size-4 mr-1.5" />
+              Save class record
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Action Bar */}
-      {isMounted && (
+      {isMounted && status !== "review" && (
         <div className="flex w-full justify-center items-center gap-4">
           {!isWorking && (
             <Button
