@@ -258,6 +258,25 @@ export class SubmissionService {
 	}
 
 	/**
+	 * `GET /forms/types` — the whole form catalog (`FormType`), not just the
+	 * types a submission happens to have used. Reference data with no
+	 * unit-scoping (every role may see which forms exist); ordered by
+	 * `sequenceNo` so the client renders the manual's order.
+	 */
+	async listTypes() {
+		return prisma.formType.findMany({
+			select: {
+				id: true,
+				code: true,
+				name: true,
+				pdcaStage: true,
+				sequenceNo: true,
+			},
+			orderBy: { sequenceNo: "asc" },
+		});
+	}
+
+	/**
 	 * `GET /forms/:id` — visibility-checked read used by the approval screen.
 	 * Throws `SubmissionNotFoundError` (unknown id) or
 	 * `SubmissionForbiddenError` (no rights) instead of leaking the record.

@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import {
 	ApprovalForbiddenError,
 	NotOwnerError,
@@ -70,6 +71,25 @@ export const formsPlugin = new Elysia({
 	tags: ["Forms"],
 })
 	.use(authPlugin)
+	.get(
+		// NOTE: registered before `/:id` so the literal path wins over the
+		// parameter route ("types" is not a submission id).
+		"/types",
+		cached(300, async () => submissionService.listTypes()),
+		{
+			auth: true,
+			detail: {
+				summary: "List the form-type catalog",
+				description:
+					"Every registered form (code, name, PDCA stage, manual sequence number) ordered by sequence. Reference data — not scoped to the caller's unit, since every role needs to know which forms exist.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "List of form types" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
 	.get(
 		"/",
 		async ({ query, user }) =>
