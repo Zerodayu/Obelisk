@@ -10,6 +10,7 @@ import {
 	chainSteps,
 	NotOwnerError,
 } from "@lib/forms/approval-routes";
+import { needsApproval } from "@lib/forms/form-tags";
 import {
 	resolveJustification,
 	type SubmissionJustification,
@@ -460,13 +461,19 @@ export class SubmissionService {
 	): Promise<FormSubmissionWithSteps> {
 		const existing = await this.findById(id);
 		if (!existing) throw new SubmissionNotFoundError();
-		assertTransition(existing.status, "submitted");
 
 		// Chain is server-derived from the form's registered route
 		// (lib/forms/approval-routes.ts) — clients cannot pick it.
 		const route = approvalRouteFor(existing.formType.code);
 		assertCanSubmit({ id: userId, role: callerRole }, existing, route);
-		const steps = chainSteps(route.chain);
+		// NOTE: Setup/Record-tagged forms are filed, not approved — no steps,
+		// straight to `approved` (see lib/forms/form-tags.ts).
+		const approvalFree = !needsApproval(existing.formType.code);
+		assertTransition(
+			existing.status,
+			approvalFree ? "approved" : "submitted",
+		);
+		const steps = approvalFree ? [] : chainSteps(route.chain);
 
 		await assertSubmitGate(existing.formTypeId, {
 			id: existing.id,
@@ -489,15 +496,20 @@ export class SubmissionService {
 			});
 			await tx.formSubmission.update({
 				where: { id },
-				data: {
-					status: "submitted",
-					currentApproverRole: firstPendingRole(steps),
-				},
+				data: approvalFree
+					? { status: "approved", currentApproverRole: null }
+					: {
+							status: "submitted",
+							currentApproverRole: firstPendingRole(steps),
+						},
 			});
 		});
 
 		const submission = await this.writeThrough(id);
-		await this.audit(userId, "form_submission.submitted", id, { steps });
+		await this.audit(userId, "form_submission.submitted", id, {
+			steps,
+			approvalFree,
+		});
 
 		return submission;
 	}

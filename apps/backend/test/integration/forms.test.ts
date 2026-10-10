@@ -15,15 +15,17 @@ import {
 const db = await isDbReachable();
 
 /**
- * Uses two registered form codes so the approval chain is derived from
- * `lib/forms/approval-routes.ts`:
- *  - `clo_raw_data`            → preparers [faculty], chain [program_chair → dean → aqau → vpaa]
+ * Uses three registered form codes so routing is derived from
+ * `lib/forms/approval-routes.ts` + `lib/forms/form-tags.ts`:
+ *  - `clo_raw_data`            → Record tag — files straight to `approved`, no steps
  *  - `course_assessment_report` → preparers [faculty], chain [program_chair → dean → aqau → vpaa]
- * Both enter the ladder at the program chair; every registered chain now
- * climbs to the VPAA (the final review before archive).
+ *  - `stakeholder_consultation` → preparers [program_chair, faculty, dean], chain enters at program_chair
+ * Approval-bound chains all climb to the VPAA (the final review before archive).
  */
 const RAW_DATA_CODE = "clo_raw_data";
 const CAR_CODE = "course_assessment_report";
+// NOTE: no other test file ensures this form type — seed() can own its row.
+const CONSULT_CODE = "stakeholder_consultation";
 
 const IDS = {
 	term: "it-forms-term",
@@ -32,6 +34,7 @@ const IDS = {
 	chair: "it-forms-chair",
 	rawType: "it-forms-type-raw",
 	carType: "it-forms-type-car",
+	consultType: "it-forms-type-consult",
 	// Section fixtures — the `clo_raw_data` submit gate needs a class section
 	// with at least one captured attainment row.
 	department: "it-forms-dept",
@@ -172,14 +175,25 @@ async function seed() {
 			sequenceNo: 13,
 		},
 	});
+	await prisma.formType.create({
+		data: {
+			id: IDS.consultType,
+			code: CONSULT_CODE,
+			name: "Stakeholder Consultation Records",
+			pdcaStage: "PLAN",
+			sequenceNo: 5,
+		},
+	});
 }
 
 async function cleanup() {
 	await prisma.formSubmission.deleteMany({
-		where: { formTypeId: { in: [IDS.rawType, IDS.carType] } },
+		where: {
+			formTypeId: { in: [IDS.rawType, IDS.carType, IDS.consultType] },
+		},
 	});
 	await prisma.formType.deleteMany({
-		where: { id: { in: [IDS.rawType, IDS.carType] } },
+		where: { id: { in: [IDS.rawType, IDS.carType, IDS.consultType] } },
 	});
 	// Section fixtures — deleting the section cascades the attainment row.
 	await prisma.classSection.deleteMany({
@@ -202,11 +216,13 @@ describe.skipIf(!db)("forms service (integration)", () => {
 		await seed();
 		try {
 			// --- submit: server-derived chain -----------------------------------
+			// NOTE: program-bound like every real CAR `…/init`; the approval-free
+			// `clo_raw_data` path is covered by its own test below.
 			const draft = await submissionService.create(
 				{
-					formTypeId: IDS.rawType,
+					formTypeId: IDS.carType,
+					programId: IDS.program,
 					termId: IDS.term,
-					classSectionId: IDS.classSection,
 					formData: { note: "seed" },
 				},
 				IDS.owner,
@@ -234,7 +250,7 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			expect(submitted.status).toBe("submitted");
 			expect(submitted.currentApproverRole).toBe("program_chair");
 			// Derived from the registry — the ladder runs chair → dean → aqau → vpaa.
-			expect(submitted.formType.code).toBe(RAW_DATA_CODE);
+			expect(submitted.formType.code).toBe(CAR_CODE);
 			expect(submitted.approvalSteps).toHaveLength(4);
 			expect(submitted.approvalSteps.map((s) => s.approverRole)).toEqual([
 				"program_chair",
@@ -558,13 +574,15 @@ describe.skipIf(!db)("forms service (integration)", () => {
 	it("blocks self-approval and keeps the owner's own row out of their inbox", async () => {
 		await seed();
 		try {
-			// A chair prepares `clo_raw_data` — preparers and rung 1 are both
-			// `program_chair`, the classic self-approval shape.
+			// A chair prepares `stakeholder_consultation` — preparers and rung 1
+			// are both `program_chair`, the classic self-approval shape.
+			// NOTE: `clo_raw_data` can no longer carry this test — Record-tagged
+			// forms file with no steps to decide.
 			const draft = await submissionService.create(
 				{
-					formTypeId: IDS.rawType,
+					formTypeId: IDS.consultType,
+					programId: IDS.program,
 					termId: IDS.term,
-					classSectionId: IDS.classSection,
 					formData: { note: "chair-prepared" },
 				},
 				IDS.chair,
@@ -627,6 +645,42 @@ describe.skipIf(!db)("forms service (integration)", () => {
 			);
 			expect(advanced.status).toBe("submitted");
 			expect(advanced.currentApproverRole).toBe("dean");
+		} finally {
+			await cleanup();
+		}
+	});
+
+	it("files Setup/Record-tagged forms with no approval chain", async () => {
+		await seed();
+		try {
+			// `clo_raw_data` is Record-tagged — the section's captured scores
+			// satisfy the submit gate, and filing skips the chain entirely.
+			const draft = await submissionService.create(
+				{
+					formTypeId: IDS.rawType,
+					termId: IDS.term,
+					classSectionId: IDS.classSection,
+					formData: { note: "record" },
+				},
+				IDS.owner,
+			);
+			const filed = await submissionService.submit(
+				draft.id,
+				IDS.owner,
+				"faculty",
+			);
+			expect(filed.status).toBe("approved");
+			expect(filed.currentApproverRole).toBeNull();
+			expect(filed.approvalSteps).toHaveLength(0);
+
+			// It never lands in anyone's pending inbox, not even the admin's.
+			const pendingAdmin = await submissionService.list(
+				scopeWhere("pending", { id: "any", role: "system_admin" }),
+			);
+			expect(pendingAdmin.map((s) => s.id)).not.toContain(draft.id);
+
+			// The audit trail still records the filing (the "Prepared by" date).
+			expect(await submissionService.submittedAt(draft.id)).not.toBeNull();
 		} finally {
 			await cleanup();
 		}

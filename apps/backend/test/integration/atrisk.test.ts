@@ -577,13 +577,15 @@ describe.skipIf(!db)("at-risk action-taken form (integration)", () => {
 				},
 				IDS.faculty,
 			);
-			await submissionService.submit(draft.id, IDS.faculty, "faculty");
-			for (const index of LADDER.keys()) {
-				const rung = await approveRung(draft.id, index);
-				expect(rung.status).toBe(
-					index === LADDER.length - 1 ? "approved" : "submitted",
-				);
-			}
+			// NOTE: `clo_raw_data` is Record-tagged — it files straight to
+			// `approved` with no steps, so no approval effect can run for it.
+			const filed = await submissionService.submit(
+				draft.id,
+				IDS.faculty,
+				"faculty",
+			);
+			expect(filed.status).toBe("approved");
+			expect(filed.approvalSteps).toHaveLength(0);
 			expect(await flagCount()).toBe(4);
 
 			// Reading the action-taken endpoints against a foreign submission 404s.

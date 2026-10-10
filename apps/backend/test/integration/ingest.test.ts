@@ -894,8 +894,8 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			classSection: "it-sub-section",
 			user: "it-sub-user",
 			chair: "it-sub-chair",
-			// Remaining approvers on the clo_raw_data ladder (chair → dean →
-			// aqau → vpaa) — every chain climbs to the VPAA.
+			// NOTE: role fixtures kept for symmetry with the other submit tests —
+			// `clo_raw_data` files as a record now, so no approver ever signs it.
 			dean: "it-sub-dean",
 			aqau: "it-sub-aqau",
 			vpaa: "it-sub-vpaa",
@@ -1039,7 +1039,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				submissionService.submit(first.formSubmissionId, ids.user, "faculty"),
 			).rejects.toThrow(/upload a class record for this section/);
 
-			// --- capture the class record → submit derives the full ladder -------
+			// --- capture the class record → the form files as a record -----------
 			await attainmentService.persistAttainment(
 				{
 					header: {},
@@ -1057,48 +1057,18 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 				ids.classSection,
 				ids.user,
 			);
-			const submitted = await submissionService.submit(
+			const filed = await submissionService.submit(
 				first.formSubmissionId,
 				ids.user,
 				"faculty",
 			);
-			expect(submitted.status).toBe("submitted");
-			expect(submitted.currentApproverRole).toBe("program_chair");
-			expect(submitted.approvalSteps.map((s) => s.approverRole)).toEqual([
-				"program_chair",
-				"dean",
-				"aqau",
-				"vpaa",
-			]);
-
-			// A submission in flight is reused, not duplicated.
-			expect(
-				(await ingestService.initSubmission(ids.classSection, ids.user))
-					.formSubmissionId,
-			).toBe(first.formSubmissionId);
+			// NOTE: `clo_raw_data` is Record-tagged — no approval chain, it
+			// files straight to `approved` with zero steps.
+			expect(filed.status).toBe("approved");
+			expect(filed.currentApproverRole).toBeNull();
+			expect(filed.approvalSteps).toHaveLength(0);
 
 			// --- approved → the next init opens a fresh draft (re-upload path) ----
-			// Walk the whole ladder: chair → dean → aqau → vpaa (last rung closes).
-			const ladder = [
-				{ role: "program_chair", userId: ids.chair },
-				{ role: "dean", userId: ids.dean },
-				{ role: "aqau", userId: ids.aqau },
-				{ role: "vpaa", userId: ids.vpaa },
-			] as const;
-			for (const [index, step] of ladder.entries()) {
-				const decided = await submissionService.decide(
-					first.formSubmissionId,
-					step.role,
-					step.userId,
-					step.role,
-					{ decision: "approved" },
-				);
-				const isLast = index === ladder.length - 1;
-				expect(decided.status).toBe(isLast ? "approved" : "submitted");
-				expect(decided.currentApproverRole).toBe(
-					isLast ? null : ladder[index + 1].role,
-				);
-			}
 			const afterApproval = await ingestService.initSubmission(
 				ids.classSection,
 				ids.user,

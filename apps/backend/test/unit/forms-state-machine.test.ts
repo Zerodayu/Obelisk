@@ -14,16 +14,21 @@ import {
 describe("submission state machine", () => {
 	it("has the canonical approval chain and status transitions", () => {
 		expect(APPROVAL_CHAIN).toEqual(["program_chair", "dean", "aqau", "vpaa"]);
-		expect(STATUS_TRANSITIONS.draft).toEqual(["submitted", "archived"]);
+		expect(STATUS_TRANSITIONS.draft).toEqual([
+			"submitted",
+			"approved",
+			"archived",
+		]);
 		expect(STATUS_TRANSITIONS.submitted).toEqual(["returned", "approved"]);
-		expect(STATUS_TRANSITIONS.returned).toEqual(["submitted"]);
+		expect(STATUS_TRANSITIONS.returned).toEqual(["submitted", "approved"]);
 		expect(STATUS_TRANSITIONS.approved).toEqual(["archived"]);
 		expect(STATUS_TRANSITIONS.archived).toEqual([]);
 	});
 
 	it("allows only legal transitions", () => {
 		expect(canTransition("draft", "submitted")).toBe(true);
-		expect(canTransition("draft", "approved")).toBe(false);
+		// approval-free forms (Setup/Record tags) file straight to approved
+		expect(canTransition("draft", "approved")).toBe(true);
 		expect(canTransition("submitted", "approved")).toBe(true);
 		expect(canTransition("approved", "returned")).toBe(false);
 		expect(canTransition("archived", "draft")).toBe(false);
@@ -31,7 +36,8 @@ describe("submission state machine", () => {
 
 	it("assertTransition throws on illegal moves", () => {
 		expect(() => assertTransition("draft", "submitted")).not.toThrow();
-		expect(() => assertTransition("draft", "approved")).toThrow(
+		expect(() => assertTransition("draft", "approved")).not.toThrow();
+		expect(() => assertTransition("archived", "approved")).toThrow(
 			InvalidTransitionError,
 		);
 	});

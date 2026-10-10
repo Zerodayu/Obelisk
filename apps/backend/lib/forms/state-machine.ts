@@ -14,9 +14,11 @@ export const STATUS_TRANSITIONS: Record<
 	SubmissionStatus,
 	readonly SubmissionStatus[]
 > = {
-	draft: ["submitted", "archived"],
+	// NOTE: approval-free forms (Setup/Record tags) skip the chain and file
+	// straight to `approved`; every other form still goes through `submitted`.
+	draft: ["submitted", "approved", "archived"],
 	submitted: ["returned", "approved"],
-	returned: ["submitted"],
+	returned: ["submitted", "approved"],
 	approved: ["archived"],
 	archived: [],
 };
