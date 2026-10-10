@@ -1,3 +1,4 @@
+import { cached } from "@lib/cache";
 import { PythonServerError } from "@lib/ingest/ingest-client";
 import {
 	assertCanGenerateAiInsights,
@@ -18,6 +19,10 @@ import {
 function callerRole(user: unknown): string {
 	return (user as { role?: string } | undefined)?.role ?? "user";
 }
+
+const SECURITY = {
+	security: [{ bearerAuth: [] as string[], apiKeyCookie: [] as string[] }],
+};
 
 export const aiPlugin = new Elysia({
 	prefix: "/ai",
@@ -41,6 +46,28 @@ export const aiPlugin = new Elysia({
 			return status(502, { error: error.message });
 		}
 	})
+	.get(
+		// NOTE: registered before `/recommendation/latest` — both are literal
+		// paths, but keeping the more specific pattern first avoids any doubt
+		// about resolution order in Elysia's static-router.
+		"/recommendations/status-counts",
+		cached(300, async ({ user }) =>
+			aiRecommendationService.statusCounts(unitScopeOf(user)),
+		),
+		{
+			auth: true,
+			detail: {
+				summary: "Count AI recommendations by review status",
+				description:
+					"The review-status distribution across the caller's unit — a different question from `GET /recommendation/latest`, which returns the single newest record. `generate` stores institution-wide rows (programId null), so only institution-wide roles have anything to count.",
+				...SECURITY,
+				responses: {
+					200: { description: "Status -> count" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
 	.get(
 		"/recommendation/latest",
 		async ({ user, set }) => {

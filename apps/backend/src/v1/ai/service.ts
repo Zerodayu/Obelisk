@@ -324,6 +324,28 @@ export class AiRecommendationService {
 		});
 		return row ? toRecommendationPayload(row) : null;
 	}
+
+	/**
+	 * `GET /ai/recommendations/status-counts` — the review-status distribution
+	 * across the caller's unit (the donut the system-admin dashboard charts).
+	 *
+	 * `latest()` answers "what is the newest one?", which is a different
+	 * question from "how many sit in each status". Unit-scoped exactly like
+	 * `latest()`: `generate()` stores institution-wide rows (`programId =
+	 * null`), so only institution-wide roles have anything to count.
+	 * `cached(300)` — the counts move when someone reviews a recommendation,
+	 * which is rare enough that a 5-minute staleness window is acceptable.
+	 */
+	async statusCounts(
+		unit: UnitScope,
+	): Promise<{ status: string; count: number }[]> {
+		const rows = await prisma.aiRecommendation.groupBy({
+			by: ["status"],
+			where: aiRecommendationUnitWhere(unit),
+			_count: { _all: true },
+		});
+		return rows.map((row) => ({ status: row.status, count: row._count._all }));
+	}
 }
 
 export const aiRecommendationService = new AiRecommendationService();
