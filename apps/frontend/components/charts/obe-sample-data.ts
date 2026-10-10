@@ -188,7 +188,6 @@ export interface PeoAttainmentDatum {
 	peoCode: string; // Peo.code
 	description: string; // Peo.description
 	attainedPct: number; // PeoAttainment.attainedPct
-	targetAttainmentPct: number; // PEO target (≥70% hard floor)
 }
 
 /** Mirrors `UploadRecord.status` distribution (class-record ingestion). */

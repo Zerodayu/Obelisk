@@ -43,7 +43,9 @@ export function DeanDashboard() {
 					<FrameHeader>
 						<FrameTitle>Program educational objectives</FrameTitle>
 						<FrameDescription>
-							Biennial PEO attainment vs target.
+							Biennial PEO attainment, newest term per PEO. No target is plotted
+							— the OBE reference sets no PEO benchmark, and the program's PLO
+							targets are not interchangeable with one.
 						</FrameDescription>
 					</FrameHeader>
 					<FramePanel>

@@ -16,7 +16,7 @@ import type {
 	ScoreBandDatum,
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
-import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
+import { atomWithAsyncData } from "@/lib/store/async-atom";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
 
 const CLO_SUMMARY = "/rollup/clo-attainment-summary";
@@ -164,10 +164,20 @@ export const {
 );
 
 /**
- * Biennial PEO attainment vs target — the `Peo` / `PeoAttainment` models are
- * not exposed by any route yet, so the chart renders its empty state.
+ * Biennial PEO attainment (`GET /rollup/peo-attainment`).
+ *
+ * No target series: neither `Peo` nor `PeoAttainment` has a target field,
+ * so the endpoint reports attainment alone rather than the client borrowing
+ * the PLO's target to fake a benchmark.
  */
 export const {
 	dataAtom: peoAttainmentsDataAtom,
 	refreshAtom: refreshPeoAttainmentsAtom,
-} = atomWithMockData<PeoAttainmentDatum[]>([]);
+} = atomWithAsyncData<PeoAttainmentDatum[]>([], (_get, signal) =>
+	api
+		.get<{ peoCode: string; description: string; attainedPct: number }[]>(
+			"/rollup/peo-attainment",
+			{ signal },
+		)
+		.then((rows) => rows.map((r) => ({ ...r }))),
+);

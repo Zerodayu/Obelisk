@@ -14,6 +14,7 @@ import {
 	cloSummaryService,
 	cohortTrackingService,
 	listRollupSubmissions,
+	listPeoAttainment,
 	listScoreBands,
 	ploSummaryService,
 	RollupInvalidEditError,
@@ -27,6 +28,23 @@ export const rollupPlugin = new Elysia({
 	tags: ["Roll-up"],
 })
 	.use(authPlugin)
+	.get(
+		"/peo-attainment",
+		cached(300, async ({ user }) => listPeoAttainment(unitScopeOf(user))),
+		{
+			auth: true,
+			detail: {
+				summary: "Newest PEO attainment per PEO",
+				description:
+					"Unit-scoped. PeoAttainment carries no target field (unlike Plo.targetAttainmentPct), so this reports attainment only — inventing a target by borrowing the PLO's would be re-deriving an institutional rule the manual does not set. Newest term per PEO, since PEOs are captured biennially.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "PEO code -> description + attained Pct" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
 	.get(
 		"/score-bands",
 		cached(300, async ({ user }) => listScoreBands(unitScopeOf(user))),

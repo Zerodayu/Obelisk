@@ -68,10 +68,6 @@ const peoConfig = {
 		label: "Attained",
 		colors: { light: ["var(--chart-2)"] },
 	},
-	target: {
-		label: "Target",
-		colors: { light: ["var(--muted-foreground)"] },
-	},
 } satisfies ChartConfig;
 
 const bandConfig = {
@@ -168,7 +164,7 @@ export function PloAttainmentBars({
 	);
 }
 
-/** Grouped bars of PEO attainment vs the configured target (biennial). */
+/** Bars of PEO attainment per PEO (biennial). Targetless — see the atom. */
 export function PeoAttainmentBars({
 	data: override,
 }: {
@@ -179,7 +175,6 @@ export function PeoAttainmentBars({
 	const rows = data.map((p) => ({
 		peoCode: p.peoCode,
 		attained: p.attainedPct,
-		target: p.targetAttainmentPct,
 	}));
 	if (rows.length === 0) return <ChartEmptyState />;
 
@@ -189,7 +184,6 @@ export function PeoAttainmentBars({
 			config={peoConfig}
 			xDataKey="peoCode"
 			className="h-full w-full"
-			stackType="stacked"
 		>
 			<EChartsBarChart.Grid />
 			<EChartsBarChart.XAxis dataKey="peoCode" />
@@ -199,8 +193,7 @@ export function PeoAttainmentBars({
 			/>
 			<EChartsBarChart.Tooltip />
 			<EChartsBarChart.Legend />
-			<EChartsBarChart.Bar dataKey="attained" />
-			<EChartsBarChart.Bar dataKey="target" />
+			<EChartsBarChart.Bar dataKey="attained" variant="expandable" />
 		</EChartsBarChart>
 	);
 }

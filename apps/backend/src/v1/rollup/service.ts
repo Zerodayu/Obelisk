@@ -10,6 +10,7 @@ import {
 	assertProgramInScope,
 	assertTargetInScope,
 	cloAttainmentUnitWhere,
+	peoAttainmentUnitWhere,
 	submissionUnitWhere,
 	type UnitScope,
 	unitScopeForUser,
@@ -1189,6 +1190,40 @@ export async function listScoreBands(unit: UnitScope) {
 	return SCORE_BANDS.map((band) => ({
 		band,
 		studentCount: counts.get(band) ?? 0,
+	}));
+}
+
+/**
+ * `GET /rollup/peo-attainment` — the newest `PeoAttainment` per PEO, for
+ * the caller's unit.
+ *
+ * NOTE: there is no PEO target field in the schema (unlike
+ * `Plo.targetAttainmentPct`), so this returns attainment only. Inventing a
+ * target by borrowing the PLO's would be re-deriving an institutional rule
+ * that the manual has not set — better to show the attainment and let the
+ * reader compare than to fabricate a benchmark.
+ */
+export async function listPeoAttainment(unit: UnitScope) {
+	const rows = await prisma.peoAttainment.findMany({
+		where: peoAttainmentUnitWhere(unit),
+		orderBy: [{ termId: "desc" }, { peoId: "asc" }],
+		select: {
+			attainedPct: true,
+			peo: { select: { code: true, description: true } },
+		},
+	});
+
+	// Newest only per PEO (a PEO is captured biennially, so an older term's
+	// row must not double-count alongside a newer one).
+	const latestByPeo = new Map<string, (typeof rows)[number]>();
+	for (const row of rows) {
+		if (!latestByPeo.has(row.peo.code)) latestByPeo.set(row.peo.code, row);
+	}
+
+	return [...latestByPeo].map(([peoCode, row]) => ({
+		peoCode,
+		description: row.peo.description,
+		attainedPct: Number(row.attainedPct),
 	}));
 }
 
