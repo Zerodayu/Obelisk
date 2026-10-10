@@ -1,5 +1,9 @@
 import { EDITABLE_STATUSES } from "@lib/forms/state-machine";
 import { registerSubmitGate, SubmitGateError } from "@lib/forms/submit-gates";
+import {
+	findSystemicTriggers,
+	SYSTEMIC_TRIGGER_CYCLES,
+} from "@lib/forms/systemic-trigger";
 import { prisma } from "@lib/prisma";
 import {
 	assertProgramInScope,
@@ -796,7 +800,8 @@ registerSubmitGate(EMPLOYER_SURVEY_CODE, (s) =>
 	assertBiennialGate(EMPLOYER_SURVEY_CODE, s),
 );
 
-// F26: Systemic Gap Report — blocked unless 3+ consecutive NOT-MET cycles
+// F26: Systemic Gap Report — blocked unless the same PLO stayed NOT MET for
+// 3+ consecutive cycles (see `lib/forms/systemic-trigger.ts`).
 registerSubmitGate(SYSTEMIC_GAP_CODE, async (submission) => {
 	if (!submission.programId) {
 		throw new SubmitGateError(
@@ -814,30 +819,56 @@ registerSubmitGate(SYSTEMIC_GAP_CODE, async (submission) => {
 			"No Cohort Tracking form type found — cannot verify trigger condition.",
 		);
 	}
-	const recentCohort = await prisma.formSubmission.findFirst({
+	// Newest first — the helper keeps the newest snapshot per academic year.
+	const recentCohorts = await prisma.formSubmission.findMany({
 		where: {
 			formTypeId: cohortType.id,
 			programId: submission.programId,
 			status: "approved",
 		},
-		orderBy: { updatedAt: "desc" },
-		select: { formData: true },
+		orderBy: { createdAt: "desc" },
+		take: 12,
+		select: {
+			term: { select: { schoolYear: true } },
+			formData: true,
+		},
 	});
-	if (!recentCohort) {
+	if (recentCohorts.length === 0) {
 		throw new SubmitGateError(
 			SYSTEMIC_GAP_CODE,
 			"No approved Cohort Tracking Sheet found for this program.",
 		);
 	}
-	const cohortData = (recentCohort.formData ?? {}) as {
-		ploSummaries?: Array<{ status?: string }>;
-	};
-	const ploSummaries = cohortData.ploSummaries ?? [];
-	const notMetCount = ploSummaries.filter((p) => p.status === "NOT_MET").length;
-	if (notMetCount < 3) {
+
+	// NOTE: `formData.plos` is what the rollup generator snapshots — the old
+	// gate read a `ploSummaries` key nothing ever wrote, so it could never fire.
+	const report = findSystemicTriggers(
+		recentCohorts.map((cohort) => {
+			const data = (cohort.formData ?? {}) as {
+				plos?: Array<{ ploCode?: string; achieved?: boolean }>;
+			};
+			return {
+				cycle: cohort.term.schoolYear,
+				plos: (data.plos ?? [])
+					.filter((plo) => typeof plo.ploCode === "string")
+					.map((plo) => ({
+						ploCode: plo.ploCode as string,
+						achieved: plo.achieved === true,
+					})),
+			};
+		}),
+	);
+
+	if (report.cycles < SYSTEMIC_TRIGGER_CYCLES) {
 		throw new SubmitGateError(
 			SYSTEMIC_GAP_CODE,
-			`Systemic Gap Report blocked: requires 3+ consecutive NOT-MET PLOs (found ${notMetCount}).`,
+			`Systemic Gap Report blocked: requires ${SYSTEMIC_TRIGGER_CYCLES}+ cycles of approved Cohort Tracking data (found ${report.cycles}).`,
+		);
+	}
+	if (report.ploCodes.length === 0) {
+		throw new SubmitGateError(
+			SYSTEMIC_GAP_CODE,
+			`Systemic Gap Report blocked: no PLO is NOT MET for ${SYSTEMIC_TRIGGER_CYCLES}+ consecutive cycles (longest run: ${report.maxRun}).`,
 		);
 	}
 });
