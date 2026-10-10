@@ -1,4 +1,8 @@
-import { ClusterCompositionDonut } from "@/components/charts/governance-charts";
+import {
+	ClusterCompositionDonut,
+	ClusterStatusDonut,
+} from "@/components/charts/governance-charts";
+import { ClusterListTable } from "@/components/governance/cluster-list-table";
 import {
 	Frame,
 	FrameDescription,
@@ -10,8 +14,10 @@ import { ARCHIVE_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
 /**
- * `/archives` — graduation-cluster archive list (program, batch, status,
- * student count, archivedAt). Read-only; gated to aqau/vpaa/dean/system_admin.
+ * `/archives` — graduation-cluster archive list (label, program, graduation
+ * term, status, live student count, confirm/archive timestamps) plus the
+ * composition and lifecycle distributions. Read-only; gated to the archive
+ * roles (`vpaa`/`system_admin`).
  */
 export default async function ArchivesIndexPage() {
 	await requireRole(ARCHIVE_ROLES);
@@ -28,8 +34,9 @@ export default async function ArchivesIndexPage() {
 					<FrameHeader>
 						<FrameTitle>Cluster composition</FrameTitle>
 						<FrameDescription>
-							Archived student statuses across compiled clusters. Empty until
-							the archival pipeline compiles a cluster.
+							Archived student statuses across compiled clusters — read from the
+							`GraduationClusterEntry` rows a compile writes, which is the
+							record that survives the source-row purge.
 						</FrameDescription>
 					</FrameHeader>
 					<FramePanel>
@@ -38,7 +45,21 @@ export default async function ArchivesIndexPage() {
 						</div>
 					</FramePanel>
 				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Cluster lifecycle</FrameTitle>
+						<FrameDescription>
+							Open, compiling, and archived clusters in your unit.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<ClusterStatusDonut />
+						</div>
+					</FramePanel>
+				</Frame>
 			</div>
+			<ClusterListTable />
 		</div>
 	);
 }

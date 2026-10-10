@@ -9,10 +9,13 @@
  * system_admin see everything), never another user's rows for a role that has
  * no claim on them. The audit trail reads the real `GET /audit/logs`
  * (scoped server-side to the caller), and `auditActivityDataAtom` is derived
- * from it. The remaining charts have no backend endpoint yet (graduation
- * clusters, report exports, platform-wide user/role counts, and the AI
- * recommendation list), so they are seeded with `[]` and render an empty
- * state instead of fabricated numbers.
+ * from it. The at-risk, composition, and cluster-status charts read their own
+ * endpoints (`GET /atrisk/flags`, `GET /archives/*`).
+ *
+ * The user-role and export-format aggregates are **platform-wide by design**
+ * (not unit-scoped) and are therefore admin-gated (`viewPlatformStats`) — a
+ * non-admin caller's fetch 403s, which `atomWithAsyncData` keeps non-ready so
+ * the chart shows its empty state rather than an error surface.
  */
 
 import { atom } from "jotai";
@@ -187,12 +190,25 @@ export const {
 		),
 );
 
-// TODO(archives): the graduation-cluster archival pipeline has no routes yet.
-/** Graduation-cluster composition by archived student status. */
+/**
+ * Graduation-cluster composition by archived student status
+ * (`GET /archives/composition`).
+ *
+ * The backend counts `GraduationClusterEntry` rows — the record that survives
+ * the compile-time purge — not the live `Student` rows a cluster points at.
+ * So an empty donut means "no cluster has been compiled yet", which is the
+ * accurate state for a deployment that has not run the archival pipeline.
+ */
 export const {
 	dataAtom: clusterCompositionDataAtom,
 	refreshAtom: refreshClusterCompositionAtom,
-} = atomWithMockData<ClusterCompositionDatum[]>([]);
+} = atomWithAsyncData<ClusterCompositionDatum[]>([], (_get, signal) =>
+	api
+		.get<{ status: string; studentCount: number }[]>("/archives/composition", {
+			signal,
+		})
+		.then((rows) => rows.map((r) => ({ ...r }))),
+);
 
 // TODO(exports): `ReportExport` is never queried by a route.
 /** Report exports by format (`ReportExport.format`). */
@@ -260,8 +276,44 @@ export const {
 	),
 );
 
-/** Graduation-cluster lifecycle statuses (`GraduationCluster.status`). */
+/**
+ * Graduation-cluster lifecycle statuses (`GET /archives/status-counts`).
+ *
+ * Unit-scoped, so a scoped caller sees only its own program's/department's
+ * clusters rather than the institution's.
+ */
 export const {
 	dataAtom: clusterStatusesDataAtom,
 	refreshAtom: refreshClusterStatusesAtom,
-} = atomWithMockData<ClusterStatusDatum[]>([]);
+} = atomWithAsyncData<ClusterStatusDatum[]>([], (_get, signal) =>
+	api
+		.get<{ status: string; clusterCount: number }[]>(
+			"/archives/status-counts",
+			{ signal },
+		)
+		.then((rows) =>
+			rows.map((r) => ({
+				status: r.status as ClusterStatusDatum["status"],
+				clusterCount: r.clusterCount,
+			})),
+		),
+);
+
+/** One row of `GET /archives` as the cluster table renders it. */
+export interface ClusterListRecord {
+	id: string;
+	label: string;
+	status: "open" | "compiling" | "archived";
+	studentCount: number;
+	confirmedAt: string | null;
+	compiledAt: string | null;
+	archivedAt: string | null;
+	program: { id: string; code: string; name: string };
+	graduationTerm: { id: string; schoolYear: string; semester: string };
+}
+
+/** `GET /archives` — the graduation-cluster list, unit-scoped server-side. */
+export const { dataAtom: clustersDataAtom, refreshAtom: refreshClustersAtom } =
+	atomWithAsyncData<ClusterListRecord[]>([], (_get, signal) =>
+		api.get<ClusterListRecord[]>("/archives", { signal }),
+	);
