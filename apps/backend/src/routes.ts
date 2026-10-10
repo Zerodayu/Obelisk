@@ -12,6 +12,7 @@ import { formsPlugin } from "./v1/forms/controller";
 import { ingestPlugin } from "./v1/ingest/controller";
 import { periodicPlugin } from "./v1/periodic/controller";
 import { planPlugin } from "./v1/plan/controller";
+import { reportsPlugin } from "./v1/reports/controller";
 import { rollupPlugin } from "./v1/rollup/controller";
 
 export const apiRoutesV1 = new Elysia({ prefix: "api/v1" })
@@ -25,6 +26,7 @@ export const apiRoutesV1 = new Elysia({ prefix: "api/v1" })
 	.use(planPlugin)
 	.use(checkPlugin)
 	.use(periodicPlugin)
+	.use(reportsPlugin)
 	.use(atRiskPlugin)
 	.use(auditPlugin)
 	.use(aiPlugin);

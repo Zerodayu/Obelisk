@@ -98,3 +98,41 @@ export const auth = betterAuth({
 		},
 	},
 });
+
+// --- Platform statistics -----------------------------------------------------
+// NOTE: kept here rather than in a new module — it reads only the `user` table
+// and is admin-gated in the controller (`viewPlatformStats`), not unit-scoped.
+
+/** Every role value, so a role with no account still reports a zero row. */
+const PLATFORM_STAT_ROLES = [
+	"user",
+	"faculty",
+	"program_chair",
+	"dean",
+	"aqau",
+	"vpaa",
+	"system_admin",
+] as const;
+
+/**
+ * `GET /auth/users/role-counts` — platform-wide headcount per role.
+ *
+ * Deliberately NOT unit-scoped (an institution-level statistic), and every
+ * role is emitted even at zero so the chart's axis is stable rather than
+ * growing as accounts are granted.
+ */
+export const userService = {
+	async roleCounts() {
+		const rows = await prisma.user.groupBy({
+			by: ["role"],
+			_count: { _all: true },
+		});
+		const counts = new Map<string, number>(
+			rows.map((row) => [row.role, row._count._all]),
+		);
+		return PLATFORM_STAT_ROLES.map((role) => ({
+			role,
+			userCount: counts.get(role) ?? 0,
+		}));
+	},
+};

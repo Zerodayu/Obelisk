@@ -1,5 +1,10 @@
 import { prisma } from "@lib/prisma";
-import { hasRole, ROLE_REQUEST_ROLES } from "@lib/role-access";
+import {
+	assertCanViewPlatformStats,
+	hasRole,
+	ROLE_REQUEST_ROLES,
+} from "@lib/role-access";
+import { RoleAccessForbiddenError } from "@lib/role-access";
 import type { UserRole } from "@prisma/generated/prisma/enums";
 import type { Session, User } from "better-auth";
 import { Elysia, t } from "elysia";
@@ -11,7 +16,7 @@ import {
 	type SelfSelectableRole,
 	validateRoleRequest,
 } from "./model";
-import { auth } from "./service";
+import { auth, userService } from "./service";
 
 const ROLE_REQUEST_STATUS = {
 	none: "none",
@@ -149,6 +154,11 @@ function requireSystemAdmin(user: User) {
 	}
 }
 
+/** Throws a 403 when the caller may not read platform-wide aggregates. */
+function requirePlatformStats(user: User) {
+	assertCanViewPlatformStats((user as { role?: string }).role);
+}
+
 export const authPlugin = new Elysia({ name: "auth" })
 	.macro({
 		auth: {
@@ -270,6 +280,39 @@ export const authPlugin = new Elysia({ name: "auth" })
 						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 						responses: {
 							200: { description: "Role request users" },
+							401: { description: "Unauthorized" },
+							403: { description: "System admin only" },
+						},
+					},
+				},
+			)
+			.get(
+				"/auth/users/role-counts",
+				async ({ user, set }) => {
+					// NOTE: platform-wide by design — counts every user account,
+					// so it is admin-only (`viewPlatformStats`), NOT unit-scoped.
+					// `GET /auth/role-requests` is filtered by request status and
+					// cannot stand in for a role distribution.
+					try {
+						requirePlatformStats(user);
+						return await userService.roleCounts();
+					} catch (error) {
+						if (error instanceof RoleAccessForbiddenError) {
+							set.status = 403;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					detail: {
+						tags: ["Auth"],
+						summary: "Count user accounts by role",
+						description:
+							"System admin only. Platform-wide headcount per role, including roles with no account (a zero row) so the chart axis is stable. Not unit-scoped: this is an institution-level statistic.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Role -> user count" },
 							401: { description: "Unauthorized" },
 							403: { description: "System admin only" },
 						},
