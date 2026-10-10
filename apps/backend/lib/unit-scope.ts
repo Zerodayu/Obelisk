@@ -349,6 +349,34 @@ export function peoAttainmentUnitWhere(
 	}
 }
 
+/** Which `graduation_cluster` rows belong to `unit` (via the cluster's program). */
+export function clusterUnitWhere(
+	unit: UnitScope,
+): Prisma.GraduationClusterWhereInput {
+	switch (unit.kind) {
+		case "institution":
+			return {};
+		case "program":
+			return { programId: unit.programId };
+		case "department":
+			return { program: { departmentId: unit.departmentId } };
+		default:
+			return nothing<Prisma.GraduationClusterWhereInput>();
+	}
+}
+
+/** Which `graduation_cluster_entry` rows belong to `unit` (via the cluster). */
+export function clusterEntryUnitWhere(
+	unit: UnitScope,
+): Prisma.GraduationClusterEntryWhereInput {
+	switch (unit.kind) {
+		case "institution":
+			return {};
+		default:
+			return { cluster: clusterUnitWhere(unit) };
+	}
+}
+
 /** Which `ai_recommendation` rows belong to `unit` (program-less rows are institution-wide). */
 export function aiRecommendationUnitWhere(
 	unit: UnitScope,

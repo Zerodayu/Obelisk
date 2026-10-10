@@ -5,6 +5,8 @@ import {
 	atRiskFlagUnitWhere,
 	classSectionUnitWhere,
 	cloAttainmentUnitWhere,
+	clusterEntryUnitWhere,
+	clusterUnitWhere,
 	courseUnitWhere,
 	departmentUnitWhere,
 	peoAttainmentUnitWhere,
@@ -346,5 +348,29 @@ describe("UnitScopeError", () => {
 		expect(error.status).toBe(403);
 		expect(error.name).toBe("UnitScopeError");
 		expect(error.message).toMatch(/program or department/);
+	});
+});
+
+// --- Graduation clusters -----------------------------------------------------
+
+describe("clusterUnitWhere", () => {
+	it("scopes a cluster to the caller's program or department", () => {
+		expect(clusterUnitWhere(SCOPES.institution)).toEqual({});
+		expect(clusterUnitWhere(SCOPES.program)).toEqual({ programId: PROGRAM });
+		expect(clusterUnitWhere(SCOPES.department)).toEqual({
+			program: { departmentId: DEPARTMENT },
+		});
+		// A unit-less scoped caller must never see another unit's clusters.
+		expect(clusterUnitWhere(SCOPES.own)).toEqual({ id: { in: [] } });
+	});
+
+	it("scopes compiled entries through their cluster", () => {
+		expect(clusterEntryUnitWhere(SCOPES.institution)).toEqual({});
+		expect(clusterEntryUnitWhere(SCOPES.program)).toEqual({
+			cluster: { programId: PROGRAM },
+		});
+		expect(clusterEntryUnitWhere(SCOPES.own)).toEqual({
+			cluster: { id: { in: [] } },
+		});
 	});
 });
