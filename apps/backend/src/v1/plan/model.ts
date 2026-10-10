@@ -404,6 +404,12 @@ export type CloToPloMapDto = {
 	plo: { code: string; description: string };
 };
 
+/** One `PloToPeoMap` row for the program's PEO coverage. */
+export type PloToPeoMapDto = {
+	ploCode: string;
+	peoCode: string;
+};
+
 export type CloDto = {
 	id: string;
 	code: string;

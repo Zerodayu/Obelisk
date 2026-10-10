@@ -32,6 +32,7 @@ import type {
 	PlanSubmissionListItem,
 	PloDto,
 	PloEntityDto,
+	PloToPeoMapDto,
 	SaveAssessmentBudget,
 	SaveAssessmentCalendar,
 	SaveCurriculumMap,
@@ -1250,6 +1251,42 @@ export class CloToPloMapService {
 	 * List all CLOs for a program (via courses) and all PLOs for the program.
 	 * Used to populate dropdown selectors.
 	 */
+	/**
+	 * `GET /plan/plo-to-peo-map` — PLO→PEO coverage for a program. Same
+	 * unit check as the CLO→PLO list above; the caller's `programId` is never
+	 * trusted to widen the read.
+	 */
+	async listPloToPeo(
+		programId: string,
+		unit: UnitScope,
+	): Promise<PloToPeoMapDto[]> {
+		await assertProgramInScope(unit, programId);
+
+		const program = await prisma.program.findUnique({
+			where: { id: programId },
+			select: { id: true },
+		});
+		if (!program) {
+			throw new CloToPloMapSourceNotFoundError(
+				`Program '${programId}' not found`,
+			);
+		}
+
+		const maps = await prisma.ploToPeoMap.findMany({
+			where: { plo: { programId } },
+			select: {
+				plo: { select: { code: true } },
+				peo: { select: { code: true } },
+			},
+			orderBy: [{ plo: { code: "asc" } }, { peo: { code: "asc" } }],
+		});
+
+		return maps.map((m) => ({
+			ploCode: m.plo.code,
+			peoCode: m.peo.code,
+		}));
+	}
+
 	async listEntities(
 		programId: string,
 		unit: UnitScope,

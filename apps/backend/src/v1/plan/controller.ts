@@ -675,6 +675,39 @@ export const planPlugin = new Elysia({
 		},
 	)
 	.get(
+		"/plo-to-peo-map",
+		async ({ query, user, set }) => {
+			try {
+				return await cloToPloMapService.listPloToPeo(
+					query.programId,
+					unitScopeOf(user),
+				);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			query: t.Object({
+				programId: t.String({
+					description: "Program to list PEO mappings for",
+				}),
+			}),
+			detail: {
+				summary: "List PLO-PEO mappings for a program",
+				description:
+					"Returns every PloToPeoMap row of the program as { ploCode, peoCode } — the coverage matrix the PEO dashboard charts.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of PLO-PEO mappings" },
+					401: { description: "Unauthorized" },
+					403: { description: "programId is outside the caller's unit" },
+					409: { description: "Program not found" },
+				},
+			},
+		},
+	)
+	.get(
 		"/clo-plo-map/entities",
 		// NOTE: deliberately NOT wrapped in `cached()` — the dropdown CLO/PLO
 		// options must show entities added elsewhere on the next open, same
