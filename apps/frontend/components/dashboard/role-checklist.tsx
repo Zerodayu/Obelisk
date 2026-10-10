@@ -19,6 +19,7 @@ import {
 import { type DutyState, resolveDutyState } from "@/lib/duty-status";
 import type { UserRole } from "@/lib/role-access";
 import type { AsyncState } from "@/lib/store/async-atom";
+import { selectedTermIdAtom } from "@/lib/store/atoms/academic";
 import {
 	type FormSubmissionRecord,
 	mySubmissionsStateAtom,
@@ -109,10 +110,11 @@ export function RoleChecklist({ role }: { role: UserRole }) {
 	const pending = useAtomValue(
 		needsPending ? pendingApprovalsStateAtom : skipState,
 	);
+	const termId = useAtomValue(selectedTermIdAtom);
 
 	if (sections.length === 0) return null;
 
-	const ctx = { mine, pending };
+	const ctx = { mine, pending, termId };
 	const steps = sections.flatMap((section) => section.steps);
 	const states = new Map(
 		steps.map((step) => [step.id, resolveDutyState(step.status, ctx)]),

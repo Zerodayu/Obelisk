@@ -9,9 +9,10 @@
  * - `GET /forms?scope=pending` (`pendingApprovalsStateAtom`) — resolves
  *   `approve` steps: is anything waiting on this role?
  *
- * NOTE: the list endpoints carry no term filter, so a step reads "Done" off
- * the newest matching submission in **any** term. Once `GET /forms` accepts a
- * `termId`, pass the active term here to make the checklist term-scoped.
+ * NOTE: prepare steps resolve "Done" only within the picked academic term
+ * (`DutyContext.termId`); an empty context keeps every term in scope.
+ * Approve steps stay term-blind — a pending approval is actionable whenever
+ * it was filed.
  */
 
 import type { DutyStatus } from "@/config/role-duties";
@@ -43,6 +44,11 @@ export interface DutyContext {
 	mine?: AsyncState<FormSubmissionRecord[]> | null;
 	/** `AsyncState` from `pendingApprovalsStateAtom`; `null` when not subscribed. */
 	pending?: AsyncState<FormSubmissionRecord[]> | null;
+	/**
+	 * Picked academic context (`selectedTermIdAtom`) — scopes `prepare` steps
+	 * to one term. Empty string = no context picked, no filtering.
+	 */
+	termId?: string;
 }
 
 /** Statuses that still owe the role an action. */
@@ -78,8 +84,13 @@ export function resolveDutyState(
 			: { kind: "clear" };
 	}
 
-	// prepare: one duty can span several submissions (one per class section).
-	const rows = state.data.filter((row) => row.formType?.code === status.code);
+	// prepare: one duty can span several submissions (one per class section),
+	// and the picked term narrows them to the current cycle.
+	const rows = state.data.filter(
+		(row) =>
+			row.formType?.code === status.code &&
+			(!ctx.termId || row.termId === ctx.termId),
+	);
 	if (rows.length === 0) return { kind: "idle" };
 
 	const outstanding = rows.filter((row) => OUTSTANDING.has(row.status));

@@ -23,12 +23,15 @@
 import {
 	ArchiveIcon,
 	BarChart3Icon,
+	CalendarDaysIcon,
 	ClipboardCheckIcon,
 	ClipboardListIcon,
 	FileChartColumnIcon,
 	FileTextIcon,
 	ListChecksIcon,
 	type LucideIcon,
+	MapIcon,
+	PresentationIcon,
 	RefreshCwIcon,
 	ShieldCheckIcon,
 	SparklesIcon,
@@ -104,13 +107,41 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			],
 		},
 		{
+			label: "Mid-Cycle",
+			steps: [
+				{
+					id: "faculty-mid-cycle",
+					title: "Record mid-cycle attainment",
+					detail:
+						"Mid-cycle CLO attainment summary with the at-risk watchlist, mid-term.",
+					url: "/forms/check/mid-cycle-attainment",
+					icon: ClipboardListIcon,
+					status: { kind: "prepare", code: "mid_cycle_attainment" },
+				},
+			],
+		},
+		{
+			label: "Peer Observation",
+			steps: [
+				{
+					id: "faculty-peer-observation",
+					title: "File peer observation records",
+					detail:
+						"OBE and CLO/PLO alignment observations with per-criterion ratings.",
+					url: "/forms/check/peer-observation",
+					icon: ClipboardCheckIcon,
+					status: { kind: "prepare", code: "peer_observation" },
+				},
+			],
+		},
+		{
 			label: "Indirect Survey",
 			steps: [
 				{
 					id: "faculty-perception",
 					title: "Enter indirect survey scores",
 					detail:
-						"CLO Achievement Perception Survey — the indirect half of the 70/30 composite.",
+						"CLO Achievement Perception Survey — indirect evidence tabulated for the term record.",
 					url: "/forms/check/clo-perception-survey",
 					icon: ClipboardListIcon,
 					status: { kind: "prepare", code: "clo_perception_survey" },
@@ -132,6 +163,20 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			],
 		},
 		{
+			label: "Course Summary",
+			steps: [
+				{
+					id: "faculty-clo-summary",
+					title: "Compile the CLO attainment summary",
+					detail:
+						"Full-term CLO attainment per cohort — feeds the program PLO summary.",
+					url: "/forms/attainment/clo-attainment-summary",
+					icon: BarChart3Icon,
+					status: { kind: "prepare", code: "clo_attainment_summary" },
+				},
+			],
+		},
+		{
 			label: "Remediation",
 			steps: [
 				{
@@ -149,16 +194,53 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 
 	program_chair: [
 		{
+			label: "Setup",
+			steps: [
+				{
+					id: "chair-curriculum-map",
+					title: "Maintain the CLO-PLO Curriculum Map",
+					detail:
+						"The CLO-PLO matrix with I-P-D stages every other form's mapping must match.",
+					url: "/forms/plan/curriculum-map",
+					icon: MapIcon,
+					status: { kind: "prepare", code: "curriculum_map" },
+				},
+				{
+					id: "chair-calendar",
+					title: "Publish the assessment calendar",
+					detail:
+						"Milestone dates that govern the timing of every form in the cycle.",
+					url: "/forms/plan/assessment-calendar",
+					icon: CalendarDaysIcon,
+					status: { kind: "prepare", code: "assessment_calendar" },
+				},
+			],
+		},
+		{
 			label: "Faculty Review",
 			steps: [
 				{
 					id: "chair-approvals",
 					title: "Approve faculty submissions",
 					detail:
-						"Class records, CARs, and remediation records reach you first.",
+						"CARs, mid-cycle summaries, surveys and remediation records reach you first.",
 					url: "/approvals",
 					icon: ClipboardCheckIcon,
 					status: { kind: "approve" },
+				},
+			],
+		},
+		{
+			label: "Industry Feedback",
+			steps: [
+				{
+					id: "chair-exhibition",
+					title: "File exhibition industry feedback",
+					detail:
+						"Industry guest register and 10-point PLO ratings from the portfolio exhibition.",
+					url: "/forms/check/exhibition-feedback",
+					icon: PresentationIcon,
+					status: { kind: "prepare", code: "exhibition_feedback" },
 				},
 			],
 		},
@@ -206,6 +288,20 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			],
 		},
 		{
+			label: "Closing the Loop",
+			steps: [
+				{
+					id: "chair-ctl",
+					title: "Compile the Closing-the-Loop report",
+					detail:
+						"Mandatory each AY — loop status is hard-computed from the five closure conditions.",
+					url: "/forms/cqi/closing-the-loop",
+					icon: RefreshCwIcon,
+					status: { kind: "prepare", code: "closing_the_loop" },
+				},
+			],
+		},
+		{
 			label: "Annual Report",
 			steps: [
 				{
@@ -230,16 +326,11 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 					detail: "Your sign-off before anything leaves the college.",
 					url: "/approvals",
 					icon: ClipboardCheckIcon,
-					status: {
-						kind: "approve",
-						// NOTE: `closing_the_loop` sits at [aqau, vpaa] — the dean is
-						// never on that chain, so listing it made the duty unresolvable.
-						codes: [
-							"plo_attainment_summary",
-							"cqi_action_plan",
-							"annual_program_report",
-						],
-					},
+					// NOTE: no `codes` narrowing — `scope=pending` already means
+					// currentApproverRole === dean, and a list here only loses rows
+					// (CAR, gap analysis, alumni/employer surveys also route through
+					// the dean).
+					status: { kind: "approve" },
 				},
 			],
 		},
