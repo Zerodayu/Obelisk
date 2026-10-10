@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -11,9 +13,8 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
-import { ClassSectionSelect } from "@/components/ui/class-section-select";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { toast, toastError } from "@/components/ui/toast";
+import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
 import { generateCloSummary } from "@/server/actions/rollup";
 
 interface CloSummaryRow {
@@ -55,7 +56,8 @@ function levelBadge(level: string | null) {
 
 export function CloSummaryForm() {
   const [payload, setPayload] = useState<CloSummaryPayload | null>(null);
-  const [classSectionId, setClassSectionId] = useState("");
+  // NOTE: target section comes from the dashboard picker, not local state.
+  const classSectionId = useAtomValue(selectedClassSectionIdAtom);
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = useCallback(async () => {
@@ -91,22 +93,16 @@ export function CloSummaryForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="flex items-end gap-3">
-            <Field className="flex-1">
-              <FieldLabel>Class Section</FieldLabel>
-              <ClassSectionSelect
-                loadAll={true}
-                value={classSectionId}
-                onValueChange={setClassSectionId}
-              />
-            </Field>
+          {!classSectionId ? (
+            <ContextRequired scope="class-section" />
+          ) : (
             <Button
               onClick={handleGenerate}
               disabled={loading || !classSectionId.trim()}
             >
               {loading ? "Generating..." : "Generate"}
             </Button>
-          </div>
+          )}
         </FramePanel>
       </Frame>
     );

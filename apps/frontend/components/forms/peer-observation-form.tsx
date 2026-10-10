@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -12,11 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
-import { ProgramSelect } from "@/components/ui/program-select";
-import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
+import {
+  selectedProgramIdAtom,
+  selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
 import {
   getCheckForm,
   initCheckForm,
@@ -102,8 +106,9 @@ const CRITERIA_LABELS: Record<string, string> = {
 };
 
 export default function PeerObservationForm() {
-  const [programId, setProgramId] = useState("");
-  const [termId, setTermId] = useState("");
+  // NOTE: academic context comes from the dashboard picker, not local state.
+  const programId = useAtomValue(selectedProgramIdAtom);
+  const termId = useAtomValue(selectedTermIdAtom);
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -184,20 +189,16 @@ export default function PeerObservationForm() {
           <FrameTitle>Initialize Peer Observation</FrameTitle>
         </FrameHeader>
         <FramePanel className="space-y-4">
-          <Field>
-            <FieldLabel>Program</FieldLabel>
-            <ProgramSelect value={programId} onValueChange={setProgramId} />
-          </Field>
-          <Field>
-            <FieldLabel>Term</FieldLabel>
-            <TermSelect value={termId} onValueChange={setTermId} />
-          </Field>
-          <Button
-            onClick={handleInit}
-            disabled={loading || !programId || !termId}
-          >
-            {loading ? "Initializing..." : "Initialize"}
-          </Button>
+          {!programId || !termId ? (
+            <ContextRequired scope="program-term" />
+          ) : (
+            <Button
+              onClick={handleInit}
+              disabled={loading || !programId || !termId}
+            >
+              {loading ? "Initializing..." : "Initialize"}
+            </Button>
+          )}
         </FramePanel>
       </Frame>
     );

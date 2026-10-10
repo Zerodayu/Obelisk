@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -11,10 +13,10 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
 import type { ActionTakenData, AtRiskFlagRow } from "@/server/actions/at-risk";
 import {
   getActionTaken,
@@ -68,7 +70,9 @@ function groupFlags(rows: AtRiskFlagRow[]): WatchlistEntry[] {
 }
 
 export function ActionTakenForm() {
-  const [classSectionId, setClassSectionId] = useState("");
+  // NOTE: target section comes from the dashboard picker — the watchlist below
+  // reloads automatically whenever it changes.
+  const classSectionId = useAtomValue(selectedClassSectionIdAtom);
   const [flags, setFlags] = useState<AtRiskFlagRow[]>([]);
   const [flagsLoading, setFlagsLoading] = useState(false);
   const [payload, setPayload] = useState<Payload | null>(null);
@@ -178,30 +182,27 @@ export function ActionTakenForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="max-w-md">
-            <Field>
-              <FieldLabel>Class Section</FieldLabel>
-              <ClassSectionSelect
-                value={classSectionId}
-                onValueChange={setClassSectionId}
-                loadAll
-              />
-            </Field>
-          </div>
-          {classSectionId ? (
-            <div className="mt-4 text-sm text-muted-foreground">
-              {flagsLoading
-                ? "Loading at-risk students..."
-                : watchlist.length === 0
-                  ? "No at-risk students in this section."
-                  : `${watchlist.length} at-risk student(s) in this section.`}
+          {!classSectionId ? (
+            <ContextRequired scope="class-section" />
+          ) : (
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                {flagsLoading
+                  ? "Loading at-risk students..."
+                  : watchlist.length === 0
+                    ? "No at-risk students in this section."
+                    : `${watchlist.length} at-risk student(s) in this section.`}
+              </div>
+              <div>
+                <Button
+                  onClick={handleInit}
+                  disabled={loading || !classSectionId}
+                >
+                  {loading ? "Opening..." : "Open Form"}
+                </Button>
+              </div>
             </div>
-          ) : null}
-          <div className="mt-4">
-            <Button onClick={handleInit} disabled={loading || !classSectionId}>
-              {loading ? "Opening..." : "Open Form"}
-            </Button>
-          </div>
+          )}
         </FramePanel>
       </Frame>
     );

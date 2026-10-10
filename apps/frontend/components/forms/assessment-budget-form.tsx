@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -11,13 +13,13 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
-import { ProgramSelect } from "@/components/ui/program-select";
-import { TermSelect } from "@/components/ui/term-select";
-import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import {
+  selectedProgramIdAtom,
+  selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
 import {
   initAssessmentBudget,
   saveAssessmentBudget,
@@ -48,8 +50,9 @@ const SOURCES = ["aqau", "dean", "vpaa"] as const;
 export function AssessmentBudgetForm() {
   const [payload, setPayload] = useState<AssessmentBudgetPayload | null>(null);
   const [lineItems, setLineItems] = useState<BudgetLineItem[]>([]);
-  const [programId, setProgramId] = useState("");
-  const [termId, setTermId] = useState("");
+  // NOTE: academic context comes from the dashboard picker, not local state.
+  const programId = useAtomValue(selectedProgramIdAtom);
+  const termId = useAtomValue(selectedTermIdAtom);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -143,24 +146,16 @@ export function AssessmentBudgetForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Field>
-              <FieldLabel>Program</FieldLabel>
-              <ProgramSelect value={programId} onValueChange={setProgramId} />
-            </Field>
-            <Field>
-              <FieldLabel>Term</FieldLabel>
-              <TermSelect value={termId} onValueChange={setTermId} />
-            </Field>
-            <div className="flex items-end">
-              <Button
-                onClick={handleGenerate}
-                disabled={loading || !programId.trim() || !termId.trim()}
-              >
-                {loading ? "Initializing..." : "Initialize"}
-              </Button>
-            </div>
-          </div>
+          {!programId || !termId ? (
+            <ContextRequired scope="program-term" />
+          ) : (
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || !programId.trim() || !termId.trim()}
+            >
+              {loading ? "Initializing..." : "Initialize"}
+            </Button>
+          )}
         </FramePanel>
       </Frame>
     );

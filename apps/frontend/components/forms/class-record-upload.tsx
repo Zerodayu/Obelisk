@@ -8,9 +8,9 @@ import {
   Info,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { Button } from "@/components/ui/button";
-import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Progress, ProgressValue } from "@/components/ui/progress";
 import { toast, toastError } from "@/components/ui/toast";
@@ -73,8 +73,11 @@ export function ClassRecordUpload() {
   // NOTE: the section lives in an atom so the approval-workflow strip above
   // can bind its `clo_raw_data` draft to the same class section.
   const classSectionId = useAtomValue(selectedClassSectionIdAtom);
-  const setClassSectionId = useSetAtom(selectedClassSectionIdAtom);
   const [isMounted, setIsMounted] = useState(false);
+  // NOTE: the section the in-flight job was started with — the dashboard can
+  // change the global section mid-upload, but polling must keep querying the
+  // one the job is bound to or the backend answers 400 (section mismatch).
+  const sectionAtUploadRef = useRef("");
 
   // Verification outcome state for persistent contextual notices
   const [verificationResult, setVerificationResult] =
@@ -107,21 +110,21 @@ export function ClassRecordUpload() {
     );
   }, []);
 
-  // When the user changes section, clear previous result states unless a job is active
-  const handleSectionChange = useCallback(
-    (newSectionId: string) => {
-      if (isWorking) return;
-      setClassSectionId(newSectionId);
-      setVerificationResult(null);
-      setMismatchError(null);
-      setResetIngest();
-      // Reset any item error state so it shows ready to upload
-      if (items.length > 0 && items[0]?.status === "error") {
-        patchItem({ status: "queued", error: undefined, progress: 0 });
-      }
-    },
-    [isWorking, items, patchItem, setClassSectionId, setResetIngest],
-  );
+  // NOTE: the section is owned by the dashboard picker now — clear stale
+  // verification/ingest state when it changes underneath an idle panel
+  // (replaces the old handleSectionChange on the removed local select).
+  useEffect(() => {
+    if (isWorking) return;
+    setVerificationResult(null);
+    setMismatchError(null);
+    setResetIngest();
+    // Reset any item error state so it shows ready to upload
+    if (items.length > 0 && items[0]?.status === "error") {
+      patchItem({ status: "queued", error: undefined, progress: 0 });
+    }
+    // NOTE: deps intentionally only the section — items/status churn must not
+    // wipe a just-recorded verification result.
+  }, [classSectionId]);
 
   // Resets the uploaded file so user can pick a different workbook
   const handleResetFile = useCallback(() => {
@@ -133,10 +136,10 @@ export function ClassRecordUpload() {
 
   // Poll the ETL job while it is `processing`
   useEffect(() => {
-    if (!jobId || status !== "processing" || !classSectionId) return;
+    if (!jobId || status !== "processing") return;
 
     let disposed = false;
-    const currentSectionId = classSectionId;
+    const currentSectionId = sectionAtUploadRef.current;
 
     const interval = setInterval(async () => {
       try {
@@ -264,7 +267,6 @@ export function ClassRecordUpload() {
   }, [
     jobId,
     status,
-    classSectionId,
     patchItem,
     setCompleteIngest,
     setFailIngest,
@@ -274,6 +276,7 @@ export function ClassRecordUpload() {
   async function handleUpload() {
     if (!file || !classSectionId.trim()) return;
 
+    sectionAtUploadRef.current = classSectionId.trim();
     setStartUpload();
     setVerificationResult(null);
     setMismatchError(null);
@@ -345,17 +348,8 @@ export function ClassRecordUpload() {
 
   return (
     <section className="space-y-4">
-      {/* Class Section Selection */}
-      <Field className="w-full">
-        <FieldLabel>Target Class Section</FieldLabel>
-        <ClassSectionSelect
-          value={classSectionId}
-          onValueChange={handleSectionChange}
-          disabled={isWorking}
-          loadAll={true}
-          placeholder="Select class section to bind upload"
-        />
-      </Field>
+      {/* Class section comes from the Academic Context card on the Dashboard. */}
+      {!classSectionId ? <ContextRequired scope="class-section" /> : null}
 
       {/* File Upload Zone */}
       <FileUpload

@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -12,9 +14,9 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
-import { ProgramSelect } from "@/components/ui/program-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
 import { generateApar, saveApar } from "@/server/actions/cqi";
 
 interface AparKpiRow {
@@ -63,7 +65,8 @@ export function AparForm() {
   const [payload, setPayload] = useState<AparPayload | null>(null);
   const [attachments, setAttachments] = useState<Record<string, boolean>>({});
   const [narratives, setNarratives] = useState<Record<string, string>>({});
-  const [programId, setProgramId] = useState("");
+  // NOTE: program comes from the dashboard picker, not local state.
+  const programId = useAtomValue(selectedProgramIdAtom);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -127,18 +130,16 @@ export function AparForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="flex items-end gap-3">
-            <Field className="flex-1">
-              <FieldLabel>Program</FieldLabel>
-              <ProgramSelect value={programId} onValueChange={setProgramId} />
-            </Field>
+          {!programId ? (
+            <ContextRequired scope="program" />
+          ) : (
             <Button
               onClick={handleGenerate}
               disabled={loading || !programId.trim()}
             >
               {loading ? "Generating..." : "Generate"}
             </Button>
-          </div>
+          )}
         </FramePanel>
       </Frame>
     );

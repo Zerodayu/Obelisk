@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import {
   Frame,
@@ -13,11 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
-import { ProgramSelect } from "@/components/ui/program-select";
-import { TermSelect } from "@/components/ui/term-select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import type { CheckFormCode } from "@/lib/check-slugs";
+import {
+  selectedProgramIdAtom,
+  selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
 import {
   getCheckForm,
   initCheckForm,
@@ -59,8 +63,9 @@ interface Payload {
 }
 
 export default function CapstonePanelForm() {
-  const [programId, setProgramId] = useState("");
-  const [termId, setTermId] = useState("");
+  // NOTE: academic context comes from the dashboard picker, not local state.
+  const programId = useAtomValue(selectedProgramIdAtom);
+  const termId = useAtomValue(selectedTermIdAtom);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [payload, setPayload] = useState<Payload | null>(null);
@@ -192,23 +197,16 @@ export default function CapstonePanelForm() {
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="grid grid-cols-2 gap-4">
-            <Field>
-              <FieldLabel>Program</FieldLabel>
-              <ProgramSelect value={programId} onValueChange={setProgramId} />
-            </Field>
-            <Field>
-              <FieldLabel>Term</FieldLabel>
-              <TermSelect value={termId} onValueChange={setTermId} />
-            </Field>
-          </div>
-          <Button
-            className="mt-4"
-            onClick={handleInit}
-            disabled={loading || !programId || !termId}
-          >
-            {loading ? "Loading…" : "Load Form"}
-          </Button>
+          {!programId || !termId ? (
+            <ContextRequired scope="program-term" />
+          ) : (
+            <Button
+              onClick={handleInit}
+              disabled={loading || !programId || !termId}
+            >
+              {loading ? "Loading…" : "Load Form"}
+            </Button>
+          )}
         </FramePanel>
       </Frame>
     );

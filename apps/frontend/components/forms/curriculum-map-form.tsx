@@ -1,6 +1,8 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -11,10 +13,11 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel } from "@/components/ui/field";
-import { ProgramSelect } from "@/components/ui/program-select";
-import { TermSelect } from "@/components/ui/term-select";
 import { toast, toastError } from "@/components/ui/toast";
+import {
+  selectedProgramIdAtom,
+  selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
 import { initCurriculumMap, saveCurriculumMap } from "@/server/actions/plan";
 import { CloPloMapPanel } from "./clo-plo-map-panel";
 
@@ -52,8 +55,9 @@ export function CurriculumMapForm() {
   const [payload, setPayload] = useState<CurriculumMapPayload | null>(null);
   const [plos, setPlos] = useState<PloDirectoryRow[]>([]);
   const [courses, setCourses] = useState<CurriculumCourseRow[]>([]);
-  const [programId, setProgramId] = useState("");
-  const [termId, setTermId] = useState("");
+  // NOTE: academic context comes from the dashboard picker, not local state.
+  const programId = useAtomValue(selectedProgramIdAtom);
+  const termId = useAtomValue(selectedTermIdAtom);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -151,24 +155,16 @@ export function CurriculumMapForm() {
             </FrameDescription>
           </FrameHeader>
           <FramePanel>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Field>
-                <FieldLabel>Program</FieldLabel>
-                <ProgramSelect value={programId} onValueChange={setProgramId} />
-              </Field>
-              <Field>
-                <FieldLabel>Term</FieldLabel>
-                <TermSelect value={termId} onValueChange={setTermId} />
-              </Field>
-              <div className="flex items-end">
-                <Button
-                  onClick={handleGenerate}
-                  disabled={loading || !programId.trim() || !termId.trim()}
-                >
-                  {loading ? "Initializing..." : "Initialize"}
-                </Button>
-              </div>
-            </div>
+            {!programId || !termId ? (
+              <ContextRequired scope="program-term" />
+            ) : (
+              <Button
+                onClick={handleGenerate}
+                disabled={loading || !programId.trim() || !termId.trim()}
+              >
+                {loading ? "Initializing..." : "Initialize"}
+              </Button>
+            )}
           </FramePanel>
         </Frame>
 
@@ -235,10 +231,7 @@ export function CurriculumMapForm() {
                 <tr className="border-b text-left text-muted-foreground">
                   <th className="py-2 pr-4">Course</th>
                   {ploCodes.map((code) => (
-                    <th
-                      key={code}
-                      className="py-2 pr-2 text-center min-w-15"
-                    >
+                    <th key={code} className="py-2 pr-2 text-center min-w-15">
                       {code}
                     </th>
                   ))}

@@ -1,7 +1,8 @@
 "use client";
 
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useState } from "react";
+import { useAtom, useAtomValue } from "jotai";
+import { useCallback, useEffect, useState } from "react";
+import { ContextRequired } from "@/components/forms/context-required";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -13,7 +14,6 @@ import {
   FrameTitle,
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
-import { ClassSectionSelect } from "@/components/ui/class-section-select";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormSelect } from "@/components/ui/form-select";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   BLOOMS_LEVELS,
   ROOT_CAUSES,
 } from "@/lib/constants/obe";
+import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
 import {
   type AssessmentTypeRow,
   type CarPart1,
@@ -798,9 +799,19 @@ export function CarForm() {
   const [payload, setPayload] = useAtom(carPayloadAtom);
   const [dirty, setDirty] = useAtom(carDirtyAtom);
   const [activeTab, setActiveTab] = useState<TabKey>("p1");
-  const [classSectionId, setClassSectionId] = useState("");
+  // NOTE: target section comes from the dashboard picker, not local state.
+  const classSectionId = useAtomValue(selectedClassSectionIdAtom);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // NOTE: changing the global section drops a CAR loaded for another section
+  // (was inline in the section select's onChange before the dashboard picker).
+  useEffect(() => {
+    if (payload && classSectionId !== payload.classSectionId) {
+      setPayload(null);
+      setDirty(false);
+    }
+  }, [classSectionId, payload, setPayload, setDirty]);
 
   const handleGenerate = useCallback(async () => {
     if (!classSectionId.trim()) return;
@@ -883,38 +894,26 @@ export function CarForm() {
 
   return (
     <div className="space-y-4">
-      {/* Top Generator / Section Selector Bar */}
+      {/* Top Generator Bar */}
       <Frame>
         <FrameHeader>
           <FrameTitle>Generate Course Assessment Report</FrameTitle>
           <FrameDescription>
-            Select a class section to generate or view the 7-part CAR from
-            ingest data.
+            Generate or view the 7-part CAR from ingest data for the selected
+            class section.
           </FrameDescription>
         </FrameHeader>
         <FramePanel>
-          <div className="flex items-end gap-3">
-            <Field className="flex-1">
-              <FieldLabel>Class Section</FieldLabel>
-              <ClassSectionSelect
-                loadAll={true}
-                value={classSectionId}
-                onValueChange={(val) => {
-                  setClassSectionId(val);
-                  if (payload && val !== payload.classSectionId) {
-                    setPayload(null);
-                    setDirty(false);
-                  }
-                }}
-              />
-            </Field>
+          {!classSectionId ? (
+            <ContextRequired scope="class-section" />
+          ) : (
             <Button
               onClick={handleGenerate}
               disabled={generating || !classSectionId.trim()}
             >
               {generating ? "Generating..." : "Generate CAR"}
             </Button>
-          </div>
+          )}
         </FramePanel>
       </Frame>
 
