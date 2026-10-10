@@ -1,18 +1,18 @@
 /**
  * Governance dataset atoms (institutional oversight / QA charts).
  *
- * `approvalFlowDataAtom` and `formStatusCountsAtom` are derived from the real
- * `GET /forms?scope=visible` fetch (see `atoms/forms.ts`), so they reflect
- * live database counts for every submission the session user's approval chain
- * entitles them to — own + the forms that must reach their role (faculty sees
- * only its own, vpaa/system_admin see everything), never another user's rows
- * for a role that has no claim on them. The audit trail reads the real
- * `GET /audit/logs` (scoped server-side to the caller), and
- * `auditActivityDataAtom` is derived from it. The remaining charts have no
- * backend endpoint yet (graduation clusters, report exports, platform-wide
- * user/role counts, the at-risk flag reasons, and the AI recommendation
- * list), so they are seeded with `[]` and render an empty state instead of
- * fabricated numbers.
+ * `approvalFlowDataAtom`, `formStatusCountsAtom` and `atRiskDataAtom` are
+ * derived from live backend reads (`GET /forms?scope=visible` and
+ * `GET /atrisk/flags`), so they reflect real database counts for every
+ * submission the session user's approval chain entitles them to — own + the
+ * forms that must reach their role (faculty sees only its own, vpaa/
+ * system_admin see everything), never another user's rows for a role that has
+ * no claim on them. The audit trail reads the real `GET /audit/logs`
+ * (scoped server-side to the caller), and `auditActivityDataAtom` is derived
+ * from it. The remaining charts have no backend endpoint yet (graduation
+ * clusters, report exports, platform-wide user/role counts, and the AI
+ * recommendation list), so they are seeded with `[]` and render an empty
+ * state instead of fabricated numbers.
  */
 
 import { atom } from "jotai";
@@ -71,11 +71,32 @@ export const approvalFlowDataAtom = atom<ApprovalFlowDatum[]>((get) => {
 /** Refreshes the underlying `GET /forms` fetch that feeds the derivation. */
 export const refreshApprovalFlowAtom = refreshFormSubmissionsAtom;
 
-// TODO(at-risk): `AtRiskFlag.reason` is written by the ingest pipeline but no
-// route exposes it yet — the `/ingest/attainments` rows carry the boolean only.
-/** At-risk watchlist grouped by `AtRiskFlag.reason`. */
+/** `AtRiskFlagRow` subset from `GET /atrisk/flags` (`server/actions/at-risk.ts`). */
+interface AtRiskFlagDto {
+	reason: string;
+}
+
+/**
+ * At-risk watchlist grouped by `AtRiskFlag.reason`.
+ *
+ * `GET /atrisk/flags` returns one row per flag (a student can carry several,
+ * one per below-threshold CLO), so the donut counts **flags**, not students.
+ * The endpoint is not wrapped in `cached` server-side, so clearing a flag on
+ * final approval moves the donut immediately — no refresh race.
+ */
 export const { dataAtom: atRiskDataAtom, refreshAtom: refreshAtRiskAtom } =
-	atomWithMockData<AtRiskDatum[]>([]);
+	atomWithAsyncData<AtRiskDatum[]>([], (_get, signal) =>
+		api.get<AtRiskFlagDto[]>("/atrisk/flags", { signal }).then((flags) => {
+			const counts = new Map<string, number>();
+			for (const flag of flags) {
+				counts.set(flag.reason, (counts.get(flag.reason) ?? 0) + 1);
+			}
+			return [...counts].map(([reason, count]) => ({
+				reason,
+				studentCount: count,
+			}));
+		}),
+	);
 
 /** Actor snapshot joined at read time from `user` (`GET /audit/logs`). */
 export interface AuditActor {
@@ -138,7 +159,6 @@ export const auditActivityDataAtom = atom<AuditActivityDatum[]>((get) => {
 
 // TODO(ai-status): `GET /ai/recommendation/latest` returns a single record, not
 // a status distribution — a list route is needed for this donut.
-/** AI recommendation review statuses (`AiRecommendation.status`). */
 export const {
 	dataAtom: recommendationsDataAtom,
 	refreshAtom: refreshRecommendationsAtom,
@@ -158,13 +178,27 @@ export const {
 	refreshAtom: refreshExportFormatsAtom,
 } = atomWithMockData<ExportFormatDatum[]>([]);
 
-// TODO(form-catalog): no `/forms/types` route — submissions only reveal the
-// types that have been used, which is not the catalog distribution.
+/** One `FormType` row from `GET /forms/types`. */
+interface FormTypeDto {
+	pdcaStage: string;
+}
+
 /** Form-type catalog by PDCA stage (`FormType.pdcaStage`). */
 export const {
 	dataAtom: formTypeStagesDataAtom,
 	refreshAtom: refreshFormTypeStagesAtom,
-} = atomWithMockData<FormTypeStageDatum[]>([]);
+} = atomWithAsyncData<FormTypeStageDatum[]>([], (_get, signal) =>
+	api.get<FormTypeDto[]>("/forms/types", { signal }).then((types) => {
+		const counts = new Map<string, number>();
+		for (const type of types) {
+			counts.set(type.pdcaStage, (counts.get(type.pdcaStage) ?? 0) + 1);
+		}
+		return [...counts].map(([stage, formTypeCount]) => ({
+			stage: stage as FormTypeStageDatum["stage"],
+			formTypeCount,
+		}));
+	}),
+);
 
 // TODO(user-roles): `GET /auth/role-requests` is admin-only and filtered by
 // request status, so it cannot seed a platform-wide role distribution.
