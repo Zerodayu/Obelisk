@@ -140,20 +140,65 @@ export const {
 export const { dataAtom: scheduleDataAtom, refreshAtom: refreshScheduleAtom } =
 	atomWithMockData<ScheduleDatum[]>([]);
 
-/** PLO→PEO coverage matrix (`PloToPeoMap`) — no route reads the model yet. */
+/**
+ * PLO→PEO coverage (`PloToPeoMap`) for the signed-in user's program.
+ *
+ * Mirrors `curriculumCoverageDataAtom`: the route is program-scoped and
+ * `lib/unit-scope.ts` refuses a foreign `programId`, so an institution-wide
+ * role with no program of its own has nothing to chart (same TODO applies).
+ */
 export const {
 	dataAtom: ploToPeoCoverageDataAtom,
 	refreshAtom: refreshPloToPeoCoverageAtom,
-} = atomWithMockData<PloToPeoCoverageDatum[]>([]);
+} = atomWithAsyncData<PloToPeoCoverageDatum[]>([], async (get, signal) => {
+	const programId = get(userAtom)?.programId;
+	if (!programId) return [];
 
-/** Assessment items by type (`AssessmentItem.type`) — no aggregation route. */
+	const maps = await api.get<{ ploCode: string; peoCode: string }[]>(
+		"/plan/plo-to-peo-map",
+		{ signal, query: { programId } },
+	);
+	return maps.map((map) => ({
+		ploCode: map.ploCode,
+		peoCode: map.peoCode,
+		mapped: true,
+	}));
+});
+
+/** Assessment items per type (`GET /academic/assessment-types`). */
 export const {
 	dataAtom: assessmentTypesDataAtom,
 	refreshAtom: refreshAssessmentTypesAtom,
-} = atomWithMockData<AssessmentTypeDatum[]>([]);
+} = atomWithAsyncData<AssessmentTypeDatum[]>([], (_get, signal) =>
+	api
+		.get<{ type: "direct" | "indirect"; itemCount: number }[]>(
+			"/academic/assessment-types",
+			{ signal },
+		)
+		.then((rows) => rows.map((r) => ({ ...r }))),
+);
 
-/** Students by year level (`Student.yearLevel`) — no student roster route. */
+/** Students per year level (`GET /academic/students/year-levels`). */
 export const {
 	dataAtom: studentYearLevelsDataAtom,
 	refreshAtom: refreshStudentYearLevelsAtom,
-} = atomWithMockData<StudentYearLevelDatum[]>([]);
+} = atomWithAsyncData<StudentYearLevelDatum[]>([], (_get, signal) =>
+	api
+		.get<{ yearLevel: number | null; studentCount: number }[]>(
+			"/academic/students/year-levels",
+			{ signal },
+		)
+		// A student with no year level on file is not one of Y1–Y4 and the chart's
+		// union type has no slot for it, so it is dropped rather than coerced.
+		.then((rows) =>
+			rows
+				.filter(
+					(r): r is { yearLevel: number; studentCount: number } =>
+						r.yearLevel !== null,
+				)
+				.map((r) => ({
+					yearLevel: r.yearLevel as StudentYearLevelDatum["yearLevel"],
+					studentCount: r.studentCount,
+				})),
+		),
+);
