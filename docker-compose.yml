@@ -185,6 +185,8 @@ services:
     environment:
       # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
+      # NOTE: MagicDNS name — logs.<tailnet>.ts.net
+      TS_HOSTNAME: logs
       # NOTE: state must persist or every restart registers a new node
       TS_STATE_DIR: /var/lib/tailscale
       # NOTE: reuse the stored login instead of re-authing on every start
@@ -213,7 +215,8 @@ services:
       umami-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/heartbeat || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:3000/api/heartbeat || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -234,6 +237,8 @@ services:
     environment:
       # NOTE: injected by the dotenvx wrap — reusable tag:obelisk key (admin console → Settings → Keys)
       TS_AUTHKEY: ${TS_AUTHKEY:-}
+      # NOTE: MagicDNS name — stats.<tailnet>.ts.net
+      TS_HOSTNAME: stats
       # NOTE: state must persist or every restart registers a new node
       TS_STATE_DIR: /var/lib/tailscale
       # NOTE: reuse the stored login instead of re-authing on every start
