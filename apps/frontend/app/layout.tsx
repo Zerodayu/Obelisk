@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import "./globals.css";
-import Script from "next/script";
 
 import { Theme } from "@/components/theme";
 import { Toaster } from "@/components/ui/toast";
@@ -12,7 +11,7 @@ import { StoreProvider } from "@/lib/store";
 import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 import { cn } from "@/lib/utils";
 import { app } from "@/utils/app-info";
-import { env } from "@/utils/env";
+import { UmamiConsentDrawer, UmamiTracker } from "@/components/umami/umami-consent";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -92,31 +91,6 @@ export const metadata: Metadata = {
 	description: app.description,
 };
 
-/**
- * Umami tracker — renders only when the build has BOTH the tracker origin
- * (NEXT_PUBLIC_UMAMI_DOMAIN) and the website key
- * (NEXT_PUBLIC_UMAMI_WEBSITE_ID) — each injected as a compose build ARG
- * from .env.docker (UMAMI_ keys, or the LOCAL_ variants in local mode).
- * Unset/empty ⇒ no script, so dev builds and key-less deploys ship none.
- */
-function UmamiTracker() {
-	const domain = env.NEXT_PUBLIC_UMAMI_DOMAIN;
-	const websiteId = env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
-	if (!domain || !websiteId) {
-		return null;
-	}
-	// NOTE: afterInteractive is Next's documented strategy for analytics — the
-	// dashboard on domain stays admin-only at the Caddy layer, the tracker
-	// endpoints (/script.js, /api/send) answer every visitor
-	return (
-		<Script
-			src={`https://${domain}/script.js`}
-			strategy="afterInteractive"
-			data-website-id={websiteId}
-		/>
-	);
-}
-
 export default function RootLayout({
 	children,
 }: Readonly<{
@@ -152,6 +126,7 @@ export default function RootLayout({
 					<TooltipProvider>
 						<body className="flex min-h-full flex-col">
 							<UmamiTracker />
+							<UmamiConsentDrawer />
 							<Toaster />
 							{children}
 						</body>
