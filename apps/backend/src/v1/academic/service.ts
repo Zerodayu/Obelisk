@@ -64,7 +64,9 @@ export async function listClassSections(
 		select: {
 			id: true,
 			sectionCode: true,
-			course: { select: { id: true, code: true, title: true } },
+			// NOTE: programId rides on the course so the client can back-fill the
+			// global program context from a picked section.
+			course: { select: { id: true, code: true, title: true, programId: true } },
 			term: { select: { id: true, schoolYear: true, semester: true } },
 			faculty: { select: { id: true, name: true } },
 		},

@@ -10,6 +10,8 @@
  * or pending fetch renders an empty select, never fabricated programs/terms.
  */
 
+import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
 import { api } from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
 import { atomWithAsyncData } from "@/lib/store/async-atom";
@@ -39,7 +41,9 @@ export interface AcademicTerm {
 export interface ClassSection {
   id: string;
   sectionCode: string;
-  course: { id: string; code: string; title: string };
+  // NOTE: programId rides on the course so picking a section can back-fill the
+  // program in the global context (see setClassSectionContextAtom).
+  course: { id: string; code: string; title: string; programId: string };
   term: { id: string; schoolYear: string; semester: string };
   faculty: { id: string; name: string } | null;
 }
@@ -125,14 +129,24 @@ export const SAMPLE_CLASS_SECTIONS: ClassSection[] = [
   {
     id: "cs-1",
     sectionCode: "A",
-    course: { id: "c-1", code: "CE101", title: "Engineering Mechanics" },
+    course: {
+      id: "c-1",
+      code: "CE101",
+      title: "Engineering Mechanics",
+      programId: "prog-1",
+    },
     term: { id: "term-1", schoolYear: "2025-2026", semester: "1" },
     faculty: { id: "f-1", name: "Dr. Juan Dela Cruz" },
   },
   {
     id: "cs-2",
     sectionCode: "B",
-    course: { id: "c-1", code: "CE101", title: "Engineering Mechanics" },
+    course: {
+      id: "c-1",
+      code: "CE101",
+      title: "Engineering Mechanics",
+      programId: "prog-1",
+    },
     term: { id: "term-1", schoolYear: "2025-2026", semester: "1" },
     faculty: { id: "f-2", name: "Prof. Maria Santos" },
   },
@@ -143,6 +157,7 @@ export const SAMPLE_CLASS_SECTIONS: ClassSection[] = [
       id: "c-2",
       code: "CPE201",
       title: "Data Structures and Algorithms",
+      programId: "prog-2",
     },
     term: { id: "term-1", schoolYear: "2025-2026", semester: "1" },
     faculty: { id: "f-3", name: "Dr. Jose Reyes" },
@@ -150,14 +165,24 @@ export const SAMPLE_CLASS_SECTIONS: ClassSection[] = [
   {
     id: "cs-4",
     sectionCode: "A",
-    course: { id: "c-3", code: "IT301", title: "Systems Analysis and Design" },
+    course: {
+      id: "c-3",
+      code: "IT301",
+      title: "Systems Analysis and Design",
+      programId: "prog-3",
+    },
     term: { id: "term-1", schoolYear: "2025-2026", semester: "1" },
     faculty: { id: "f-4", name: "Prof. Ana Garcia" },
   },
   {
     id: "cs-5",
     sectionCode: "A",
-    course: { id: "c-4", code: "BA101", title: "Principles of Management" },
+    course: {
+      id: "c-4",
+      code: "BA101",
+      title: "Principles of Management",
+      programId: "prog-4",
+    },
     term: { id: "term-2", schoolYear: "2024-2025", semester: "2" },
     faculty: { id: "f-5", name: "Dr. Pedro Mendoza" },
   },
@@ -190,3 +215,46 @@ export const { dataAtom: termsAtom, refreshAtom: refreshTerms } =
       });
     },
   );
+
+// ---------------------------------------------------------------------------
+// Global academic context — one selection shared by every form in the app
+// ---------------------------------------------------------------------------
+
+/**
+ * App-wide academic context, picked once on the dashboard
+ * (`AcademicContextPicker`) and consumed by every form instead of per-form
+ * selectors. Persisted in localStorage so the selection survives reloads.
+ */
+export const selectedProgramIdAtom = atomWithStorage<string>(
+  "obelisk.ctx.programId",
+  "",
+);
+
+export const selectedTermIdAtom = atomWithStorage<string>(
+  "obelisk.ctx.termId",
+  "",
+);
+
+/**
+ * Target class section of the global context — also binds the class-record
+ * upload and the `clo_raw_data` workflow strip (`GET/POST /ingest/clo-raw-data/*`).
+ * Was `selectedClassSectionIdAtom` in `atoms/ingest.ts`; re-exported there.
+ */
+export const selectedClassSectionIdAtom = atomWithStorage<string>(
+  "obelisk.ctx.classSectionId",
+  "",
+);
+
+/**
+ * Set the whole context from one picked class section — the section implies
+ * its program (via course) and term, so the dashboard picker back-fills all
+ * three atoms in one write.
+ */
+export const setClassSectionContextAtom = atom(
+  null,
+  (_get, set, section: ClassSection) => {
+    set(selectedProgramIdAtom, section.course.programId);
+    set(selectedTermIdAtom, section.term.id);
+    set(selectedClassSectionIdAtom, section.id);
+  },
+);

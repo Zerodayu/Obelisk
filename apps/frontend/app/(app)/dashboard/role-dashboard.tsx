@@ -5,11 +5,13 @@ import { FacultyDashboard } from "@/app/(app)/dashboard/faculty-dashboard";
 import { ProgramChairDashboard } from "@/app/(app)/dashboard/program-chair-dashboard";
 import { SystemAdminDashboard } from "@/app/(app)/dashboard/system-admin-dashboard";
 import { VpaaDashboard } from "@/app/(app)/dashboard/vpaa-dashboard";
+import { AcademicContextPicker } from "@/components/dashboard/academic-context";
 import { RoleChecklist } from "@/components/dashboard/role-checklist";
 import {
   DashboardShell,
   type StatCard,
 } from "@/components/dashboard/role-dashboard-shell";
+import { navSectionsFor } from "@/config/navigation";
 import type { ApiUser } from "@/lib/api-client";
 import { roleLabel } from "@/lib/roles";
 
@@ -103,6 +105,9 @@ export function RoleDashboard({ user }: { user: ApiUser }) {
       description={config.description}
       stats={stats}
     >
+      {/* One shared context picker for every form — preparer roles only
+          (pure reviewers like VPAA/AQAU have no catalog to bind it to). */}
+      {navSectionsFor(user.role).length > 0 && <AcademicContextPicker />}
       {/* Role's ordered duty list with live done/in-progress states
           (config/role-duties.ts → lib/duty-status.ts). */}
       <RoleChecklist role={user.role} />

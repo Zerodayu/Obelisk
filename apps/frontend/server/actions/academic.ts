@@ -35,7 +35,7 @@ export interface AcademicTerm {
 export interface ClassSection {
   id: string;
   sectionCode: string;
-  course: { id: string; code: string; title: string };
+  course: { id: string; code: string; title: string; programId: string };
   term: { id: string; schoolYear: string; semester: string };
   faculty: { id: string; name: string } | null;
 }
@@ -154,22 +154,10 @@ export async function listClassSections(
 ): Promise<ActionResult<ClassSection[]>> {
   if (isDevMode) {
     let filtered = SAMPLE_CLASS_SECTIONS;
+    // NOTE: samples carry course.programId, so dev filtering mirrors the
+    // backend `course.programId` where-clause directly.
     if (programId) {
-      // Map program code prefix to course codes for filtering
-      const programCoursePrefixes: Record<string, string[]> = {
-        "prog-1": ["CE"], // Civil Engineering
-        "prog-2": ["CPE"], // Computer Engineering
-        "prog-3": ["IT"], // Information Technology
-        "prog-4": ["BA"], // Business Administration
-        "prog-5": ["ACC"], // Accountancy
-        "prog-6": ["NUR"], // Nursing
-      };
-      const prefixes = programCoursePrefixes[programId] ?? [];
-      if (prefixes.length > 0) {
-        filtered = filtered.filter((cs) =>
-          prefixes.some((prefix) => cs.course.code.startsWith(prefix)),
-        );
-      }
+      filtered = filtered.filter((cs) => cs.course.programId === programId);
     }
     if (termId) {
       filtered = filtered.filter((cs) => cs.term.id === termId);

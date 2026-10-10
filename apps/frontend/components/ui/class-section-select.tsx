@@ -20,6 +20,8 @@ interface ClassSectionSelectProps {
   termId?: string;
   value?: string;
   onValueChange?: (value: string) => void;
+  /** Fires with the full section row on pick — used to back-fill context atoms. */
+  onSectionChange?: (section: ClassSection) => void;
   disabled?: boolean;
   className?: string;
   placeholder?: string;
@@ -32,6 +34,7 @@ export function ClassSectionSelect({
   termId,
   value,
   onValueChange,
+  onSectionChange,
   disabled,
   className,
   placeholder = "Select class section",
@@ -106,7 +109,14 @@ export function ClassSectionSelect({
   return (
     <Select
       value={value ? [value] : undefined}
-      onValueChange={(details) => onValueChange?.(details.value[0] ?? "")}
+      onValueChange={(details) => {
+        const next = details.value[0] ?? "";
+        onValueChange?.(next);
+        // NOTE: clearing fires only onValueChange — onSectionChange carries a
+        // picked row, so there is nothing to back-fill on clear.
+        const picked = sections.find((s) => s.id === next);
+        if (picked) onSectionChange?.(picked);
+      }}
       disabled={disabled || loading}
       collection={collection}
     >

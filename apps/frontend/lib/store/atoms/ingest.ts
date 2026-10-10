@@ -16,6 +16,11 @@ import type {
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 
+// NOTE: the target class section moved to the global academic context
+// (`atoms/academic.ts` — localStorage-backed, shared with the sidebar
+// selector); re-exported here so ingest call-sites keep one import path.
+export { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
+
 export type IngestStatus =
   | "idle"
   | "uploading"
@@ -65,13 +70,6 @@ export interface UploadHistoryRecord {
 }
 
 export const ingestStatusAtom = atom<IngestStatus>("idle");
-
-/**
- * Target class section chosen in the upload panel — shared with the
- * `clo_raw_data` workflow strip, which binds its submission draft to the same
- * section (`GET/POST /ingest/clo-raw-data/*`).
- */
-export const selectedClassSectionIdAtom = atom<string>("");
 
 export const ingestJobIdAtom = atom<string | null>(null);
 
