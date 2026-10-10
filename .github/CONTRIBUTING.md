@@ -194,9 +194,9 @@ The whole stack (Caddy, backend, frontend, ETL, Redis, Postgres, Dozzle, umami +
 
 | Recipe | What it does |
 | :--- | :--- |
-| `just lint` | Lint backend + frontend (biome, via turbo) |
+| `just lint` | Lint backend + frontend (oxlint, via turbo) |
 | `just typecheck` | Typecheck via turbo (backend only — frontend has no typecheck script, see §5) |
-| `just format` | Format backend + frontend (biome, via turbo) |
+| `just format` | Format backend + frontend (oxfmt, via turbo) |
 | `just test` | Run backend tests (all) |
 | `just test-unit` | Run backend unit tests |
 | `just test-integration` | Run backend integration tests |
@@ -210,20 +210,20 @@ Run `just --list` to see all recipes (the `deploy` group — `docker-deploy`, `d
 
 Prefer the `just check` recipe (§4) to run all of these at once.
 
-Biome is a **root devDependency** (single install, single version) configured by the **root `biome.json`** — per-app behavior (indentation, rule presets, frontend-only rule exceptions) lives in its `overrides` section; there are no per-package configs anymore. `typescript` is hoisted to the root too.
+oxc is a **root devDependency** (single install, single version): `oxlint` + `oxfmt`, configured by the root hidden `.oxlintrc.json` / `.oxfmtrc.json` — shared ignore patterns plus per-tool rules (e.g. the `@shadcn/lint` plugin, `shadcn/no-arbitrary-values`), no per-package configs. The repo formats with tabs (`useTabs: true`, width 2). `typescript` is hoisted to the root too.
 
 **Backend** (inside `apps/backend/`):
 
 ```sh
 bun run typecheck   # bunx tsc --noEmit
-bun run lint        # bunx biome check
+bun run lint        # bunx oxlint .
 bun test            # bun:test unit + integration tests
 ```
 
 **Frontend** (inside `apps/frontend/`):
 
 ```sh
-bun run lint        # biome check
+bun run lint        # bunx oxlint .
 bun run build       # production build
 bunx tsc --noEmit   # typecheck — manual only: has pre-existing errors, and
                     # `next build` skips them via typescript.ignoreBuildErrors

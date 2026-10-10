@@ -20,8 +20,8 @@ cd apps/frontend
 bun dev              # = bunx dotenvx run -f ../../.env.local -- next dev  → http://localhost:3000
 bun run build        # production build (dotenvx over the root .env.local)
 bun run build:prod # prod build — dotenvx over the root .env.prod (what the Docker image runs)
-bun run lint         # biome check
-bun run format       # biome format --write
+bun run lint         # oxlint
+bun run format       # oxfmt
 ```
 
 Secrets: the encrypted env files live at the **repo root** (`.env.local` for dev, `.env.prod` for production, header `DOTENV_PUBLIC_KEY_LOCAL`); the private keys live in the gitignored root `.env.keys`. Edit via `just env-decrypt` → edit → `just env-encrypt` (repo root). Env vars are validated by Zod in `@obelisk/env/client` (re-exported by `utils/env.ts`).
