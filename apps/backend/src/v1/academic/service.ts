@@ -4,6 +4,7 @@ import {
 	classSectionUnitWhere,
 	departmentUnitWhere,
 	programUnitWhere,
+	studentUnitWhere,
 	type UnitScope,
 } from "@lib/unit-scope";
 
@@ -41,6 +42,36 @@ export async function listTerms() {
 		},
 		orderBy: [{ schoolYear: "desc" }, { semester: "asc" }],
 	});
+}
+
+/**
+ * Students per year level, unit-scoped (`studentUnitWhere`). NULL yearLevel
+ * (a student with no level on file) is reported as `null` rather than dropped,
+ * so the client can show it instead of silently under-counting the roster.
+ */
+export async function listStudentYearLevels(unit: UnitScope) {
+	const rows = await prisma.student.groupBy({
+		by: ["yearLevel"],
+		where: studentUnitWhere(unit),
+		_count: { _all: true },
+	});
+	return rows.map((row) => ({
+		yearLevel: row.yearLevel,
+		studentCount: row._count._all,
+	}));
+}
+
+/**
+ * Assessment items per type across the caller's unit. `AssessmentItem` hangs
+ * off a class section, so the unit filter is the section filter.
+ */
+export async function listAssessmentTypeCounts(unit: UnitScope) {
+	const rows = await prisma.assessmentItem.groupBy({
+		by: ["type"],
+		where: { classSection: classSectionUnitWhere(unit) },
+		_count: { _all: true },
+	});
+	return rows.map((row) => ({ type: row.type, itemCount: row._count._all }));
 }
 
 export async function listClassSections(

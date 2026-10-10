@@ -5,9 +5,11 @@ import { Elysia } from "elysia";
 
 import { ClassSectionQuerySchema } from "./model";
 import {
+	listAssessmentTypeCounts,
 	listClassSections,
 	listDepartments,
 	listPrograms,
+	listStudentYearLevels,
 	listTerms,
 } from "./service";
 
@@ -65,6 +67,42 @@ export const academicPlugin = new Elysia({
 				...SECURITY,
 				responses: {
 					200: { description: "List of terms" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/students/year-levels",
+		cached(300, async ({ user }) => listStudentYearLevels(unitScopeOf(user))),
+		{
+			auth: true,
+			detail: {
+				summary: "Count students per year level",
+				description:
+					"Unit-scoped headcount by `Student.yearLevel`; students with no level on file are reported with a null yearLevel.",
+				...SECURITY,
+				responses: {
+					200: { description: "Year level -> student count" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/assessment-types",
+		cached(300, async ({ user }) =>
+			listAssessmentTypeCounts(unitScopeOf(user)),
+		),
+		{
+			auth: true,
+			detail: {
+				summary: "Count assessment items per type",
+				description:
+					"Unit-scoped count of `AssessmentItem` rows grouped by direct/indirect.",
+				...SECURITY,
+				responses: {
+					200: { description: "Assessment type -> item count" },
 					401: { description: "Unauthorized" },
 				},
 			},
