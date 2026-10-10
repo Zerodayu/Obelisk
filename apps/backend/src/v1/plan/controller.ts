@@ -637,7 +637,11 @@ export const planPlugin = new Elysia({
 	// --- clo_to_plo_map ----------------------------------------------------------
 	.get(
 		"/clo-plo-map",
-		cached(60, async ({ query, user, set }) => {
+		// NOTE: deliberately NOT wrapped in `cached()` — the connections panel
+		// refetches right after an add/edit/delete, and `cached` keys are opaque
+		// URL hashes with no invalidation hook (see lib/cache.ts). Unit-scoped
+		// list of small rows is cheap.
+		async ({ query, user, set }) => {
 			try {
 				// NOTE: unit-scoped inside the service (403 for a foreign program).
 				return await cloToPloMapService.list(
@@ -650,7 +654,7 @@ export const planPlugin = new Elysia({
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		}),
+		},
 		{
 			auth: true,
 			query: t.Object({
@@ -672,7 +676,10 @@ export const planPlugin = new Elysia({
 	)
 	.get(
 		"/clo-plo-map/entities",
-		cached(60, async ({ query, user, set }) => {
+		// NOTE: deliberately NOT wrapped in `cached()` — the dropdown CLO/PLO
+		// options must show entities added elsewhere on the next open, same
+		// no-invalidation reason as the list route above.
+		async ({ query, user, set }) => {
 			try {
 				return await cloToPloMapService.listEntities(
 					query.programId,
@@ -681,7 +688,7 @@ export const planPlugin = new Elysia({
 			} catch (error) {
 				return mapPlanErrors(error, set);
 			}
-		}),
+		},
 		{
 			auth: true,
 			query: t.Object({
