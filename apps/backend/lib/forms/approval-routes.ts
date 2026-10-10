@@ -115,7 +115,9 @@ export function ascendToVpaa(
 export const APPROVAL_ROUTES: Record<string, ApprovalRoute> = {
 	// --- PLAN-phase setup ------------------------------------------------------
 	curriculum_map: {
-		// "Program Chair (with Faculty) → Curriculum Committee → AQAU"
+		// "Program Chair → Curriculum Committee → AQAU" — Faculty co-prepares
+		// (the manual names the Program Chair alone); Curriculum Committee is
+		// not an ApproverRole, so the chain enters at AQAU.
 		preparerRoles: ["program_chair", "faculty"],
 		chain: ascendToVpaa(["aqau"]),
 	},

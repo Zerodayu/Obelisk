@@ -232,11 +232,12 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
           icon: ClipboardCheckIcon,
           status: {
             kind: "approve",
+            // NOTE: `closing_the_loop` sits at [aqau, vpaa] — the dean is
+            // never on that chain, so listing it made the duty unresolvable.
             codes: [
               "plo_attainment_summary",
               "cqi_action_plan",
               "annual_program_report",
-              "closing_the_loop",
             ],
           },
         },
