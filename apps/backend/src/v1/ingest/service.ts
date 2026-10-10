@@ -4,6 +4,7 @@ import { csvPercent, parseCsv } from "@lib/ingest/csv";
 import type {
 	ETLJob,
 	EtlLoadedData,
+	EtlResultData,
 	EtlSectionExtractionStatus,
 	EtlSectionInfo,
 	EtlSetupInfo,
@@ -15,7 +16,7 @@ import {
 	reconcileAtRisk,
 } from "@lib/ingest/score-edit";
 import { prisma } from "@lib/prisma";
-import type { Prisma } from "@prisma/generated/prisma/client";
+import type { Prisma, UploadRecord } from "@prisma/generated/prisma/client";
 import { submissionService } from "@v1/forms/service";
 import {
 	compareSectionToWorkbook,
@@ -24,17 +25,19 @@ import {
 
 // --- In-memory Cache for Idempotency ---
 // NOTE: clients poll completed jobs repeatedly — the cache runs the persistence
-// logic once and replays the stored result on every later poll.
-const jobCompletionCache = new Map<
-	string,
+// logic once and replays the stored result on every later poll. `ready` is the
+// reviewed-but-unsaved ETL result: what a later save commits from.
+export type CachedJobResult =
+	| { status: "ready"; etl?: EtlResultData | null; preview: UploadPreview }
 	| {
 			status: "completed";
 			persistence: PersistenceSummary;
 			etl?: unknown;
 			verification?: SectionComparisonResult;
 	  }
-	| { status: "failed"; error: unknown }
->();
+	| { status: "failed"; error: unknown };
+
+const jobCompletionCache = new Map<string, CachedJobResult>();
 
 // In-flight persistence mutex to avoid concurrent execution during client polling
 const inFlightJobs = new Set<string>();
@@ -91,6 +94,20 @@ export type PersistenceSummary = {
 	cloMatchFailures: { cloCode: string; studentName: string; reason: string }[];
 	verification?: SectionComparisonResult;
 };
+
+/**
+ * Read-only summary of a finished ETL job shown before the user saves —
+ * nothing is written to the attainment tables until `saveJob` runs.
+ */
+export interface UploadPreview {
+	verification: SectionComparisonResult;
+	students: number;
+	rows: number;
+	atRisk: number;
+	/** CLO codes the section's course does not define — rows a save skips. */
+	unmatchedClos: { cloCode: string; rows: number }[];
+	setup: EtlSetupInfo | null;
+}
 
 export type AttainmentRosterRow = {
 	id: string;
@@ -402,6 +419,63 @@ export class AttainmentService {
 		}
 
 		return summary;
+	}
+
+	/**
+	 * Read-only pre-save summary of an ETL result: section verification plus
+	 * the parsed counts, mirroring what `persistAttainment` would write.
+	 */
+	async buildPreview(
+		etlLoadedData: TypedEtlLoadedData,
+		classSectionId: string,
+	): Promise<UploadPreview> {
+		const { courseId, academicContext } =
+			await this.resolveAcademicChain(classSectionId);
+
+		const verification = compareSectionToWorkbook(academicContext, {
+			section: etlLoadedData.section,
+			section_extraction: etlLoadedData.section_extraction,
+			setup: etlLoadedData.setup,
+		});
+
+		const knownClos = new Set(
+			(
+				await prisma.clo.findMany({
+					where: { courseId },
+					select: { code: true },
+				})
+			).map((clo) => clo.code.toUpperCase()),
+		);
+
+		const students = new Set<string>();
+		const unmatched = new Map<string, number>();
+		let atRisk = 0;
+
+		for (const record of etlLoadedData.attainments) {
+			students.add(`${record.student_name}|${record.student_id ?? ""}`);
+			// NOTE: same rule as persistAttainment's isBelowThreshold, so the
+			// preview's at-risk count matches the flags a save creates.
+			if (!record.met_threshold) atRisk++;
+			const code = String(record.clo_code).toUpperCase();
+			if (!knownClos.has(code)) {
+				unmatched.set(
+					record.clo_code,
+					(unmatched.get(record.clo_code) ?? 0) + 1,
+				);
+			}
+		}
+
+		return {
+			verification,
+			students: students.size,
+			rows: etlLoadedData.attainments.length,
+			atRisk,
+			unmatchedClos: [...unmatched].map(([cloCode, rows]) => ({
+				cloCode,
+				rows,
+			})),
+			setup: etlLoadedData.setup ?? null,
+		};
 	}
 
 	/**
@@ -1157,6 +1231,14 @@ export class IngestService {
 		return prisma.uploadRecord.findFirst({ where: { etlJobId: jobId } });
 	}
 
+	/** Validates the python result shape and returns the typed ETL payload. */
+	private loadedOf(job: ETLJob): TypedEtlLoadedData {
+		if (!job.result?.loaded || !Array.isArray(job.result.loaded.attainments)) {
+			throw new MalformedEtlResultError(job.job_id);
+		}
+		return job.result.loaded as TypedEtlLoadedData;
+	}
+
 	/**
 	 * Processes a completed ETL job, validates the result, and persists it.
 	 * This is the core logic that should only run once per job.
@@ -1166,11 +1248,7 @@ export class IngestService {
 		classSectionId: string,
 		triggeredByUserId?: string,
 	) {
-		if (!job.result?.loaded || !Array.isArray(job.result.loaded.attainments)) {
-			throw new MalformedEtlResultError(job.job_id);
-		}
-
-		const loadedData = job.result.loaded as TypedEtlLoadedData;
+		const loadedData = this.loadedOf(job);
 
 		const persistenceSummary = await attainmentService.persistAttainment(
 			loadedData,
@@ -1186,15 +1264,100 @@ export class IngestService {
 		};
 	}
 
-	/**
-	 * Checks the status of a job, and if complete, triggers the persistence step.
-	 * Caches results to ensure idempotency. The matching `UploadRecord` is
-	 * updated to `completed`/`failed` so the user's history stays accurate.
-	 */
-	async getJobStatus(
+	/** Maps a preview/persistence error onto a cached `failed` result. */
+	private async failJob(
 		jobId: string,
-		queryClassSectionId?: string,
+		record: UploadRecord | null,
+		error: unknown,
+	) {
+		console.error(`[Ingest] Job ${jobId} failed:`, error);
+
+		let errorObj: {
+			error_type: string;
+			message: string;
+			verification?: SectionComparisonResult;
+		};
+
+		if (error instanceof SectionMismatchError) {
+			errorObj = {
+				error_type: "SectionMismatchError",
+				message: error.message,
+				verification: error.verification,
+			};
+		} else if (error instanceof MalformedEtlResultError) {
+			errorObj = {
+				error_type: error.name,
+				message: error.message,
+			};
+		} else {
+			errorObj = {
+				error_type: "PersistenceFailed",
+				message: (error as Error).message,
+			};
+		}
+
+		const result = { status: "failed" as const, error: errorObj };
+		jobCompletionCache.set(jobId, result);
+
+		if (record) {
+			await this.markUploadFailed(record.id, errorObj.message);
+		}
+
+		return result;
+	}
+
+	/** Persists a completed job once and records the result on its history row. */
+	private async commitJob(
+		jobId: string,
+		job: ETLJob,
+		record: UploadRecord | null,
+		classSectionId: string,
 		triggeredByUserId?: string,
+	) {
+		// NOTE: second guard — `ingestClient.getJob` awaited above lets two
+		// concurrent saves through the one in `resolveJob`.
+		if (inFlightJobs.has(jobId)) {
+			return { status: "running" as const };
+		}
+		inFlightJobs.add(jobId);
+
+		try {
+			const result = await this.processAndPersistJob(
+				job,
+				classSectionId,
+				triggeredByUserId,
+			);
+			jobCompletionCache.set(jobId, result);
+
+			if (record && result.status === "completed") {
+				await prisma.uploadRecord.update({
+					where: { id: record.id },
+					data: {
+						status: "completed",
+						computationRunId: result.persistence.computationRunId,
+						summary: result.persistence as unknown as Prisma.InputJsonValue,
+					},
+				});
+			}
+
+			return result;
+		} catch (error) {
+			return this.failJob(jobId, record, error);
+		} finally {
+			inFlightJobs.delete(jobId);
+		}
+	}
+
+	/**
+	 * Shared job resolution for the status poll and the save call: section
+	 * binding → cached replay → `UploadRecord` replay → python poll. With
+	 * `commit: false` a finished job answers `ready` + a preview and writes
+	 * nothing; `commit: true` runs the (idempotent) persistence step.
+	 */
+	private async resolveJob(
+		jobId: string,
+		queryClassSectionId: string | undefined,
+		opts: { commit: boolean; userId?: string },
 	) {
 		// 1. Look up the authoritative upload record to verify section binding.
 		// NOTE: this must run BEFORE the jobCompletionCache read below — otherwise
@@ -1216,7 +1379,8 @@ export class IngestService {
 		}
 
 		const cached = jobCompletionCache.get(jobId);
-		if (cached) return cached;
+		// NOTE: a `ready` entry is only a preview — a save must still persist it.
+		if (cached && (cached.status !== "ready" || !opts.commit)) return cached;
 
 		const targetClassSectionId = boundClassSectionId ?? queryClassSectionId;
 		if (!targetClassSectionId) {
@@ -1252,7 +1416,12 @@ export class IngestService {
 			return { status: "running" as const };
 		}
 
-		const job = await ingestClient.getJob(jobId);
+		// NOTE: a save can commit straight from the previewed payload when the
+		// python job is no longer reachable (e.g. Redis flushed).
+		const ready = cached?.status === "ready" ? cached : null;
+		const job: ETLJob = ready?.etl
+			? { job_id: jobId, status: "completed", result: ready.etl }
+			: await ingestClient.getJob(jobId);
 
 		if (job.status === "running" || job.status === "queued") {
 			return { status: job.status };
@@ -1270,76 +1439,98 @@ export class IngestService {
 		}
 
 		if (job.status === "completed") {
-			if (inFlightJobs.has(jobId)) {
-				return { status: "running" as const };
-			}
-			inFlightJobs.add(jobId);
-
-			try {
-				const result = await this.processAndPersistJob(
+			if (opts.commit) {
+				return this.commitJob(
+					jobId,
 					job,
+					record,
 					targetClassSectionId,
-					triggeredByUserId,
+					opts.userId,
 				);
+			}
+
+			// Preview only: nothing is written until the user saves.
+			try {
+				const preview = await attainmentService.buildPreview(
+					this.loadedOf(job),
+					targetClassSectionId,
+				);
+				const result = { status: "ready" as const, etl: job.result, preview };
 				jobCompletionCache.set(jobId, result);
-
-				if (record && result.status === "completed") {
-					await prisma.uploadRecord.update({
-						where: { id: record.id },
-						data: {
-							status: "completed",
-							computationRunId: result.persistence.computationRunId,
-							summary: result.persistence as unknown as Prisma.InputJsonValue,
-						},
-					});
-				}
-
 				return result;
 			} catch (error) {
-				console.error(`[Ingest] Persistence failed for job ${jobId}:`, error);
-
-				let errorObj: {
-					error_type: string;
-					message: string;
-					verification?: SectionComparisonResult;
-				};
-
-				if (error instanceof SectionMismatchError) {
-					errorObj = {
-						error_type: "SectionMismatchError",
-						message: error.message,
-						verification: error.verification,
-					};
-				} else if (error instanceof MalformedEtlResultError) {
-					errorObj = {
-						error_type: error.name,
-						message: error.message,
-					};
-				} else {
-					errorObj = {
-						error_type: "PersistenceFailed",
-						message: (error as Error).message,
-					};
-				}
-
-				const result = {
-					status: "failed" as const,
-					error: errorObj,
-				};
-				jobCompletionCache.set(jobId, result);
-
-				if (record) {
-					await this.markUploadFailed(record.id, errorObj.message);
-				}
-
-				return result;
-			} finally {
-				inFlightJobs.delete(jobId);
+				return this.failJob(jobId, record, error);
 			}
 		}
 
 		// Should not be reached
 		return { status: "unknown", error: "Unknown job status" };
+	}
+
+	/**
+	 * `GET /ingest/upload/:jobId/status` — polls the job. A finished job answers
+	 * `ready` with a preview; nothing is written until `saveJob` runs.
+	 */
+	async getJobStatus(
+		jobId: string,
+		queryClassSectionId?: string,
+		triggeredByUserId?: string,
+	) {
+		return this.resolveJob(jobId, queryClassSectionId, {
+			commit: false,
+			userId: triggeredByUserId,
+		});
+	}
+
+	/**
+	 * `POST /ingest/upload/:jobId/save` — persists a reviewed job and marks the
+	 * matching `UploadRecord` `completed` (or `failed` when persistence throws).
+	 * Idempotent: a repeated save replays the stored summary.
+	 */
+	async saveJob(
+		jobId: string,
+		queryClassSectionId?: string,
+		triggeredByUserId?: string,
+	) {
+		return this.resolveJob(jobId, queryClassSectionId, {
+			commit: true,
+			userId: triggeredByUserId,
+		});
+	}
+
+	/**
+	 * `POST /ingest/upload/:jobId/discard` — the user chose to re-upload instead
+	 * of saving; only the history row changes (the attainment tables were never
+	 * touched for a `queued` record).
+	 */
+	async discardJob(
+		jobId: string,
+		queryClassSectionId?: string,
+	): Promise<{ status: "discarded" }> {
+		const record = await this.findRecordByJob(jobId);
+		const boundClassSectionId = record?.classSectionId;
+
+		if (
+			boundClassSectionId &&
+			queryClassSectionId &&
+			queryClassSectionId !== boundClassSectionId
+		) {
+			throw new SectionBindingMismatchError(
+				queryClassSectionId,
+				boundClassSectionId,
+			);
+		}
+
+		// NOTE: an already-saved record stays `completed` — discard only clears
+		// uploads that never persisted.
+		if (record && record.status === "queued") {
+			await prisma.uploadRecord.update({
+				where: { id: record.id },
+				data: { status: "discarded" },
+			});
+		}
+
+		return { status: "discarded" };
 	}
 }
 

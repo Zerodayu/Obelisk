@@ -12,6 +12,7 @@ import {
 	InitCloRawDataSchema,
 	ListAttainmentsSchema,
 	ReimportScoresSchema,
+	SaveIngestSchema,
 	UpdateAttainmentsSchema,
 	UploadClassRecordSchema,
 } from "./model";
@@ -289,15 +290,72 @@ export const ingestPlugin = new Elysia({
 			params: t.Object({ jobId: t.String() }),
 			query: t.Object({ classSectionId: t.String() }),
 			detail: {
-				summary: "Get status of an ingest job and trigger persistence",
+				summary: "Get status of an ingest job (preview before saving)",
 				description:
-					"Poll this endpoint to check the status of an upload job. When the job is complete, the server will trigger the database persistence step and return the final summary. This persistence step is idempotent and will only run once.",
+					"Poll this endpoint to check the status of an upload job. When the ETL finishes it answers 'ready' with a preview (section verification + parsed counts) and writes nothing — persist it with POST /ingest/upload/:jobId/save, or drop it with /discard.",
 				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
 				responses: {
 					200: {
 						description:
-							"Returns current job status ('queued', 'running') or the final result ('completed', 'failed').",
+							"Returns 'queued'/'running', 'ready' + preview, or the final result ('completed' after a save, 'failed').",
 					},
+					400: { description: "Section binding mismatch" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/upload/:jobId/save",
+		async ({ params, body, user }) => {
+			await gateSection(user, body.classSectionId);
+			return ingestService.saveJob(
+				params.jobId,
+				body.classSectionId,
+				user.id,
+			);
+		},
+		{
+			auth: true,
+			params: t.Object({ jobId: t.String() }),
+			body: SaveIngestSchema,
+			detail: {
+				summary: "Save a reviewed upload job",
+				description:
+					"Persists a finished ('ready') ETL job: creates the ComputationRun and its attainment/flag rows, then marks the UploadRecord completed. Idempotent — a repeated save replays the stored summary without writing twice.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: {
+						description:
+							"Persistence summary, or 'running' while another save is in flight.",
+					},
+					400: { description: "Section binding mismatch" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller's role may not capture class records" },
+					404: { description: "ClassSection not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/upload/:jobId/discard",
+		async ({ params, body, user }) => {
+			await gateSection(user, body.classSectionId);
+			return ingestService.discardJob(params.jobId, body.classSectionId);
+		},
+		{
+			auth: true,
+			params: t.Object({ jobId: t.String() }),
+			body: SaveIngestSchema,
+			detail: {
+				summary: "Discard a reviewed upload job",
+				description:
+					"User chose to re-upload instead of saving: marks the UploadRecord discarded. No attainment data is touched — nothing was ever written for a queued job.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "{ status: 'discarded' }" },
 					400: { description: "Section binding mismatch" },
 					401: { description: "Unauthorized" },
 					403: { description: "Caller's role may not capture class records" },

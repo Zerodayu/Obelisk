@@ -1118,4 +1118,304 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			});
 		}
 	});
+
+	it("buildPreview summarises a finished ETL job without writing anything", async () => {
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "T1",
+			},
+		});
+		await prisma.clo.create({
+			data: { id: "it-ingest-clo-1", courseId: IDS.course, code: "CLO1", description: "CLO 1" },
+		});
+
+		const etlLoadedData: TypedEtlLoadedData = {
+			header: {},
+			clo_plo_mapping: {},
+			attainments: [
+				{
+					student_name: "Doe, John",
+					student_id: "IT-INGEST-0001",
+					clo_code: "CLO1",
+					direct_clo_attainment_pct: 0.85,
+					met_threshold: true,
+				},
+				{
+					student_name: "Reyes, Maria",
+					student_id: null,
+					clo_code: "CLO1",
+					direct_clo_attainment_pct: 0.55,
+					met_threshold: false,
+				},
+				{
+					student_name: "Reyes, Maria",
+					student_id: null,
+					clo_code: "CLO999",
+					direct_clo_attainment_pct: 0.8,
+					met_threshold: true,
+				},
+			],
+		};
+
+		try {
+			const preview = await attainmentService.buildPreview(
+				etlLoadedData,
+				IDS.classSection,
+			);
+
+			expect(preview.students).toBe(2);
+			expect(preview.rows).toBe(3);
+			expect(preview.atRisk).toBe(1);
+			expect(preview.unmatchedClos).toEqual([{ cloCode: "CLO999", rows: 1 }]);
+			// NOTE: no section info in the fixture → unverified, never a blocking mismatch.
+			expect(preview.verification.status).toBe("unverified");
+
+			// NOTE: the preview must stay read-only — only saveJob persists.
+			expect(
+				await prisma.computationRun.count({ where: { scope: IDS.classSection } }),
+			).toBe(0);
+			expect(
+				await prisma.cloAttainment.count({
+					where: { classSectionId: IDS.classSection },
+				}),
+			).toBe(0);
+		} finally {
+			await prisma.clo.deleteMany({ where: { courseId: IDS.course } });
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+		}
+	});
+
+	it("discardJob marks a queued upload discarded and leaves a saved one alone", async () => {
+		await prisma.user.create({
+			data: { id: IDS.userA, name: "User A", email: "a@ingest.test" },
+		});
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "T1",
+			},
+		});
+
+		const queued = await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-queued",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				etlJobId: "it-ingest-queued-job-1",
+				filename: "queued.xlsx",
+				status: "queued",
+			},
+		});
+		const saved = await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-already-saved",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				etlJobId: "it-ingest-saved-job-1",
+				filename: "saved.xlsx",
+				status: "completed",
+				summary: {
+					studentsProcessed: 4,
+					cloAttainmentsCreated: 3,
+					atRiskFlagsCreated: 0,
+					cloMatchFailures: [],
+				},
+			},
+		});
+
+		try {
+			await expect(
+				ingestService.discardJob("it-ingest-queued-job-1", IDS.classSection),
+			).resolves.toEqual({ status: "discarded" });
+			expect(
+				(await prisma.uploadRecord.findUniqueOrThrow({ where: { id: queued.id } }))
+					.status,
+			).toBe("discarded");
+
+			// NOTE: a discard never downgrades an upload that was already saved.
+			await expect(
+				ingestService.discardJob("it-ingest-saved-job-1", IDS.classSection),
+			).resolves.toEqual({ status: "discarded" });
+			expect(
+				(await prisma.uploadRecord.findUniqueOrThrow({ where: { id: saved.id } }))
+					.status,
+			).toBe("completed");
+
+			await expect(
+				ingestService.discardJob("it-ingest-queued-job-1", "other-section"),
+			).rejects.toThrow(SectionBindingMismatchError);
+		} finally {
+			await prisma.uploadRecord.deleteMany({
+				where: { id: { in: [queued.id, saved.id] } },
+			});
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+			await prisma.user.delete({ where: { id: IDS.userA } });
+		}
+	});
+
+	it("saveJob replays a stored summary idempotently without re-persisting", async () => {
+		await prisma.user.create({
+			data: { id: IDS.userA, name: "User A", email: "a@ingest.test" },
+		});
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "T1",
+			},
+		});
+		await prisma.uploadRecord.create({
+			data: {
+				id: "it-ingest-upload-replay",
+				userId: IDS.userA,
+				classSectionId: IDS.classSection,
+				etlJobId: "it-ingest-replay-job-1",
+				filename: "saved.xlsx",
+				status: "completed",
+				summary: {
+					studentsProcessed: 4,
+					studentsCreated: 1,
+					cloAttainmentsCreated: 3,
+					atRiskFlagsCreated: 1,
+					cloMatchFailures: [],
+				},
+			},
+		});
+
+		try {
+			// NOTE: a saved job answers from the UploadRecord — no python call, no writes.
+			const result = await ingestService.saveJob(
+				"it-ingest-replay-job-1",
+				IDS.classSection,
+				IDS.userA,
+			);
+
+			expect(result.status).toBe("completed");
+			expect(result).toMatchObject({
+				persistence: { studentsProcessed: 4, cloAttainmentsCreated: 3 },
+			});
+			expect(
+				await prisma.cloAttainment.count({
+					where: { classSectionId: IDS.classSection },
+				}),
+			).toBe(0);
+		} finally {
+			await prisma.uploadRecord.deleteMany({
+				where: { id: "it-ingest-upload-replay" },
+			});
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+			await prisma.user.delete({ where: { id: IDS.userA } });
+		}
+	});
 });

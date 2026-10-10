@@ -63,6 +63,15 @@ export const ReimportScoresSchema = t.Object({
 
 export type ReimportScores = typeof ReimportScoresSchema.static;
 
+/** `POST /ingest/upload/:jobId/save` and `:jobId/discard` body. */
+export const SaveIngestSchema = t.Object({
+	classSectionId: t.String({
+		description: "ClassSection the upload job is bound to",
+	}),
+});
+
+export type SaveIngest = typeof SaveIngestSchema.static;
+
 /** `GET /ingest/clo-raw-data/submission` query. */
 export const CloRawDataSubmissionSchema = t.Object({
 	classSectionId: t.String({
