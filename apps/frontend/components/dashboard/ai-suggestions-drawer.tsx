@@ -26,6 +26,7 @@ import {
 	generateAiRecommendationAction,
 	getLatestAiRecommendationAction,
 } from "@/server/actions/ai";
+import { type AtRiskFlagRow, listAtRiskFlags } from "@/server/actions/at-risk";
 
 /**
  * Floating AI suggestions drawer for dashboards. Opens a bottom-sheet drawer
@@ -39,12 +40,22 @@ import {
  * context" blocks are pure computed data, independent of the LLM — the latter
  * carries each section's Bloom's level, I-P-D stage and assessment types as
  * stored with the recommendation.
+ *
+ * The "at-risk students" block is live `GET /atrisk/flags` data grouped by the
+ * student's program — fetched alongside the recommendation (never stored in
+ * it) and rendered only for `viewAiInsights` roles, since it names students.
  */
 
 type DrawerState =
 	| { phase: "loading" }
 	| { phase: "ready"; recommendation: AiRecommendation | null }
 	| { phase: "error"; message: string };
+
+/** Live at-risk flags — its own slice so a flags failure never hides the insight. */
+type FlagsState =
+	| { phase: "idle" }
+	| { phase: "ready"; rows: AtRiskFlagRow[] }
+	| { phase: "error" };
 
 const STATUS_LABELS: Record<string, string> = {
 	pending_review: "Pending review",
@@ -211,14 +222,26 @@ function renderMarkdown(markdown: string): React.ReactNode[] {
 
 export function AiSuggestionsDrawer() {
 	const user = useAtomValue(userAtom);
+	// NOTE: drawer + at-risk table gate; the Regenerate button stays narrower.
+	const canView = canAccess(user?.role, "viewAiInsights");
 	const canGenerate = canAccess(user?.role, "generateAiInsights");
 
 	const [state, setState] = useState<DrawerState>({ phase: "loading" });
+	const [flags, setFlags] = useState<FlagsState>({ phase: "idle" });
 	const [hasLoaded, setHasLoaded] = useState(false);
 	const [generating, setGenerating] = useState(false);
 
+	const loadFlags = useCallback(async () => {
+		const result = await listAtRiskFlags();
+		setFlags(
+			result.ok ? { phase: "ready", rows: result.data } : { phase: "error" },
+		);
+	}, []);
+
 	const load = useCallback(async () => {
 		setState({ phase: "loading" });
+		// NOTE: independent fetch — a flags failure must not hide the insight.
+		if (canView) void loadFlags();
 		const result = await getLatestAiRecommendationAction();
 		if (result.ok) {
 			setState({ phase: "ready", recommendation: result.data });
@@ -226,14 +249,17 @@ export function AiSuggestionsDrawer() {
 			setState({ phase: "error", message: result.error });
 		}
 		setHasLoaded(true);
-	}, []);
+	}, [canView, loadFlags]);
 
 	const handleOpenChange = useCallback(
 		(open: boolean) => {
-			// Fetch on first open; `hasLoaded` keeps reopening cheap and stable.
-			if (open && !hasLoaded && !generating) void load();
+			// NOTE: fetch on first open (`hasLoaded` keeps reopening cheap);
+			// flags refetch every open — they clear on a final approval.
+			if (!open || generating) return;
+			if (!hasLoaded) void load();
+			else if (canView) void loadFlags();
 		},
-		[hasLoaded, generating, load],
+		[hasLoaded, generating, load, canView, loadFlags],
 	);
 
 	const handleGenerate = useCallback(async () => {
@@ -252,6 +278,9 @@ export function AiSuggestionsDrawer() {
 			description: result.error,
 		});
 	}, []);
+
+	// NOTE: after the hooks — dean and below never see the drawer at all.
+	if (!canView) return null;
 
 	return (
 		<Drawer swipeDirection="right" onOpenChange={handleOpenChange}>
@@ -287,6 +316,9 @@ export function AiSuggestionsDrawer() {
 								onGenerate={handleGenerate}
 							/>
 						) : null}
+						{/* NOTE: independent of the recommendation state — live flags
+						    render even while it loads, errors, or is still empty. */}
+						<AtRiskBlock flags={flags} />
 					</div>
 				</ScrollArea>
 				<DrawerFooter className="flex-row justify-center gap-2">
@@ -482,5 +514,122 @@ const ReadyBlock = ({
 				</em>
 			</p>
 		</div>
+	);
+};
+
+// --- At-risk students (live) ------------------------------------------------
+
+/** "IT 101 §1A" — em dash when the flag carries no attainment row. */
+function atRiskSectionLabel(row: AtRiskFlagRow): string {
+	const section = row.cloAttainment?.classSection;
+	return section ? `${section.course.code} §${section.sectionCode}` : "—";
+}
+
+/**
+ * Live `GET /atrisk/flags` rows grouped by the student's program — biggest
+ * group first, then alphabetical. Never stored with the recommendation.
+ */
+const AtRiskBlock = ({ flags }: { flags: FlagsState }) => {
+	if (flags.phase === "idle") return null;
+
+	const heading = <h2>At-risk students (by program)</h2>;
+	if (flags.phase === "error") {
+		return (
+			<>
+				{heading}
+				<p>
+					<em>
+						At-risk list unavailable right now — reopen the drawer to retry.
+					</em>
+				</p>
+			</>
+		);
+	}
+
+	const rows = flags.rows;
+	if (rows.length === 0) {
+		return (
+			<>
+				{heading}
+				<p>
+					<em>No active at-risk flags.</em>
+				</p>
+			</>
+		);
+	}
+
+	const groups = new Map<string, AtRiskFlagRow[]>();
+	for (const row of rows) {
+		const name = row.student.program.name;
+		const bucket = groups.get(name);
+		if (bucket) bucket.push(row);
+		else groups.set(name, [row]);
+	}
+	const ordered = [...groups.entries()].sort(
+		([nameA, rowsA], [nameB, rowsB]) =>
+			rowsB.length - rowsA.length || nameA.localeCompare(nameB),
+	);
+
+	// NOTE: same cap as the alignment table — a busy term flags a lot of rows.
+	let budget = VISIBLE_ALIGNMENT_ROWS;
+	let rendered = 0;
+	const visible: {
+		name: string;
+		count: number;
+		rows: AtRiskFlagRow[];
+	}[] = [];
+	for (const [name, group] of ordered) {
+		const take = Math.min(group.length, budget);
+		if (take === 0) break;
+		visible.push({ name, count: group.length, rows: group.slice(0, take) });
+		budget -= take;
+		rendered += take;
+	}
+
+	return (
+		<>
+			{heading}
+			{visible.map((group) => (
+				<Fragment key={group.name}>
+					<h3>
+						{group.name} ({group.count})
+					</h3>
+					<table>
+						<thead>
+							<tr>
+								<th>Student</th>
+								<th>Student no.</th>
+								<th>CLO</th>
+								<th>Course §Section</th>
+								<th>Reason</th>
+								<th>Flagged</th>
+							</tr>
+						</thead>
+						<tbody>
+							{group.rows.map((row) => (
+								<tr key={row.id}>
+									<td>
+										{row.student.firstName} {row.student.lastName}
+									</td>
+									<td>{row.student.studentNumber}</td>
+									<td>{row.cloAttainment?.clo.code ?? "—"}</td>
+									<td>{atRiskSectionLabel(row)}</td>
+									<td>{row.reason}</td>
+									<td>{new Date(row.flaggedAt).toLocaleDateString()}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				</Fragment>
+			))}
+			{rows.length > rendered ? (
+				<p>
+					<em>
+						Showing {rendered} of {rows.length} at-risk flags — grouped by the
+						student's program.
+					</em>
+				</p>
+			) : null}
+		</>
 	);
 };
