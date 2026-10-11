@@ -5,8 +5,16 @@
 		{ "code": "TRIALDEPT2", "name": "Trial Department 2" }
 	],
 	"programs": [
-		{ "code": "TRIALPROG1", "name": "Trial Program 1", "department": "TRIALDEPT1" },
-		{ "code": "TRIALPROG2", "name": "Trial Program 2", "department": "TRIALDEPT2" }
+		{
+			"code": "TRIALPROG1",
+			"name": "Trial Program 1",
+			"department": "TRIALDEPT1"
+		},
+		{
+			"code": "TRIALPROG2",
+			"name": "Trial Program 2",
+			"department": "TRIALDEPT2"
+		}
 	],
 	"sections": [
 		{
