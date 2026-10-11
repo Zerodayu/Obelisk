@@ -44,6 +44,9 @@ service returns `401 Unauthorized` with a structured error payload
 2. **Dynamic CLOs**: CLO blocks are discovered dynamically (scanning until a blank cell). The number of CLOs is not fixed.
 3. **CLO-PLO Mapping Retired**: python-server no longer reads or enforces CLO-PLO mappings from Excel. Mapping is managed solely in the webapp backend (`curriculum_map` / Prisma). `result.loaded.clo_plo_mapping` is always `[]`.
 4. **Independent Recomputation**: Direct attainment is computed from the 6 raw score/max cells ($\frac{\text{Prelim}+\text{Midterm}+\text{Final}}{\text{Prelim Max}+\text{Midterm Max}+\text{Final Max}}$). Indirect attainment is recomputed from raw Likert rating as $(\frac{\text{Rating}}{5.0}) \times 100$. Excel's formula columns are ignored.
+5. **Workbook data validation**: Nonblank period score and indirect-rating cells must contain finite numbers or parseable numeric strings. Null/empty/whitespace cells remain missing; zero remains numeric. Malformed text, Excel errors, booleans and nonfinite values raise `WorkbookValidationError`, with `sheet_name`, `cell`, `field` and `reason` details, plus `conflicting_cell` for repeated IDs/CLOs. Details omit names, IDs and raw invalid values. Metadata parsing is unaffected.
+6. **Identity and CLO collisions**: Repeated nonblank student IDs and repeated discovered CLO codes within either worksheet are rejected before lookup insertion. Existing trimmed identifiers/CLO extraction are preserved; no new case-folding is applied. The same ID/CLO once on each sheet is valid. Optional IDs and unambiguous name fallback remain supported; ambiguous name fallback is rejected rather than choosing a row. Matching unique IDs takes priority over names, so shared names with matching distinct IDs remain valid.
+7. **Extra credit**: Valid nonnegative scores above a period maximum are accepted. Scores and resulting attainments are not clamped; the numerator, denominator and [canonical formulas](FORMULAS.md) are unchanged. Direct attainment can exceed 100%.
 
 ---
 
@@ -162,6 +165,9 @@ Per-course AI gap analysis and CQI recommendation.
 - Returns `409 Conflict` if the job is not yet completed.
 - The completed job's `result.loaded.clo_plo_mapping` is passed through to `generate_cqi_recommendation`. Entries carrying the optional [pedagogical alignment keys](#optional-pedagogical-alignment-keys-on-clo_plo_mapping) (rare on this ETL-driven path, since `loaded.clo_plo_mapping` is normally `[]`) are rendered into the prompt's alignment block; bare mappings are skipped. Response shape is unchanged.
 - The `recommendation` string returns schema-compliant JSON with `summary`, `recommendations`, and `pattern`.
+- Course responses are parsed and validated before `status: "ok"`: exactly these top-level fields, nonempty string `summary`, a nonempty list of items with exactly nonempty string `title`/`explanation` and an allowed `recommendedFor`, and string-or-null `pattern`. Single recommendations and fenced JSON remain supported; the returned value remains a JSON string.
+- Malformed course JSON and empty, null or non-string provider text return the existing `status: "error"` envelope with matching `error` and `recommendation` strings. Institutional summaries validate nonempty text only and continue to accept prose. Neither boundary adds retries. The no-gap course shortcut still returns a null recommendation without calling the provider.
+- ETL rejects negative non-null PRELIM/MIDTERM/FINAL scores before calculation using `TransformationError` with field/value details only. Zero, null and extra-credit score behavior is preserved; see [FORMULAS.md](FORMULAS.md) for the unchanged calculations.
 
 **Normal Success Response (`status: "ok"`):**
 ```json

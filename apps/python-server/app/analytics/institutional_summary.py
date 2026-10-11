@@ -7,7 +7,7 @@ from app.analytics.cqi_recommender import (
     anonymize_students,
     call_llm_api,
     sanitize_prompt_data,
-    strip_code_fences,
+    normalize_llm_response,
 )
 from app.etl import etl_const
 from app.schemas.institutional_summary import (
@@ -307,7 +307,7 @@ async def generate_institutional_summary(
     """
     summary = compute_summary_only(payload)
     prompt = build_institutional_prompt(payload, summary)
-    llm_response = strip_code_fences(await call_llm_api(prompt))
+    llm_response = normalize_llm_response(await call_llm_api(prompt))
 
     is_error = isinstance(llm_response, str) and llm_response.startswith(
         "[LLM API ERROR"

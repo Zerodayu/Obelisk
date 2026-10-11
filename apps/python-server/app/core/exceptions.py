@@ -7,6 +7,21 @@ class OBELISKError(Exception):
         return {"error_type": self.__class__.__name__, "message": str(self)}
 
 
+class WorkbookValidationError(OBELISKError):
+    """Invalid workbook data, with location-only details safe for consumers."""
+    def __init__(self, sheet_name: str, cell: str, field: str, reason: str,
+                 conflicting_cell: str | None = None):
+        self.details = {"sheet_name": sheet_name, "cell": cell,
+                        "field": field, "reason": reason}
+        if conflicting_cell is not None:
+            self.details["conflicting_cell"] = conflicting_cell
+        super().__init__("Workbook data validation failed.")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {"error_type": "WorkbookValidationError", "message": str(self),
+                "details": self.details}
+
+
 class InvalidWorkbook(OBELISKError):
     def __init__(self, file_path: str, underlying_error: str):
         self.file_path = file_path

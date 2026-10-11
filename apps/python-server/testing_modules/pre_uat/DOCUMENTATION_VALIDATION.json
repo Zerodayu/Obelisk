@@ -1,0 +1,1176 @@
+{
+  "timestamp_utc": "2026-10-11T08:08:10.804148+00:00",
+  "mode": "documentation-only; no tests/services/application imports",
+  "status": "PASS",
+  "test_id_count": 26,
+  "counts": {
+    "PASS": 20,
+    "BLOCKED": 5,
+    "SKIPPED": 1
+  },
+  "markdown_unique_ids": 26,
+  "evidence_index_unique_ids": 26,
+  "relative_links_checked": 193,
+  "json_artifacts_parsed": 61,
+  "timestamp_and_evidence_checks": [
+    {
+      "test_id": "UT-001",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-002",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-003",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-004",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-005",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-006",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-007",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-008",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-009",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-010",
+      "preserved": true
+    },
+    {
+      "test_id": "UT-014",
+      "preserved": true
+    },
+    {
+      "test_id": "IT-007",
+      "preserved": true
+    },
+    {
+      "test_id": "IT-009",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-001",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-002",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-003",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-004",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-005",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-006",
+      "preserved": true
+    },
+    {
+      "test_id": "ST-AI-007",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-004",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-005",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-006",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-007",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-008",
+      "preserved": true
+    },
+    {
+      "test_id": "PT-009",
+      "preserved": true
+    }
+  ],
+  "executed_function_checks": [
+    {
+      "test_id": "UT-001",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-002",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-003",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-004",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-005",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-006",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-007",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-008",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-009",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-010",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "UT-014",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "IT-007",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "IT-009",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-001",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-002",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-003",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-004",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-005",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-006",
+      "exact_function_exists": true
+    },
+    {
+      "test_id": "ST-AI-007",
+      "exact_function_exists": true
+    }
+  ],
+  "protected_files_checked": 345,
+  "changed_protected_files": [],
+  "historical_evidence_files_checked": 232,
+  "historical_evidence_inventory_preserved": true,
+  "links": [
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-010_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/UT-014_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T071933_296064Z/IT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T071933_296064Z/IT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T073848_090587Z/PT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T073848_090587Z/PT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T073848_090587Z/PT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T073848_090587Z/PT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/PT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T073848_090587Z/PT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "evidence/20261011T063734_111127Z/SOURCE_MANIFEST.json",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "COVERAGE_AUDIT.md",
+      "target": "DOCUMENTATION_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "DEFECTS.md",
+      "target": "REGRESSION_NOTES.md",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/COVERAGE_AUDIT.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/DEFECTS.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/INTEGRATION_README.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/PERFORMANCE_README.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/PRE_UAT_RESULTS.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/README.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/REGRESSION_NOTES.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "documentation_snapshots/STARTUP_DIAGNOSTIC_NOTES.md.txt",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "README.md",
+      "exists": true
+    },
+    {
+      "document": "DOCUMENTATION_AUDIT.md",
+      "target": "DOCUMENTATION_VALIDATION.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-010_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/UT-014_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/IT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/IT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/PT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/PT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/PT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/PT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/PT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/PT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/SOURCE_MANIFEST.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T063734_111127Z/COMPATIBILITY.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/SANITIZED_LOGS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T071933_296064Z/EXECUTION_SUMMARY.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T073848_090587Z/EXECUTION_SUMMARY.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/STARTUP_STAGES.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/READINESS_ATTEMPTS.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/PROCESS_CLEANUP.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/OWNED_PROCESS_EXIT_CHECK.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "evidence/20261011T075026_653371Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "EVIDENCE_INDEX.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "evidence/20261011T071933_296064Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "evidence/20261011T071933_296064Z/EXECUTION_SUMMARY.json",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "evidence/20261011T071933_296064Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "evidence/20261011T071933_296064Z/SANITIZED_LOGS.json",
+      "exists": true
+    },
+    {
+      "document": "INTEGRATION_README.md",
+      "target": "evidence/20261011T071933_296064Z/SOURCE_MANIFEST.json",
+      "exists": true
+    },
+    {
+      "document": "PERFORMANCE_README.md",
+      "target": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "exists": true
+    },
+    {
+      "document": "PERFORMANCE_README.md",
+      "target": "EVIDENCE_INDEX.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "PRE_UAT_RESULTS.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "PRE_UAT_RESULTS.csv",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "EVIDENCE_INDEX.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "DEFECTS.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T063734_111127Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T063734_111127Z/COMPATIBILITY.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T071933_296064Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T071933_296064Z/EXECUTION_SUMMARY.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "EVIDENCE_INDEX.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T063734_111127Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T071933_296064Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T073848_090587Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_FINAL_SUMMARY.md",
+      "target": "DOCUMENTATION_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-010_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/UT-014_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T071933_296064Z/IT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T071933_296064Z/IT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-001_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-002_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-003_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/ST-AI-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T073848_090587Z/PT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T073848_090587Z/PT-005_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T073848_090587Z/PT-006_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T073848_090587Z/PT-007_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T063734_111127Z/PT-008_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "evidence/20261011T073848_090587Z/PT-009_result.txt",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "EVIDENCE_INDEX.md",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "PRE_UAT_RESULTS.csv",
+      "exists": true
+    },
+    {
+      "document": "PRE_UAT_RESULTS.md",
+      "target": "PRE_UAT_FINAL_SUMMARY.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "PRE_UAT_FINAL_SUMMARY.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "PRE_UAT_RESULTS.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "PRE_UAT_RESULTS.csv",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "EVIDENCE_INDEX.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "COVERAGE_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "DEFECTS.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "REGRESSION_NOTES.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "DOCUMENTATION_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "../../documentations/FORMULAS.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "../../documentations/INTEGRATION.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "INTEGRATION_README.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "PERFORMANCE_README.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "exists": true
+    },
+    {
+      "document": "README.md",
+      "target": "DOCUMENTATION_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "REGRESSION_NOTES.md",
+      "target": "evidence/20261011T063734_111127Z/UT-004_result.txt",
+      "exists": true
+    },
+    {
+      "document": "REGRESSION_NOTES.md",
+      "target": "evidence/20261011T063734_111127Z/COMPATIBILITY.json",
+      "exists": true
+    },
+    {
+      "document": "REGRESSION_NOTES.md",
+      "target": "TESTING_HISTORY.md",
+      "exists": true
+    },
+    {
+      "document": "REGRESSION_NOTES.md",
+      "target": "README.md",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/STARTUP_STAGES.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/CHILD_CONTROL.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/READINESS_ATTEMPTS.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/normal_startup/PROCESS_CLEANUP.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/OWNED_PROCESS_EXIT_CHECK.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T075026_653371Z/SOURCE_MANIFEST.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T073848_090587Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "evidence/20261011T073848_090587Z/ISOLATION.json",
+      "exists": true
+    },
+    {
+      "document": "STARTUP_DIAGNOSTIC_NOTES.md",
+      "target": "PERFORMANCE_README.md",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "DOCUMENTATION_AUDIT.md",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T060556_694484Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T060651_997186Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T061026_592082Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T062548_769685Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T062718_385853Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T063734_111127Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T064937_069972Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T065517_011796Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T065750_252644Z/PREFLIGHT_INSPECTION.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T070935_324625Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T071933_296064Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T073848_090587Z/RESULTS.json",
+      "exists": true
+    },
+    {
+      "document": "TESTING_HISTORY.md",
+      "target": "evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json",
+      "exists": true
+    }
+  ],
+  "errors": [],
+  "performance_workloads_executed": false
+}

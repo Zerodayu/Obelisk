@@ -1,0 +1,92 @@
+# Startup-only diagnostic — October 11, 2026
+
+Run `20261011T075026_653371Z` executed only owned API readiness/control
+diagnostics. No upload, analytics or other performance workload was submitted.
+The earlier run/evidence and consolidated 20 PASS, 5 BLOCKED, 1 SKIPPED table
+retain their original timestamps. This diagnostic is not a Pre-UAT performance
+PASS.
+
+## Corrections implemented
+
+- A shared performance lifecycle helper contains subprocess launch, bounded
+  readiness and always-run cleanup. Both startup-only and benchmark branches
+  use it. Primary startup errors and cleanup errors are recorded separately.
+- A private stdin control channel requires matching nonce, Redis identity and
+  process identity before shutdown is sent. HTTP shutdown also requires the
+  nonce. Unverified processes never receive shutdown requests.
+- A Windows kill-on-close job contains the newly launched process tree. Forced
+  cleanup closes only that job; it does not search processes by name or stop
+  application containers. Guarded server code cannot spawn subprocesses.
+- Readiness checks process exit, enforces an overall 20-second bound, bounds
+  each HTTP attempt by remaining time, checks status before JSON, and preserves
+  exact ownership comparisons. Attempt errors/statuses are saved.
+- Child startup stages and exception frame locations are saved without raw
+  payloads/credentials. Uvicorn logging now uses error level. Redis diagnostic
+  identity queries have bounded connect/read timeouts.
+- The temporary-directory root is initialized before installing the open audit
+  hook and then reused unchanged in the file policy.
+
+## Identified original startup hazard
+
+The original performance file audit hook called `tempfile.gettempdir()` on every
+open event, including reads. In a fresh subprocess `tempfile.tempdir` is unset.
+Python 3.13 `tempfile._gettempdir()` acquires `_once_lock`; directory discovery
+then calls `os.open()` to probe the candidate directory. That triggers the audit
+hook again, whose nested `gettempdir()` waits on the same non-reentrant lock.
+The integration runner initialized its temp directory before installing guards,
+so it did not encounter this path.
+
+The new child's startup-stage evidence records
+`temp_directory_was_uninitialized: true`, and after preinitialization proceeds
+through imports, Redis identity verification, Uvicorn and lifespan startup.
+This supports the original deadlock diagnosis. The original run did not capture
+a stack at its hang, so its historical runtime location cannot be proved from a
+trace. No production application change was necessary.
+
+## Actual diagnostic outcome: BLOCKED
+
+The owned API returned HTTP 200. Exact ownership verification rejected its PID:
+the configured SDK subprocess launcher PID was **13620**, while the guarded
+Python server's startup/control proof reports **24656**. The readiness helper
+requires the HTTP/control PID to equal `Popen.pid`, which is unsuitable for this
+Windows virtual-environment launcher process chain.
+
+Saved primary error: `PrerequisiteBlocked: HTTP ownership identity mismatch`.
+Saved independent control error: `Owned child control identity mismatch`.
+Cleanup also records missing `SERVER_PROOF.json`. The control shutdown was
+correctly withheld; no graceful worker-stop result is claimed. The owned job
+was forcibly closed; both launcher and server PIDs were subsequently absent.
+The disposable Redis container and temporary uploads were removed. Source
+manifest confirms protected production/historical files unchanged.
+
+The controlled intentional pre-readiness failure mode is implemented but was
+**NOT EXECUTED**: the normal diagnostic failed, triggering the required stop.
+There was no retry. PT-004/005/006/007/009 stay BLOCKED, PT-008 stays SKIPPED.
+
+## Proposed next correction — not implemented
+
+Prove that the server-reported PID belongs to this freshly created Windows job
+using an opened process handle and `IsProcessInJob`, together with its exact
+nonce and Redis identity. Retain the launcher handle and verify both identities;
+do not simply remove PID checking or trust an arbitrary reported PID. Make the
+confirmed server PID the resource-monitor target while retaining process-tree
+cleanup. Capture expected/observed ownership fields in sanitized evidence.
+Resolve the small launch-to-job-assignment race if necessary by starting the
+launcher suspended, assigning it to the owned job, then resuming it.
+
+After approval, run one startup-only attempt. If it passes, run the already
+implemented intentional pre-readiness failure case with a separately injected
+cleanup-diagnostic error and verify the primary child error remains intact.
+No benchmark may be inferred as passing from these diagnostics.
+
+```powershell
+& 'D:\Jetbrains_IDE_Projects\pycharm\Obelisk_FINAL\apps\python-server\.venv\Scripts\python.exe' -B testing_modules/pre_uat/run_phase2b2.py --startup-only
+```
+
+Evidence: [diagnostic results](evidence/20261011T075026_653371Z/DIAGNOSTIC_RESULTS.json),
+[startup stages](evidence/20261011T075026_653371Z/normal_startup/STARTUP_STAGES.json),
+[readiness attempts](evidence/20261011T075026_653371Z/normal_startup/READINESS_ATTEMPTS.json),
+[process cleanup](evidence/20261011T075026_653371Z/normal_startup/PROCESS_CLEANUP.json),
+[process exit check](evidence/20261011T075026_653371Z/OWNED_PROCESS_EXIT_CHECK.json),
+[Redis/temp cleanup](evidence/20261011T075026_653371Z/ISOLATION.json),
+[source hashes](evidence/20261011T075026_653371Z/SOURCE_MANIFEST.json).

@@ -1,0 +1,91 @@
+{
+  "mode": "startup-only",
+  "status": "BLOCKED",
+  "timestamp": "2026-10-11T07:50:46.633277+00:00",
+  "startup_error": {
+    "type": "PrerequisiteBlocked",
+    "frames": [
+      {
+        "file": "run_phase2b2.py",
+        "line": 258,
+        "function": "diagnostic_main"
+      }
+    ],
+    "reason": "Normal startup diagnostic failed; no retry or failure-path subprocess started"
+  },
+  "cases": [
+    {
+      "intentional_failure": false,
+      "startup_error": {
+        "type": "PrerequisiteBlocked",
+        "frames": [
+          {
+            "file": "performance_lifecycle.py",
+            "line": 125,
+            "function": "startup_case"
+          },
+          {
+            "file": "performance_lifecycle.py",
+            "line": 70,
+            "function": "ready"
+          }
+        ],
+        "reason": "HTTP ownership identity mismatch"
+      },
+      "cleanup": {
+        "pid": 13620,
+        "cleanup_errors": [
+          {
+            "type": "FileNotFoundError",
+            "frames": [
+              {
+                "file": "performance_lifecycle.py",
+                "line": 100,
+                "function": "finish"
+              },
+              {
+                "file": "_local.py",
+                "line": 546,
+                "function": "read_text"
+              },
+              {
+                "file": "_abc.py",
+                "line": 632,
+                "function": "read_text"
+              },
+              {
+                "file": "_local.py",
+                "line": 537,
+                "function": "open"
+              }
+            ]
+          }
+        ],
+        "forced_termination": true,
+        "control_error": {
+          "type": "PrerequisiteBlocked",
+          "frames": [
+            {
+              "file": "performance_lifecycle.py",
+              "line": 85,
+              "function": "finish"
+            },
+            {
+              "file": "performance_lifecycle.py",
+              "line": 52,
+              "function": "control_proof"
+            }
+          ],
+          "reason": "Owned child control identity mismatch"
+        },
+        "exit_code": 0,
+        "process_exited": true
+      },
+      "status": "BLOCKED"
+    }
+  ],
+  "workload_requests": 0,
+  "performance_ids": "unchanged: five BLOCKED; PT-008 SKIPPED",
+  "prior_evidence_untouched": true,
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2b2.py --startup-only"
+}

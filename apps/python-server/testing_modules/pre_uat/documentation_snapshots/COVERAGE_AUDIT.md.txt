@@ -1,0 +1,395 @@
+# Current Phase 2B-2 performance coverage
+
+Execution record: 20261011T073848_090587Z. Historical scripts and earlier audit snapshots are preserved below.
+
+| ID | Current coverage | Evidence |
+| --- | --- | --- |
+| PT-004 | BLOCKED; not verified | [result](evidence/20261011T073848_090587Z/PT-004_result.txt) |
+| PT-005 | BLOCKED; not verified | [result](evidence/20261011T073848_090587Z/PT-005_result.txt) |
+| PT-006 | BLOCKED; not verified | [result](evidence/20261011T073848_090587Z/PT-006_result.txt) |
+| PT-007 | BLOCKED; not verified | [result](evidence/20261011T073848_090587Z/PT-007_result.txt) |
+| PT-009 | BLOCKED; not verified | [result](evidence/20261011T073848_090587Z/PT-009_result.txt) |
+| PT-008 | SKIPPED: execution not approved | No new execution evidence |
+
+PT-006 covers the mocked Python AI path only; live Gemini latency remains unverified. Local host results do not certify production capacity.
+
+---
+# Current coverage audit - Phase 2B-1 executed PASS
+
+Execution **20261011T071933_296064Z**, October 11, 2026 UTC. Both integration IDs executed and PASS. The consolidated package now contains **20 PASS, 0 FAIL, 0 BLOCKED and 6 SKIPPED**: 18 Phase 2A PASS entries are carried forward with their original timestamps; they were not rerun.
+
+| ID | Historical coverage | New executed assertions | Evidence |
+| --- | --- | --- | --- |
+| IT-007 | PARTIALLY COVERED historically; no earlier verified isolated lifecycle run | NEW VERIFIED: real upload 202/UUID/queued/null results, persisted running to completed or failed, six valid unique records with independent 80% direct + 90% indirect = 83% composite, private malformed-input error/no result, stable reread and absent-ID 404 | [PASS, exact function/assertions](evidence/20261011T071933_296064Z/IT-007_result.txt) |
+| IT-009 | NOT COVERED by suitable previously verified concurrent correctness evidence | NEW VERIFIED: three concurrent synthetic worst/mixed/ideal uploads, unique UUIDs/files, all completed, 4/9/8 unique scenario-specific records, independent calculations, disjoint student-CLO sets and stable per-job fingerprints | [PASS, exact function/assertions](evidence/20261011T071933_296064Z/IT-009_result.txt) |
+
+The real routes, upload service, Redis queue, workers and ETL ran against a fresh harness-owned Redis 7.4.11 instance using exact cached redis:7-alpine by image ID, loopback port 2062, disabled persistence and UUID namespace. No existing obelisk-redis/obelisk-etl service or configured shared Redis was contacted. Five jobs were accepted: four completed and one intentionally malformed workbook reached failed as required; this is two passing test IDs, not a failed test.
+
+Worker-persisted running/terminal transitions are recorded through the observation wrapper around real update_job; HTTP polling observed queued/running/completed for the valid lifecycle job, but the malformed job completed its failure transition fast enough for HTTP to observe queued/failed only. Its persisted running/failed states were verified. No status/result was mocked and 202 alone was never counted as success.
+
+Cleanup verified empty owned queue/database between cases and removed only the owned disposable container/temp folder. Source manifest comparison confirms no production/original changes since Phase 2A or during this run. No live AI, database, Phase 2A rerun or performance test executed.
+
+[Results](evidence/20261011T071933_296064Z/RESULTS.json), [isolation/ownership/cleanup](evidence/20261011T071933_296064Z/ISOLATION.json), [source hashes](evidence/20261011T071933_296064Z/SOURCE_MANIFEST.json), [sanitized logs](evidence/20261011T071933_296064Z/SANITIZED_LOGS.json), [execution summary](evidence/20261011T071933_296064Z/EXECUTION_SUMMARY.json).
+
+Scope limitations remain: app.main startup, shared-secret enforcement, webapp persistence/approval/frontend behavior were not verified by this explicit-worker ASGI harness. Six performance IDs PT-004 through PT-009 remain SKIPPED and require separate approval. Prior blocked evidence is preserved below and in timestamped directories; those blockers are superseded by this passing execution.
+
+---
+
+## Preserved earlier prerequisite checks
+# Current Phase 2B-1 resume - cached Redis tag differs
+
+Latest prerequisite record: **20261011T070935_324625Z**, October 11, 2026 UTC. Docker context desktop-linux and the harness both target npipe:////./pipe/dockerDesktopLinuxEngine. The Linux engine is running (29.7.2, overlayfs). Redis image listing shows **redis:alpine** (short image ID 978f0e01593e), while exact redis:7-alpine and fully qualified docker.io/library/redis:7-alpine inspections both report No such image.
+
+**IT-007 and IT-009 remain BLOCKED, executed=false.** The existing runner executed only its prerequisite check and exited 2; zero integration assertions, workers, uploads or containers ran. The harness did not substitute or retag redis:alpine, pull an image, contact either existing obelisk container, or load configured/shared Redis.
+
+[IT-007 evidence](evidence/20261011T070935_324625Z/IT-007_result.txt), [IT-009 evidence](evidence/20261011T070935_324625Z/IT-009_result.txt), [exact context/image inspection](evidence/20261011T070935_324625Z/PREFLIGHT_INSPECTION.json), [source hashes](evidence/20261011T070935_324625Z/SOURCE_MANIFEST.json). Consolidated results retain 18 Phase 2A PASS entries with original timestamps, two BLOCKED integration IDs and six SKIPPED performance IDs. Earlier evidence remains intact; no suite recreation, Phase 2A execution or production changes occurred.
+
+The exact redis:7-alpine image is still the missing prerequisite on this local engine. No unsafe alternative was attempted. Stop before integration execution or performance testing.
+
+---
+
+## Preserved earlier inspections
+# Current Phase 2B-1 resume status - Redis image missing
+
+Prerequisite record **20261011T065517_011796Z**, October 11, 2026 UTC, supersedes the previous missing-engine blocker. Docker Desktop's local Linux engine is now reachable (version 29.7.2), but local image inspection reports **No such image: redis:7-alpine**. The prepared runner stopped at image inspection and exited 2.
+
+| ID | Current status | Execution evidence |
+| --- | --- | --- |
+| IT-007 | **BLOCKED**, executed=false; prepared lifecycle assertions NOT YET VERIFIED | [result](evidence/20261011T065517_011796Z/IT-007_result.txt) |
+| IT-009 | **BLOCKED**, executed=false; prepared concurrency assertions NOT YET VERIFIED | [result](evidence/20261011T065517_011796Z/IT-009_result.txt) |
+
+Zero integration assertions, uploads, workers or containers ran. No image was pulled, shared Redis contacted or live AI/performance test executed. Phase 2A was not repeated. Consolidated results carry forward its 18 PASS entries with original timestamps; the six performance cases remain SKIPPED. Earlier evidence and original scripts remain preserved, and no production or harness code changed on resume.
+
+[Preflight inspection](evidence/20261011T065517_011796Z/PREFLIGHT_INSPECTION.json), [isolation state](evidence/20261011T065517_011796Z/ISOLATION.json), [source hashes](evidence/20261011T065517_011796Z/SOURCE_MANIFEST.json), [consolidated evidence](evidence/20261011T065517_011796Z/CONSOLIDATED_RESULTS.json). The missing prerequisite is the cached redis:7-alpine image on the confirmed local Linux engine. The runner deliberately never pulls images or falls back to existing Redis.
+
+---
+
+## Preserved previous integration inspection
+# Current coverage audit - Phase 2B-1 prerequisites BLOCKED
+
+Integration prerequisite run: **20261011T064937_069972Z**, October 11, 2026 UTC. The current consolidated package contains **18 PASS carried forward from Phase 2A, 2 BLOCKED integration IDs, and 6 SKIPPED performance IDs**. Zero integration test bodies/assertions executed. No production/application code or original tests changed in this phase.
+
+| Test ID | Existing coverage | New prepared assertions | Current status / evidence |
+| --- | --- | --- | --- |
+| IT-007 | PARTIALLY COVERED / NOT YET VERIFIED: historical upload/worker scripts exist, but no isolated lifecycle execution evidence | IntegrationPreUAT.test_it007_lifecycle: HTTP 202 + UUID + queued/null result, persisted running/terminal states, valid independent numerical/unique-record assertions, malformed terminal failed/private error, stable reread/no stale result, absent-ID 404 | **BLOCKED**, executed=false: [result](evidence/20261011T064937_069972Z/IT-007_result.txt) |
+| IT-009 | NOT COVERED by suitable verified historical correctness assertions | IntegrationPreUAT.test_it009_concurrency: three concurrent distinct fixtures, unique job IDs/upload paths, all terminal completed, accurate scenario-specific records, pair uniqueness/disjointness and stable fingerprints | **BLOCKED**, executed=false: [result](evidence/20261011T064937_069972Z/IT-009_result.txt) |
+
+The exact prepared functions are in testing_modules/integration_test/test_pre_uat_integration.py. Their source syntax was parsed; this is not evidence that their assertions pass. The runner permits only a fresh owned local Docker Redis container with persistence disabled and unique namespace; it never substitutes application-configured Redis. Native redis-server is absent from PATH. Docker CLI exists, but the local Docker Desktop Linux-engine named pipe is missing. Image-cache availability could not be verified while the engine is unavailable. WSL distribution presence does not prove a disposable Redis and was not used as fallback.
+
+Read-only queue/worker inspection found import-time Redis ping, hardcoded db=0, ENV-scoped queue/job keys, atomic UUID upload filenames, one-second BRPOP, running/completed/failed transitions, and no automatic successful job/upload cleanup. The prepared harness bypasses root encrypted configuration and app.main, installs temporary test config, mounts real upload/job routes in an ASGI app, starts real workers explicitly, observes persisted updates without mocking results, and owns bounded cleanup. Full app startup, auth/webapp persistence/frontend behavior remain outside these IDs.
+
+[Preflight inspection](evidence/20261011T064937_069972Z/PREFLIGHT_INSPECTION.json), [isolation/prerequisite state](evidence/20261011T064937_069972Z/ISOLATION.json), [source hashes](evidence/20261011T064937_069972Z/SOURCE_MANIFEST.json), [integration results](evidence/20261011T064937_069972Z/RESULTS.json), [consolidated results](evidence/20261011T064937_069972Z/CONSOLIDATED_RESULTS.json).
+
+Missing prerequisite: running local Docker Desktop Linux engine; then verify a cached redis:7-alpine image. No Docker Desktop startup, image pull, shared Redis connection, upload, worker, Gemini call, database access or stress test occurred. See [INTEGRATION_README.md](INTEGRATION_README.md) for reproduction and safety. Stop at this blocker; performance testing remains unauthorized.
+
+---
+
+## Preserved previous Phase 2A audit
+# Current coverage audit - final approved UT-004 correction
+
+Execution timestamp (UTC): 2026-10-11T06:37:51.702621+00:00. This section supersedes current-status statements in all preserved snapshots below.
+
+18 implemented IDs executed: **18 PASS, 0 FAIL, 0 BLOCKED**. Eight Phase 2B IDs remain SKIPPED. UT-004 passed all 98 subchecks. Fourteen unchanged historical methods were reused; all eleven restored original scripts remain untouched. Existing verified status is limited to historical assertions with exact method provenance and passing evidence, not script existence.
+
+Evidence: [RESULTS.json](evidence/20261011T063734_111127Z/RESULTS.json), [UT-004 assertions](evidence/20261011T063734_111127Z/UT-004_result.txt), [source preservation/method manifest](evidence/20261011T063734_111127Z/SOURCE_MANIFEST.json), [isolation](evidence/20261011T063734_111127Z/ISOLATION.json), [comparison to prior run](evidence/20261011T063734_111127Z/COMPATIBILITY.json).
+
+| Test ID | Existing versus current coverage | Exact scenario/assertion scope | Evidence/function |
+| --- | --- | --- | --- |
+| UT-001 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Exact header, roster, CLO set, raw values and 12 independently checked outputs | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut001_valid_workbook](evidence/20261011T063734_111127Z/UT-001_result.txt) |
+| UT-002 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Structured InvalidWorkbook/MissingWorksheet/InvalidTemplate errors | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut002_invalid_workbook](evidence/20261011T063734_111127Z/UT-002_result.txt) |
+| UT-003 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Structured errors for all four mandatory structural fields; SETUP metadata is optional by current contract | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut003_missing_required_fields](evidence/20261011T063734_111127Z/UT-003_result.txt) |
+| UT-004 | **PASS** - Historical range helper coverage PARTIAL; NEW VERIFIED for approved workbook validation | Reject invalid nonblank cells and collisions with private structured errors; accept extra credit and preserve independently calculated outputs; curriculum validity is EXTERNAL | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut004_invalid_values](evidence/20261011T063734_111127Z/UT-004_result.txt) |
+| UT-005 | **PASS** - EXISTING VERIFIED for reused numerical/boundary methods; NEW VERIFIED for full output assertions | 83.00 composite for every workbook record; missing/zero indirect distinguished | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut005_composite](evidence/20261011T063734_111127Z/UT-005_result.txt) |
+| UT-006 | **PASS** - EXISTING VERIFIED for reused numerical/boundary methods; NEW VERIFIED for full output assertions | 70.00 is met and Proficient, below is Basic; fixed institutional threshold | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold](evidence/20261011T063734_111127Z/UT-006_result.txt) |
+| UT-007 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | All counts, composite/direct/indirect percentages, thresholds and means match independent oracle; no synthetic identities/IDs leak | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut007_ai_input](evidence/20261011T063734_111127Z/UT-007_result.txt) |
+| UT-008 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Valid response preserved; invalid schemas rejected by service or status=error | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema](evidence/20261011T063734_111127Z/UT-008_result.txt) |
+| UT-009 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Failover order and error status correct; blank provider response must not be status=ok | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut009_ai_failures](evidence/20261011T063734_111127Z/UT-009_result.txt) |
+| UT-010 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | All 28 records match independent direct/indirect/composite/threshold/level/completeness; section completeness correct | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut010_independent_oracle](evidence/20261011T063734_111127Z/UT-010_result.txt) |
+| UT-014 | **PASS** - NEW VERIFIED; historical assertions reused where recorded | Exactly 30 IDs, five CLOs and 150 unique Cartesian pairs in extraction and transform; no duplicates | [testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut014_uniqueness](evidence/20261011T063734_111127Z/UT-014_result.txt) |
+| ST-AI-001 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | 12 below threshold, composite=6%; accurate gap prompt and valid mocked response | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai001_worst](evidence/20261011T063734_111127Z/ST-AI-001_result.txt) |
+| ST-AI-002 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | Six below and six at/above threshold; gap counts/values exactly grounded | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai002_mixed](evidence/20261011T063734_111127Z/ST-AI-002_result.txt) |
+| ST-AI-003 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | Composite=96.5%, no gaps and no LLM calls; no assumption about existing ideal workbook | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai003_ideal](evidence/20261011T063734_111127Z/ST-AI-003_result.txt) |
+| ST-AI-004 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | Every supported count/denominator/threshold/mean checked; wrong claim detected; unsupported digits flagged for manual review | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai004_numerical_grounding](evidence/20261011T063734_111127Z/ST-AI-004_result.txt) |
+| ST-AI-005 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | Bounded two attempts, error status, intact inputs and no actual SDK/network calls | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai005_unavailable](evidence/20261011T063734_111127Z/ST-AI-005_result.txt) |
+| ST-AI-006 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | Input header/records unchanged, no approval execution or persistence path; webapp approval and wording quality require external/human review | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai006_advisory](evidence/20261011T063734_111127Z/ST-AI-006_result.txt) |
+| ST-AI-007 | **PASS** - NEW VERIFIED with deterministic mocks; live/human/external portions remain unverified | All 12 composite=70.00, met=True; gaps empty, prompt empty, no provider calls | [testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai007_zero_gap](evidence/20261011T063734_111127Z/ST-AI-007_result.txt) |
+| IT-007 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/IT-007_result.txt) |
+| IT-009 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/IT-009_result.txt) |
+| PT-004 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-004_result.txt) |
+| PT-005 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-005_result.txt) |
+| PT-006 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-006_result.txt) |
+| PT-007 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-007_result.txt) |
+| PT-008 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-008_result.txt) |
+| PT-009 | **SKIPPED** - NOT YET VERIFIED; Phase 2B unexecuted | Explicit approval/selection before execution | [not executed](evidence/20261011T063734_111127Z/PT-009_result.txt) |
+
+UT-004 correction distinguishes four malformed-input/collision defect groups from the approved extra-credit policy: the previous above-maximum rejection expectation was wrong and is now an independent acceptance/calculation assertion. All other original valid rejection assertions remain, strengthened to exact structured errors. Tests cover each period/rating, finite numeric strings, zeros and legitimate blanks, Excel errors/booleans/nonfinite values, duplicate IDs per sheet, ambiguous names, normalized CLO collisions and different indirect headers resolving to the same code. Matching IDs/CLOs across sheets and dynamic layouts remain valid.
+
+The 17 previously passing IDs remain passing with identical saved actual observations. Source manifest comparison shows only extractor.py and exceptions.py changed since that run; formula helpers, thresholds/rounding, earlier corrections and all originals are unchanged. Compatibility covers synthetic fixtures and the selected historical synthetic methods; no saved original workbook or live service was tested.
+
+Remaining scope: identity/CLO curriculum registry, webapp approval/RBAC/persistence/frontend handling are EXTERNAL. AI educational quality and unsupported numerical prose require MANUAL REVIEW. IT-007/IT-009 and PT-004 through PT-009 remain unexecuted; live Gemini also needs explicit approval. No integration/performance scripts were implemented or run in this correction. See [REGRESSION_NOTES.md](REGRESSION_NOTES.md) for precise production changes, compatibility and reproduction.
+
+---
+
+## Preserved earlier audit snapshots
+
+# Current coverage audit - approved validation regression
+
+Execution: 2026-10-11T06:27:26.070319+00:00. This section supersedes current-status claims in the retained Phase 2A/Phase 1 snapshots below.
+
+All eleven old_test scripts now have restored nonempty contents. The user confirmed that a file-moving issue caused the earlier temporary empty-file state; this is not an application defect. Originals were read only. Fourteen unchanged methods from test_etl_v2.py and test_composite_attainment.py passed under the offline harness, including three additional restored helper/mean tests. Their exact functions and original hashes are in the source manifest. No historical script is automatically verified merely because it exists.
+
+Latest evidence: [RESULTS.json](evidence/20261011T062718_385853Z/RESULTS.json), [SOURCE_MANIFEST.json](evidence/20261011T062718_385853Z/SOURCE_MANIFEST.json), [ISOLATION.json](evidence/20261011T062718_385853Z/ISOLATION.json). All 18 implemented IDs executed: 17 PASS, 1 FAIL, 0 BLOCKED. Eight deferred IDs SKIPPED. All 15 previously passing IDs remain PASS.
+
+| ID | Historical coverage classification | Current assertions/result | Evidence |
+| --- | --- | --- | --- |
+| UT-001 | PARTIALLY COVERED: restored dynamic-CLO method passed | **PASS**: Exact header, roster, CLO set, raw values and 12 independently checked outputs | [exact function/assertions](evidence/20261011T062718_385853Z/UT-001_result.txt) |
+| UT-002 | PARTIALLY COVERED / NOT YET VERIFIED: historical conditional workbook test not executed | **PASS**: Structured InvalidWorkbook/MissingWorksheet/InvalidTemplate errors | [exact function/assertions](evidence/20261011T062718_385853Z/UT-002_result.txt) |
+| UT-003 | PARTIALLY COVERED: required layout checks exist; historical missing-field checks not fully evidenced | **PASS**: Structured errors for all four mandatory structural fields; SETUP metadata is optional by current contract | [exact function/assertions](evidence/20261011T062718_385853Z/UT-003_result.txt) |
+| UT-004 | PARTIALLY COVERED: two historical helper range tests pass, broader workbook validation fails | **FAIL**: Reject invalid numerical input and conflicting duplicate identities/blocks; curriculum validity is EXTERNAL | [exact function/assertions](evidence/20261011T062718_385853Z/UT-004_result.txt) |
+| UT-005 | EXISTING VERIFIED: exact composite/fallback/zero, indirect helper and synthetic transformer assertions passed | **PASS**: 83.00 composite for every workbook record; missing/zero indirect distinguished | [exact function/assertions](evidence/20261011T062718_385853Z/UT-005_result.txt) |
+| UT-006 | EXISTING VERIFIED: exact 70% and tier/rounding assertions passed | **PASS**: 70.00 is met and Proficient, below is Basic; fixed institutional threshold | [exact function/assertions](evidence/20261011T062718_385853Z/UT-006_result.txt) |
+| UT-007 | PARTIALLY COVERED / NOT YET VERIFIED: historical prompt logic exists but not executed | **PASS**: All counts, composite/direct/indirect percentages, thresholds and means match independent oracle; no synthetic identities/IDs leak | [exact function/assertions](evidence/20261011T062718_385853Z/UT-007_result.txt) |
+| UT-008 | PARTIALLY COVERED / NOT YET VERIFIED: restored provider tests do not enforce the complete course schema | **PASS**: Valid response preserved; invalid schemas rejected by service or status=error | [exact function/assertions](evidence/20261011T062718_385853Z/UT-008_result.txt) |
+| UT-009 | PARTIALLY COVERED / NOT YET VERIFIED: restored failover script not executed; fresh mocked assertions passed | **PASS**: Failover order and error status correct; blank provider response must not be status=ok | [exact function/assertions](evidence/20261011T062718_385853Z/UT-009_result.txt) |
+| UT-010 | PARTIALLY COVERED: restored spoofed-column and mixed-mean methods passed | **PASS**: All 28 records match independent direct/indirect/composite/threshold/level/completeness; section completeness correct | [exact function/assertions](evidence/20261011T062718_385853Z/UT-010_result.txt) |
+| UT-014 | PARTIALLY COVERED: restored synthetic count assertions do not directly verify all 150 pairs | **PASS**: Exactly 30 IDs, five CLOs and 150 unique Cartesian pairs in extraction and transform; no duplicates | [exact function/assertions](evidence/20261011T062718_385853Z/UT-014_result.txt) |
+| ST-AI-001 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: 12 below threshold, composite=6%; accurate gap prompt and valid mocked response | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-001_result.txt) |
+| ST-AI-002 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: Six below and six at/above threshold; gap counts/values exactly grounded | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-002_result.txt) |
+| ST-AI-003 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: Composite=96.5%, no gaps and no LLM calls; no assumption about existing ideal workbook | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-003_result.txt) |
+| ST-AI-004 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: Every supported count/denominator/threshold/mean checked; wrong claim detected; unsupported digits flagged for manual review | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-004_result.txt) |
+| ST-AI-005 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: Bounded two attempts, error status, intact inputs and no actual SDK/network calls | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-005_result.txt) |
+| ST-AI-006 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: Input header/records unchanged, no approval execution or persistence path; webapp approval and wording quality require external/human review | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-006_result.txt) |
+| ST-AI-007 | PARTIALLY COVERED / NOT YET VERIFIED historically; approval workflow EXTERNAL for ST-AI-006 | **PASS**: All 12 composite=70.00, met=True; gaps empty, prompt empty, no provider calls | [exact function/assertions](evidence/20261011T062718_385853Z/ST-AI-007_result.txt) |
+| IT-007 | PARTIALLY COVERED / NOT YET VERIFIED: historical endpoint/stress script exists, no isolated execution evidence | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/IT-007_result.txt) |
+| IT-009 | NOT COVERED by suitable verified historical assertions | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/IT-009_result.txt) |
+| PT-004 | PARTIALLY COVERED / NOT YET VERIFIED: historical endpoint/stress script exists, no isolated execution evidence | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-004_result.txt) |
+| PT-005 | NOT COVERED by suitable verified historical assertions | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-005_result.txt) |
+| PT-006 | NOT COVERED by suitable verified historical assertions | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-006_result.txt) |
+| PT-007 | NOT COVERED by suitable verified historical assertions | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-007_result.txt) |
+| PT-008 | NOT COVERED by suitable verified historical assertions | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-008_result.txt) |
+| PT-009 | PARTIALLY COVERED / NOT YET VERIFIED: historical endpoint/stress script exists, no isolated execution evidence | **SKIPPED**: Explicit approval/selection before execution | [exact function/assertions](evidence/20261011T062718_385853Z/PT-009_result.txt) |
+
+UT-004 targeted negative PRELIM/MIDTERM/FINAL regressions and zero/null/extra-credit compatibility checks all PASS. Five original broader subchecks still FAIL: above-maximum score rejection (conflicts with the approved extra-credit policy), nonnumeric score, nonnumeric rating, duplicate student IDs and duplicate CLO labels. These assertions were retained, not loosened. The last four remain unresolved validation findings; curriculum registry checks are EXTERNAL.
+
+UT-008 now rejects malformed JSON and invalid/missing/extra fields, item types, roles, empty lists and invalid patterns; valid single/fenced/string responses pass. UT-009 rejects ten invalid text scenarios on both course and institutional boundaries, preserves institutional prose/error sentinels and numerical summary, and retains passing failover/no-key/rate-limit assertions. ST-AI-007 still verifies the no-gap null shortcut. See [REGRESSION_NOTES.md](REGRESSION_NOTES.md) for precise changes and compatibility limits.
+
+Historical scripts not run: test_llm_failover.py requires the real Settings class at import (the isolated config stub deliberately excludes it); provider cases are covered with fresh SDK mocks, without loading credential configuration. test_shared_secret_auth.py and test_institutional_summary_e2e.py import app.main/TestClient; test_unsupported_course_type.py imports worker/queue. Running those unchanged could load live configuration or Redis, so they remain NOT YET VERIFIED in this scope. test_ai_module.py loads/decrypts env and can use live Gemini; test_validate.py uses a saved workbook and prints records; upload/stress scripts and run_all discovery are outside authorized scope. No such scripts were executed.
+
+Automated ST-AI-004 evidence is limited to the supported numerical-claim grammar; arbitrary prose claims, educational usefulness and advisory semantics need manual review. Approval/RBAC/persistence/frontend error rendering require the webapp team. Integration, live Gemini and performance require Phase 2B approval and verified dedicated isolation.
+
+---
+
+## Retained earlier audit snapshots
+
+# OBELISK Pre-UAT coverage audit — Phase 1 and approved Phase 2A
+
+## Phase 2A update — October 11, 2026
+
+This section supersedes the **current-status** findings of Phase 1. The original Phase 1 inspection below is retained as a dated historical snapshot; its absence-of-execution statements apply to that phase only.
+
+### Direct old_test recheck
+
+Before implementation, direct `Get-ChildItem` sizes, `Get-Content`, SHA-256 hashes and an IDE `read_file` check were performed. All eleven `testing_modules/old_test/*.py` files still contain **zero bytes**, with empty-file hash `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. Their last-write timestamps at the recheck were October 11, 2026, 13:56:18 local time. The IDE read of `test_etl_v2.py` returned an empty first line.
+
+The working directory remains `D:\Jetbrains_IDE_Projects\pycharm\Obelisk_FINAL\apps\python-server`, Git root remains `D:\Jetbrains_IDE_Projects\pycharm\Obelisk_FINAL`, and HEAD remains `1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93`. IDE module metadata and interpreter point to this same Python service. The pre-existing staged additions/deletions were preserved. The presence of file tabs/paths in an IDE does not establish saved content. Unsaved buffers or another filesystem view are possible explanations, but the exact discrepancy is not established; no original was edited, restored or overwritten to resolve it.
+
+The original code is recoverable through `git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/<script>`. For this suite, only selected imports/class definitions from two allowlisted committed scripts are evaluated **in memory**, retaining their original assertions. Eleven historical test methods and the original configurable synthetic workbook helper are reused. No live/standalone historical script is executed.
+
+### Current execution evidence
+
+Final suite run: [RESULTS.json](evidence/20261011T061026_592082Z/RESULTS.json). Isolation proof: [ISOLATION.json](evidence/20261011T061026_592082Z/ISOLATION.json). Original/production preservation and exact reused-method/source hashes: [SOURCE_MANIFEST.json](evidence/20261011T061026_592082Z/SOURCE_MANIFEST.json).
+
+**18 requested IDs implemented and executed: 15 PASS, 3 FAIL, 0 BLOCKED, 0 SKIPPED within Phase 2A.** Eight integration/performance IDs are SKIPPED because Phase 2B is not authorized. The first harness attempt was blocked before test-body assertions because its guard rejected Windows asyncio's internal socketpair; that attempt is retained with zero executed IDs. A narrow stdlib wakeup-pipe exception resolved the harness issue. Later runs have no unexpected isolation violations, and production/original hashes match before/after.
+
+**EXISTING VERIFIED** below is used only for core requirements directly checked by unchanged historical methods with fresh passing execution evidence. **NEW VERIFIED** denotes newly implemented deterministic assertions with recorded PASS; it does not imply they existed before this task. Historical subchecks inside a failed parent ID are separately verified but do not make that ID pass. All AI verification is mocked and scoped; live model performance/truthfulness and webapp functionality remain unverified.
+
+| Test ID | Historical coverage now evidenced | Phase 2A exact assertions / current classification | Result and evidence |
+| --- | --- | --- | --- |
+| UT-001 | PARTIALLY COVERED; historical dynamic-CLO assertions passed | NEW VERIFIED: header/setup/section, exact synthetic IDs and written raw values, dynamic CLO sets/counts and all 12 oracle-checked outputs | [PASS](evidence/20261011T061026_592082Z/UT-001_result.txt) |
+| UT-002 | PARTIALLY COVERED historically; conditional old fixture not executed | NEW VERIFIED: corrupt XLSX/text rejection, synthetic unsupported layout and invalid marker with structured error metadata | [PASS](evidence/20261011T061026_592082Z/UT-002_result.txt) |
+| UT-003 | PARTIALLY COVERED historically | NEW VERIFIED for mandatory sheets/markers: delete each and assert MissingWorksheet/InvalidTemplate details. Optional SETUP absence correctly produces missing_sheet/null metadata; any stricter header policy needs clarification | [PASS, scoped](evidence/20261011T061026_592082Z/UT-003_result.txt) |
+| UT-004 | PARTIALLY COVERED; two historical range-helper methods passed | Implemented, FAILED: six malformed numerical/duplicate-identity/CLO scenarios accepted. Curriculum/identity registry validity is EXTERNAL | [FAIL](evidence/20261011T061026_592082Z/UT-004_result.txt) |
+| UT-005 | EXISTING VERIFIED: exact 83%, fallback 75%, real-zero indirect 56%; historical indirect math and transformer fallback pass | Also NEW VERIFIED on actual synthetic workbook outputs and independent oracle; no-direct evidence returns null | [PASS](evidence/20261011T061026_592082Z/UT-005_result.txt) |
+| UT-006 | EXISTING VERIFIED: historical exact 70%/neighbor classifications and rounded-boundary assertions pass | Also NEW VERIFIED for returned transformer met_threshold/level with custom course threshold 90% at 69.99, 70, 70.01 and 69.996 rounded | [PASS](evidence/20261011T061026_592082Z/UT-006_result.txt) |
+| UT-007 | PARTIALLY COVERED historically | NEW VERIFIED: every gap count/denominator/value/threshold, direct/indirect scaling, means, anonymization/dropped IDs, unchanged inputs, alignment and DATA framing | [PASS](evidence/20261011T061026_592082Z/UT-007_result.txt) |
+| UT-008 | PARTIALLY COVERED historically; old live E2E not run | Implemented, FAILED: service accepts malformed/wrong-schema responses despite independent validator rejecting them; role/type/cardinality/pattern/missing/extra/blank-field cases recorded | [FAIL](evidence/20261011T061026_592082Z/UT-008_result.txt) |
+| UT-009 | PARTIALLY COVERED historically | Implemented, FAILED overall: mocked timeout failover/order, missing-key exception and exhausted rate-limited slots pass; whitespace response incorrectly returns ok | [FAIL](evidence/20261011T061026_592082Z/UT-009_result.txt) |
+| UT-010 | PARTIALLY COVERED; historical spoofed-column recomputation method passes | NEW VERIFIED: all 28 varied records match independent direct/indirect/composite/level/met/completeness oracle, including missing scores, zero maxima and section completeness | [PASS](evidence/20261011T061026_592082Z/UT-010_result.txt) |
+| UT-014 | PARTIALLY COVERED historically | NEW VERIFIED: extraction and transform each have all 150 Cartesian pairs exactly once, 30 unique synthetic IDs and five CLOs; all outputs oracle-checked | [PASS](evidence/20261011T061026_592082Z/UT-014_result.txt) |
+| ST-AI-001 | PARTIALLY COVERED historically | NEW VERIFIED, MOCKED: valid worst scenario with 12 composite=6% failures, all outputs and gap data independently checked | [PASS](evidence/20261011T061026_592082Z/ST-AI-001_result.txt) |
+| ST-AI-002 | PARTIALLY COVERED historically | NEW VERIFIED, MOCKED: six failed and six met records with exact gap counts/values and valid controlled response | [PASS](evidence/20261011T061026_592082Z/ST-AI-002_result.txt) |
+| ST-AI-003 | PARTIALLY COVERED historically | NEW VERIFIED, MOCKED: synthetic ideal composite=96.5%, no gaps, no provider calls; existing ideal file not assumed safe/zero-gap | [PASS](evidence/20261011T061026_592082Z/ST-AI-003_result.txt) |
+| ST-AI-004 | NOT COVERED historically | NEW VERIFIED, MOCKED/SCOPE LIMITED: 12 supported numeric fields checked against oracle-verified ETL; wrong-count negative control detected; unsupported numeric wording flagged MANUAL REVIEW. Live claims remain unverified | [PASS](evidence/20261011T061026_592082Z/ST-AI-004_result.txt) |
+| ST-AI-005 | PARTIALLY COVERED historically | NEW VERIFIED, MOCKED: unavailable/429/timeout SDK errors exhaust exactly two synthetic slots, status=error, inputs unchanged | [PASS](evidence/20261011T061026_592082Z/ST-AI-005_result.txt) |
+| ST-AI-006 | NOT COVERED historically; approval is EXTERNAL | NEW VERIFIED, PYTHON ONLY: header/records unchanged for normal/malicious mocked text; advisory rules in prompt, no approval output/action. Webapp enforcement EXTERNAL; semantic advice needs MANUAL REVIEW | [PASS, scoped](evidence/20261011T061026_592082Z/ST-AI-006_result.txt) |
+| ST-AI-007 | PARTIALLY COVERED historically | NEW VERIFIED, MOCKED: all 12 composite=70.00 and met=True, zero gaps, empty prompt, no recommendation/provider calls | [PASS](evidence/20261011T061026_592082Z/ST-AI-007_result.txt) |
+| IT-007 | PARTIALLY COVERED historically, no execution evidence | Phase 2B not authorized; real lifecycle/persistence/Redis isolation still unverified | [SKIPPED](evidence/20261011T061026_592082Z/IT-007_result.txt) |
+| IT-009 | NOT COVERED | Phase 2B not authorized; concurrent job correctness still unverified | [SKIPPED](evidence/20261011T061026_592082Z/IT-009_result.txt) |
+| PT-004 | PARTIALLY COVERED historically, benchmark claims unverified | Phase 2B not authorized; accepted vs completed throughput still unverified | [SKIPPED](evidence/20261011T061026_592082Z/PT-004_result.txt) |
+| PT-005 | NOT COVERED | Phase 2B not authorized; no completion-time benchmark | [SKIPPED](evidence/20261011T061026_592082Z/PT-005_result.txt) |
+| PT-006 | NOT COVERED | Phase 2B not authorized; no AI latency benchmark/live call | [SKIPPED](evidence/20261011T061026_592082Z/PT-006_result.txt) |
+| PT-007 | NOT COVERED | Phase 2B not authorized; no sustained-load test | [SKIPPED](evidence/20261011T061026_592082Z/PT-007_result.txt) |
+| PT-008 | NOT COVERED | Phase 2B not authorized; no saturation/recovery test | [SKIPPED](evidence/20261011T061026_592082Z/PT-008_result.txt) |
+| PT-009 | PARTIALLY COVERED historically, benchmark claims unverified | Phase 2B not authorized; no analytics-load benchmark | [SKIPPED](evidence/20261011T061026_592082Z/PT-009_result.txt) |
+
+New test implementations are `testing_modules/unit_test/test_pre_uat_unit.py::UnitPreUAT` and `testing_modules/ai_system_test/test_pre_uat_ai.py::AIPreUAT`; per-ID evidence identifies exact methods, subchecks, expected/actual values, timestamps, environment and reproduction commands. These files preserve the existing folder structure.
+
+### Verified historical method reuse
+
+| Owning ID | Unchanged historical methods evaluated | Assertion evidence |
+| --- | --- | --- |
+| UT-001 | `TestETLV2Pipeline.test_dynamic_clo_count_discovery` | Original 5×3 and 3×7 cardinalities, exact CLO sets and empty mapping; PASS observation in UT-001 evidence |
+| UT-004 | `TestCompositeAttainmentPureMath.test_direct_scale_validation`, `test_indirect_scale_validation` | Original ValueError assertions for negative/strict-over-one direct and out-of-range indirect; constituent PASS observations inside FAILED UT-004 |
+| UT-005 | `TestCompositeAttainmentPureMath.test_70_30_composite_calculation`, `test_fallback_when_indirect_is_none`, `test_indirect_zero_is_not_treated_as_missing`; `TestIndirectAttainment.test_compute_indirect_clo_attainment_returns_expected_percentage`; `TestAunObeRealWorkbookIntegration.test_no_indirect_sheet_or_scores_fallback_in_transformer` | Exact original numeric/threshold/level/null checks executed, PASS observations in UT-005 |
+| UT-006 | `TestCompositeAttainmentPureMath.test_rounding_boundary`, `test_clo_levels_classification` | Original rounded 70 and six tier-boundary expectations executed, PASS observations in UT-006 |
+| UT-010 | `TestETLV2Pipeline.test_independent_recomputation_ignores_tampered_formula_column` | Original four-output direct=.80, indirect=80, Proficient, met and excluded-null checks executed, PASS observations in UT-010 |
+
+Actual script/revision provenance is recorded in SOURCE_MANIFEST.json. None of the unselected historical methods is claimed to have passed. Four documented defect groups (invalid numerical inputs, duplicate identities/blocks, response schema enforcement, blank successful response) affect three failed IDs; see [DEFECTS.md](DEFECTS.md). No defect was silently fixed.
+
+Next authorization boundary: Phase 2B integration/live Gemini/performance execution. Dedicated Redis/server/upload isolation must be established for stateful cases; disruptive/live tests additionally need explicit opt-in. This session stops after Phase 2A.
+
+---
+
+## Preserved Phase 1 snapshot
+
+Prepared for Team 4th Dimension's October 13, 2026 submission.
+
+- Inspection date: October 11, 2026 (Asia/Shanghai, UTC+08:00).
+- Repository: `apps/python-server`, Windows PowerShell; declared Python requirement `>=3.13`.
+- Inspected HEAD: `1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93`.
+- Method: static source, filesystem, documentation, and read-only Git inspection. **No tests executed, no application imports, no server started, no Redis or Gemini calls made.**
+- Deliverable: this audit only. No new test scripts, results reports, evidence of execution, dependencies, or configuration changes were created.
+
+## Classification and evidence rules
+
+**EXISTING VERIFIED** requires a directly relevant automated assertion and identifiable passing execution evidence for that assertion, including its source/scenario. A script name, an assertion in source, a printed success message in source, or a documentation claim is insufficient.
+
+**NOT YET VERIFIED** means precise historical assertions directly address the core requirement, but execution evidence is unavailable. **PARTIALLY COVERED** means identifiable historical checks address only some behavior; missing assertions and absent execution evidence are recorded. **NOT COVERED** means no suitable automated checks were located for the requirement. **NOT APPLICABLE / EXTERNAL** applies to portions owned by the webapp or requiring human evaluation.
+
+Historical candidates below are **not runnable tests in the current working tree**. Their classification describes reusable coverage intent in committed source, not current operational coverage. No requested case has verified current coverage.
+
+## Repository and test inventory
+
+1. Current `testing_modules/old_test/` contains eleven **zero-byte** files: `run_all.py`, `test_ai_module.py`, `test_composite_attainment.py`, `test_etl_v2.py`, `test_institutional_summary_e2e.py`, `test_llm_failover.py`, `test_shared_secret_auth.py`, `test_stress_async.py`, `test_unsupported_course_type.py`, `test_upload_e2e.py`, and `test_validate.py`. They contain no functions or assertions.
+2. `testing_modules/unit_test/`, `integration_test/`, `ai_system_test/`, `performance_test/`, and `__pycache__/` contain no files at inspection time.
+3. Before this audit, Git already showed staged deletions of the original eleven scripts at `testing_modules/` and staged additions at `testing_modules/old_test/`. Those changes were left untouched. Source was inspected using `git show HEAD:apps/python-server/testing_modules/<filename>` without restoring, moving, or executing scripts.
+4. The historical runner uses `unittest.TestLoader.discover(pattern="test_*.py")`. Standalone `main()` scripts are not automatically executed by unittest discovery. `pyproject.toml` lists runtime dependencies and `uv.lock` exists; no project pytest/conftest configuration was located. Historical upload E2E imports `requests`, which is not declared in `pyproject.toml`; package availability was not executed or verified.
+5. Three top-level workbook fixtures exist in `classrecord_templates/`: `JMCFI_Class_Record_Template_AUN-OBE(worst).xlsx`, `(mixed).xlsx`, and `(ideal).xlsx`. An `Old/` directory also exists. There are 104 `.xlsx` files across `testing_modules/` and `classrecord_templates/`, including previously saved uploads. Workbook contents and personal data were not printed or treated as safe synthetic evidence. Filenames alone do not prove scenario properties, student counts, or a zero-gap condition.
+6. Historical ETL `_create_synthetic_aunobe_workbook()` constructs temporary workbooks with configurable CLO/student counts. This is a potential fixture approach for a future isolated suite; no active helper implementation is present in the empty relocated scripts.
+7. Historical scripts reference the unsuffixed `classrecord_templates/JMCFI_Class_Record_Template_AUN-OBE.xlsx`, which is absent at that exact top-level path. `test_etl_v2` references `classrecord_templates/E-classrecord(LECTURE ONLY).xlsx`; its assertion is conditional on that exact file existing and otherwise silently performs no check.
+
+## Execution evidence inspected
+
+No saved test run reports, JUnit XML, result CSV/JSON, logs, or Pre-UAT evidence files were located in the Python service's inspected project/test files. IDE report-file search returned no candidates; tracked result/report/log/evidence filename searches also returned none. No evidence from CI, an external submission archive, or another machine was supplied or inspected.
+
+`documentations/KNOWN_LIMITATIONS.md`, item 7, quotes performance figures and labels them measured. It does not supply an identifiable raw run artifact, timestamp, revision, full environment, or per-request/completed-job results. These are **unverified documentary claims**, not passing execution evidence. No numbers from that document are accepted as Pre-UAT results here.
+
+For **every table row**, execution evidence is **unavailable**. Line numbers and function references below identify historical source assertions only. Historical filenames are abbreviated to their basename; all resolve to `HEAD:apps/python-server/testing_modules/<filename>` at the HEAD recorded above.
+
+## Unit coverage
+
+| Test ID / objective | Historical script/function and exact existing checks | Classification | Evidence available | Missing assertions / prerequisites |
+| --- | --- | --- | --- | --- |
+| UT-001 Parse valid Excel class record | `test_etl_v2.py::TestETLV2Pipeline.test_dynamic_clo_count_discovery` (138–156): records equal `5*3` and `3*7`, exact CLO sets, empty mapping for the first workbook. `test_independent_recomputation_ignores_tampered_formula_column` (158–178) checks four transformed records and computed fields. | PARTIALLY COVERED | Historical assertion source only; current scripts empty; no run evidence. | Assert required header/metadata, roster identities, raw values, and actual outputs across a fully defined synthetic valid workbook; independently establish fixture validity. |
+| UT-002 Reject corrupted or unsupported workbook | `test_etl_v2.py::test_old_template_format_raises_structured_missing_worksheet_error` (180–188): conditional `assertRaises(MissingWorksheet)`, structured error type and expected sheet. `test_unsupported_course_type.py::test_research_course_type_marks_job_failed_with_structured_error` (14–64): mocked failed update and `UnsupportedCourseType` details. | PARTIALLY COVERED | Historical source only; course-type rejection is not corrupt-file rejection. | Synthetic corrupt ZIP/XLSX, unsupported formats, invalid marker/template; assert rejection/error metadata rather than mere failure. Old-template check can silently do nothing when fixture is absent. |
+| UT-003 Reject workbook with missing required fields | Historical `test_etl_v2.py` missing-worksheet check above covers a missing structural sheet only. | PARTIALLY COVERED | Conditional historical assertion source only. | Enumerate which fields are mandatory; synthetic deletion of each; assert intended structured errors. Current SETUP metadata deliberately permits missing fields, so strict rejection of every header field cannot be assumed. |
+| UT-004 Validate invalid scores, IDs, CLO values | `test_composite_attainment.py::TestCompositeAttainmentPureMath.test_direct_scale_validation`: `ValueError` for negative direct and `1.05` with strict scale. `test_indirect_scale_validation`: `ValueError` for `-5`/`105` indirect. `test_etl_v2.py::TestIndirectAttainment` rejects zero scale and rating above maximum. | PARTIALLY COVERED | Historical helper assertions only. | End-to-end invalid/nonnumeric/nonfinite scores, per-period score/max limits, ID format/duplicates, blank/duplicate CLO labels. Curriculum CLO reconciliation is EXTERNAL; Python intentionally discovers workbook CLO labels dynamically. |
+| UT-005 Verify 70% direct + 30% indirect | `test_composite_attainment.py::TestCompositeAttainmentPureMath.test_70_30_composite_calculation`: `compute_composite_clo(0.80,90.0)==83.0`; fallback `0.75,None==75.0`; zero indirect `0.80,0.0==56.0`. | NOT YET VERIFIED | Exact historical math assertions; no execution artifact and no runnable working-tree implementation. | Obtain fresh deterministic run evidence after approval; extend to actual ETL output, scales, rounding, and missing-direct behavior. Current formula is implemented; do not change it. |
+| UT-006 Classification exactly 70% | Historical `test_composite_attainment.py::test_clo_levels_classification`: `compute_clo_level(70.0)==Proficient`, `69.99==Basic`, and other boundaries. `test_rounding_boundary`: composite `0.69996,None` equals `70.00`, local threshold comparison true, level Proficient. | NOT YET VERIFIED | Exact historical boundary assertions only; no run evidence. | Assert the transformer's returned `met_threshold` and `clo_level` at exactly 70 and neighboring values, including a course threshold different from 70. Local comparison alone does not verify transformer behavior. |
+| UT-007 Numerical CLO data prepared for AI | `test_llm_failover.py::test_prompts_format_and_escape_data_boundaries` (72–127): placeholders absent, one pair of DATA delimiters, CLO text included, injected closing delimiter escaped. `test_ai_module.py::main` prints gap data and checks three hardcoded name substrings using print-only branches. | PARTIALLY COVERED | Historical structural prompt assertions / diagnostic branches only. | Assert every gap count, denominator, composite/direct/indirect unit conversion, mean and threshold against independently computed values; verify anonymization for all synthetic students and dropped IDs. Print-only name checks do not prove privacy. |
+| UT-008 AI recommendation response schema | `test_upload_e2e.py::run_e2e_for_file` (194–232): parse JSON; nonempty string summary; nonempty recommendation list; each item dict with truthy title/explanation/recommendedFor; pattern key present. | PARTIALLY COVERED | Historical E2E assertion source only; calls live recommendation endpoint. | Deterministic mocked schema tests; field types, allowed roles, recommendation cardinality, pattern type/null, extra fields and invalid objects. Python CQI service itself currently returns response text without JSON/schema validation. |
+| UT-009 Invalid/unavailable AI responses | `test_llm_failover.py::test_call_llm_api_no_keys_raises_not_implemented`, `test_call_llm_api_first_key_fails_second_succeeds`, `test_call_llm_api_all_keys_exhausted_returns_error`, `test_generate_cqi_recommendation_status_on_exhaustion`, `test_generate_institutional_summary_status_on_exhaustion`: missing-key exception, exact second-key success/call order, error prefix and propagated `status=error`. | PARTIALLY COVERED | Historical mocked assertions only, no execution evidence. | Malformed JSON, wrong schema, empty/null provider text, bounded timeout, explicit rate-limit/unavailable provider cases and route outcomes. Historical debug-mode test expects an old placeholder prefix that current JSON mock does not return. |
+| UT-010 Independent expected attainment results | `test_etl_v2.py::test_independent_recomputation_ignores_tampered_formula_column`: each direct `0.80` and indirect `80.0` (four decimal places) despite spoofed formula columns. `test_validate.py::step2_validate_transform`: first direct equals `91/105`, indirect `60.0`, completeness/met flags true. Historical composite workbook test checks direct `78/90`, indirect `60`, composite `78.67`, and another composite `94`. | PARTIALLY COVERED | Historical exact value assertions only; unsuffixed fixture missing. | Independent oracle across every output record with varied scores, composite/levels/completeness and edge cases; avoid shared production math as expected-value implementation. |
+| UT-014 30 unique students × 5 CLOs = 150 unique records | `test_validate.py::step1_validate_extraction` checks 15 students and 75 records; `step2_validate_transform` checks 75 outputs. Dynamic tests check other cardinalities. | PARTIALLY COVERED | Historical generic count checks only; none asserts the designated 30×5 scenario. | Create designated synthetic fixture; assert 30 unique IDs, five distinct CLOs, all 150 Cartesian pairs exactly once and matching transformed output. Row count alone cannot establish uniqueness. |
+
+## Integration coverage
+
+| Test ID / objective | Historical script/function and exact existing checks | Classification | Evidence available | Missing assertions / isolation blockers |
+| --- | --- | --- | --- | --- |
+| IT-007 Background ETL lifecycle | `test_upload_e2e.py::run_e2e_for_file`: requires 202 plus job ID, polls at one-second intervals for up to 30 seconds, stops at completed/failed, returns false for failure/timeout, requires nonempty `result.loaded.attainments`, asserts excluded_reason null and indirect field present. Historical unsupported-course test asserts mocked worker failure update metadata. | PARTIALLY COVERED | Historical terminal polling/checks only; no successful run artifact. | Prove dedicated Redis/server/upload directory before execution; assert job identity/status sequence (`running` is current processing state), completed successful output against per-job synthetic expected data, malformed-job failed terminal state, uniqueness and cleanup. Failed terminal state is not a successful-upload pass. |
+| IT-009 Concurrent upload isolation | Historical stress upload factory posts concurrently but retains HTTP status/latency only; no job IDs, job polling, or isolated-result assertions. | NOT COVERED | Relevant historical request generator only; no suitable correctness checks or execution evidence. | Concurrent distinct synthetic datasets, unique job IDs, every successful job completed, matching identities/numbers per job, no cross-job contamination or duplicate student-CLO pairs; bounded polling and test-owned cleanup. |
+
+Database isolation is **NOT APPLICABLE** inside this compute service: `DummyLoader` serializes computed results, and the webapp owns relational persistence. Redis job data and uploaded files are stateful and must be isolated. Confirming persisted `CloAttainment`/`PloAttainment` ownership requires webapp integration evidence.
+
+## AI system coverage
+
+| Test ID / objective | Historical script/function and exact existing checks | Classification | Evidence available | Missing assertions / external portions |
+| --- | --- | --- | --- | --- |
+| ST-AI-001 Worst-case dataset | `test_upload_e2e.py::run_e2e_for_file`, default worst workbook: completed/nonempty attainments and AI schema checks described above. | PARTIALLY COVERED | Historical default fixture selection and generic E2E checks; no execution evidence. | Prove worst-case numerical properties from synthetic data, expected gap counts/severity and mocked prompt grounding; separate optional live quality review. |
+| ST-AI-002 Mixed-attainment dataset | Same historical E2E function, default mixed workbook and generic checks. | PARTIALLY COVERED | Historical source only. | Assert both met/unmet groups, exact gap values and exclusions, valid grounded recommendations using deterministic mock; establish fixture properties. |
+| ST-AI-003 Ideal-attainment dataset | Same historical E2E function, default ideal workbook and generic checks. | PARTIALLY COVERED | Historical source only; filename does not establish high attainment or zero gaps. | Independently define/verify ideal scenario, expected gaps or no-gaps response and provider call count. Generic non-null recommendation expectation may be inappropriate for no-gap output. |
+| ST-AI-004 Every numerical AI claim grounded in ETL | No historical test compares numerical claims in recommendations with actual ETL records. Printing prompt/result is not a check. | NOT COVERED | No suitable assertion or run evidence located. | Build claim-to-source checks for every machine-checkable number, units, population and rounding; flag ambiguous/free-text claims for MANUAL REVIEW. Test a deliberately incorrect mock claim to establish detection. |
+| ST-AI-005 AI unavailable/rate-limited | Historical `test_llm_failover.py` mocked first-key failure/second-key success, exhausted pool and propagated course/institutional error status assertions. | PARTIALLY COVERED | Historical mocked assertions only. | Explicit unavailable, rate-limit, timeout and malformed response scenarios; bounded timing, no state mutation and sanitized errors. Optional live failure behavior requires separate opt-in. |
+| ST-AI-006 CQI remains advisory | No historical automated assertion checks unchanged attainment/job data or forbidden actions; escaping prompt delimiters alone does not establish advisory behavior. | NOT COVERED (Python); NOT APPLICABLE / EXTERNAL (approval workflow) | Advisory rules exist in production prompt; no execution evidence. | Snapshot Python input/job data before/after recommendation and assert unchanged scores/status and no action/persistence calls. Verify approval/RBAC/CQI lifecycle with webapp team; inspect semantic grade-changing advice manually. |
+| ST-AI-007 Truly zero attainment gaps | `test_ai_module.py::main` prints success when status is `no_gaps_found`, but contains no dedicated zero-gap fixture, assertion, or provider-call spy. | PARTIALLY COVERED | Historical diagnostic branch only, no run evidence. | Synthetic all-at/above-threshold records with independently computed zero gaps; assert `no_gaps_found`, recommendation null and zero LLM calls. Do not infer zero gaps from ideal filename. |
+
+Deterministic mocks can verify formatting, numeric request data, schema/error handling and Python behavior; they do not establish the quality of a live Gemini recommendation. Live tests must be explicitly enabled later and record model, sanitized response/error, latency and manual-review outcomes.
+
+## Performance coverage
+
+| Test ID / objective | Historical script/function and exact existing checks | Classification | Evidence available | Missing measurements / assertions |
+| --- | --- | --- | --- | --- |
+| PT-004 Concurrent Excel upload throughput | `test_stress_async.py::create_upload_request_func`, `run_stress_suite`, `BenchmarkSummary`: concurrent POSTs, status distribution, elapsed wall time, requested-count RPS, mean/p95/max HTTP response latency, 2xx success counts. | PARTIALLY COVERED | Historical measurement source; documentation figures lack raw run evidence. | Accepted/completed/failed/rejected job counts, actual accepted throughput versus completed ETL throughput, per-job isolation, queue depth/drain, CPU/RAM, environment and cleanup. Existing RPS uses requested count, not completed ETL count. |
+| PT-005 Upload-to-completed-job timing | Historical E2E has a polling deadline but no aggregate end-to-end latency measurements. | NOT COVERED | Timeout logic only, no benchmark or run evidence. | Per-job upload start to completed timestamp, bounded polling interval uncertainty, failures/timeouts and mean/p95/max completion latency/throughput. |
+| PT-006 AI CQI recommendation latency | Historical E2E recommendation request uses 30-second HTTP timeout; stress modes do not benchmark recommendations. | NOT COVERED | HTTP timeout only, no latency result evidence. | Deterministic mocked service overhead separately from optional live provider latency, model/request counts/error distribution and mean/p95/max; live stress opt-in. |
+| PT-007 Sustained-load stability | Historical stress script issues a finite request batch; no defined sustained duration or stability criteria. | NOT COVERED | No suitable sustained-load assertions or run evidence. | Explicit opt-in duration/rate, time-window throughput/error/latency trends, worker survival, CPU/RAM, queue growth, resource limits, bounded abort and post-load recovery. |
+| PT-008 Redis saturation and recovery | Historical upload stress records status codes; no assertion deliberately fills a dedicated queue or verifies recovery. | NOT COVERED | Production capacity check exists; no suitable test evidence. | Isolated deterministic capacity fill, exact rejection boundary/503, rejected-file cleanup, queue depth, worker drain time, post-drain acceptance/completion and owned-key cleanup. Concurrent capacity race needs targeted investigation. |
+| PT-009 Analytics endpoint throughput/p95 | Historical `test_stress_async.py::create_analytics_request_func`, `run_stress_suite`, `BenchmarkSummary`: POST `/analytics/summary`, request counts/concurrency, HTTP statuses, wall-time RPS and latency percentiles. Historical institutional E2E separately asserts CLO/PLO means `0.70` and Rule 3 true. | PARTIALLY COVERED | Historical benchmark/functional assertions; no execution artifacts tying output correctness to load. | Validate numerical outputs under load, acceptance versus successful valid response rate, error rates and limits, reproducible payload/environment, CPU/RAM and explicit safe thresholds. Separate pure-summary timing from LLM-backed institutional summary. |
+
+Historical stress defaults are 100 requests per selected suite, concurrency 25, and mode `all`; upload concurrency is capped at 20 and analytics at 30. Its arbitrary `--url` has no demonstrated production/shared-service guard or explicit disruptive-test opt-in. **Do not run it as a Phase 1 or safe-default test.** Documentation suggestions to increase worker/queue counts are not benchmark proof and are not recommendations to change configuration for this task.
+
+## Summary
+
+| Classification | Requested cases |
+| --- | ---: |
+| EXISTING VERIFIED | 0 |
+| NOT YET VERIFIED (historical direct checks, evidence absent) | 2 |
+| PARTIALLY COVERED (historical checks only) | 17 |
+| NOT COVERED (including ST-AI-006 Python portion) | 7 |
+| Total requested test IDs audited | 26 |
+
+ST-AI-006 approval-workflow checks, UT-004 curriculum reconciliation, and relational persistence portions of integration tests are additionally **NOT APPLICABLE / EXTERNAL**. These portions do not add test IDs to the total. Tests executed: **0**. Passing/failing execution results: **none established**. All 26 IDs still need suitable execution evidence; the current working tree has no implemented assertions in its eleven test script files.
+
+## Static findings and reproduction plans (not executed failures)
+
+1. **Missing runnable tests / stale references — all IDs.** Read the zero-byte files and staged status; compare with `git show` at the recorded revision. Existing README commands reference deleted original paths. Do not repair/restore existing scripts without authorization; add the future suite in `pre_uat/` only.
+2. **AI schema enforcement gap — UT-008, UT-009, ST-AI-004.** In `cqi_recommender.generate_cqi_recommendation`, response text is fence-stripped and classified as an error only by a special prefix; there is no JSON/schema validation. Future reproduction: mock `call_llm_api` to return malformed JSON or a wrong-shape JSON object for records with a gap; inspect returned status/recommendation. Source indicates an `ok` result is possible; this has not been executed.
+3. **Input-validation and required-field ambiguity — UT-003/004.** `StudentRawCloData` has no score-range/ID/CLO validators. Extractor float conversion returns null on nonnumeric cells, discovered CLO labels are emitted verbatim, duplicate `(id,name,CLO)` keys can overwrite records, and SETUP/header extraction defaults gracefully. Composite helper permits above-one direct fractions by default (warning). Future reproduction: synthetic invalid score/ID/CLO variants and missing SETUP fields, with expected behavior agreed first. Some permissive behavior is intentional; do not silently redefine it as a defect or change it.
+4. **Isolation not established — IT-007/009 and stateful performance cases.** Importing settings loads/decrypts root environment; importing queue code performs a Redis ping. Client uses database 0 and `obelisk:local`/`obelisk:prod` keys. Environment loader accepts only `local` and `prod`, so an invented `OBELISK_ENV=pre_uat` is not a valid isolation solution. Future execution needs a dedicated Redis endpoint/server process and temporary upload directory with no shared worker consuming its queue. Use existing runtime settings through an approved isolated harness without editing production configuration; no FLUSHDB/shared-key cleanup.
+5. **AI exposure in evidence — UT-007/009, ST-AI-005/006.** Student anonymization removes student IDs, but prompt includes instructor metadata. Provider logs/error strings include partial key previews and provider exception text. Historical scripts print entire responses/job records. Future evidence must use wholly synthetic metadata, redact credentials/exception text, and suppress or capture sensitive logs before saving artifacts. No credential files were read for this audit.
+6. **Queue capacity concurrency concern — PT-008.** `enqueue()` does `LLEN` then separate job `SET` and `LPUSH`; it is not an atomic capacity transaction across independent processes. Future reproduction on a dedicated Redis instance: simultaneous uploads near capacity, then measure actual depth/rejections/recovery. This is a static concern, not a demonstrated failure.
+7. **Source/guide drift — UT-005/006 and AI tests.** Current [FORMULAS.md](../../documentations/FORMULAS.md) and code implement 70/30 and composite thresholding; the supplied/local agent guide still describes direct-only classification, unavailable indirect attainment and debug LLM. Current `IS_DEBUG_MODE=False`; optional shared-secret enforcement also exists. Current behavior was inspected, not changed; runtime effective settings were not accessed. Historical debug mock assertion expects `[PLACEHOLDER RESPONSE`, unlike current JSON debug output.
+
+No application defect was runtime-confirmed in this phase. The schema gap is directly visible in source; other items require controlled reproduction or clarification. They must not be silently fixed during testing.
+
+## Recommended next steps — require explicit Phase 2 approval
+
+1. Implement the isolated deterministic suite only in `testing_modules/pre_uat/`, preserving all existing/staged files. Reuse historical synthetic-fixture patterns and exact math assertions where suitable, without treating past source as past passing evidence. A standard-library `unittest` harness may avoid a new testing dependency.
+2. Prioritize UT-005/006/010/014, valid/invalid extraction, schema and error handling, and zero-gap behavior. Use synthetic labels/IDs/metadata, independent expected values and varied student/CLO counts.
+3. Mock Gemini and isolate environment loading/import side effects before running any deterministic tests. Consult the Python environment skill and obtain PyCharm's configured interpreter before any future Python toolchain command. Do not flip production `IS_DEBUG_MODE` or load real credentials for test evidence.
+4. Establish and verify dedicated Redis/server/file isolation before approving state-changing integration execution. Verify real upload-to-worker-to-terminal behavior and each job's numerical result. No database is required for Python-only tests.
+5. Add evidence generation for actual executions with timestamp/environment/script/scenario/expected/actual/status/failure details, readable summary and CSV. Record blocked and unexecuted cases accurately; do not generate a PASS from empty unittest discovery.
+6. Keep live Gemini, disruptive concurrency/sustained load and saturation behind explicit opt-in and target-isolation guards. Obtain webapp-team evidence for approvals, persistence, RBAC and curriculum reconciliation; manually review claims not machine-checkable.
+
+## Read-only commands to reproduce the inspection
+
+Run from the Python-server directory in PowerShell. These inspect files only; they do not execute tests:
+
+```powershell
+git status --short
+git rev-parse HEAD
+Get-ChildItem testing_modules/old_test -File | Select-Object Name,Length
+Get-ChildItem -Force -Recurse testing_modules -File |
+    Where-Object { $_.Extension -ne '.xlsx' } |
+    Select-Object FullName,Length
+git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/test_composite_attainment.py
+git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/test_etl_v2.py
+git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/test_llm_failover.py
+git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/test_upload_e2e.py
+git show 1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:apps/python-server/testing_modules/test_stress_async.py
+Get-Content app/analytics/cqi_recommender.py -Encoding utf8
+Get-Content app/services/job_queue.py -Encoding utf8
+Get-Content documentations/FORMULAS.md -Encoding utf8
+```
+
+Other historical scripts can be inspected with the same pinned `git show` pattern. Do not execute existing README test commands as part of this audit. **Phase 1 ends here; implementation and execution await explicit approval.**

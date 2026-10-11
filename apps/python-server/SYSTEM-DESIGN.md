@@ -10,6 +10,10 @@
 
 ## 1. Architecture
 
+Final UT-004 validation: the extractor validates score/rating cells, per-sheet duplicate IDs/CLOs and ambiguous name fallback before data can be overwritten. Invalid data uses the existing OBELISKError mechanism through `WorkbookValidationError`, exposing locations/reasons without identities or raw invalid values. Extra credit, blanks/zero, numeric strings, valid cross-sheet matching, metadata parsing and formulas are preserved; see [INTEGRATION.md](documentations/INTEGRATION.md).
+
+Approved Pre-UAT validation corrections (October 11, 2026): the v2 transformer rejects negative non-null period scores with a structured, identity-free `TransformationError`. Course CQI validates its JSON contract at the course boundary while retaining a string response; course and institutional boundaries reject empty/non-string text, including empty fences. Institutional prose, no-gap behavior, provider failover and all numerical formulas remain unchanged. See [INTEGRATION.md](documentations/INTEGRATION.md) for response and validation details.
+
 ```
 class-record .xlsx ──POST /upload──> app (FastAPI :8000)
       └─ upload_service.save_upload_file (chunked, size-limited, atomic)

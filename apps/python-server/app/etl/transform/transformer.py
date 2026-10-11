@@ -37,6 +37,13 @@ class SimpleTransformer(Transformer):
         # 1. First pass: compute per-student, per-CLO attainment
         intermediate_results = []
         for record in records:
+            for field in ("prelim_score", "midterm_score", "final_score"):
+                score = getattr(record, field)
+                if score is not None and score < 0:
+                    raise TransformationError(
+                        "Period scores must be non-negative.",
+                        details={"field": field, "value": score},
+                    )
             # Rule 1 completeness check: Prelim, Midterm, and Final must all have non-null scores
             is_record_complete = (
                 record.prelim_score is not None

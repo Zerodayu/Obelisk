@@ -57,6 +57,42 @@ def strip_code_fences(text: str) -> str:
     return match.group(1).strip() if match else trimmed
 
 
+def normalize_llm_response(response: object) -> str:
+    """Validate nonempty text at service boundaries, without provider retries."""
+    if isinstance(response, str):
+        if re.fullmatch(r"```[^\n`]*\n\s*```", response.strip()):
+            return "[LLM API ERROR: Empty or invalid recommendation response.]"
+        text = strip_code_fences(response)
+        if text:
+            return text
+    return "[LLM API ERROR: Empty or invalid recommendation response.]"
+
+
+def validate_course_recommendation(text: str) -> bool:
+    """Enforce the course JSON contract while retaining its string encoding."""
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return False
+    if not isinstance(data, dict) or set(data) != {"summary", "recommendations", "pattern"}:
+        return False
+    if not isinstance(data["summary"], str) or not data["summary"].strip():
+        return False
+    if data["pattern"] is not None and not isinstance(data["pattern"], str):
+        return False
+    items = data["recommendations"]
+    if not isinstance(items, list) or not items:
+        return False
+    for item in items:
+        if not isinstance(item, dict) or set(item) != {"title", "explanation", "recommendedFor"}:
+            return False
+        if any(not isinstance(value, str) or not value.strip() for value in item.values()):
+            return False
+        if item["recommendedFor"] not in {"Faculty", "Program Chair", "Dean", "VPAA", "AQAU"}:
+            return False
+    return True
+
+
 def sanitize_prompt_data(value: object) -> str:
     """Prevent data values from changing the prompt's DATA block boundaries."""
     return (
@@ -364,9 +400,9 @@ async def generate_cqi_recommendation(
     ]
 
     prompt = build_prompt(header, gap_summary, alignment_lines(rows))
-    llm_response = await call_llm_api(prompt)
-
-    llm_response = strip_code_fences(llm_response)
+    llm_response = normalize_llm_response(await call_llm_api(prompt))
+    if not llm_response.startswith("[LLM API ERROR") and not validate_course_recommendation(llm_response):
+        llm_response = "[LLM API ERROR: Invalid course recommendation JSON.]"
     is_error = isinstance(llm_response, str) and llm_response.startswith(
         "[LLM API ERROR"
     )

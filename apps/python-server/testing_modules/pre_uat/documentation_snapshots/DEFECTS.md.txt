@@ -1,0 +1,60 @@
+# Final corrected defect status
+
+The approved malformed score/rating, duplicate ID/CLO and ambiguous name-fallback validations are implemented. Final Phase 2A run 20261011T063734_111127Z reports **18 PASS, 0 FAIL, 0 BLOCKED**, eight deferred SKIPPED. UT-004 passes 98 subchecks. The former above-maximum rejection assertion was corrected under explicit approval because extra credit was already valid application behavior.
+
+All previously observed validation failures are resolved within the approved scope. Registry validation, frontend/approval integration and manual AI review remain external or unexecuted. Earlier failed runs and the prior status notes below are preserved historical evidence, not current unresolved findings. See [REGRESSION_NOTES.md](REGRESSION_NOTES.md).
+
+---
+
+# Current defect status after approved regression
+
+The three approved corrections are implemented. UT-008 and UT-009 now PASS; negative-period-score checks within UT-004 PASS. UT-004 remains FAIL on five retained broader assertions: above-maximum rejection is a policy mismatch with the explicitly preserved extra-credit behavior, while nonnumeric score/rating and duplicate identity/CLO-block handling remain unresolved findings outside this approval. No additional production fixes were made.
+
+See [REGRESSION_NOTES.md](REGRESSION_NOTES.md) and [latest results](PRE_UAT_RESULTS.md). The observations below describe the earlier unmodified application and remain retained as historical reproduction evidence; they do not describe the corrected negative-score, course-schema or blank-response behavior.
+
+---
+
+# Phase 2A observed defects and limitations
+
+These observations reproduce against unmodified Python application code with synthetic workbooks and mocked Gemini. See the latest [results](PRE_UAT_RESULTS.md) and each referenced test's evidence for timestamps, hashes, expected and actual output. No production fixes were made.
+
+## D-001 — UT-004: invalid numerical workbook inputs accepted
+
+Reproduce with the README interpreter command plus `--case UT-004`. The fixture has two synthetic students and two CLOs, direct scores normally 20/25 + 40/50 + 20/25 and rating 4.5/5. Each scenario independently mutates only temporary workbook cells:
+
+| Mutation | Expected | Observed |
+| --- | --- | --- |
+| First period score -1 | Reject negative raw score | Accepted; direct fraction 0.59 |
+| First period score 26 with maximum 25 | Validate/reject score exceeding period maximum | Accepted; direct fraction 0.86 |
+| First period score `invalid-score` | Reject nonnumeric score | Converted to null; accepted with direct fraction 0.60 |
+| Indirect rating `invalid-rating` | Reject nonnumeric rating | Converted to null; accepted with indirect null and direct-only fallback |
+
+`ExcelExtractor._as_optional_float` silently converts unparseable text to null. `SimpleTransformer._transform_v2_records` does not check per-period negative/over-maximum scores. Composite helper range checks do not replace raw-score validation when the total fraction remains in range.
+
+Above-maximum scores may involve an intentional extra-credit policy; stakeholders should confirm that policy before deciding the fix. Negative and nonnumeric inputs still require an explicit handling decision. The tests preserve the submitted validation expectation and record FAIL rather than changing application behavior.
+
+## D-002 — UT-004: conflicting duplicate identity/CLO blocks accepted
+
+Use the same isolated UT-004 command. Duplicate the first student ID into the second student's Direct and Indirect rows (leave the synthetic names distinct): four records are accepted with only two unique `(student_id, clo_code)` pairs. Duplicate the second Direct CLO block label as CLO1 while retaining distinct Indirect CLO1/CLO2: the request is accepted; duplicate direct keys are overwritten and indirect-only CLO records may be reintroduced without direct evidence.
+
+Expected: reject or explicitly surface conflicting duplicates so they cannot masquerade as valid student-CLO data. Identity/CLO registry existence is EXTERNAL to Python; these tests concern structural collisions and record uniqueness only. UT-014 passes for the designated well-formed 30×5 fixture; it does not negate this malformed-input finding.
+
+## D-003 — UT-008: AI response schema not enforced by service
+
+Reproduce with `--case UT-008`. For valid synthetic gap records, mock `call_llm_api` to return malformed JSON, missing required fields, an invalid recipient role, numeric title, extra field, empty recommendation list, invalid pattern type or blank title. The independent evidence validator rejects these values, but `generate_cqi_recommendation` returns `status=ok` and the invalid recommendation text.
+
+Expected: reject/validate the response or return structured `status=error`. A requested JSON schema in a prompt does not enforce provider output. Exact failing scenarios and response strings are recorded in UT-008 evidence. No live provider or endpoint request is needed to reproduce.
+
+## D-004 — UT-009: blank AI response marked successful
+
+Reproduce with `--case UT-009`. Mock `call_llm_api` to return whitespace for a synthetic gap dataset. Fence stripping yields an empty string; the service still returns `status=ok`, `recommendation=""`. Expected: invalid/unavailable response handling with an error or structured rejection.
+
+The same case verifies successful timeout failover, missing-key exception and rate-limit exhaustion. ST-AI-005 verifies unavailable/429/timeout provider scenarios. Those constituent passing checks do not make the blank-response case pass.
+
+## Findings that are not runtime-confirmed application failures
+
+- UT-003 covers mandatory Direct/Indirect sheets and marker fields. SETUP/header metadata is optional by current code/contract; stricter field requirements need clarification, not an unapproved rewrite.
+- ST-AI-006 shows Python does not execute advice or mutate scores even when mocked advice requests automatic approval or grade changes. The text itself is returned without semantic filtering. Advisory wording/educational quality requires human review; webapp approval enforcement remains EXTERNAL.
+- Gemini errors/logs can contain partial key previews and provider exception text. No real credentials were used or emitted in Phase 2A. Live-test redaction remains necessary before approving such tests.
+- The queue capacity check uses separate Redis operations. Concurrent capacity/recovery behavior remains unexecuted and belongs to Phase 2B with a dedicated instance.
+- The initial harness block was a Windows asyncio wakeup-pipe isolation issue, **not** an application failure. Its evidence remains in `evidence/20261011T060556_694484Z/`; no test-body assertions executed in that attempt.

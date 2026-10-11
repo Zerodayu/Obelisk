@@ -107,7 +107,7 @@ def print_summary_card(summary: BenchmarkSummary) -> None:
     print(f"  Throughput (RPS):   {summary.rps:.2f} req/sec")
     print(f"  Success / Failed:   {summary.successful} / {summary.failed} "
           f"({(summary.successful / summary.total_requests * 100):.1f}% success rate)")
-    
+
     status_str = ", ".join(f"{code}: {count}" for code, count in sorted(summary.status_counts.items()))
     print(f"  HTTP Statuses:      {status_str or 'None'}")
 
@@ -131,10 +131,10 @@ def print_summary_card(summary: BenchmarkSummary) -> None:
 
 
 async def execute_stress_worker(
-    queue: asyncio.Queue,
-    client: httpx.AsyncClient,
-    request_func,
-    results: List[RequestResult],
+        queue: asyncio.Queue,
+        client: httpx.AsyncClient,
+        request_func,
+        results: List[RequestResult],
 ) -> None:
     while True:
         try:
@@ -155,12 +155,12 @@ async def execute_stress_worker(
 
 
 async def run_stress_suite(
-    name: str,
-    total_requests: int,
-    concurrency: int,
-    request_func,
-    client_timeout: float = 30.0,
-    limits: Optional[httpx.Limits] = None,
+        name: str,
+        total_requests: int,
+        concurrency: int,
+        request_func,
+        client_timeout: float = 30.0,
+        limits: Optional[httpx.Limits] = None,
 ) -> BenchmarkSummary:
     print(f"\n>>> Starting stress benchmark: '{name}'")
     print(f"    Requests: {total_requests} | Concurrency: {concurrency}")
@@ -222,6 +222,7 @@ def create_health_request_func(base_url: str):
     async def _req(client: httpx.AsyncClient, _item: int):
         resp = await client.get(f"{base_url}/health/", follow_redirects=True)
         return resp.status_code, None if resp.status_code == 200 else resp.text[:120]
+
     return _req
 
 
@@ -284,6 +285,7 @@ def create_analytics_request_func(base_url: str):
             headers={"Content-Type": "application/json"},
         )
         return resp.status_code, None if resp.status_code == 200 else resp.text[:120]
+
     return _req
 
 
@@ -304,6 +306,7 @@ def create_upload_request_func(base_url: str, file_path: Path):
         }
         resp = await client.post(f"{base_url}/upload", files=files)
         return resp.status_code, None if resp.status_code in (200, 202) else resp.text[:120]
+
     return _req
 
 

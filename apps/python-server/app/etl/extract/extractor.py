@@ -1,4 +1,5 @@
 import asyncio
+import math
 import re
 import warnings
 from pathlib import Path
@@ -7,7 +8,7 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils.cell import column_index_from_string
 
-from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType
+from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType, WorkbookValidationError
 from app.core.logging import logger
 from app.etl.abstracts import Extractor
 from app.schemas.class_record import (
@@ -114,6 +115,31 @@ class ExcelExtractor(Extractor):
 
         # 3. Dynamic Student Roster discovery from Direct CLO sheet
         students = self._read_direct_roster(direct_sheet, start_row=etl_const.DirectCloSheet.DATA_START_ROW)
+        indirect_students = self._read_indirect_roster(indirect_sheet, start_row=etl_const.IndirectCloSheet.DATA_START_ROW)
+        self._validate_roster_ids(direct_sheet, students, etl_const.DirectCloSheet.STUDENT_ID_COL)
+        self._validate_roster_ids(indirect_sheet, indirect_students, etl_const.IndirectCloSheet.STUDENT_ID_COL)
+        indirect_students_by_id = {s["student_id"]: s for s in indirect_students if s["student_id"]}
+        indirect_students_by_name: dict[str, list[dict[str, Any]]] = {}
+        direct_students_by_name: dict[str, list[dict[str, Any]]] = {}
+        for roster, lookup in ((students, direct_students_by_name), (indirect_students, indirect_students_by_name)):
+            for student in roster:
+                name = self._normalize_name(student["student_name"])
+                if name:
+                    lookup.setdefault(name, []).append(student)
+        matched_rows = {}
+        for student in students:
+            name = self._normalize_name(student["student_name"])
+            matched = indirect_students_by_id.get(student["student_id"])
+            if matched is None:
+                candidates = indirect_students_by_name.get(name, [])
+                if len(candidates) > 1 or (len(direct_students_by_name.get(name, [])) > 1 and (candidates or student["student_id"] is None)):
+                    raise WorkbookValidationError(
+                        direct_sheet.title,
+                        f"{etl_const.DirectCloSheet.STUDENT_NAME_COL}{student['row']}",
+                        "student_name", "Ambiguous name-based identity matching.",
+                    )
+                matched = candidates[0] if candidates else None
+            matched_rows[student["row"]] = matched
 
         # 4. Extract raw Direct CLO scores per student per CLO
         # Key: (student_id, student_name, clo_code)
@@ -125,11 +151,11 @@ class ExcelExtractor(Extractor):
             s_name = student["student_name"]
 
             for col_idx, clo_code in direct_clos:
-                p_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_SCORE).value)
+                p_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_SCORE, "prelim_score")
                 p_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_MAX).value)
-                m_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_SCORE).value)
+                m_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_SCORE, "midterm_score")
                 m_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_MAX).value)
-                f_score = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_SCORE).value)
+                f_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_SCORE, "final_score")
                 f_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_MAX).value)
 
                 extracted_map[(s_id, s_name, clo_code)] = StudentRawCloData(
@@ -146,18 +172,14 @@ class ExcelExtractor(Extractor):
                 )
 
         # 5. Extract raw Indirect CLO ratings per student per CLO
-        indirect_students = self._read_indirect_roster(indirect_sheet, start_row=etl_const.IndirectCloSheet.DATA_START_ROW)
-        indirect_students_by_id = {s["student_id"]: s for s in indirect_students if s["student_id"]}
-        indirect_students_by_name = {self._normalize_name(s["student_name"]): s for s in indirect_students if s["student_name"]}
-
         for col_idx, clo_code in indirect_clos:
             for student in students:
                 s_id = student["student_id"]
                 s_name = student["student_name"]
                 
-                matched = indirect_students_by_id.get(s_id) or indirect_students_by_name.get(self._normalize_name(s_name))
+                matched = matched_rows[student["row"]]
                 if matched:
-                    rating = self._as_optional_float(indirect_sheet.cell(row=matched["row"], column=col_idx + etl_const.IndirectCloSheet.BlockOffsets.RATING).value)
+                    rating = self._read_numeric_cell(indirect_sheet, matched["row"], col_idx + etl_const.IndirectCloSheet.BlockOffsets.RATING, "indirect_rating")
                 else:
                     rating = None
 
@@ -215,6 +237,7 @@ class ExcelExtractor(Extractor):
             clo_name = str(val).strip()
             clos.append((col, clo_name))
             col += etl_const.DirectCloSheet.BLOCK_WIDTH
+        self._validate_clo_codes(sheet, clos, etl_const.DirectCloSheet.CLO_LABEL_ROW)
         return clos
 
     def _discover_indirect_clos(self, sheet: Worksheet) -> list[tuple[int, str]]:
@@ -233,7 +256,50 @@ class ExcelExtractor(Extractor):
             clo_code = raw_text.split()[0].strip() if raw_text else f"CLO{len(clos) + 1}"
             clos.append((col, clo_code))
             col += etl_const.IndirectCloSheet.BLOCK_WIDTH
+        self._validate_clo_codes(sheet, clos, etl_const.IndirectCloSheet.HEADER_ROW)
         return clos
+
+    @staticmethod
+    def _validate_clo_codes(sheet: Worksheet, clos: list[tuple[int, str]], row: int) -> None:
+        seen = {}
+        for column, code in clos:
+            cell = sheet.cell(row=row, column=column).coordinate
+            if code in seen:
+                raise WorkbookValidationError(sheet.title, cell, "clo_code",
+                                              "Duplicate CLO code within worksheet.", seen[code])
+            seen[code] = cell
+
+    @staticmethod
+    def _validate_roster_ids(sheet: Worksheet, students: list[dict[str, Any]], id_column: str) -> None:
+        seen = {}
+        for student in students:
+            student_id = student["student_id"]
+            if student_id is None:
+                continue
+            cell = f"{id_column}{student['row']}"
+            if student_id in seen:
+                raise WorkbookValidationError(sheet.title, cell, "student_id",
+                                              "Duplicate student ID within worksheet.", seen[student_id])
+            seen[student_id] = cell
+
+    @staticmethod
+    def _read_numeric_cell(sheet: Worksheet, row: int, column: int, field: str) -> float | None:
+        cell = sheet.cell(row=row, column=column)
+        value = cell.value
+        if cell.data_type != "e" and (value is None or isinstance(value, str) and not value.strip()):
+            return None
+        if cell.data_type == "e" or isinstance(value, bool) or not isinstance(value, (int, float, str)):
+            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
+                                          "Expected a finite numeric value or a blank cell.")
+        try:
+            number = float(value)
+        except (ValueError, TypeError, OverflowError):
+            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
+                                          "Expected a finite numeric value or a blank cell.") from None
+        if not math.isfinite(number):
+            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
+                                          "Expected a finite numeric value or a blank cell.")
+        return number
 
     def _read_direct_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, Any]]:
         """
