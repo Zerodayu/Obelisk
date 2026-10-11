@@ -66,7 +66,7 @@ db-generate:
 db-seed:
     @just _bun apps/backend db:seed
 
-# inject departments/programs/sections from a JSON file (additive upserts, never deletes — safe on dev and prod; see apps/backend/scripts/inject.example.json). Prod: `bun run db:inject-prod <file>` on the server.
+# inject departments/programs/sections from a JSON file (additive upserts, never deletes — safe on dev and prod; see apps/backend/scripts/inject.example.json). For the deployed DB use `just db-inject-prod <file>`.
 [group('setup')]
 db-inject file:
     @just _bun apps/backend "db:inject $(realpath '{{file}}')"
@@ -269,6 +269,12 @@ docker-update:
 [group('deploy')]
 docker-migrate:
     docker compose exec backend bun run db:migrate-prod
+
+# inject departments/programs/sections from a JSON file into the deployed DB — the file is piped into the backend container, same additive upserts as `just db-inject`; run on the server (needs `just docker-update` first so the script is baked into the image)
+[group('deploy')]
+db-inject-prod file:
+    docker compose exec -T backend sh -c 'cat > /tmp/db-inject.json' < '{{file}}'
+    docker compose exec backend bun run db:inject-prod /tmp/db-inject.json
 
 # NOTE: bunx directly, not a package script — a script wrapper only exists in the image after a rebuild
 # check for pending Prisma migrations without applying them (read-only; no rows from `just db-check` = the DB was never migrated)
