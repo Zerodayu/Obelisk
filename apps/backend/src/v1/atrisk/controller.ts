@@ -2,7 +2,7 @@ import { NotOwnerError } from "@lib/forms/approval-routes";
 import { InvalidTransitionError } from "@lib/forms/state-machine";
 import { SubmitGateError } from "@lib/forms/submit-gates";
 import {
-	assertCanCaptureClassRecords,
+	assertCanReadAtRiskFlags,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
 import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
@@ -71,7 +71,7 @@ export const atRiskPlugin = new Elysia({
 		"/flags",
 		async ({ query, user, set }) => {
 			try {
-				assertCanCaptureClassRecords(callerRole(user));
+				assertCanReadAtRiskFlags(callerRole(user));
 				// NOTE: deliberately NOT wrapped in `cached()` — the watchlist has
 				// to reflect flag clears the moment a final approval lands, and
 				// `cached` keys are opaque URL hashes with no invalidation hook
@@ -95,7 +95,7 @@ export const atRiskPlugin = new Elysia({
 				responses: {
 					200: { description: "List of at-risk flags" },
 					401: { description: "Unauthorized" },
-					403: { description: "Caller's role may not capture class records" },
+					403: { description: "Caller's role may not read the watchlist" },
 				},
 			},
 		},

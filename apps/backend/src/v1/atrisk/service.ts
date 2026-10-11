@@ -119,12 +119,22 @@ export class AtRiskService {
 						studentNumber: true,
 						firstName: true,
 						lastName: true,
+						// NOTE: grouping key for the drawer's by-program table —
+						// the same program the unit scope filters on.
+						program: { select: { name: true } },
 					},
 				},
 				cloAttainment: {
 					select: {
 						classSectionId: true,
 						clo: { select: { code: true } },
+						// NOTE: course §section for the table's context column.
+						classSection: {
+							select: {
+								sectionCode: true,
+								course: { select: { code: true } },
+							},
+						},
 					},
 				},
 			},

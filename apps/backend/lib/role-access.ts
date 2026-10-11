@@ -37,6 +37,13 @@ export const FEATURE_ACCESS = {
 	 */
 	generateAiInsights: ["vpaa", "system_admin"],
 	/**
+	 * Open the dashboard AI suggestions drawer and read its at-risk-by-program
+	 * table (`GET /atrisk/flags`). UI gate — the recommendation read endpoint
+	 * stays open and unit-scoped; dean and below are out because the table
+	 * names students.
+	 */
+	viewAiInsights: ["aqau", "vpaa", "system_admin"],
+	/**
 	 * Read every user's audit trail (`GET /audit/logs` full waterfall).
 	 * Self-scoped reads (own entries only) stay open to every role.
 	 */
@@ -120,6 +127,26 @@ export function assertCanGenerateAiInsights(role: string | undefined): void {
 	if (!hasRole(role, AI_INSIGHT_GENERATION_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not generate AI insights — expected one of: ${AI_INSIGHT_GENERATION_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/**
+ * May `role` read `GET /atrisk/flags` — class-record capture roles (the
+ * action-taken watchlist picker) ∪ the AI-drawer roles (its by-program table).
+ */
+export const AT_RISK_READ_ROLES: readonly string[] = [
+	...new Set([
+		...FEATURE_ACCESS.captureClassRecords,
+		...FEATURE_ACCESS.viewAiInsights,
+	]),
+];
+
+/** 403 — caller's role may not read the at-risk watchlist. */
+export function assertCanReadAtRiskFlags(role: string | undefined): void {
+	if (!hasRole(role, AT_RISK_READ_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not read the at-risk watchlist — expected one of: ${AT_RISK_READ_ROLES.join(", ")}`,
 		);
 	}
 }

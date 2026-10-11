@@ -54,6 +54,13 @@ export const FEATURE_ACCESS = {
 	 */
 	generateAiInsights: ["vpaa", "system_admin"],
 	/**
+	 * Open the dashboard AI suggestions drawer and read its at-risk-by-program
+	 * table (`GET /atrisk/flags`). UI gate — the recommendation read endpoint
+	 * stays open and unit-scoped; dean and below are out because the table
+	 * names students.
+	 */
+	viewAiInsights: ["aqau", "vpaa", "system_admin"],
+	/**
 	 * Read every user's audit trail (`GET /audit/logs` full waterfall).
 	 * Self-scoped reads (own entries only) stay open to every role.
 	 */
