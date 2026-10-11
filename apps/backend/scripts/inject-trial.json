@@ -1,0 +1,23 @@
+{
+	"term": { "schoolYear": "2026-2027", "semester": "1st Semester" },
+	"departments": [
+		{ "code": "TRIALDEPT1", "name": "Trial Department 1" },
+		{ "code": "TRIALDEPT2", "name": "Trial Department 2" }
+	],
+	"programs": [
+		{ "code": "TRIALPROG1", "name": "Trial Program 1", "department": "TRIALDEPT1" },
+		{ "code": "TRIALPROG2", "name": "Trial Program 2", "department": "TRIALDEPT2" }
+	],
+	"sections": [
+		{
+			"code": "1A",
+			"program": "TRIALPROG1",
+			"course": { "code": "TRIAL 101", "title": "Trial Subject 1" }
+		},
+		{
+			"code": "1A",
+			"program": "TRIALPROG2",
+			"course": { "code": "TRIAL 101", "title": "Trial Subject 2" }
+		}
+	]
+}

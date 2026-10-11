@@ -66,6 +66,11 @@ db-generate:
 db-seed:
     @just _bun apps/backend db:seed
 
+# inject departments/programs/sections from a JSON file (additive upserts, never deletes — safe on dev and prod; see apps/backend/scripts/inject.example.json). Prod: `bun run db:inject-prod <file>` on the server.
+[group('setup')]
+db-inject file:
+    @just _bun apps/backend "db:inject $(realpath '{{file}}')"
+
 # --- dev ---
 
 # run backend + frontend + etl in parallel with colored log prefixes (Ctrl+C stops all)
