@@ -1,0 +1,110 @@
+{
+  "path": "classrecord_templates/JMCFI_Class_Record_Template_AUN-OBE(mixed).xlsx",
+  "sha256": "867873f6fd2dd016e39ffc8a7371dc5e5eff618e74c894eb90865690cb1c8e73",
+  "synthetic": true,
+  "students": 30,
+  "clos": 5,
+  "valid_student_clo_cases": 150,
+  "missing_or_invalid_cases": 0,
+  "sheets": [
+    "Dashboard",
+    "Direct CLO",
+    "README",
+    "Indirect CLO",
+    "SETUP",
+    "RECORD",
+    "GRADES",
+    "PRINTABLE (per grading)",
+    "PRINTABLE (GRADESHEET)",
+    "F12",
+    "Sheet1"
+  ],
+  "assessment_coverage": {
+    "CLO1": {
+      "Prelim": {
+        "assessment_count": 1,
+        "max_score": 30.0
+      },
+      "Midterm": {
+        "assessment_count": 1,
+        "max_score": 50.0
+      },
+      "Final": {
+        "assessment_count": 1,
+        "max_score": 25.0
+      }
+    },
+    "CLO2": {
+      "Prelim": {
+        "assessment_count": 1,
+        "max_score": 60.0
+      },
+      "Midterm": {
+        "assessment_count": 1,
+        "max_score": 50.0
+      },
+      "Final": {
+        "assessment_count": 1,
+        "max_score": 25.0
+      }
+    },
+    "CLO3": {
+      "Prelim": {
+        "assessment_count": 1,
+        "max_score": 80.0
+      },
+      "Midterm": {
+        "assessment_count": 1,
+        "max_score": 100.0
+      },
+      "Final": {
+        "assessment_count": 1,
+        "max_score": 25.0
+      }
+    },
+    "CLO4": {
+      "Prelim": {
+        "assessment_count": 0,
+        "max_score": 0.0
+      },
+      "Midterm": {
+        "assessment_count": 0,
+        "max_score": 0.0
+      },
+      "Final": {
+        "assessment_count": 2,
+        "max_score": 45.0
+      }
+    },
+    "CLO5": {
+      "Prelim": {
+        "assessment_count": 0,
+        "max_score": 0.0
+      },
+      "Midterm": {
+        "assessment_count": 0,
+        "max_score": 0.0
+      },
+      "Final": {
+        "assessment_count": 2,
+        "max_score": 75.0
+      }
+    }
+  },
+  "independent_source_validation": "RECORD raw assessments and F12 ratings match Direct/Indirect caches",
+  "rules": {
+    "direct": "sum raw / sum maxima, converted to percent",
+    "indirect": "rating / 5 * 100",
+    "composite": "0.70 * direct_pct + 0.30 * indirect_pct; two decimals, half-even",
+    "student_positive": "rounded composite < 70; exactly 70 passes",
+    "clo_positive": "mean of rounded student composite values < 70; PROVISIONAL",
+    "completeness": "non-null period scores; zero assessment coverage disclosed separately"
+  },
+  "limitations": [
+    "CLO4 and CLO5 have Final assessments only; zero Prelim/Midterm maxima.",
+    "Workbook formula caches verified against raw sources; Excel itself was not run.",
+    "One synthetic course; no population-level generalization."
+  ],
+  "execution_timestamp": "2026-10-11T12:04:23.248941+00:00",
+  "formula_source": "documentations/FORMULAS.md"
+}

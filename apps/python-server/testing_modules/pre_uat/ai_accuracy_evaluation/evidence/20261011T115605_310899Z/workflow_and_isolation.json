@@ -1,0 +1,46 @@
+{
+  "mode": "offline saved-response replay; no production imports or network",
+  "services_started": 0,
+  "containers_created": 0,
+  "database_or_redis_used": false,
+  "actual_sdk_request_attempts": 0,
+  "source_historical_sdk_attempts": 2,
+  "source_workflow_evidence": "testing_modules/pre_uat/ai_accuracy_evaluation/evidence/20261011T115002_695327Z/workflow_and_isolation.json",
+  "historical_etl_cross_check": {
+    "status": "VERIFIED",
+    "records": 150,
+    "mismatches": 0
+  },
+  "historical_provider_preflight": {
+    "production_debug_mode": false,
+    "configured_key_count": 1,
+    "requested_model": "gemini-3.5-flash-lite",
+    "google_genai_version": "2.25.0",
+    "sdk_max_attempts": 1,
+    "aiohttp_transport": false,
+    "vertexai": false,
+    "provider_host": "generativelanguage.googleapis.com"
+  },
+  "historical_cleanup": {
+    "owned_sdk_clients_closed": true,
+    "client_count": 2,
+    "errors": [],
+    "processes_or_services_created": 0,
+    "original_workbook_not_written": true
+  },
+  "owned_asyncio_loop": {
+    "type": "ProactorEventLoop",
+    "private_wakeup_socket_count": 2,
+    "socket_handles": [
+      644,
+      628
+    ],
+    "pairing_verified": true,
+    "loop_closed": true,
+    "retained_socket_handles_closed": true
+  },
+  "denied_operations": [],
+  "fatal_error": null,
+  "existing_services_contacted": false,
+  "new_services_or_containers": 0
+}

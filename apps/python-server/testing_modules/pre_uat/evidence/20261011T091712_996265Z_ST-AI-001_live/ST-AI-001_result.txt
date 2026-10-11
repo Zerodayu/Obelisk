@@ -1,0 +1,34 @@
+{
+  "test_id": "ST-AI-001",
+  "test_type": "Live Gemini AI generation",
+  "timestamp": "2026-10-11T09:17:12.996265+00:00",
+  "status": "READY",
+  "live_execution_requested": false,
+  "production_recommender_invoked": false,
+  "provider_invoked": false,
+  "sdk_generation_invoked": false,
+  "observed_sdk_http_attempts": 0,
+  "expected": "Generate valid advisory CQI recommendations for 12 records at 6% composite attainment, all below 70%.",
+  "environment": {
+    "python": "3.13.0",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "database": "not imported or accessed",
+    "redis": "not imported or accessed",
+    "workers": "not started",
+    "provider": "production Gemini SDK; no mocks or replacement provider"
+  },
+  "preflight": {
+    "debug_mode": false,
+    "configured_key_count": 1,
+    "configured_model": "gemini-3.5-flash-lite",
+    "google_genai_version": "2.25.0",
+    "configured_key_values_recorded": false,
+    "sdk_max_attempts": 1,
+    "sdk_retry_options_supplied": false,
+    "async_transport": "httpx",
+    "provider_host": "generativelanguage.googleapis.com",
+    "vertexai": false
+  },
+  "reason": "Preflight passed. No Gemini generation requested in preflight mode.",
+  "duration_seconds": 2.088884
+}

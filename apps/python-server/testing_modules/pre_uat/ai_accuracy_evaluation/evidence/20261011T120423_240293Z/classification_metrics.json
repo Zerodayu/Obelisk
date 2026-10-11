@@ -1,0 +1,279 @@
+{
+  "execution_timestamp": "2026-10-11T12:04:23.248941+00:00",
+  "dataset_sha256": "867873f6fd2dd016e39ffc8a7371dc5e5eff618e74c894eb90865690cb1c8e73",
+  "student_clo": {
+    "status": "COMPLETE",
+    "expected_cases": 150,
+    "evaluated_cases": 150,
+    "coverage": 1.0,
+    "missing_predictions": [],
+    "validation_errors": [],
+    "tp": 26,
+    "fp": 8,
+    "fn": 14,
+    "tn": 102,
+    "accuracy": 0.8533333333333334,
+    "precision": 0.7647058823529411,
+    "recall": 0.65,
+    "f1_score": 0.7027027027027027,
+    "actual_positive_support": 40,
+    "predicted_positive_support": 34,
+    "dataset_positive_support": 40,
+    "dataset_negative_support": 110,
+    "confusion_matrix": [
+      [
+        26,
+        14
+      ],
+      [
+        8,
+        102
+      ]
+    ],
+    "matrix_order": "rows actual [at-risk, not-at-risk]; columns predicted [at-risk, not-at-risk]",
+    "positive_class": "at-risk",
+    "classification_errors": [
+      {
+        "case_id": "S001:CLO3",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S001:CLO4",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S001:CLO5",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S003:CLO2",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S004:CLO2",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S004:CLO3",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S004:CLO4",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S004:CLO5",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S008:CLO3",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S010:CLO3",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S012:CLO1",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S013:CLO3",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S013:CLO4",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S017:CLO1",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S017:CLO2",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S020:CLO4",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S021:CLO1",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S022:CLO4",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S023:CLO1",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S027:CLO1",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      },
+      {
+        "case_id": "S028:CLO1",
+        "actual_at_risk": false,
+        "predicted_at_risk": true,
+        "error_type": "FP"
+      },
+      {
+        "case_id": "S028:CLO4",
+        "actual_at_risk": true,
+        "predicted_at_risk": false,
+        "error_type": "FN"
+      }
+    ],
+    "most_common_mistake": [
+      [
+        "FN",
+        14
+      ],
+      [
+        "FP",
+        8
+      ]
+    ],
+    "limitations": [
+      "Metrics use only validated predicted cases; coverage is reported separately.",
+      "Zero denominator metrics are null, never silently set to 100% or zero."
+    ]
+  },
+  "clo": {
+    "status": "COMPLETE",
+    "expected_cases": 5,
+    "evaluated_cases": 5,
+    "coverage": 1.0,
+    "missing_predictions": [],
+    "validation_errors": [],
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "tn": 5,
+    "accuracy": 1.0,
+    "precision": null,
+    "recall": null,
+    "f1_score": null,
+    "actual_positive_support": 0,
+    "predicted_positive_support": 0,
+    "dataset_positive_support": 0,
+    "dataset_negative_support": 5,
+    "confusion_matrix": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        5
+      ]
+    ],
+    "matrix_order": "rows actual [at-risk, not-at-risk]; columns predicted [at-risk, not-at-risk]",
+    "positive_class": "at-risk",
+    "classification_errors": [],
+    "most_common_mistake": [],
+    "limitations": [
+      "Metrics use only validated predicted cases; coverage is reported separately.",
+      "Zero denominator metrics are null, never silently set to 100% or zero."
+    ]
+  },
+  "clo_rule": "PROVISIONAL mean composite below 70%",
+  "generation": {
+    "cqi": {
+      "status": "CAPTURED",
+      "timestamp": "2026-10-11T12:04:27.530937+00:00",
+      "sdk_http_attempts": 1,
+      "requested_model": "gemini-3.5-flash-lite",
+      "returned_model_version": "gemini-3.5-flash-lite",
+      "response_id": "TXvLasalG9S_1e8PzcLnyQI",
+      "usage_metadata": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 287,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 1211,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 1211
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 1498,
+        "traffic_type": null
+      },
+      "elapsed_seconds": 3.3291809000002104
+    },
+    "classification": {
+      "status": "CAPTURED",
+      "timestamp": "2026-10-11T12:04:30.873342+00:00",
+      "sdk_http_attempts": 1,
+      "requested_model": "gemini-3.5-flash-lite",
+      "returned_model_version": "gemini-3.5-flash-lite",
+      "response_id": "T3vLar3vGd761e8PvOa20QM",
+      "usage_metadata": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 3790,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 14241,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 14241
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 18031,
+        "traffic_type": null
+      },
+      "elapsed_seconds": 7.801871600000595
+    }
+  }
+}

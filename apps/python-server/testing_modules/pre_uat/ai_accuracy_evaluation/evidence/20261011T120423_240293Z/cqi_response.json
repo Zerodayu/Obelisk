@@ -1,0 +1,16 @@
+{
+  "summary": "In IT 101 (Section BSIT - 1A), multiple students fell below the 70.0% institutional composite threshold across all five CLOs, with CLO3 recording the highest number of students below the threshold (12 students).",
+  "recommendations": [
+    {
+      "title": "Review Direct and Indirect Attainment for CLO3",
+      "explanation": "CLO3 has the highest number of students (12 out of 30) failing to meet the 70.0% threshold, with an average composite attainment of 60.2%. The faculty should review the instructional and assessment strategies specifically for this outcome.",
+      "recommendedFor": "Faculty"
+    },
+    {
+      "title": "Monitor Support for Students Failing Multiple CLOs",
+      "explanation": "Specific students such as Student A consistently appear across multiple CLOs with low composite attainment scores. The Program Chair should coordinate targeted academic support interventions for these recurring students.",
+      "recommendedFor": "Program Chair"
+    }
+  ],
+  "pattern": "Certain students (e.g., Student A and Student D) consistently score below the 70% threshold across multiple CLOs, contributing to attainment gaps in CLO1 through CLO5."
+}

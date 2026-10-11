@@ -1,0 +1,6 @@
+{
+  "testing_modules/pre_uat/run_live_ai_evidence.py": "603ca7da443e9962fd3c21bf1f26dcbfc3b03ac8a72109ee45670e8b9e3cdf80",
+  "testing_modules/pre_uat/live_ai_claims.py": "f5707ceda28b0a225471a135e1fe32bfdac5d98e2c6f267a0ca186c861ebe130",
+  "testing_modules/pre_uat/support.py": "fbcc9860cb3d75e1a0345f9aea497e85e433527577e4c39c9fef6060cbb917a7",
+  "app/analytics/cqi_recommender.py": "10adf2cf9cc390d492d0de221156cc34476a7d6bcc6921e794624a1b626e4cf6"
+}

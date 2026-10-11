@@ -1,0 +1,66 @@
+{
+  "test_id": "ST-AI-003",
+  "objective": "Ideal attainment dataset",
+  "scenario": "Independent synthetic fixture: direct=95%, rating=5/5",
+  "expected": "Composite=96.5%, no gaps and no LLM calls; no assumption about existing ideal workbook",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T08:54:55.209973+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0"
+  },
+  "script_function": "testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai003_ideal",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.092728,
+  "actual": [
+    {
+      "check": "ideal",
+      "expected": {
+        "failed_records": 0
+      },
+      "actual": {
+        "failed_records": 0,
+        "composite_values": [
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5
+        ],
+        "provider_calls": 0,
+        "result": {
+          "course_code": "SYN-101",
+          "status": "no_gaps_found",
+          "recommendation": null
+        }
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ST-AI-003_result.txt"
+}

@@ -1,0 +1,304 @@
+﻿{
+    "test_id":  "ST-AI-001",
+    "review_type":  "Post-execution review of saved real Gemini output; no new request",
+    "reviewed_at_utc":  "2026-10-11T09:26:29.0448294Z",
+    "execution_timestamp":  "2026-10-11T09:22:44.208959+00:00",
+    "checks":  [
+                   {
+                       "claim":  "Saved ETL student-CLO records",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Unique student-CLO identities",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Unique students",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Unique CLOs",
+                       "expected":  3,
+                       "actual":  3,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Below-threshold records",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Summary threshold claim, percent",
+                       "expected":  70,
+                       "actual":  70,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Summary mean composite claim, percent",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO1 student count",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO1 mean composite, percent",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student A CLO1 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student B CLO1 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student C CLO1 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student D CLO1 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO2 student count",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO2 mean composite, percent",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student A CLO2 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student B CLO2 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student C CLO2 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student D CLO2 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO3 student count",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "CLO3 mean composite, percent",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student A CLO3 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student B CLO3 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student C CLO3 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Student D CLO3 independent 70/30 arithmetic",
+                       "expected":  6.0,
+                       "actual":  6.00,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Summary all-students count",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Pattern all-students count",
+                       "expected":  4,
+                       "actual":  4,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Pattern composite claim",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Pattern direct claim",
+                       "expected":  0,
+                       "actual":  0,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Pattern indirect claim",
+                       "expected":  20,
+                       "actual":  20,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Faculty recommendation direct claim",
+                       "expected":  0,
+                       "actual":  0,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Faculty recommendation indirect claim",
+                       "expected":  20,
+                       "actual":  20,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Every saved direct value supports 0% claim",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Every saved indirect value supports 20% claim",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Program Chair recommendation composite claim",
+                       "expected":  6,
+                       "actual":  6,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Every saved composite value supports uniform 6% claim",
+                       "expected":  12,
+                       "actual":  12,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "All eight percentage occurrences enumerated",
+                       "expected":  8,
+                       "actual":  8,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO1 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO2 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO3 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO1 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO2 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO3 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO1 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO2 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Mentioned CLO CLO3 exists",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Section code agrees with actual prompt metadata",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   },
+                   {
+                       "claim":  "Section code agrees with actual prompt metadata",
+                       "expected":  true,
+                       "actual":  true,
+                       "status":  "PASS"
+                   }
+               ],
+    "failed_checks":  0,
+    "percentage_claims_reviewed":  8,
+    "student_count_claims_reviewed":  2,
+    "method":  "Extract numeric tokens from this captured response and compare with saved independently validated ETL records. Percentage ordering is specific to the captured sentences; this is not a general free-text validator.",
+    "excluded_numeric_tokens":  "Digits in CLO codes and BSIT-4A are identifiers, checked against recorded CLOs/prompt metadata, not student counts.",
+    "original_checker_limit":  "Original exact-sentence checker matched zero claims; four prose passages were correctly flagged for manual review.",
+    "advisory_text_review":  "Assistant inspection: investigate/assess actions only; no request to alter, inflate or rescore grades. This does not replace academic human sign-off.",
+    "educational_review":  "Pending human academic review of usefulness, sufficient improvement actions and Faculty/Program Chair responsibilities."
+}

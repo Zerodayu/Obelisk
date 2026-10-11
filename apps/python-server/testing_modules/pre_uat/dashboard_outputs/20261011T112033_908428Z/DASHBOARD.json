@@ -1,0 +1,725 @@
+{
+  "label": "CONSOLIDATED HISTORICAL RESULTS — NOT A NEW TEST RUN",
+  "consolidation_timestamp": "2026-10-11T11:20:33.908428+00:00",
+  "new_test_executions": 0,
+  "counts": {
+    "PASS": 20,
+    "BLOCKED": 5,
+    "SKIPPED": 1
+  },
+  "results": [
+    {
+      "test_id": "UT-001",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:40.976170+00:00",
+      "record_timestamp": "2026-10-11T08:54:40.976170+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-001_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-001_result.txt",
+      "objective": "Parse valid Excel class record",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-002",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:41.201445+00:00",
+      "record_timestamp": "2026-10-11T08:54:41.201445+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-002_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-002_result.txt",
+      "objective": "Reject corrupted/unsupported workbook",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-003",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:41.499718+00:00",
+      "record_timestamp": "2026-10-11T08:54:41.499718+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-003_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-003_result.txt",
+      "objective": "Reject missing required workbook fields",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-004",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:42.132863+00:00",
+      "record_timestamp": "2026-10-11T08:54:42.132863+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-004_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-004_result.txt",
+      "objective": "Validate scores/IDs/CLO values while preserving extra credit",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-005",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:53.810103+00:00",
+      "record_timestamp": "2026-10-11T08:54:53.810103+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-005_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-005_result.txt",
+      "objective": "Independently verify 70/30 composite calculation",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-006",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:53.920955+00:00",
+      "record_timestamp": "2026-10-11T08:54:53.920955+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-006_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-006_result.txt",
+      "objective": "Exactly 70% attainment boundary",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-007",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:54.168419+00:00",
+      "record_timestamp": "2026-10-11T08:54:54.168419+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-007_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-007_result.txt",
+      "objective": "Numerical CLO data prepared for AI",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-008",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:54.295695+00:00",
+      "record_timestamp": "2026-10-11T08:54:54.295695+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-008_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-008_result.txt",
+      "objective": "Validate AI recommendation response schema",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-009",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:54.431433+00:00",
+      "record_timestamp": "2026-10-11T08:54:54.431433+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-009_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-009_result.txt",
+      "objective": "Handle invalid/unavailable AI responses",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-010",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:54.605033+00:00",
+      "record_timestamp": "2026-10-11T08:54:54.605033+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-010_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-010_result.txt",
+      "objective": "Independent full-record calculation oracle",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "UT-014",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:54.841584+00:00",
+      "record_timestamp": "2026-10-11T08:54:54.841584+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/UT-014_result.txt",
+      "notes": [],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\UT-014_result.txt",
+      "objective": "150 unique student-CLO records",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "IT-007",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T07:19:37.862828+00:00",
+      "record_timestamp": "2026-10-11T07:19:37.862828+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T071933_296064Z/IT-007_result.txt",
+      "notes": [
+        "Verified historical Phase 2B-1; Phase 2A placeholders excluded.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 11,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T071933_296064Z\\IT-007_result.txt",
+      "objective": "Real ETL job lifecycle",
+      "phase": "2B-1",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T071933_296064Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T071933_296064Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "IT-009",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T07:19:39.938492+00:00",
+      "record_timestamp": "2026-10-11T07:19:39.938492+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T071933_296064Z/IT-009_result.txt",
+      "notes": [
+        "Verified historical Phase 2B-1; Phase 2A placeholders excluded.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 11,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T071933_296064Z\\IT-009_result.txt",
+      "objective": "Concurrent job isolation",
+      "phase": "2B-1",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T071933_296064Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T071933_296064Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-001",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T09:22:44.208959+00:00",
+      "record_timestamp": "2026-10-11T09:22:44.208959+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/ST-AI-001_result.txt",
+      "notes": [
+        "Saved live AI evidence; no provider calls by this utility.",
+        "Historical execution Git commit not recorded.",
+        "Academic quality requires manual review; automated PASS does not certify it."
+      ],
+      "review_flags": [],
+      "history_count": 13,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T094047_256997Z_live_ai_evidence\\ST-AI-001_result.txt",
+      "objective": "Generate CQI recommendations for worst attainment",
+      "phase": null,
+      "git_commit": null,
+      "processing_timestamp": "2026-10-11T09:40:47.390062+00:00",
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": "2026-10-11T09:22:44.208959+00:00",
+      "source_evidence": "testing_modules/pre_uat/evidence/20261011T092244_208959Z_ST-AI-001_live/ST-AI-001_result.txt",
+      "execution_type": "saved live evidence validation",
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/PRESERVATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-002",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T09:37:51.316190+00:00",
+      "record_timestamp": "2026-10-11T09:37:51.316190+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/ST-AI-002_result.txt",
+      "notes": [
+        "Saved live AI evidence; no provider calls by this utility.",
+        "Historical execution Git commit not recorded.",
+        "Academic quality requires manual review; automated PASS does not certify it."
+      ],
+      "review_flags": [],
+      "history_count": 10,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T094047_256997Z_live_ai_evidence\\ST-AI-002_result.txt",
+      "objective": "Generate CQI recommendations for mixed attainment",
+      "phase": null,
+      "git_commit": null,
+      "processing_timestamp": "2026-10-11T09:40:47.402136+00:00",
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": "2026-10-11T09:37:51.316190+00:00",
+      "source_evidence": "testing_modules/pre_uat/evidence/20261011T093750_493757Z_live_ai_evidence/LIVE_ST-AI-002.json",
+      "execution_type": "saved live evidence validation",
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/PRESERVATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-003",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:55.209973+00:00",
+      "record_timestamp": "2026-10-11T08:54:55.209973+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ST-AI-003_result.txt",
+      "notes": [
+        "Deterministic/mock AI evidence; not a live provider test."
+      ],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\ST-AI-003_result.txt",
+      "objective": "Ideal attainment dataset",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-004",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T09:40:47.412745+00:00",
+      "record_timestamp": "2026-10-11T09:40:47.412745+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/ST-AI-004_result.txt",
+      "notes": [
+        "Saved live AI evidence; no provider calls by this utility.",
+        "Historical execution Git commit not recorded.",
+        "Timestamp is saved-response numerical validation; provider timestamps listed separately."
+      ],
+      "review_flags": [],
+      "history_count": 10,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T094047_256997Z_live_ai_evidence\\ST-AI-004_result.txt",
+      "objective": "Numerical grounding of real Gemini CQI responses",
+      "phase": null,
+      "git_commit": null,
+      "processing_timestamp": "2026-10-11T09:40:47.413456+00:00",
+      "source_execution_timestamps": {
+        "ST-AI-001": "2026-10-11T09:22:44.208959+00:00",
+        "ST-AI-002": "2026-10-11T09:37:51.316190+00:00"
+      },
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": "saved live response numerical validation",
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/PRESERVATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-005",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:55.411805+00:00",
+      "record_timestamp": "2026-10-11T08:54:55.411805+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ST-AI-005_result.txt",
+      "notes": [
+        "Deterministic/mock AI evidence; not a live provider test."
+      ],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\ST-AI-005_result.txt",
+      "objective": "AI unavailable or rate-limited",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-006",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:55.524308+00:00",
+      "record_timestamp": "2026-10-11T08:54:55.524308+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ST-AI-006_result.txt",
+      "notes": [
+        "Deterministic/mock AI evidence; not a live provider test."
+      ],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\ST-AI-006_result.txt",
+      "objective": "CQI recommendations remain advisory",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "ST-AI-007",
+      "status": "PASS",
+      "original_status": "PASS",
+      "executed": true,
+      "execution_timestamp": "2026-10-11T08:54:55.621504+00:00",
+      "record_timestamp": "2026-10-11T08:54:55.621504+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ST-AI-007_result.txt",
+      "notes": [
+        "Deterministic/mock AI evidence; not a live provider test."
+      ],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T085439_489884Z\\ST-AI-007_result.txt",
+      "objective": "Truly zero attainment gaps",
+      "phase": "2A",
+      "git_commit": "04c8a22f6e9ed5394784bae023c6ecb0bb6801d0",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T085439_489884Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-004",
+      "status": "BLOCKED",
+      "original_status": "BLOCKED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T07:39:28.646758+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-004_result.txt",
+      "notes": [
+        "Workload blocked: server shutdown/isolation proof missing or invalid.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 8,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T073848_090587Z\\PT-004_result.txt",
+      "objective": "Concurrent upload acceptance and completed ETL throughput",
+      "phase": "2B-2",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-005",
+      "status": "BLOCKED",
+      "original_status": "BLOCKED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T07:39:28.646778+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-005_result.txt",
+      "notes": [
+        "Workload blocked: server shutdown/isolation proof missing or invalid.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 8,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T073848_090587Z\\PT-005_result.txt",
+      "objective": "Sequential upload-to-terminal completion latency",
+      "phase": "2B-2",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-006",
+      "status": "BLOCKED",
+      "original_status": "BLOCKED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T07:39:28.646784+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-006_result.txt",
+      "notes": [
+        "Workload blocked: server shutdown/isolation proof missing or invalid.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 8,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T073848_090587Z\\PT-006_result.txt",
+      "objective": "Mocked Python course CQI path latency",
+      "phase": "2B-2",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-007",
+      "status": "BLOCKED",
+      "original_status": "BLOCKED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T07:39:28.646788+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-007_result.txt",
+      "notes": [
+        "Workload blocked: server shutdown/isolation proof missing or invalid.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 8,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T073848_090587Z\\PT-007_result.txt",
+      "objective": "Bounded sustained-load stability",
+      "phase": "2B-2",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-008",
+      "status": "SKIPPED",
+      "original_status": "SKIPPED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T06:37:51.538237+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T063734_111127Z/PT-008_result.txt",
+      "notes": [
+        "No performance acceptance measurement; queue saturation is not authorized."
+      ],
+      "review_flags": [],
+      "history_count": 7,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T063734_111127Z\\PT-008_result.txt",
+      "objective": "Queue saturation/recovery",
+      "phase": "2A",
+      "git_commit": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93",
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T063734_111127Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ISOLATION.json"
+      ]
+    },
+    {
+      "test_id": "PT-009",
+      "status": "BLOCKED",
+      "original_status": "BLOCKED",
+      "executed": false,
+      "execution_timestamp": null,
+      "record_timestamp": "2026-10-11T07:39:28.646792+00:00",
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-009_result.txt",
+      "notes": [
+        "Workload blocked: server shutdown/isolation proof missing or invalid.",
+        "Historical execution Git commit not recorded."
+      ],
+      "review_flags": [],
+      "history_count": 8,
+      "evidence_absolute_path": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\pre_uat\\evidence\\20261011T073848_090587Z\\PT-009_result.txt",
+      "objective": "Analytics throughput and p95 latency",
+      "phase": "2B-2",
+      "git_commit": null,
+      "processing_timestamp": null,
+      "source_execution_timestamps": null,
+      "source_execution_timestamp": null,
+      "source_evidence": null,
+      "execution_type": null,
+      "supporting_manifests": [
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/SOURCE_MANIFEST.json",
+        "testing_modules/pre_uat/evidence/20261011T073848_090587Z/ISOLATION.json"
+      ]
+    }
+  ],
+  "inventory_errors": [
+    {
+      "test_id": null,
+      "path": "testing_modules/pre_uat/evidence/20261011T064937_069972Z/ISOLATION.json",
+      "error": "isolation manifest records unverified isolation or violations"
+    },
+    {
+      "test_id": null,
+      "path": "testing_modules/pre_uat/evidence/20261011T065517_011796Z/ISOLATION.json",
+      "error": "isolation manifest records unverified isolation or violations"
+    },
+    {
+      "test_id": null,
+      "path": "testing_modules/pre_uat/evidence/20261011T070935_324625Z/ISOLATION.json",
+      "error": "isolation manifest records unverified isolation or violations"
+    }
+  ]
+}

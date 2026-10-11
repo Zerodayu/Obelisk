@@ -1,0 +1,4 @@
+{
+  "type": "SafetyBlock",
+  "error": "Only verified Gemini HTTPS traffic is permitted"
+}

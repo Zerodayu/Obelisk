@@ -1,0 +1,10 @@
+{
+  "status": "INCOMPLETE",
+  "human_academic_review": "PENDING",
+  "qualitative_quality_percentage": null,
+  "source": "This workbook execution only; existing ST-AI outcomes remain separate.",
+  "limitations": [
+    "No human recommendation-quality judgments recorded."
+  ],
+  "error": "No captured genuine CQI response"
+}

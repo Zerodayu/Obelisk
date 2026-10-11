@@ -1,0 +1,49 @@
+{
+  "mode": "isolated in-process production ETL/CQI compute; HTTP/upload/queue stages not exercised",
+  "services_started": 0,
+  "containers_created": 0,
+  "database_or_redis_used": false,
+  "preflight": {
+    "production_debug_mode": false,
+    "configured_key_count": 1,
+    "requested_model": "gemini-3.5-flash-lite",
+    "google_genai_version": "2.25.0",
+    "sdk_max_attempts": 1,
+    "aiohttp_transport": false,
+    "vertexai": false,
+    "provider_host": "generativelanguage.googleapis.com"
+  },
+  "etl_independent_cross_check": {
+    "status": "VERIFIED",
+    "records": 150,
+    "mismatches": 0
+  },
+  "classification_labels_in_prompt": false,
+  "classification_prompt_sha256": "9c29525a831264f1eb94d803993cead6300860228f30e6693a537ee635eb5b31",
+  "cleanup": {
+    "owned_sdk_clients_closed": true,
+    "client_count": 2,
+    "errors": [],
+    "processes_or_services_created": 0,
+    "original_workbook_not_written": true
+  },
+  "actual_sdk_request_attempts": 2,
+  "owned_asyncio_loop": {
+    "type": "ProactorEventLoop",
+    "private_wakeup_socket_count": 2,
+    "socket_handles": [
+      652,
+      636
+    ],
+    "pairing_verified": true,
+    "loop_closed": true,
+    "retained_socket_handles_closed": true
+  },
+  "denied_operations": [
+    "socket.getaddrinfo",
+    "socket.getaddrinfo"
+  ],
+  "fatal_error": null,
+  "existing_services_contacted": false,
+  "new_services_or_containers": 0
+}

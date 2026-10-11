@@ -1,0 +1,11 @@
+﻿PHASE 2B VERIFICATION - evidence audit only; NEW TESTS EXECUTED: 0
+IT-007 PASS - verified historical execution: 20261011T071933_296064Z/IT-007_result.txt
+IT-009 PASS - verified historical execution: 20261011T071933_296064Z/IT-009_result.txt
+PT-004 BLOCKED - server ownership/shutdown proof; no acceptance SLA
+PT-005 BLOCKED - server ownership/shutdown proof; no acceptance SLA
+PT-006 BLOCKED - server ownership/shutdown proof; mocked path cannot certify live AI latency
+PT-007 BLOCKED - server ownership/shutdown proof; institutional duration/criteria unavailable
+PT-008 SKIPPED - queue saturation not authorized
+PT-009 BLOCKED - server ownership/shutdown proof; no acceptance SLA
+Historical preservation: 311 files unchanged
+Audit directory: testing_modules/pre_uat/evidence/20261011T103309_745090Z_phase2b_verification

@@ -1,0 +1,20 @@
+{
+  "owned_asyncio_loop": {
+    "type": "ProactorEventLoop",
+    "private_wakeup_socket_count": 2,
+    "socket_handles": [
+      652,
+      628
+    ],
+    "pairing_verified": true,
+    "loop_closed": true,
+    "retained_socket_handles_closed": true
+  },
+  "denied_operations": [],
+  "fatal_error": {
+    "type": "SafetyBlock",
+    "error": "Replay source must be inside evaluation module"
+  },
+  "existing_services_contacted": false,
+  "new_services_or_containers": 0
+}

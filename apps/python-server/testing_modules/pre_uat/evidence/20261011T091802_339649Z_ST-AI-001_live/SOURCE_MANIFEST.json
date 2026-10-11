@@ -1,0 +1,7 @@
+{
+  "app/analytics/cqi_recommender.py": "10adf2cf9cc390d492d0de221156cc34476a7d6bcc6921e794624a1b626e4cf6",
+  "app/core/config.py": "dce02efd148f580fbe72c4351a36d409b7b5591deaa5be02724f1601466c1509",
+  "testing_modules/pre_uat/support.py": "fbcc9860cb3d75e1a0345f9aea497e85e433527577e4c39c9fef6060cbb917a7",
+  "testing_modules/old_test/test_etl_v2.py": "a67ee26439aae2a385d34c215073dd22f2cba4d009a581c7f1a50b1f8be1a49f",
+  "testing_modules/pre_uat/run_st_ai001_live.py": "2643c03b1aabefe63b470a0d5129f4a83b4d92e0288986982cf5aca9fda7c175"
+}

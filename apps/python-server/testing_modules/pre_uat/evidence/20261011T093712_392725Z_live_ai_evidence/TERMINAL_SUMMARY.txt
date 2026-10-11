@@ -1,0 +1,8 @@
+LIVE-AI EVIDENCE | ST-AI-001 reused; ST-AI-004 uses saved output only
+New Gemini SDK HTTP attempts this run: 0
+ST-AI-001: PASS | mode=saved live evidence validation | human review=True
+ST-AI-002: BLOCKED | mode=evidence only | human review=False
+ST-AI-004: BLOCKED | mode=saved live response numerical validation | human review=False
+ST-AI-004 numerical outcomes: {'VERIFIED': 21}
+Academic approval: NOT CLAIMED
+Evidence: testing_modules/pre_uat/evidence/20261011T093712_392725Z_live_ai_evidence

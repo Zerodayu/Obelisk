@@ -1,0 +1,28 @@
+{
+  "test_id": "ST-AI-002",
+  "objective": "Generate CQI recommendations for mixed attainment",
+  "scenario": "4 fictional students, 3 CLOs, 12 records; 6 below, 6 at/above 70%; composite 40/62.5/73.5/90%",
+  "expected": "Genuine schema-valid recommendation addresses measured gaps; educational usefulness requires academic review.",
+  "actual": [],
+  "status": "BLOCKED",
+  "executed": false,
+  "timestamp": "2026-10-11T09:37:12.538202+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true
+  },
+  "script_function": "testing_modules.pre_uat.run_live_ai_evidence.st_ai_002",
+  "command": "& '.venv/Scripts/python.exe' -B testing_modules/pre_uat/run_live_ai_evidence.py",
+  "duration_seconds": 0.001159,
+  "subchecks": [],
+  "failures": [
+    "No valid saved live generation. Use explicit opt-in to request ST-AI-002 only."
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T093712_392725Z_live_ai_evidence/ST-AI-002_result.txt",
+  "live_api_called": false,
+  "evidence_processing_timestamp": "2026-10-11T09:37:12.539332+00:00"
+}

@@ -1,0 +1,18 @@
+```json
+{
+  "summary": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+  "recommendations": [
+    {
+      "title": "Review Direct Assessment Alignment",
+      "explanation": "Investigate the direct assessment components for CLO1, CLO2, and CLO3 where affected students averaged lower scores to identify specific areas of conceptual difficulty.",
+      "recommendedFor": "Faculty"
+    },
+    {
+      "title": "Evaluate Course Delivery and Support",
+      "explanation": "Examine instructional strategies and student support mechanisms across SYN-101 to address the consistent performance gaps observed in multiple CLOs.",
+      "recommendedFor": "Program Chair"
+    }
+  ],
+  "pattern": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%."
+}
+```

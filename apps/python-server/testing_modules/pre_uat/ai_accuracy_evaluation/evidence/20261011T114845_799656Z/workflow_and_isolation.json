@@ -1,0 +1,11 @@
+{
+  "denied_operations": [
+    "socket.connect"
+  ],
+  "fatal_error": {
+    "type": "SafetyBlock",
+    "error": "Only verified Gemini HTTPS traffic is permitted"
+  },
+  "existing_services_contacted": false,
+  "new_services_or_containers": 0
+}

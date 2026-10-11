@@ -1,0 +1,9 @@
+{
+  "status": "INCOMPLETE",
+  "timestamp": "2026-10-11T11:50:09.921178+00:00",
+  "sdk_http_attempts": 1,
+  "requested_model": "gemini-3.5-flash-lite",
+  "error_type": "SafetyBlock",
+  "error": "DNS lookup outside the Gemini endpoint prohibited",
+  "elapsed_seconds": 0.017686800005321857
+}

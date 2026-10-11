@@ -1,0 +1,157 @@
+﻿{
+    "timestamp":  "2026-10-11T10:33:15.1182363Z",
+    "git_commit":  "66cf2e0cb8402e97926747558c9f4be954835de1",
+    "command":  "\u0026 powershell -NoProfile -File testing_modules/pre_uat/audit_phase2b_evidence.ps1",
+    "docker_host":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "docker_info":  "linux 29.7.2",
+    "containers":  [
+                       "obelisk-etl|obelisk-etl:latest|Up 4 hours|8000/tcp",
+                       "obelisk-redis|redis:alpine|Up 4 hours|127.0.0.1:6379-\u003e6379/tcp"
+                   ],
+    "cached_redis_image":  "sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+    "image_inspection_exit":  0,
+    "processes":  [
+                      {
+                          "ProcessId":  7588,
+                          "ParentProcessId":  5572,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9372,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9448,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9484,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9784,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9904,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  9548,
+                          "ParentProcessId":  7588,
+                          "Name":  "postgres.exe"
+                      },
+                      {
+                          "ProcessId":  21320,
+                          "ParentProcessId":  13440,
+                          "Name":  "Docker Desktop.exe"
+                      },
+                      {
+                          "ProcessId":  22520,
+                          "ParentProcessId":  21320,
+                          "Name":  "com.docker.backend.exe"
+                      },
+                      {
+                          "ProcessId":  18792,
+                          "ParentProcessId":  22520,
+                          "Name":  "com.docker.backend.exe"
+                      },
+                      {
+                          "ProcessId":  11952,
+                          "ParentProcessId":  18792,
+                          "Name":  "com.docker.build.exe"
+                      },
+                      {
+                          "ProcessId":  12400,
+                          "ParentProcessId":  18792,
+                          "Name":  "Docker Desktop.exe"
+                      },
+                      {
+                          "ProcessId":  26248,
+                          "ParentProcessId":  12400,
+                          "Name":  "Docker Desktop.exe"
+                      },
+                      {
+                          "ProcessId":  10944,
+                          "ParentProcessId":  12400,
+                          "Name":  "Docker Desktop.exe"
+                      },
+                      {
+                          "ProcessId":  26340,
+                          "ParentProcessId":  12400,
+                          "Name":  "Docker Desktop.exe"
+                      },
+                      {
+                          "ProcessId":  26336,
+                          "ParentProcessId":  18792,
+                          "Name":  "docker-agent.exe"
+                      },
+                      {
+                          "ProcessId":  21328,
+                          "ParentProcessId":  5232,
+                          "Name":  "node.exe"
+                      },
+                      {
+                          "ProcessId":  20736,
+                          "ParentProcessId":  17224,
+                          "Name":  "node.exe"
+                      },
+                      {
+                          "ProcessId":  22300,
+                          "ParentProcessId":  20736,
+                          "Name":  "node.exe"
+                      },
+                      {
+                          "ProcessId":  23576,
+                          "ParentProcessId":  27832,
+                          "Name":  "node.exe"
+                      }
+                  ],
+    "connections":  [
+                        {
+                            "LocalAddress":  "::",
+                            "LocalPort":  5432,
+                            "RemoteAddress":  "::",
+                            "RemotePort":  0,
+                            "State":  2,
+                            "OwningProcess":  7588
+                        },
+                        {
+                            "LocalAddress":  "127.0.0.1",
+                            "LocalPort":  6379,
+                            "RemoteAddress":  "0.0.0.0",
+                            "RemotePort":  0,
+                            "State":  2,
+                            "OwningProcess":  18792
+                        },
+                        {
+                            "LocalAddress":  "0.0.0.0",
+                            "LocalPort":  5432,
+                            "RemoteAddress":  "0.0.0.0",
+                            "RemotePort":  0,
+                            "State":  2,
+                            "OwningProcess":  7588
+                        }
+                    ],
+    "memory_kib":  {
+                       "FreePhysicalMemory":  2977884,
+                       "TotalVisibleMemorySize":  24973808
+                   },
+    "cpu":  {
+                "LoadPercentage":  17
+            },
+    "environment_variable_names_only":  [
+                                            "npm_config_noproxy"
+                                        ],
+    "environment_values":  "Not decrypted or printed; app.core.env/config inspected statically; effective container configuration not extracted",
+    "database":  "Process/port metadata only; no database query or credential access",
+    "workers":  "Existing ETL container present; internal worker count/state not probed",
+    "new_services_started":  0,
+    "workload_requests":  0,
+    "cleanup":  "No resources created except this audit directory; existing services untouched"
+}

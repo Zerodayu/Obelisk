@@ -1,0 +1,682 @@
+{
+  "test_id": "ST-AI-004",
+  "objective": "Numerical grounding of real Gemini CQI responses",
+  "scenario": "Saved worst and mixed live responses; no generation for ST-AI-004",
+  "expected": "Every identifiable numerical claim is VERIFIED or NOT APPLICABLE; any MISMATCH fails, unresolved claims require review and prevent PASS.",
+  "actual": [
+    {
+      "source_test": "ST-AI-001",
+      "source_evidence": "testing_modules/pre_uat/evidence/20261011T092244_208959Z_ST-AI-001_live/ST-AI-001_result.txt",
+      "validation": {
+        "claims": [
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              95,
+              99
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              101,
+              105
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              111,
+              115
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              26,
+              33
+            ],
+            "claim": "BSIT-4A",
+            "metric": "fixture metadata identifier",
+            "expected": "BSIT-4A",
+            "actual": "BSIT-4A",
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Existing fixture course/section identifier; not a numerical score."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              0,
+              14
+            ],
+            "claim": "All 4 students",
+            "metric": "unique student count",
+            "expected": 4,
+            "actual": 4.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Distinct fictional students, not student-CLO record count."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              53,
+              56
+            ],
+            "claim": "70%",
+            "metric": "institutional threshold percent",
+            "expected": 70,
+            "actual": 70.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Stated institutional proficiency threshold."
+          },
+          {
+            "path": "summary",
+            "text": "All 4 students in section BSIT-4A failed to meet the 70% composite attainment threshold across CLO1, CLO2, and CLO3, with an average composite attainment of 6.0% for each outcome.",
+            "span": [
+              157,
+              161
+            ],
+            "claim": "6.0%",
+            "metric": "composite attainment percent",
+            "expected": 6.0,
+            "actual": 6.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              32,
+              36
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              38,
+              42
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              48,
+              52
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              59,
+              73
+            ],
+            "claim": "all 4 students",
+            "metric": "unique student count",
+            "expected": 4,
+            "actual": 4.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Distinct fictional students, not student-CLO record count."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              104,
+              108
+            ],
+            "claim": "6.0%",
+            "metric": "composite attainment percent",
+            "expected": 6.0,
+            "actual": 6.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              120,
+              124
+            ],
+            "claim": "0.0%",
+            "metric": "direct attainment percent",
+            "expected": 0.0,
+            "actual": 0.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "pattern",
+            "text": "A uniform pattern exists across CLO1, CLO2, and CLO3 where all 4 students attained a composite score of 6.0%, driven by 0.0% direct scores and 20.0% indirect scores.",
+            "span": [
+              143,
+              148
+            ],
+            "claim": "20.0%",
+            "metric": "indirect attainment percent",
+            "expected": 20.0,
+            "actual": 20.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate why all students scored 0.0% on direct assessments and only 20.0% on indirect perceptions across CLO1, CLO2, and CLO3.",
+            "span": [
+              109,
+              113
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate why all students scored 0.0% on direct assessments and only 20.0% on indirect perceptions across CLO1, CLO2, and CLO3.",
+            "span": [
+              115,
+              119
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate why all students scored 0.0% on direct assessments and only 20.0% on indirect perceptions across CLO1, CLO2, and CLO3.",
+            "span": [
+              125,
+              129
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate why all students scored 0.0% on direct assessments and only 20.0% on indirect perceptions across CLO1, CLO2, and CLO3.",
+            "span": [
+              36,
+              40
+            ],
+            "claim": "0.0%",
+            "metric": "direct attainment percent",
+            "expected": 0.0,
+            "actual": 0.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate why all students scored 0.0% on direct assessments and only 20.0% on indirect perceptions across CLO1, CLO2, and CLO3.",
+            "span": [
+              72,
+              77
+            ],
+            "claim": "20.0%",
+            "metric": "indirect attainment percent",
+            "expected": 20.0,
+            "actual": 20.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          },
+          {
+            "path": "recommendations[1].explanation",
+            "text": "Assess the uniform low composite attainment of 6.0% across all students in section BSIT-4A for multiple CLOs to determine course delivery factors.",
+            "span": [
+              83,
+              90
+            ],
+            "claim": "BSIT-4A",
+            "metric": "fixture metadata identifier",
+            "expected": "BSIT-4A",
+            "actual": "BSIT-4A",
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Existing fixture course/section identifier; not a numerical score."
+          },
+          {
+            "path": "recommendations[1].explanation",
+            "text": "Assess the uniform low composite attainment of 6.0% across all students in section BSIT-4A for multiple CLOs to determine course delivery factors.",
+            "span": [
+              47,
+              51
+            ],
+            "claim": "6.0%",
+            "metric": "composite attainment percent",
+            "expected": 6.0,
+            "actual": 6.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Every measured record has this value; population/mean scope cannot change it."
+          }
+        ],
+        "counts": {
+          "VERIFIED": 21,
+          "MISMATCH": 0,
+          "MANUAL REVIEW": 0,
+          "NOT APPLICABLE": 0
+        },
+        "limitation": "Heuristic parsing does not certify arbitrary prose. Unresolved claims prevent numerical-grounding PASS."
+      }
+    },
+    {
+      "source_test": "ST-AI-002",
+      "source_evidence": "testing_modules/pre_uat/evidence/20261011T093750_493757Z_live_ai_evidence/LIVE_ST-AI-002.json",
+      "validation": {
+        "claims": [
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              37,
+              41
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              43,
+              47
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              53,
+              57
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              10,
+              17
+            ],
+            "claim": "SYN-101",
+            "metric": "fixture metadata identifier",
+            "expected": "SYN-101",
+            "actual": "SYN-101",
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Existing fixture course/section identifier; not a numerical score."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              27,
+              34
+            ],
+            "claim": "BSIT-4A",
+            "metric": "fixture metadata identifier",
+            "expected": "BSIT-4A",
+            "actual": "BSIT-4A",
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Existing fixture course/section identifier; not a numerical score."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              67,
+              93
+            ],
+            "claim": "2 of 4 students fall below",
+            "metric": "below-threshold numerator",
+            "expected": 2,
+            "actual": 2.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Requires one named CLO or explicit per-CLO scope."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              67,
+              93
+            ],
+            "claim": "2 of 4 students fall below",
+            "metric": "student denominator",
+            "expected": 4,
+            "actual": 4.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Denominator is records for the stated CLO, not total course records."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              98,
+              101
+            ],
+            "claim": "70%",
+            "metric": "institutional threshold percent",
+            "expected": 70,
+            "actual": 70.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Stated institutional proficiency threshold."
+          },
+          {
+            "path": "summary",
+            "text": "In course SYN-101 (Section BSIT-4A), CLO1, CLO2, and CLO3 each had 2 of 4 students fall below the 70% composite threshold with an average attainment of 51.2%.",
+            "span": [
+              152,
+              157
+            ],
+            "claim": "51.2%",
+            "metric": "composite attainment percent",
+            "expected": 51.25,
+            "actual": 51.2,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Explicit below-threshold population average; all three fixture CLOs have equal failed means. Unqualified attainment means composite only when composite threshold is the sole metric context."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              60,
+              64
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              66,
+              70
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              76,
+              80
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              96,
+              126
+            ],
+            "claim": "2 of 4 students failed to meet",
+            "metric": "below-threshold numerator",
+            "expected": 2,
+            "actual": 2.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Requires one named CLO or explicit per-CLO scope."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              96,
+              126
+            ],
+            "claim": "2 of 4 students failed to meet",
+            "metric": "student denominator",
+            "expected": 4,
+            "actual": 4.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Denominator is records for the stated CLO, not total course records."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              131,
+              134
+            ],
+            "claim": "70%",
+            "metric": "institutional threshold percent",
+            "expected": 70,
+            "actual": 70.0,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Stated institutional proficiency threshold."
+          },
+          {
+            "path": "pattern",
+            "text": "A consistent pattern of underperformance is observed across CLO1, CLO2, and CLO3, where exactly 2 of 4 students failed to meet the 70% threshold with identical average composite attainments of 51.2%.",
+            "span": [
+              193,
+              198
+            ],
+            "claim": "51.2%",
+            "metric": "composite attainment percent",
+            "expected": 51.25,
+            "actual": 51.2,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Explicit below-threshold population average; all three fixture CLOs have equal failed means. Unqualified attainment means composite only when composite threshold is the sole metric context."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate the direct assessment components for CLO1, CLO2, and CLO3 where affected students averaged lower scores to identify specific areas of conceptual difficulty.",
+            "span": [
+              49,
+              53
+            ],
+            "claim": "CLO1",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate the direct assessment components for CLO1, CLO2, and CLO3 where affected students averaged lower scores to identify specific areas of conceptual difficulty.",
+            "span": [
+              55,
+              59
+            ],
+            "claim": "CLO2",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[0].explanation",
+            "text": "Investigate the direct assessment components for CLO1, CLO2, and CLO3 where affected students averaged lower scores to identify specific areas of conceptual difficulty.",
+            "span": [
+              65,
+              69
+            ],
+            "claim": "CLO3",
+            "metric": "CLO identifier",
+            "expected": true,
+            "actual": true,
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Identifier must be in the actual synthetic CLO set."
+          },
+          {
+            "path": "recommendations[1].explanation",
+            "text": "Examine instructional strategies and student support mechanisms across SYN-101 to address the consistent performance gaps observed in multiple CLOs.",
+            "span": [
+              71,
+              78
+            ],
+            "claim": "SYN-101",
+            "metric": "fixture metadata identifier",
+            "expected": "SYN-101",
+            "actual": "SYN-101",
+            "outcome": "VERIFIED",
+            "method": "automated deterministic parsing",
+            "explanation": "Existing fixture course/section identifier; not a numerical score."
+          }
+        ],
+        "counts": {
+          "VERIFIED": 20,
+          "MISMATCH": 0,
+          "MANUAL REVIEW": 0,
+          "NOT APPLICABLE": 0
+        },
+        "limitation": "Heuristic parsing does not certify arbitrary prose. Unresolved claims prevent numerical-grounding PASS."
+      }
+    }
+  ],
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T09:40:47.412745+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true
+  },
+  "script_function": "testing_modules.pre_uat.live_ai_claims.claims",
+  "command": "& '.venv/Scripts/python.exe' -B testing_modules/pre_uat/run_live_ai_evidence.py",
+  "duration_seconds": 0.000779,
+  "subchecks": [],
+  "failures": [],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T094047_256997Z_live_ai_evidence/ST-AI-004_result.txt",
+  "live_api_called": false,
+  "evidence_processing_timestamp": "2026-10-11T09:40:47.413456+00:00",
+  "execution_type": "saved live response numerical validation",
+  "provider": "saved Google Gemini output",
+  "source_execution_timestamps": {
+    "ST-AI-001": "2026-10-11T09:22:44.208959+00:00",
+    "ST-AI-002": "2026-10-11T09:37:51.316190+00:00"
+  },
+  "numerical_validation": {
+    "VERIFIED": 41
+  },
+  "manual_review_required": false
+}

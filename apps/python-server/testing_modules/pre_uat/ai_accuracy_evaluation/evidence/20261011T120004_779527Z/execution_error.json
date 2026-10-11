@@ -1,0 +1,4 @@
+{
+  "type": "SafetyBlock",
+  "error": "Replay source must be inside evaluation module"
+}

@@ -1,0 +1,16 @@
+OBELISK AI ACCURACY EVALUATION - NEW BOUNDED EVALUATION
+Execution: 2026-10-11T12:04:23.248941+00:00
+Dataset SHA-256: 867873f6fd2dd016e39ffc8a7371dc5e5eff618e74c894eb90865690cb1c8e73
+Positive = AT RISK. Ground truth calculated independently; model labels used as predictions.
+STUDENT-CLO: COMPLETE; scored 150/150; missing 0
+  TP=26 FP=8 FN=14 TN=102
+  Accuracy=85.33% Precision=76.47% Recall=65.00% F1=70.27%
+  Dataset positives=40; scored positives=40; errors=22
+CLO (PROVISIONAL): COMPLETE; scored 5/5; missing 0
+  TP=0 FP=0 FN=0 TN=5
+  Accuracy=100.00% Precision=undefined Recall=undefined F1=undefined
+  Dataset positives=0; scored positives=0; errors=0
+CQI: HUMAN REVIEW PENDING; academic quality: PENDING; no quality percentage assigned.
+Current Gemini SDK attempts: 2 (maximum 2; no retry)
+Protected originals unchanged: True; isolated compute, no HTTP/Redis/Docker.
+Evidence: testing_modules/pre_uat/ai_accuracy_evaluation/evidence/20261011T120423_240293Z
