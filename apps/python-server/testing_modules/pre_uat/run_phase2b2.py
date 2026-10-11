@@ -4,10 +4,12 @@ from collections import Counter
 import csv
 from datetime import datetime, timezone
 import hashlib
+import os
 from importlib.metadata import version
 import json
 from pathlib import Path
 import platform
+import shutil
 import socket
 import subprocess
 import sys
@@ -28,11 +30,13 @@ BASELINE=HERE/'evidence/20261011T071933_296064Z/CONSOLIDATED_RESULTS.json'
 
 
 async def execute(run_dir, environment, rows, owned):
+    raise E.PrerequisiteBlocked('Full PT workloads disabled pending separate authorization and review')
+    # Prepared implementation retained for later review; unreachable in remediation.
     import httpx
     from testing_modules.pre_uat.support import SyntheticWorkbook
     from testing_modules.performance_test.controlled_workloads import Workloads
     status={'error':None,'active_test':None}; samples=[]
-    guard_pids=[__import__('os').getpid(),E.ACTIVE['server_pid']]
+    guard_pids=[os.getpid()]
     def guard():
         if status['error']: raise E.PrerequisiteBlocked(status['error'])
         if E.ACTIVE['network_violations']: raise E.PrerequisiteBlocked('Unexpected network attempt')
@@ -40,7 +44,7 @@ async def execute(run_dir, environment, rows, owned):
         previous=None
         while True:
             try:
-                snapshot=await asyncio.to_thread(resources,guard_pids)
+                snapshot=await asyncio.to_thread(resources,guard_pids,owned=owned['process'])
                 enforce_resources(snapshot)
                 snapshot.update(monotonic=time.perf_counter(),timestamp=datetime.now(timezone.utc).isoformat(),test_id=status['active_test'],
                     queue_depth=E.ACTIVE['client'].llen(E.ACTIVE['queue_prefix']+'job_queue'))
@@ -49,9 +53,8 @@ async def execute(run_dir, environment, rows, owned):
                     for pid,p in snapshot['processes'].items():
                         p['cpu_percent_one_core']=100*(p['cpu_seconds']-previous['processes'][pid]['cpu_seconds'])/dt
                 # Only the positively identified owned container is sampled.
-                label=await asyncio.to_thread(E.docker,'inspect','--format','{{index .Config.Labels "obelisk.preuat.run"}}',E.ACTIVE['container'])
-                if label!=E.ACTIVE['nonce']: raise E.PrerequisiteBlocked('Resource container ownership changed')
-                raw=await asyncio.to_thread(E.docker,'stats','--no-stream','--format','{{json .}}',E.ACTIVE['container'])
+                container_id=await asyncio.to_thread(E.verify_container)
+                raw=await asyncio.to_thread(E.docker,'stats','--no-stream','--format','{{json .}}',container_id)
                 container=json.loads(raw)
                 snapshot['owned_redis']={k:container.get(k) for k in ('CPUPerc','MemUsage','MemPerc','PIDs')}
                 samples.append(snapshot); previous=snapshot
@@ -61,7 +64,8 @@ async def execute(run_dir, environment, rows, owned):
                 return
             await asyncio.sleep(3)
     async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{E.ACTIVE['api_port']}",trust_env=False,
-            timeout=30,limits=httpx.Limits(max_connections=10,max_keepalive_connections=10)) as client:
+            timeout=30,headers={'Authorization':'Bearer '+E.ACTIVE['nonce']},
+            limits=httpx.Limits(max_connections=10,max_keepalive_connections=10)) as client:
         await ready(client,owned)
         # Prove rejection without actually connecting to the blocked address.
         for address in [('127.0.0.1',6379),('203.0.113.1',443)]:
@@ -185,99 +189,236 @@ def reports(run_dir, rows, environment, before, after, command):
     audit.write_text('\n'.join(preface)+audit.read_text(encoding='utf-8'),encoding='utf-8')
 
 
-def main():
-    startup_only=sys.argv[1:]==['--startup-only']
-    if startup_only: return diagnostic_main()
-    if sys.argv[1:]!=['--approved-bounded-run']:
-        raise SystemExit('Select --startup-only or separately approved --approved-bounded-run')
-    run_dir=HERE/'evidence'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S_%fZ'); run_dir.mkdir(parents=True)
-    before=fingerprints(); rows=[]; child=None; owned=None
-    environment={'phase':'2B-2','python':platform.python_version(),'interpreter':sys.executable,'platform':platform.platform(),
-        'configuration':DEFAULTS,'HTTP':'owned separate Uvicorn process; loopback TCP','Redis':'fresh owned labelled container',
-        'Gemini':'mocked; client construction and external sockets denied','database':'denied','request_timeout_seconds':30,
-        'post_submission_drain_seconds':120,'resource_guard':'1 GiB minimum free RAM/disk; 1 GiB maximum owned Python working set',
-        'p95':'nearest rank: sorted[ceil(0.95*n)-1]','PT-008':'not approved; no execution path'}
-    command=f"& '{sys.executable}' -B testing_modules/pre_uat/run_phase2b2.py --approved-bounded-run"
+HARNESS_NAMES = ('windows_owned_process.py', 'performance_lifecycle.py',
+                 'performance_environment.py', 'performance_server.py',
+                 'integration_environment.py', 'run_phase2b2.py')
+
+
+def source_hashes():
+    return {name: hashlib.sha256((HERE/name).read_bytes()).hexdigest() for name in HARNESS_NAMES}
+
+
+def saved_hashes():
+    paths = [p for p in (HERE/'evidence').rglob('*') if p.is_file()]
+    paths += [HERE/'PRE_UAT_RESULTS.md', HERE/'PRE_UAT_RESULTS.csv']
+    return {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in paths}
+
+
+def preflight(run_dir):
+    """Read-only local metadata before ANY container/API creation."""
+    if sys.platform != 'win32':
+        raise E.PrerequisiteBlocked('Diagnostics require Windows')
+    snapshot = resources([os.getpid()])
+    enforce_resources(snapshot)
+    command = """
+$ErrorActionPreference='Stop'
+$processes=@(Get-CimInstance Win32_Process | Where-Object {
+    $_.Name -match '^(python.*|uvicorn.*|redis.*|postgres.*|docker.*|com.docker.*|bun|node)\\.exe$'
+} | Select-Object ProcessId,ParentProcessId,Name)
+$ports=@(Get-NetTCPConnection | Where-Object {
+    $_.State -eq 'Listen' -or $_.RemotePort -in @(5432,6379,8000)
+} | Select-Object LocalAddress,LocalPort,RemoteAddress,RemotePort,State,OwningProcess)
+$cpu=Get-CimInstance Win32_Processor | Select-Object LoadPercentage
+$names=@(Get-ChildItem Env: | Where-Object {
+    $_.Name -match 'OBELISK|REDIS|DATABASE|GEMINI|GOOGLE|DOTENV|PROXY'
+} | Select-Object -ExpandProperty Name)
+@{processes=$processes;ports=$ports;cpu=$cpu;environment_variable_names_only=$names} | ConvertTo-Json -Depth 5 -Compress
+"""
+    inspected = subprocess.run(['powershell', '-NoProfile', '-NonInteractive', '-Command', command],
+                               capture_output=True, text=True, timeout=20,
+                               creationflags=subprocess.CREATE_NO_WINDOW)
+    if inspected.returncode:
+        raise E.PrerequisiteBlocked('Read-only host preflight failed')
+    host = json.loads(inspected.stdout)
+    if any(c['LoadPercentage'] is None or c['LoadPercentage'] >= 90
+           for c in ([host['cpu']] if isinstance(host['cpu'], dict) else host['cpu'])):
+        raise E.PrerequisiteBlocked('Host CPU observation unavailable or at least 90 percent')
+    E.ACTIVE.update(docker=shutil.which('docker'), docker_host=E.DOCKER_HOST)
+    if not E.ACTIVE['docker']:
+        raise E.PrerequisiteBlocked('Docker CLI unavailable')
+    host['docker_engine'] = E.docker('info', '--format', '{{.OSType}} {{.ServerVersion}}')
+    if not host['docker_engine'].startswith('linux '):
+        raise E.PrerequisiteBlocked('Local Linux engine required')
+    host['containers'] = E.docker('ps', '--all', '--format',
+                                '{{.ID}}|{{.Names}}|{{.Image}}|{{.Status}}|{{.Ports}}').splitlines()
+    host['resource_observation'] = snapshot
+    host['runtime_environment'] = 'Root env not loaded/decrypted; child credentials stripped; imports guarded'
+    (run_dir/'PREFLIGHT.json').write_text(json.dumps(host, indent=2), encoding='utf-8')
+    return host
+
+
+def validate_smoke_gate(path):
+    source = Path(path).resolve()
+    if not source.is_relative_to(HERE/'evidence') or source.is_symlink() or source.is_junction():
+        raise E.PrerequisiteBlocked('Smoke prerequisite must be saved local diagnostic evidence')
+    result = json.loads((source/'DIAGNOSTIC_RESULTS.json').read_text(encoding='utf-8'))
+    isolation = json.loads((source/'ISOLATION.json').read_text(encoding='utf-8'))
+    manifest = json.loads((source/'SOURCE_MANIFEST.json').read_text(encoding='utf-8'))
+    if (result.get('mode') != 'startup-only' or result.get('status') != 'PASS'
+            or result.get('workload_requests') != 0 or result.get('smoke_requests') != 0
+            or not manifest.get('protected_unchanged') or not manifest.get('historical_unchanged')
+            or manifest.get('harness_sources') != source_hashes()
+            or not all(isolation.get(k) is True for k in
+                       ('redis_empty_verified', 'container_removed_verified', 'scratch_removed_verified'))
+            or isolation.get('resource_cleanup_errors') != []):
+        raise E.PrerequisiteBlocked('Prior normal/failure diagnostic and complete cleanup proof required')
+    cases = result.get('cases', [])
+    if len(cases) != 2 or [c.get('intentional_failure') for c in cases] != [False, True]:
+        raise E.PrerequisiteBlocked('Both normal and intentional-failure cases required')
+    for case in cases:
+        cleanup = case.get('cleanup', {})
+        if (case.get('status') != 'PASS' or cleanup.get('job_active_processes') != 0
+                or cleanup.get('retained_processes_exited') is not True
+                or cleanup.get('forced_termination') or cleanup.get('cleanup_errors')):
+            raise E.PrerequisiteBlocked('Prior case cleanup proof incomplete')
+    if not cases[0]['cleanup'].get('graceful_workers_verified'):
+        raise E.PrerequisiteBlocked('Prior graceful workers not verified')
+    return source
+
+
+async def smoke_request(client):
+    """Exactly ONE synthetic analytics POST; no ETL fixture, queue job or provider."""
+    header = dict(course_code='SMOKE-101', course_title='Synthetic smoke',
+                  course_type='LECTURE', section='Synthetic', semester_year='Synthetic',
+                  instructor_name=None, no_of_students=2, threshold=.70, grading_system=None)
+    attainments = [
+        dict(student_id=None, student_name='Student '+letter, clo_code='CLO1',
+             direct_clo_attainment_pct=value, indirect_clo_attainment_pct=None,
+             composite_clo_attainment_pct=None, met_threshold=value >= .70,
+             clo_level='Proficient' if value >= .70 else 'Basic',
+             is_record_complete=True, section_completeness_pct=1.0, rule1_met=True)
+        for letter, value in [('A', .6), ('B', .8)]]
+    payload = dict(period=dict(type='custom', label='Synthetic diagnostic'),
+        submissions=[dict(department='Synthetic Department', program='Synthetic Program',
+                          avp_group='Synthetic AVP', course_code='SMOKE-101', section='Synthetic',
+                          header=header, attainments=attainments,
+                          clo_plo_mapping=[dict(clo_code='CLO1', plo_code='PLO1', correlation_strength=3)])])
+    started = time.perf_counter()
+    row = dict(status='FAIL', executed=True, request_count=1,
+               objective='Single diagnostic analytics request; no PT acceptance',
+               expected=dict(records=2, clo_mean=.7, plo_mean=.7, program_mean=.7))
     try:
-        environment['packages']={name:version(name) for name in ['uvicorn','fastapi','httpx','redis','openpyxl','pydantic','google-genai']}
-        initial=resources([__import__('os').getpid()]); enforce_resources(initial); environment['resource_preflight']=initial
-        cpu_snapshot=subprocess.run(['powershell','-NoProfile','-NonInteractive','-Command',
-            'Get-CimInstance Win32_Processor | Select-Object Name,NumberOfCores,NumberOfLogicalProcessors,LoadPercentage | ConvertTo-Json -Compress'],capture_output=True,text=True,timeout=20)
-        if cpu_snapshot.returncode: raise E.PrerequisiteBlocked('Host CPU preflight unavailable')
-        environment['cpu_preflight']=json.loads(cpu_snapshot.stdout)
-        if environment['cpu_preflight']['LoadPercentage']>=90:
-            raise E.PrerequisiteBlocked('Host CPU preflight at least 90 percent; postpone benchmarks')
-        with socket.socket() as reservation:
-            reservation.bind(('127.0.0.1',0)); E.ACTIVE['api_port']=reservation.getsockname()[1]
-        E.install_guards=install_guards
-        E.prepare(run_dir); E.ACTIVE['phase']='2B-2'
-        config={k:E.ACTIVE[k] for k in ('nonce','api_port','redis_port','redis_run_id')}
-        config.update(run_dir=str(run_dir),upload_folder=str(E.ACTIVE['upload_folder']))
-        config_path=run_dir/'OWNED_SERVER_CONFIG.json'; config_path.write_text(json.dumps(config),encoding='utf-8')
-        owned=launch(config_path,run_dir); child=owned['child']
-        E.ACTIVE['server_pid']=child.pid
-        asyncio.run(execute(run_dir,environment,rows,owned))
+        response = await client.post('/analytics/summary', json=payload, timeout=10)
+        row['elapsed_seconds'] = time.perf_counter()-started
+        row['http_status'] = response.status_code
+        row['actual'] = response.json()
+        assert response.status_code == 200, 'Smoke response is not HTTP 200'
+        body = row['actual']
+        for level, name in [('department_summary','Synthetic Department'),
+                            ('program_summary','Synthetic Program'),
+                            ('avp_group_summary','Synthetic AVP')]:
+            group = body[level][name]
+            assert group['total_attainment_records'] == 2
+            assert set(group['clos']) == {'CLO1'} and set(group['plos']) == {'PLO1'}
+            clo, plo = group['clos']['CLO1'], group['plos']['PLO1']
+            assert clo['record_count'] == 2 and clo['rule1_met'] is True
+            assert abs(clo['mean_attainment_pct'] - (.6+.8)/2) < 1e-12
+            assert abs(plo['plo_attainment_direct_only'] - .7) < 1e-12
+            assert plo['plo_rule3_met'] is True and plo['plo_completeness_pct'] == 1
+            if level == 'program_summary':
+                assert abs(group['program_plo_average'] - .7) < 1e-12
+        row['status'] = 'PASS'
     except Exception as exc:
-        E.ACTIVE['startup_error']=sanitized(exc)
-        E.ACTIVE['blocker']=E.ACTIVE['startup_error'].get('reason','Prerequisite/harness failure: '+type(exc).__name__)
-    finally:
-        if owned:
-            cleanup_report=finish(owned)
-            E.ACTIVE['process_cleanup']=cleanup_report
-            if cleanup_report['cleanup_errors']: E.ACTIVE['cleanup_error']='Owned server cleanup proof failed'
-        try: E.cleanup()
-        except Exception as exc: E.ACTIVE['cleanup_error']='Owned Redis/temp cleanup failed: '+type(exc).__name__
-    after=fingerprints()
-    if before!=after or E.ACTIVE['network_violations'] or E.ACTIVE.get('cleanup_error'):
-        E.ACTIVE.setdefault('blocker',E.ACTIVE.get('cleanup_error','Protected files or network guards changed'))
-        for row in rows:
-            row['status']='BLOCKED'; row['failures'].append(E.ACTIVE['blocker'])
-    reports(run_dir,rows,environment,before,after,command)
-    print('Phase 2B-2: '+json.dumps(dict(Counter(r['status'] for r in rows))),flush=True)
-    print('Evidence: '+str(run_dir.relative_to(ROOT)),flush=True)
-    return 2 if any(r['status']=='BLOCKED' for r in rows) else 1 if any(r['status']=='FAIL' for r in rows) else 0
+        row['elapsed_seconds'] = time.perf_counter()-started
+        row['failure'] = sanitized(exc)
+    return row
 
 
-def diagnostic_main():
-    """No import or call of workload modules; no consolidated-result rewrite."""
-    run_dir=HERE/'evidence'/datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S_%fZ')
-    run_dir.mkdir(parents=True)
-    before=fingerprints(); outcomes=[]; error=None
+def main():
+    if sys.argv[1:] == ['--startup-only']:
+        return diagnostic_main()
+    if len(sys.argv) == 3 and sys.argv[1] == '--smoke-after':
+        return diagnostic_main(smoke_source=sys.argv[2])
+    raise SystemExit('Full PT workloads disabled. Select --startup-only or --smoke-after <verified diagnostic directory>; separate approval required.')
+
+
+def diagnostic_main(smoke_source=None):
+    """No workload imports/calls or consolidated-result writes in either mode."""
+    mode = 'smoke-only' if smoke_source is not None else 'startup-only'
+    # Validate before making a new directory or resource.
+    prior = validate_smoke_gate(smoke_source) if smoke_source is not None else None
+    history_before = saved_hashes()
+    before = fingerprints()
+    run_dir = HERE/'evidence'/(datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S_%fZ')+'_'+mode)
+    run_dir.mkdir()
+    command = f"& '{sys.executable}' -B testing_modules/pre_uat/run_phase2b2.py "
+    command += '--startup-only' if prior is None else f"--smoke-after '{prior}'"
+    outcomes = []
+    error = None
+    git_commit = None
     try:
-        snapshot=resources([__import__('os').getpid()]); enforce_resources(snapshot)
-        (run_dir/'RESOURCE_PREFLIGHT.json').write_text(json.dumps(snapshot,indent=2),encoding='utf-8')
+        git = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                             capture_output=True, text=True, timeout=10)
+        if git.returncode:
+            raise E.PrerequisiteBlocked('Git provenance unavailable')
+        git_commit = git.stdout.strip()
+        preflight(run_dir)
         with socket.socket() as reservation:
-            reservation.bind(('127.0.0.1',0)); E.ACTIVE['api_port']=reservation.getsockname()[1]
-        E.install_guards=install_guards
-        E.prepare(run_dir); E.ACTIVE['phase']='startup-only diagnostic'
-        config={k:E.ACTIVE[k] for k in ('nonce','api_port','redis_port','redis_run_id')}
-        config['upload_folder']=str(E.ACTIVE['upload_folder'])
-        normal=asyncio.run(startup_case(run_dir/'normal_startup',config))
-        outcomes.append(normal)
-        if normal['status']!='PASS':
-            raise E.PrerequisiteBlocked('Normal startup diagnostic failed; no retry or failure-path subprocess started')
-        if E.ACTIVE['client'].dbsize()!=0 or list(E.ACTIVE['upload_folder'].iterdir()):
-            raise E.PrerequisiteBlocked('Startup-only mode unexpectedly created job/upload data')
-        failure=asyncio.run(startup_case(run_dir/'intentional_failure',config,intentional=True))
-        outcomes.append(failure)
-        if failure['status']!='PASS': raise E.PrerequisiteBlocked('Controlled failure-path assertions failed')
-        assert E.ACTIVE['client'].dbsize()==0 and not list(E.ACTIVE['upload_folder'].iterdir())
-    except Exception as exc: error=sanitized(exc)
+            reservation.bind(('127.0.0.1',0))
+            E.ACTIVE['api_port'] = reservation.getsockname()[1]
+        E.install_guards = install_guards
+        E.prepare(run_dir)
+        E.ACTIVE['phase'] = mode+' harness remediation'
+        config = {k:E.ACTIVE[k] for k in ('nonce','api_port','redis_port','redis_run_id','queue_prefix')}
+        config.update(upload_folder=str(E.ACTIVE['upload_folder']),
+                      scratch_root=str(E.ACTIVE['scratch_root']), owned_run_dir=str(run_dir))
+        if prior is None:
+            normal = asyncio.run(startup_case(run_dir/'normal_startup', config))
+            outcomes.append(normal)
+            if normal['status'] != 'PASS':
+                raise E.PrerequisiteBlocked('Normal lifecycle failed; no second API launched')
+            if E.ACTIVE['client'].dbsize() or list(E.ACTIVE['upload_folder'].iterdir()):
+                raise E.PrerequisiteBlocked('Startup diagnostic unexpectedly created data')
+            failure = asyncio.run(startup_case(run_dir/'intentional_failure', config, intentional=True))
+            outcomes.append(failure)
+            if failure['status'] != 'PASS':
+                raise E.PrerequisiteBlocked('Intentional-failure lifecycle cleanup failed')
+        else:
+            smoke = asyncio.run(startup_case(run_dir/'smoke', config, smoke=smoke_request))
+            outcomes.append(smoke)
+            if smoke['status'] != 'PASS' or smoke['cleanup'].get('mock_calls') != 0:
+                raise E.PrerequisiteBlocked('Smoke response, cleanup, or zero-provider-call proof failed')
+        if E.ACTIVE['client'].dbsize() or list(E.ACTIVE['upload_folder'].iterdir()):
+            raise E.PrerequisiteBlocked('Diagnostic/smoke unexpectedly created job/upload data')
+    except Exception as exc:
+        error = sanitized(exc)
     finally:
-        try: E.cleanup()
-        except Exception as exc: E.ACTIVE['diagnostic_cleanup_error']=sanitized(exc)
-    after=fingerprints()
-    status='PASS' if error is None and not E.ACTIVE.get('diagnostic_cleanup_error') and before==after and not E.ACTIVE['network_violations'] else 'BLOCKED'
-    result={'mode':'startup-only','status':status,'timestamp':datetime.now(timezone.utc).isoformat(),'startup_error':error,
-        'cases':outcomes,'workload_requests':0,'performance_ids':'unchanged: five BLOCKED; PT-008 SKIPPED',
-        'prior_evidence_untouched':True,'command':f"& '{sys.executable}' -B testing_modules/pre_uat/run_phase2b2.py --startup-only"}
+        try:
+            E.cleanup()
+        except Exception as exc:
+            E.ACTIVE['diagnostic_cleanup_error'] = sanitized(exc)
+    after = fingerprints()
+    history_after = {p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+                     if (ROOT/p).is_file() else None for p in history_before}
+    unchanged = before == after and history_before == history_after
+    status = ('PASS' if error is None and not E.ACTIVE.get('diagnostic_cleanup_error')
+              and unchanged and not E.ACTIVE['network_violations'] else 'BLOCKED')
+    result = dict(mode=mode, status=status, timestamp=datetime.now(timezone.utc).isoformat(),
+                  git_commit=git_commit, startup_error=error, cases=outcomes,
+                  workload_requests=0, smoke_requests=sum(c.get('smoke_executed',False) for c in outcomes),
+                  performance_ids='UNCHANGED; no PT ID executed or marked PASS',
+                  prior_diagnostic=str(prior) if prior else None,
+                  prior_evidence_untouched=history_before == history_after, command=command)
     (run_dir/'DIAGNOSTIC_RESULTS.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
     (run_dir/'ISOLATION.json').write_text(json.dumps(E.proof(),indent=2),encoding='utf-8')
-    sources=[HERE/name for name in ('performance_environment.py','performance_server.py','performance_lifecycle.py','run_phase2b2.py')]
-    (run_dir/'SOURCE_MANIFEST.json').write_text(json.dumps({'before':before,'after':after,'protected_unchanged':before==after,
-        'harness_sources':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sources}},indent=2),encoding='utf-8')
-    print('Startup-only diagnostic: '+status,flush=True)
-    print('Evidence: '+str(run_dir.relative_to(ROOT)),flush=True)
-    return 0 if status=='PASS' else 2
+    manifest = dict(git_commit=git_commit, before=before, after=after,
+                    protected_unchanged=before == after, historical_unchanged=history_before == history_after,
+                    historical_before=history_before, historical_after=history_after,
+                    harness_sources=source_hashes())
+    (run_dir/'SOURCE_MANIFEST.json').write_text(json.dumps(manifest,indent=2),encoding='utf-8')
+    if prior is not None:
+        smoke_result = outcomes[0].get('smoke',dict(status='SKIPPED',executed=False)) if outcomes else dict(status='SKIPPED',executed=False)
+        (run_dir/'SMOKE_RESULT.json').write_text(json.dumps(smoke_result,indent=2),encoding='utf-8')
+    lines = ['HARNESS '+mode+': '+status,
+             'Full PT workloads: NOT EXECUTED; institutional statuses unchanged',
+             'Smoke requests: '+str(result['smoke_requests']),
+             'Evidence: '+str(run_dir.relative_to(ROOT))]
+    (run_dir/'TERMINAL_SUMMARY.txt').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+    for line in lines:
+        print(line,flush=True)
+    return 0 if status == 'PASS' else 2
 
-if __name__=='__main__': raise SystemExit(main())
+
+if __name__ == '__main__':
+    raise SystemExit(main())

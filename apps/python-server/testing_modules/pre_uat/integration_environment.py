@@ -54,6 +54,8 @@ def install_guards(run_dir, port):
     socket.socketpair = pair
 
     def audit(event,args):
+        if event == "shutil.rmtree":
+            raise PrerequisiteBlocked("Recursive filesystem deletion forbidden")
         if event in {"socket.connect","socket.getaddrinfo","socket.bind","socket.sendto"}:
             if getattr(pair_context,"active",False): return
             address = args[1] if event != "socket.getaddrinfo" else args[:2]
@@ -85,20 +87,44 @@ def install_guards(run_dir, port):
 
 def prepare(run_dir):
     if any(n.startswith("app.") for n in sys.modules): raise PrerequisiteBlocked("Fresh process required")
+    run_dir = Path(run_dir).resolve()
+    if not run_dir.is_relative_to(ROOT/"testing_modules/pre_uat/evidence"):
+        raise PrerequisiteBlocked("Owned run directory must be inside repository evidence")
     ACTIVE.update(docker=shutil.which("docker"),docker_host=DOCKER_HOST,image=IMAGE)
     if not ACTIVE["docker"]: raise PrerequisiteBlocked("Docker CLI unavailable; no native/shared Redis fallback exists")
     ACTIVE["docker_server_version"] = docker("info","--format","{{.ServerVersion}}")
     # No pull or service startup if the local engine/image prerequisite is absent.
     image_id = docker("image","inspect",IMAGE,"--format","{{.Id}}")
     nonce = uuid4().hex
-    ACTIVE.update(nonce=nonce,container="obelisk-preuat-"+nonce,image_id=image_id)
-    ACTIVE["scratch"] = tempfile.TemporaryDirectory(prefix="obelisk_preuat_integration_")
-    ACTIVE["upload_folder"] = Path(ACTIVE["scratch"].name)/"uploads"
+    ACTIVE.update(nonce=nonce,container="obelisk-preuat-"+nonce,image_id=image_id,
+                  run_dir=str(run_dir),queue_prefix="obelisk:preuat_"+nonce+":",
+                  tracked_scratch_files=[])
+    scratch = run_dir/("scratch_"+nonce)
+    scratch.mkdir()  # exclusive creation; never adopt an existing directory
+    ACTIVE["scratch_root"] = scratch
+    tempfile.tempdir = str(scratch)  # no system-temp discovery/probe
+    ACTIVE["upload_folder"] = scratch/"uploads"
     ACTIVE["upload_folder"].mkdir()
-    docker("run","--detach","--pull=never","--name",ACTIVE["container"],"--label","obelisk.preuat.run="+nonce,"--publish","127.0.0.1::6379","--read-only","--tmpfs","/data:rw,noexec,nosuid,size=16m","--user","redis","--entrypoint","redis-server",image_id,"--save","","--appendonly","no","--bind","0.0.0.0","--protected-mode","no")
-    label = docker("inspect","--format",'{{index .Config.Labels "obelisk.preuat.run"}}',ACTIVE["container"])
-    if label != nonce: raise PrerequisiteBlocked("Container ownership label mismatch")
-    binding = json.loads(docker("inspect","--format",'{{json (index .NetworkSettings.Ports "6379/tcp")}}',ACTIVE["container"]))
+    cidfile = run_dir/"OWNED_REDIS.cid"
+    ACTIVE["container_cidfile"] = str(cidfile)
+    # Record the ID before starting Redis. A failed create is never cleaned up
+    # by name; cleanup may use a recorded cidfile plus exact label proof only.
+    try:
+        container_id = docker("create","--pull=never","--cidfile",str(cidfile),
+            "--name",ACTIVE["container"],"--label","obelisk.preuat.run="+nonce,
+            "--publish","127.0.0.1::6379","--read-only","--tmpfs",
+            "/data:rw,noexec,nosuid,size=16m","--user","redis","--entrypoint",
+            "redis-server",image_id,"--save","","--appendonly","no",
+            "--bind","0.0.0.0","--protected-mode","no")
+        ACTIVE["container_id"] = container_id
+        if cidfile.read_text(encoding="utf-8").strip() != container_id:
+            raise PrerequisiteBlocked("Recorded container ID/cidfile mismatch")
+    finally:
+        if not ACTIVE.get("container_id") and cidfile.is_file():
+            ACTIVE["container_id"] = cidfile.read_text(encoding="utf-8").strip()
+    verify_container()
+    docker("start",ACTIVE["container_id"])
+    binding = json.loads(docker("inspect","--format",'{{json (index .NetworkSettings.Ports "6379/tcp")}}',ACTIVE["container_id"]))
     if len(binding)!=1 or binding[0]["HostIp"]!="127.0.0.1": raise PrerequisiteBlocked("Redis port must be published only on loopback")
     port = int(binding[0]["HostPort"])
     if port == 6379: raise PrerequisiteBlocked("Refusing conventional/shared Redis port")
@@ -124,23 +150,80 @@ def prepare(run_dir):
     ACTIVE["queue_prefix"] = "obelisk:preuat_"+nonce+":"
 
 
+def verify_container():
+    container_id = ACTIVE.get("container_id", "")
+    if len(container_id) != 64 or any(c not in "0123456789abcdef" for c in container_id):
+        raise PrerequisiteBlocked("Full current-run container ID unavailable; cleanup refused")
+    identity = docker("inspect","--format",'{{.Id}}|{{index .Config.Labels "obelisk.preuat.run"}}',container_id)
+    if identity != container_id+"|"+ACTIVE["nonce"]:
+        raise PrerequisiteBlocked("Container ID/ownership label mismatch")
+    return container_id
+
+
+def register_scratch_file(path):
+    path = Path(path)
+    root = ACTIVE["scratch_root"].resolve()
+    if path.is_symlink() or path.is_junction() or not path.resolve().is_relative_to(root):
+        raise PrerequisiteBlocked("Scratch file registration outside owned root")
+    ACTIVE["tracked_scratch_files"].append(str(path.resolve()))
+
+
 def cleanup():
+    errors = []
     client = ACTIVE.get("client")
     if client:
-        if client.info("server")["run_id"] != ACTIVE["redis_run_id"]: raise PrerequisiteBlocked("Redis identity changed; cleanup refused")
-        keys = list(client.scan_iter(match=ACTIVE["queue_prefix"]+"*"))
-        if keys: client.delete(*keys)
-        ACTIVE["cleanup"].append("Only owned namespace keys deleted; no FLUSHDB/FLUSHALL")
-        client.close()
-    if ACTIVE.get("container"):
-        label = docker("inspect","--format",'{{index .Config.Labels "obelisk.preuat.run"}}',ACTIVE["container"])
-        if label != ACTIVE["nonce"]: raise PrerequisiteBlocked("Container cleanup refused: ownership mismatch")
-        docker("rm","--force",ACTIVE["container"])
-        ACTIVE["cleanup"].append("Owned disposable container removed")
-    if ACTIVE.get("scratch"):
-        ACTIVE["scratch"].cleanup()
-        ACTIVE["cleanup"].append("Temporary upload folder removed")
+        try:
+            verify_container()
+            if client.info("server")["run_id"] != ACTIVE["redis_run_id"]:
+                raise PrerequisiteBlocked("Redis identity changed; key cleanup refused")
+            keys = list(client.scan_iter(match=ACTIVE["queue_prefix"]+"*"))
+            if keys: client.delete(*keys)
+            if client.dbsize() != 0:
+                raise PrerequisiteBlocked("Owned Redis contains unexpected keys after cleanup")
+            ACTIVE["redis_empty_verified"] = True
+            ACTIVE["cleanup"].append("Only owned namespace keys deleted; no FLUSHDB/FLUSHALL")
+        except Exception as exc:
+            errors.append(type(exc).__name__)
+        finally:
+            try: client.close()
+            except Exception as exc: errors.append(type(exc).__name__)
+    if ACTIVE.get("container_id"):
+        try:
+            container_id = verify_container()
+            docker("rm","--force",container_id)
+            remaining = docker("ps","--all","--no-trunc","--filter","id="+container_id,"--format","{{.ID}}")
+            if remaining: raise PrerequisiteBlocked("Owned container removal not verified")
+            ACTIVE["container_removed_verified"] = True
+            ACTIVE["cleanup"].append("Recorded current-run container ID and label verified; removed")
+        except Exception as exc:
+            errors.append(type(exc).__name__)
+    elif ACTIVE.get("container_cidfile"):
+        # A create timeout without a recorded ID is uncertain; never guess a target.
+        errors.append("Container create attempted without recorded ID; manual ownership review required")
+    if ACTIVE.get("scratch_root"):
+        try:
+            root = ACTIVE["scratch_root"]
+            if root.is_symlink() or root.is_junction() or not root.resolve().is_relative_to(
+                    ROOT/"testing_modules/pre_uat/evidence"):
+                raise PrerequisiteBlocked("Owned scratch root changed; cleanup refused")
+            for recorded in ACTIVE["tracked_scratch_files"]:
+                path = Path(recorded)
+                if path.is_symlink() or path.is_junction() or not path.resolve().is_relative_to(root.resolve()):
+                    raise PrerequisiteBlocked("Tracked scratch path changed; cleanup refused")
+                if path.is_file(): path.unlink()  # individual recorded file only
+            upload = ACTIVE["upload_folder"]
+            if upload.is_symlink() or upload.is_junction():
+                raise PrerequisiteBlocked("Owned upload directory changed")
+            if upload.exists(): upload.rmdir()  # empty only; unexpected files block cleanup
+            root.rmdir()  # empty only; NEVER recursive deletion
+            ACTIVE["scratch_removed_verified"] = True
+            ACTIVE["cleanup"].append("Only recorded files and empty owned directories removed")
+        except Exception as exc:
+            errors.append(type(exc).__name__)
+    ACTIVE["resource_cleanup_errors"] = errors
+    if errors: raise PrerequisiteBlocked("Owned resource cleanup not fully verified: "+", ".join(errors))
 
 
 def proof():
-    return {k:v for k,v in ACTIVE.items() if k not in {"client","logger","scratch","upload_folder"}}
+    return {k:(str(v) if isinstance(v,Path) else v) for k,v in ACTIVE.items()
+            if k not in {"client","logger","upload_folder","stage_callback"}}
