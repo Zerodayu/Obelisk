@@ -1,0 +1,87 @@
+# Final UT-004 corrections and deterministic regression
+
+Latest execution: **20261011T063734_111127Z**; **18 PASS, 0 FAIL, 0 BLOCKED**, eight Phase 2B IDs SKIPPED. All 17 previously passing IDs remain PASS. UT-004 has **98 passing subchecks**, zero failing subchecks, and 101 expected/actual observations. [Results](evidence/20261011T063734_111127Z/RESULTS.json), [UT-004](evidence/20261011T063734_111127Z/UT-004_result.txt), [isolation](evidence/20261011T063734_111127Z/ISOLATION.json), [source manifest](evidence/20261011T063734_111127Z/SOURCE_MANIFEST.json).
+
+## Final production changes
+
+- `app/etl/extract/extractor.py::_read_numeric_cell`: dedicated strict parser at period-score and indirect-rating callers only. It accepts finite numbers/numeric strings, treats blank/whitespace as missing, and rejects malformed nonblank strings, Excel errors, booleans and nonfinite values. Conversion exceptions are suppressed to avoid exposing raw invalid text. `_as_optional_float` and its unrelated metadata/max-cell callers are unchanged.
+- `_validate_roster_ids`: rejects repeated trimmed nonblank IDs separately on Direct/Indirect before insertion. Cross-sheet ID matching, optional IDs and existing ID conversion/case behavior remain unchanged.
+- Identity lookup: groups indirect names into candidate lists instead of overwriting them. Unique ID matches take precedence; fallback must be unambiguous on the matching rosters. Missing-ID duplicate names are rejected before extraction keys can overwrite records. Distinct matching IDs sharing a name remain valid.
+- `_validate_clo_codes`: rejects duplicate discovered codes in each worksheet, after existing trimming and indirect header token extraction. Matching codes across sheets, dynamic discovery and case behavior are preserved.
+- `app/core/exceptions.py::WorkbookValidationError`: existing OBELISKError mechanism with `sheet_name`, `cell`, `field`, `reason`, and optional `conflicting_cell`. Messages/details contain no student names, IDs or raw invalid values. The existing worker catches OBELISKError and serializes to_dict; that integration path was inspected only, not executed.
+
+Only these two application files changed in this final correction. Earlier approved negative-score/AI corrections remain intact. No formula helper, threshold, rounding, range policy, Redis, model, API settings or original script changed.
+
+## Defects versus corrected expectation
+
+Malformed score/rating acceptance, within-sheet duplicate IDs/CLOs and ambiguous fallback are corrected application validation defects. Above-maximum score acceptance was already valid extra-credit behavior: only its incorrect UT-004 rejection expectation changed, under explicit user approval. New workbook tests check each period with small and large bonuses, including direct attainment above 100%, without clamping or denominator changes. The original 26/25 case independently verifies direct=0.86 and composite=87.20.
+
+UT-004 retains all other original rejection scenarios and strengthens them to assert specific structured error types. Added tests exercise invalid/valid numeric cells across all three periods and rating, duplicate IDs with same/different names independently on each sheet, optional IDs/name fallback, ambiguous matching, duplicate normalized CLO labels and distinct indirect headers resolving to the same code. True/false, Excel errors and nonfinite numeric strings pass through full synthetic Excel ETL rejection tests. Literal NaN/infinities are additionally checked before saving because openpyxl serializes these literal floats as empty cells; this is explicitly distinct from the full workbook tests.
+
+## Compatibility evidence and limits
+
+[COMPATIBILITY.json](evidence/20261011T063734_111127Z/COMPATIBILITY.json) compares the preceding 17-PASS run with this run: **all 17 previously passing IDs have identical actual observations**, including the valid synthetic workbook attainment outputs. It also compares source manifests: only extractor.py/exceptions.py differ, and all eleven old_test scripts are identical to the baseline. Formula/calculation helpers and earlier production corrections have identical hashes. The synthetic oracle/historical assertions verify 70/30, thresholds, rounding, completeness and missing-data behavior.
+
+No saved original workbook was opened; compatibility is established for the synthetic valid layouts and unchanged historical synthetic methods. Formula cache handling, unused roster data, unrelated maximum-cell validation and metadata parsing were not redesigned. Curriculum identity/CLO existence and webapp approval/persistence/frontend behavior remain EXTERNAL. Numerical prose outside the supported checker grammar and recommendation quality remain MANUAL REVIEW.
+
+Reproduce from apps/python-server:
+
+```powershell
+& 'D:\Jetbrains_IDE_Projects\pycharm\Obelisk_FINAL\apps\python-server\.venv\Scripts\python.exe' -B testing_modules/pre_uat/run_phase2a.py
+```
+
+The complete final run exits **0**. `--case UT-004` selects only that case; other cases are SKIPPED in a selected run. Earlier failed evidence and notes below remain preserved. No live Gemini, integration or performance/stress tests ran. Phase 2B awaits explicit approval.
+
+---
+
+## Preserved previous correction notes
+
+Latest run: `20261011T062718_385853Z` (UTC, October 11, 2026). [Results](evidence/20261011T062718_385853Z/RESULTS.json), [isolation proof](evidence/20261011T062718_385853Z/ISOLATION.json), [source hashes and exact reused methods](evidence/20261011T062718_385853Z/SOURCE_MANIFEST.json).
+
+18 implemented IDs executed: **17 PASS, 1 FAIL, 0 BLOCKED**. Eight integration/performance IDs are **SKIPPED**, not executed. All 15 IDs that passed the earlier run still pass. No assertion was changed to turn a failure into a pass. Original failed evidence at `evidence/20261011T061026_592082Z/` and other earlier run directories remains intact.
+
+## Exact production changes
+
+| File / boundary | Correction | Compatibility and regression evidence |
+| --- | --- | --- |
+| `app/etl/transform/transformer.py::SimpleTransformer._transform_v2_records` | Before summing, reject each non-null negative prelim_score/midterm_score/final_score with existing TransformationError. Details contain only field/value, no student name, ID or workbook payload. | UT-004 checks all three fields, structured error metadata and absence of synthetic identifiers. Zero/null/extra-credit cases for each period match the independent oracle and preserve completeness behavior. No clamping, formula, rounding or threshold changes. Legacy RawScoreRecord behavior is unchanged. |
+| `app/analytics/cqi_recommender.py::generate_cqi_recommendation` | Normalize response text and validate successful JSON with required exact schema fields, expected types, nonempty text/list and permitted recipient roles. Invalid responses use the existing error envelope and sanitized error string. | UT-008 rechecks all original invalid scenarios plus missing/null/numeric/blank item fields and invalid top-level types. Valid fenced/unfenced JSON, single/two recommendations and nullable/string pattern pass. The returned recommendation stays a string; valid JSON is not reserialized. |
+| `app/analytics/cqi_recommender.py::normalize_llm_response` and `app/analytics/institutional_summary.py::generate_institutional_summary` | Reject empty, whitespace, null, non-string and empty fenced responses at both service boundaries. Institutional output receives no course JSON validation. | UT-009 checks ten invalid-text scenarios on each boundary, including plain/json/text empty fences; verifies matching error/recommendation strings and exactly one boundary provider call. Nonempty institutional prose, fenced prose, provider error sentinel and numerical summaries remain unchanged. |
+
+Shared `call_llm_api`, its SDK requests, model/API settings, failover and retry behavior are untouched. The normalizer is called by the two boundary functions only. SDK timeout failover, missing-key failure and exhausted rate-limit cases still pass. ST-AI-003/ST-AI-007 preserve `no_gaps_found`, null recommendation and zero provider calls. Schema validation does not evaluate educational truthfulness or filter malicious advisory prose; human review remains necessary.
+
+Course JSON now rejects extra keys, malformed fields and unknown recipients that previously passed unchecked. This is an intentional strict schema correction; a consumer or provider relying on arbitrary extra fields must conform to the documented course contract. The list must have at least one item; single responses are deliberately supported rather than enforcing the prompt's suggested two-to-three cardinality. Institutional prose has no such schema requirement.
+
+## Remaining UT-004 failures
+
+The parent ID remains FAIL whenever any original subcheck fails. Negative-score rejection is corrected, but these five original expectations are retained:
+
+| Scenario | Actual output | Assessment |
+| --- | --- | --- |
+| Score 26, period maximum 25 | Accepted; direct fraction 0.86 | Test policy mismatch: this approval explicitly preserves extra credit. No production rejection added and original assertion not removed. |
+| Nonnumeric period score | Converted to null; direct fraction 0.60 | Unresolved extractor validation finding outside this approval. |
+| Nonnumeric indirect rating | Converted to null; indirect null, direct-only fallback | Unresolved extractor validation finding outside this approval. |
+| Duplicate student ID with distinct names | Four records, two unique student-CLO pairs | Unresolved structural identity collision outside this approval. |
+| Duplicate Direct CLO block label | Accepted; duplicate direct data may be overwritten and indirect-only records introduced | Unresolved structural CLO collision outside this approval. |
+
+Reproduce each mutation using the original scenario labels in `UnitPreUAT.test_ut004_invalid_values`. All data is generated in a temporary synthetic workbook. [UT-004 evidence](evidence/20261011T062718_385853Z/UT-004_result.txt) records every original and new subcheck, expected/actual values and traceback. Any further production correction or change to the extra-credit test specification requires a separate decision.
+
+## Restored historical tests
+
+All eleven originals have nonempty restored contents; the user's file-moving issue explains the earlier temporary emptiness. No original was edited/restored/relocated by this task. Fourteen unchanged methods from `old_test/test_etl_v2.py` and `old_test/test_composite_attainment.py` passed inside the offline harness. They are constituent checks, not fourteen additional Pre-UAT IDs. Three newly reused historical methods verify zero-scale rejection, over-scale indirect rating rejection and composite/direct-only mean aggregation. The configurable historical workbook generator is also reused.
+
+The real-template method in the historical class named TestAunObeRealWorkbookIntegration was not executed; only its synthetic no-indirect fallback method ran. Standalone scripts that import application startup, workers/Redis, real environment configuration or saved workbook data were not run. `test_shared_secret_auth.py` remains historical, unexecuted evidence and does not verify Python or webapp authorization here.
+
+## Reproduction and boundaries
+
+From `apps/python-server`, with PyCharm's configured SDK:
+
+```powershell
+& 'D:\Jetbrains_IDE_Projects\pycharm\Obelisk_FINAL\apps\python-server\.venv\Scripts\python.exe' -B testing_modules/pre_uat/run_phase2a.py
+```
+
+Exit code 1 is expected while UT-004 retains the five broader failures. Add `--case UT-004`, `--case UT-008` or `--case UT-009` for a focused run; each invocation creates a new timestamped evidence directory and updates the consolidated reports. The full run restores all 18 IDs in the latest summary.
+
+No packages, database schema, Redis/workers, formulas, keys, model or deployment settings changed. Network and credential access were blocked; no live Gemini, integration, stress or performance tests ran. Source hashes prove all application/original files were unchanged during execution. Only the three application files listed above were changed before execution under the user's approval.
+
+Webapp approval/RBAC/persistence and frontend rendering of the existing error envelope remain EXTERNAL. Free-text numerical claims outside the checker grammar and recommendation quality need manual review. IT-007, IT-009 and PT-004 through PT-009 require Phase 2B approval and dedicated isolation; live Gemini additionally requires explicit opt-in. Work stops at this boundary.
