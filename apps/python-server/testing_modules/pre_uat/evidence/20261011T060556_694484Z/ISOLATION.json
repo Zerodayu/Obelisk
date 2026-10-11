@@ -1,0 +1,33 @@
+{
+  "verified": true,
+  "violations": [
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind",
+    "Network operation denied: socket.bind"
+  ],
+  "probes": [
+    "network: blocked as expected",
+    "environment-file: blocked as expected",
+    "queue-import: blocked as expected"
+  ],
+  "environment_loader": "not imported",
+  "redis": "imports/network blocked",
+  "gemini": "Client denied unless explicitly mocked",
+  "synthetic_only": true,
+  "originals_unchanged": true
+}

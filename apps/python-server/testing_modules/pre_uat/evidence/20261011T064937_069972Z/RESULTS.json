@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-10-11T06:49:37.690451+00:00",
+  "phase": "2B-1",
+  "implemented_ids": 2,
+  "executed_ids": 0,
+  "counts": {
+    "BLOCKED": 2
+  },
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2b1.py",
+  "environment": {
+    "phase": "2B-1",
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "redis": "owned disposable local container required; never configured/shared Redis",
+    "gemini": "denied",
+    "database": "not used",
+    "http_transport": "in-process ASGI with real routes",
+    "upload_concurrency": 3,
+    "workers": 2,
+    "terminal_timeout_seconds": 15,
+    "performance_tests": "not run",
+    "packages": {
+      "fastapi": "0.141.1",
+      "httpx": "0.28.1",
+      "redis": "8.1.0",
+      "orjson": "3.11.9",
+      "aiofiles": "25.1.0",
+      "python-multipart": "0.0.32",
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    }
+  },
+  "rows": [
+    {
+      "test_id": "IT-007",
+      "objective": "Real ETL job lifecycle",
+      "scenario": "Owned disposable local Redis prerequisite",
+      "expected": "Verified fresh local Redis before upload/worker execution",
+      "actual": "PrerequisiteBlocked: Local Docker command failed: info (exit 1). Docker Desktop Linux engine must be running; image redis:7-alpine must already be cached.",
+      "status": "BLOCKED",
+      "executed": false,
+      "timestamp": "2026-10-11T06:49:37.614353+00:00",
+      "environment": {
+        "phase": "2B-1",
+        "python": "3.13.0",
+        "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+        "platform": "Windows-11-10.0.26200-SP0",
+        "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+        "redis": "owned disposable local container required; never configured/shared Redis",
+        "gemini": "denied",
+        "database": "not used",
+        "http_transport": "in-process ASGI with real routes",
+        "upload_concurrency": 3,
+        "workers": 2,
+        "terminal_timeout_seconds": 15,
+        "performance_tests": "not run",
+        "packages": {
+          "fastapi": "0.141.1",
+          "httpx": "0.28.1",
+          "redis": "8.1.0",
+          "orjson": "3.11.9",
+          "aiofiles": "25.1.0",
+          "python-multipart": "0.0.32",
+          "openpyxl": "3.1.5",
+          "pydantic": "2.13.4",
+          "google-genai": "2.25.0"
+        }
+      },
+      "script_function": "testing_modules.integration_test.test_pre_uat_integration.IntegrationPreUAT.test_it007_lifecycle",
+      "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2b1.py",
+      "failures": [
+        "PrerequisiteBlocked: Local Docker command failed: info (exit 1). Docker Desktop Linux engine must be running; image redis:7-alpine must already be cached."
+      ],
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T064937_069972Z/IT-007_result.txt"
+    },
+    {
+      "test_id": "IT-009",
+      "objective": "Concurrent job isolation",
+      "scenario": "Owned disposable local Redis prerequisite",
+      "expected": "Verified fresh local Redis before upload/worker execution",
+      "actual": "PrerequisiteBlocked: Local Docker command failed: info (exit 1). Docker Desktop Linux engine must be running; image redis:7-alpine must already be cached.",
+      "status": "BLOCKED",
+      "executed": false,
+      "timestamp": "2026-10-11T06:49:37.614373+00:00",
+      "environment": {
+        "phase": "2B-1",
+        "python": "3.13.0",
+        "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+        "platform": "Windows-11-10.0.26200-SP0",
+        "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+        "redis": "owned disposable local container required; never configured/shared Redis",
+        "gemini": "denied",
+        "database": "not used",
+        "http_transport": "in-process ASGI with real routes",
+        "upload_concurrency": 3,
+        "workers": 2,
+        "terminal_timeout_seconds": 15,
+        "performance_tests": "not run",
+        "packages": {
+          "fastapi": "0.141.1",
+          "httpx": "0.28.1",
+          "redis": "8.1.0",
+          "orjson": "3.11.9",
+          "aiofiles": "25.1.0",
+          "python-multipart": "0.0.32",
+          "openpyxl": "3.1.5",
+          "pydantic": "2.13.4",
+          "google-genai": "2.25.0"
+        }
+      },
+      "script_function": "testing_modules.integration_test.test_pre_uat_integration.IntegrationPreUAT.test_it009_concurrency",
+      "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2b1.py",
+      "failures": [
+        "PrerequisiteBlocked: Local Docker command failed: info (exit 1). Docker Desktop Linux engine must be running; image redis:7-alpine must already be cached."
+      ],
+      "evidence_path": "testing_modules/pre_uat/evidence/20261011T064937_069972Z/IT-009_result.txt"
+    }
+  ]
+}

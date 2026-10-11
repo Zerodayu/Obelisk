@@ -1,0 +1,13 @@
+{
+  "host_total_ram_bytes": 25573179392,
+  "host_free_ram_bytes": 6160211968,
+  "disk_free_bytes": 55206780928,
+  "logical_cpus": 12,
+  "processes": {
+    "26028": {
+      "working_set_bytes": 34271232,
+      "peak_working_set_bytes": 34324480,
+      "cpu_seconds": 0.3125
+    }
+  }
+}

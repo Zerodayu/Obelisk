@@ -1,0 +1,172 @@
+{
+  "test_id": "ST-AI-004",
+  "objective": "Numerical grounding against actual ETL",
+  "scenario": "Structured numeric sentences in mock response compared to independent oracle and ETL; deliberately wrong count and unsupported claim",
+  "expected": "Every supported count/denominator/threshold/mean checked; wrong claim detected; unsupported digits flagged for manual review",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T06:10:31.929267+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai004_numerical_grounding",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.115275,
+  "actual": [
+    {
+      "check": "all supported response claims",
+      "expected": {
+        "claims": 3,
+        "numeric_fields": 12,
+        "mismatches": 0
+      },
+      "actual": {
+        "checked": [
+          {
+            "clo": "CLO1",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              2,
+              4,
+              70.0,
+              51.2
+            ]
+          },
+          {
+            "clo": "CLO2",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              2,
+              4,
+              70.0,
+              51.2
+            ]
+          },
+          {
+            "clo": "CLO3",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              2,
+              4,
+              70.0,
+              51.2
+            ]
+          }
+        ],
+        "mismatches": [],
+        "manual_review": [],
+        "semantic_review": "Human review required for educational usefulness, inferred causes, and advisory wording"
+      }
+    },
+    {
+      "check": "verifier negative control",
+      "expected": "one mismatch",
+      "actual": {
+        "checked": [
+          {
+            "clo": "CLO1",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              3,
+              4,
+              70.0,
+              51.2
+            ]
+          },
+          {
+            "clo": "CLO2",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              2,
+              4,
+              70.0,
+              51.2
+            ]
+          },
+          {
+            "clo": "CLO3",
+            "expected": [
+              2,
+              4,
+              70.0,
+              51.2
+            ],
+            "actual": [
+              2,
+              4,
+              70.0,
+              51.2
+            ]
+          }
+        ],
+        "mismatches": [
+          "CLO1: 3 of 4 students below 70%; mean failed composite 51.2%."
+        ],
+        "manual_review": [],
+        "semantic_review": "Human review required for educational usefulness, inferred causes, and advisory wording"
+      }
+    },
+    {
+      "check": "unsupported claim",
+      "expected": "MANUAL REVIEW",
+      "actual": {
+        "checked": [],
+        "mismatches": [],
+        "manual_review": [
+          "Attainment might improve by 12% next term."
+        ],
+        "semantic_review": "Human review required for educational usefulness, inferred causes, and advisory wording"
+      }
+    },
+    {
+      "check": "scope",
+      "expected": "deterministic mock only",
+      "actual": "Live AI numerical correctness and semantic quality remain unverified"
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T061026_592082Z/ST-AI-004_result.txt"
+}

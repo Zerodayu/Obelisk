@@ -1,0 +1,25 @@
+{
+    "execution_timestamp_utc":  "2026-10-11T07:19:42.743428+00:00",
+    "phase":  "2B-1",
+    "executed_test_ids":  2,
+    "passed_test_ids":  2,
+    "failed_test_ids":  0,
+    "blocked_test_ids":  0,
+    "accepted_jobs":  5,
+    "completed_jobs":  4,
+    "expected_malformed_failed_jobs":  1,
+    "http_transport":  "in-process ASGI with real production upload/job routers",
+    "redis_version":  "7.4.11",
+    "redis_loopback_port":  2062,
+    "image_id":  "sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+    "persistence":  "prepare verified CONFIG GET save empty and appendonly no",
+    "cleanup":  [
+                    "Only owned namespace keys deleted; no FLUSHDB/FLUSHALL",
+                    "Owned disposable container removed",
+                    "Temporary upload folder removed"
+                ],
+    "production_and_originals_unchanged":  true,
+    "phase2a_rerun":  false,
+    "performance_tests_run":  false,
+    "scope":  "Explicit worker startup; app.main startup/auth/webapp behavior not verified"
+}

@@ -1,0 +1,86 @@
+{
+  "test_id": "UT-002",
+  "objective": "Reject corrupted/unsupported workbook",
+  "scenario": "Corrupt XLSX bytes, unsupported text file, synthetic old-layout workbook and invalid marker",
+  "expected": "Structured InvalidWorkbook/MissingWorksheet/InvalidTemplate errors",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T06:25:50.626954+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut002_invalid_workbook",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [
+    {
+      "scenario": "test_ut002_invalid_workbook (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut002_invalid_workbook) (file='corrupt.xlsx')",
+      "status": "PASS"
+    },
+    {
+      "scenario": "test_ut002_invalid_workbook (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut002_invalid_workbook) (file='unsupported.txt')",
+      "status": "PASS"
+    }
+  ],
+  "duration_seconds": 0.356326,
+  "actual": [
+    {
+      "check": "corrupt.xlsx",
+      "expected": "InvalidWorkbook",
+      "actual": "InvalidWorkbook"
+    },
+    {
+      "check": "unsupported.txt",
+      "expected": "InvalidWorkbook",
+      "actual": "InvalidWorkbook"
+    },
+    {
+      "check": "wrong marker",
+      "expected": "InvalidTemplate",
+      "actual": {
+        "error_type": "InvalidTemplate",
+        "message": "Invalid template in sheet 'Direct CLO': Cell A1 did not match.",
+        "details": {
+          "sheet_name": "Direct CLO",
+          "cell": "A1",
+          "expected_value": "DIRECT CLO — PER-STUDENT RAW SCORES",
+          "found_value": "WRONG MARKER"
+        }
+      }
+    },
+    {
+      "check": "unsupported layout",
+      "expected": "MissingWorksheet",
+      "actual": {
+        "error_type": "MissingWorksheet",
+        "message": "Missing required worksheet: 'Direct CLO'.",
+        "details": {
+          "expected_sheet_name": "Direct CLO",
+          "available_sheets": [
+            "OLD DATABASE",
+            "Indirect CLO",
+            "SETUP"
+          ]
+        }
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T062548_769685Z/UT-002_result.txt"
+}

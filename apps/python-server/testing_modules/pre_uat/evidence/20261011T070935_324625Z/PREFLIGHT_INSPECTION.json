@@ -1,0 +1,24 @@
+{
+    "timestamp_utc":  "2026-10-11T07:10:00.2717915Z",
+    "context":  "desktop-linux",
+    "context_endpoint":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "harness_endpoint":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "engine_version":  "29.7.2",
+    "engine_os":  "linux",
+    "storage_driver":  "overlayfs",
+    "redis_tags_observed":  [
+                                "redis:alpine"
+                            ],
+    "cached_redis_image_short_id":  "978f0e01593e",
+    "required_image":  "redis:7-alpine",
+    "required_image_cached":  false,
+    "fully_qualified_required_reference":  "docker.io/library/redis:7-alpine",
+    "fully_qualified_inspect_result":  "No such image",
+    "prerequisite_exit_code":  2,
+    "integration_assertions_executed":  0,
+    "existing_containers_contacted":  false,
+    "new_containers_started":  0,
+    "image_pulled_or_retagged":  false,
+    "production_modified":  false,
+    "phase2a_rerun":  false
+}

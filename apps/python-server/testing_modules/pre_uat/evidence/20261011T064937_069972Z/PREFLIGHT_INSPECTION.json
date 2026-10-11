@@ -1,0 +1,34 @@
+{
+    "timestamp_utc":  "2026-10-11T06:51:00.5293028Z",
+    "commands":  [
+                     "Get-Command redis-server,docker,wsl",
+                     "docker context show",
+                     "docker context inspect --format {{.Endpoints.docker.Host}}",
+                     "docker --context desktop-linux info --format {{.ServerVersion}}",
+                     "docker --context desktop-linux image ls redis"
+                 ],
+    "native_redis_server_on_path":  false,
+    "docker_cli_available":  true,
+    "docker_context":  "desktop-linux",
+    "local_engine_endpoint":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "local_engine_available":  false,
+    "failure":  "Docker Desktop Linux engine named pipe is absent; local daemon cannot be reached",
+    "redis_image_cache":  "NOT VERIFIED because the local engine is unavailable",
+    "wsl":  "Ubuntu/docker-desktop distributions listed; no WSL Redis was contacted or substituted",
+    "application_configuration_loaded":  false,
+    "redis_service_connections":  0,
+    "containers_started":  0,
+    "uploads_submitted":  0,
+    "workers_started":  0,
+    "integration_assertions_executed":  0,
+    "production_inspection":  {
+                                  "queue":  "obelisk:\u003clowercased ENV\u003e:job_queue",
+                                  "job_key":  "obelisk:\u003cENV\u003e:job:\u003cUUID\u003e",
+                                  "redis_database":  "hardcoded db=0",
+                                  "queue_import":  "constructs Redis client and pings immediately",
+                                  "worker":  "BRPOP timeout 1 second in asyncio.to_thread; running then completed/failed",
+                                  "production_cleanup":  "No job TTL or automatic successful upload deletion in inspected queue/worker",
+                                  "failure_path":  "OBELISKError.to_dict stored in failed job, else generic UnexpectedError",
+                                  "upload":  "atomic UUID filename save then enqueue; 202 queued does not prove completion"
+                              }
+}

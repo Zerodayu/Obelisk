@@ -1,0 +1,18 @@
+﻿{
+    "phase":  "2B-2",
+    "executed_performance_ids":  0,
+    "counts":  {
+                   "PASS":  20,
+                   "SKIPPED":  1,
+                   "BLOCKED":  5
+               },
+    "prior_pass_count":  20,
+    "prior_pass_timestamps_and_evidence_preserved":  true,
+    "changed_protected_files":  [
+
+                                ],
+    "blocker":  "Owned HTTP ownership proof absent; graceful server isolation/shutdown proof absent. Server process terminated; owned Redis and temporary upload cleanup verified. Underlying startup cause not established by captured diagnostics.",
+    "workloads_submitted":  0,
+    "PT008":  "SKIPPED; explicitly not approved",
+    "no_retry_performed":  true
+}

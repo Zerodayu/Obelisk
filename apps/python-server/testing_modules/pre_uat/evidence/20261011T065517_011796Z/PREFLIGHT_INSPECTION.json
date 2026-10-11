@@ -1,0 +1,16 @@
+{
+    "timestamp_utc":  "2026-10-11T06:55:45.7326861Z",
+    "docker_host":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "docker_engine_version":  "29.7.2",
+    "docker_engine_available":  true,
+    "redis_image":  "redis:7-alpine",
+    "image_available_locally":  false,
+    "image_inspect_result":  "No such image: redis:7-alpine",
+    "image_pulled":  false,
+    "containers_started":  0,
+    "workers_started":  0,
+    "uploads_submitted":  0,
+    "integration_assertions_executed":  0,
+    "prerequisite_runner_exit_code":  2,
+    "phase2a_rerun":  false
+}

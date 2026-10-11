@@ -1,0 +1,12 @@
+﻿{
+    "timestamp_utc":  "2026-10-11T07:52:55.2905742Z",
+    "tracked_launcher_pid":  13620,
+    "server_reported_pid":  24656,
+    "remaining_tracked_processes":  [
+
+                                    ],
+    "both_processes_absent":  true,
+    "protected_source_hashes_unchanged":  true,
+    "diagnostic_retry_performed":  false,
+    "controlled_failure_path_executed":  false
+}

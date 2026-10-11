@@ -1,0 +1,11 @@
+{
+  "verified": false,
+  "network_violations": [],
+  "cleanup": [],
+  "phase": "2B-1",
+  "docker": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+  "docker_host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+  "image": "redis:7-alpine",
+  "docker_server_version": "29.7.2",
+  "originals_unchanged": true
+}

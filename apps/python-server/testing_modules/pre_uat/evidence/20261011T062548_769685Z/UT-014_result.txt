@@ -1,0 +1,63 @@
+{
+  "test_id": "UT-014",
+  "objective": "150 unique student-CLO records",
+  "scenario": "Designated synthetic 30 students x 5 CLOs",
+  "expected": "Exactly 30 IDs, five CLOs and 150 unique Cartesian pairs in extraction and transform; no duplicates",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T06:25:53.499619+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut014_uniqueness",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.167603,
+  "actual": [
+    {
+      "check": "raw",
+      "expected": {
+        "records": 150,
+        "unique_pairs": 150,
+        "duplicates": 0
+      },
+      "actual": {
+        "records": 150,
+        "unique_pairs": 150,
+        "duplicates": 0
+      }
+    },
+    {
+      "check": "transformed",
+      "expected": {
+        "records": 150,
+        "unique_pairs": 150,
+        "duplicates": 0
+      },
+      "actual": {
+        "records": 150,
+        "unique_pairs": 150,
+        "duplicates": 0
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T062548_769685Z/UT-014_result.txt"
+}

@@ -1,0 +1,22 @@
+{
+  "verified": true,
+  "network_violations": [],
+  "cleanup": [
+    "Only owned namespace keys deleted; no FLUSHDB/FLUSHALL",
+    "Owned disposable container removed",
+    "Temporary upload folder removed"
+  ],
+  "phase": "2B-1",
+  "docker": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+  "docker_host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+  "image": "redis:7-alpine",
+  "docker_server_version": "29.7.2",
+  "nonce": "3fa6838237df4355adc9cae8199b76fa",
+  "container": "obelisk-preuat-3fa6838237df4355adc9cae8199b76fa",
+  "image_id": "sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+  "redis_port": 2062,
+  "redis_run_id": "61fec145b8adb9768a4e9a4f9febe933f515449a",
+  "redis_version": "7.4.11",
+  "queue_prefix": "obelisk:preuat_3fa6838237df4355adc9cae8199b76fa:",
+  "originals_unchanged": true
+}

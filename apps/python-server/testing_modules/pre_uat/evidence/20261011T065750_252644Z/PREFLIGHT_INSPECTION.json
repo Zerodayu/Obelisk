@@ -1,0 +1,19 @@
+{
+    "timestamp_utc":  "2026-10-11T06:57:50.3148034Z",
+    "phase":  "2B-1 prerequisite recheck only",
+    "docker_host":  "npipe:////./pipe/dockerDesktopLinuxEngine",
+    "docker_engine_available":  true,
+    "docker_engine_version":  "29.7.2",
+    "image":  "redis:7-alpine",
+    "image_cached":  false,
+    "actual":  "Error response from daemon: No such image: redis:7-alpine",
+    "IT007":  "BLOCKED",
+    "IT009":  "BLOCKED",
+    "integration_assertions_executed":  0,
+    "harness_executed":  false,
+    "existing_redis_container_used":  false,
+    "containers_started":  0,
+    "production_changes":  0,
+    "phase2a_rerun":  false,
+    "performance_tests_run":  false
+}

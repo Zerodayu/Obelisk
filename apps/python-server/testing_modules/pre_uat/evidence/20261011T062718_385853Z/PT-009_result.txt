@@ -1,0 +1,34 @@
+{
+  "test_id": "PT-009",
+  "objective": "Analytics throughput/p95",
+  "scenario": "Outside selected run scope",
+  "expected": "Explicit approval/selection before execution",
+  "actual": "Phase 2B not authorized",
+  "status": "SKIPPED",
+  "executed": false,
+  "timestamp": "2026-10-11T06:27:25.903255+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "not executed",
+  "command": "not authorized",
+  "failures": [],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T062718_385853Z/PT-009_result.txt"
+}

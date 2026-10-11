@@ -1,0 +1,16 @@
+{
+  "verified": true,
+  "violations": [],
+  "probes": [
+    "network: blocked as expected",
+    "environment-file: blocked as expected",
+    "queue-import: blocked as expected"
+  ],
+  "asyncio_internal_socketpairs": 18,
+  "environment_loader": "not imported",
+  "redis": "imports/service network blocked",
+  "gemini": "Client denied unless explicitly mocked",
+  "synthetic_only": true,
+  "network_exception": "Zero-argument stdlib socketpair only: Windows asyncio internal wakeup pipe; no service endpoint",
+  "originals_unchanged": true
+}

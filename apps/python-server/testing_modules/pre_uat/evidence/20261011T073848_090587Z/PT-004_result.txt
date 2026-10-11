@@ -1,0 +1,66 @@
+{
+  "test_id": "PT-004",
+  "objective": "Concurrent upload acceptance and completed ETL throughput",
+  "scenario": "Approved bounded workload",
+  "expected": "Verified prerequisites before execution",
+  "actual": "Server shutdown/isolation proof missing or invalid",
+  "status": "BLOCKED",
+  "executed": false,
+  "timestamp": "2026-10-11T07:39:28.646758+00:00",
+  "environment": {
+    "phase": "2B-2",
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "configuration": {
+      "JOB_WORKER_COUNT": 4,
+      "JOB_QUEUE_MAXSIZE": 200,
+      "MAX_CONCURRENT_UPLOAD_WRITES": 5,
+      "UPLOAD_CHUNK_SIZE": 1048576,
+      "MAX_UPLOAD_SIZE": 10485760
+    },
+    "HTTP": "owned separate Uvicorn process; loopback TCP",
+    "Redis": "fresh owned labelled container",
+    "Gemini": "mocked; client construction and external sockets denied",
+    "database": "denied",
+    "request_timeout_seconds": 30,
+    "post_submission_drain_seconds": 120,
+    "resource_guard": "1 GiB minimum free RAM/disk; 1 GiB maximum owned Python working set",
+    "p95": "nearest rank: sorted[ceil(0.95*n)-1]",
+    "PT-008": "not approved; no execution path",
+    "packages": {
+      "uvicorn": "0.29.0",
+      "fastapi": "0.141.1",
+      "httpx": "0.28.1",
+      "redis": "8.1.0",
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "resource_preflight": {
+      "host_total_ram_bytes": 25573179392,
+      "host_free_ram_bytes": 5087256576,
+      "disk_free_bytes": 55215869952,
+      "logical_cpus": 12,
+      "processes": {
+        "19828": {
+          "working_set_bytes": 38707200,
+          "peak_working_set_bytes": 39075840,
+          "cpu_seconds": 0.359375
+        }
+      }
+    },
+    "cpu_preflight": {
+      "Name": "Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz",
+      "NumberOfCores": 6,
+      "NumberOfLogicalProcessors": 12,
+      "LoadPercentage": 28
+    }
+  },
+  "script_function": "testing_modules.performance_test.controlled_workloads.Workloads.pt004",
+  "failures": [
+    "Server shutdown/isolation proof missing or invalid"
+  ],
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2b2.py --approved-bounded-run",
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T073848_090587Z/PT-004_result.txt"
+}

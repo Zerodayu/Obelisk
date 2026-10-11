@@ -1,0 +1,61 @@
+[
+  {
+    "stage": "configuration_loaded",
+    "monotonic": 26752.1709585,
+    "pid": 24656
+  },
+  {
+    "stage": "temp_directory_cached_before_audit",
+    "monotonic": 26752.1728521,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "importing_offline_provider_sdk",
+    "monotonic": 26752.1733774,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "guards_installed",
+    "monotonic": 26753.1242931,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "redis_identity_verified",
+    "monotonic": 26753.3448883,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "importing_fastapi",
+    "monotonic": 26753.352514,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "importing_routes",
+    "monotonic": 26753.6125377,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "application_imports_complete",
+    "monotonic": 26754.3868396,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "entering_uvicorn",
+    "monotonic": 26754.6154768,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  },
+  {
+    "stage": "lifespan_startup",
+    "monotonic": 26754.6976932,
+    "pid": 24656,
+    "temp_directory_was_uninitialized": true
+  }
+]

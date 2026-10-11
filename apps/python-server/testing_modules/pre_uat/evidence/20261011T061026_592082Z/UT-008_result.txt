@@ -1,0 +1,156 @@
+{
+  "test_id": "UT-008",
+  "objective": "Validate AI recommendation response schema",
+  "scenario": "Valid JSON plus malformed JSON, missing summary, bad role/type, missing pattern, extra field",
+  "expected": "Valid response preserved; invalid schemas rejected by service or status=error",
+  "status": "FAIL",
+  "executed": true,
+  "timestamp": "2026-10-11T06:10:30.876020+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: malformed_json\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: missing_summary\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: bad_role\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: bad_type\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: missing_pattern\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: extra_field\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: bad_cardinality\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: bad_pattern\n",
+    "Traceback (most recent call last):\n  File \"D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\testing_modules\\unit_test\\test_pre_uat_unit.py\", line 213, in test_ut008_response_schema\n    self.assertEqual(response[\"status\"],\"error\",\"Invalid recommendation schema accepted: \"+scenario)\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: 'ok' != 'error'\n- ok\n+ error\n : Invalid recommendation schema accepted: blank_title\n"
+  ],
+  "subchecks": [
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='malformed_json')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='missing_summary')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='bad_role')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='bad_type')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='missing_pattern')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='extra_field')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='bad_cardinality')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='bad_pattern')",
+      "status": "FAIL"
+    },
+    {
+      "scenario": "test_ut008_response_schema (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut008_response_schema) (scenario='blank_title')",
+      "status": "FAIL"
+    }
+  ],
+  "duration_seconds": 0.11209,
+  "actual": [
+    {
+      "check": "malformed_json",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "not JSON"
+      }
+    },
+    {
+      "check": "missing_summary",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"recommendations\": [{\"title\": \"Review aligned evidence\", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": null}"
+      }
+    },
+    {
+      "check": "bad_role",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": \"Review aligned evidence\", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Automatic Approver\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": null}"
+      }
+    },
+    {
+      "check": "bad_type",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": 42, \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": null}"
+      }
+    },
+    {
+      "check": "missing_pattern",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": \"Review aligned evidence\", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}]}"
+      }
+    },
+    {
+      "check": "extra_field",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": \"Review aligned evidence\", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": null, \"automaticApproval\": true}"
+      }
+    },
+    {
+      "check": "bad_cardinality",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [], \"pattern\": null}"
+      }
+    },
+    {
+      "check": "bad_pattern",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": \"Review aligned evidence\", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": 123}"
+      }
+    },
+    {
+      "check": "blank_title",
+      "expected": "error status",
+      "actual": {
+        "status": "ok",
+        "recommendation": "{\"summary\": \"Review the measured CLO gaps.\", \"recommendations\": [{\"title\": \"   \", \"explanation\": \"Review the assessment rubric with the faculty.\", \"recommendedFor\": \"Faculty\"}, {\"title\": \"Discuss the next CQI cycle\", \"explanation\": \"Have a human review the evidence before deciding on action.\", \"recommendedFor\": \"Program Chair\"}], \"pattern\": null}"
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T061026_592082Z/UT-008_result.txt"
+}

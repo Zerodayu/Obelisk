@@ -1,0 +1,388 @@
+[
+  {
+    "event": "redis_connected"
+  },
+  {
+    "event": "upload_received"
+  },
+  {
+    "event": "upload_saved"
+  },
+  {
+    "event": "job_queued",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "upload_received"
+  },
+  {
+    "event": "upload_saved"
+  },
+  {
+    "event": "job_queued",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "worker_start",
+    "worker_id": 0
+  },
+  {
+    "event": "worker_start",
+    "worker_id": 1
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "worker_job_popped",
+    "worker_id": 0,
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "job_running",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504",
+    "worker_id": 0
+  },
+  {
+    "event": "extract_started"
+  },
+  {
+    "event": "worker_job_popped",
+    "worker_id": 1,
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "job_running",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b",
+    "worker_id": 1
+  },
+  {
+    "event": "extract_started"
+  },
+  {
+    "event": "dynamic_clos_discovered"
+  },
+  {
+    "event": "extract_completed"
+  },
+  {
+    "event": "transform_started"
+  },
+  {
+    "event": "transform_completed"
+  },
+  {
+    "event": "load_started"
+  },
+  {
+    "event": "dynamic_clos_discovered"
+  },
+  {
+    "event": "job_failed_structured",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b",
+    "error_type": "WorkbookValidationError"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "load_completed"
+  },
+  {
+    "event": "job_completed",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504",
+    "worker_id": 0
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "f4c1032c-70d6-45dc-946a-d5c7d8640504"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "5eeefa0c-98f7-4daa-abda-ee963740f33b"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "00000000-0000-0000-0000-000000000000"
+  },
+  {
+    "event": "worker_cancelled",
+    "worker_id": 0
+  },
+  {
+    "event": "worker_cancelled",
+    "worker_id": 1
+  },
+  {
+    "event": "upload_received"
+  },
+  {
+    "event": "upload_received"
+  },
+  {
+    "event": "upload_received"
+  },
+  {
+    "event": "upload_saved"
+  },
+  {
+    "event": "job_queued",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "upload_saved"
+  },
+  {
+    "event": "job_queued",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "upload_saved"
+  },
+  {
+    "event": "job_queued",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "worker_start",
+    "worker_id": 0
+  },
+  {
+    "event": "worker_start",
+    "worker_id": 1
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "worker_job_popped",
+    "worker_id": 0,
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "job_running",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f",
+    "worker_id": 0
+  },
+  {
+    "event": "extract_started"
+  },
+  {
+    "event": "worker_job_popped",
+    "worker_id": 1,
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "job_running",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882",
+    "worker_id": 1
+  },
+  {
+    "event": "extract_started"
+  },
+  {
+    "event": "dynamic_clos_discovered"
+  },
+  {
+    "event": "extract_completed"
+  },
+  {
+    "event": "transform_started"
+  },
+  {
+    "event": "transform_completed"
+  },
+  {
+    "event": "load_started"
+  },
+  {
+    "event": "dynamic_clos_discovered"
+  },
+  {
+    "event": "extract_completed"
+  },
+  {
+    "event": "transform_started"
+  },
+  {
+    "event": "transform_completed"
+  },
+  {
+    "event": "load_started"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "load_completed"
+  },
+  {
+    "event": "job_completed",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f",
+    "worker_id": 0
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "worker_job_popped",
+    "worker_id": 0,
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "job_running",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5",
+    "worker_id": 0
+  },
+  {
+    "event": "extract_started"
+  },
+  {
+    "event": "load_completed"
+  },
+  {
+    "event": "job_completed",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882",
+    "worker_id": 1
+  },
+  {
+    "event": "dynamic_clos_discovered"
+  },
+  {
+    "event": "extract_completed"
+  },
+  {
+    "event": "transform_started"
+  },
+  {
+    "event": "transform_completed"
+  },
+  {
+    "event": "load_started"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "load_completed"
+  },
+  {
+    "event": "job_completed",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5",
+    "worker_id": 0
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "526733db-7c4a-4ed0-b2d4-a1325347867f"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "71fb3938-8013-4cdb-a2c4-a8ac73869882"
+  },
+  {
+    "event": "api_get_job",
+    "job_id": "a4c30204-1754-4f8d-99c3-517448cccae5"
+  },
+  {
+    "event": "worker_cancelled",
+    "worker_id": 0
+  },
+  {
+    "event": "worker_cancelled",
+    "worker_id": 1
+  }
+]

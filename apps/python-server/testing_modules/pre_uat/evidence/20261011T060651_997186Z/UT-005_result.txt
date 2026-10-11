@@ -1,0 +1,79 @@
+{
+  "test_id": "UT-005",
+  "objective": "Independently verify 70/30 composite calculation",
+  "scenario": "Historical exact math/fallback/zero tests plus synthetic 80% direct, 90% indirect workbook",
+  "expected": "83.00 composite for every workbook record; missing/zero indirect distinguished",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-10-11T06:06:58.403813+00:00",
+  "environment": {
+    "python": "3.13.0",
+    "interpreter": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "cwd": "D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "git_head": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut005_composite",
+  "command": "& 'D:\\Jetbrains_IDE_Projects\\pycharm\\Obelisk_FINAL\\apps\\python-server\\.venv\\Scripts\\python.exe' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.128328,
+  "actual": [
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:test_composite_attainment.py::TestCompositeAttainmentPureMath.test_70_30_composite_calculation"
+    },
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:test_composite_attainment.py::TestCompositeAttainmentPureMath.test_fallback_when_indirect_is_none"
+    },
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:test_composite_attainment.py::TestCompositeAttainmentPureMath.test_indirect_zero_is_not_treated_as_missing"
+    },
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:test_etl_v2.py::TestIndirectAttainment.test_compute_indirect_clo_attainment_returns_expected_percentage"
+    },
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "1a8fb6dd41d1ef9c10fe5ab0f03e24af54a3ef93:test_composite_attainment.py::TestAunObeRealWorkbookIntegration.test_no_indirect_sheet_or_scores_fallback_in_transformer"
+    },
+    {
+      "check": "70/30 workbook",
+      "expected": 83.0,
+      "actual": [
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0,
+        83.0
+      ]
+    },
+    {
+      "check": "no direct evidence",
+      "expected": null,
+      "actual": null
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261011T060651_997186Z/UT-005_result.txt"
+}

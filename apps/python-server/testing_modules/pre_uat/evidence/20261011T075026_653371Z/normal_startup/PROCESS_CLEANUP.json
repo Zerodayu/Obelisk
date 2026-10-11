@@ -1,0 +1,49 @@
+{
+  "pid": 13620,
+  "cleanup_errors": [
+    {
+      "type": "FileNotFoundError",
+      "frames": [
+        {
+          "file": "performance_lifecycle.py",
+          "line": 100,
+          "function": "finish"
+        },
+        {
+          "file": "_local.py",
+          "line": 546,
+          "function": "read_text"
+        },
+        {
+          "file": "_abc.py",
+          "line": 632,
+          "function": "read_text"
+        },
+        {
+          "file": "_local.py",
+          "line": 537,
+          "function": "open"
+        }
+      ]
+    }
+  ],
+  "forced_termination": true,
+  "control_error": {
+    "type": "PrerequisiteBlocked",
+    "frames": [
+      {
+        "file": "performance_lifecycle.py",
+        "line": 85,
+        "function": "finish"
+      },
+      {
+        "file": "performance_lifecycle.py",
+        "line": 52,
+        "function": "control_proof"
+      }
+    ],
+    "reason": "Owned child control identity mismatch"
+  },
+  "exit_code": 0,
+  "process_exited": true
+}

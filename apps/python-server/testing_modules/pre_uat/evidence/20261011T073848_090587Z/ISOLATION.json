@@ -1,0 +1,27 @@
+{
+  "verified": true,
+  "network_violations": [],
+  "cleanup": [
+    "Only owned namespace keys deleted; no FLUSHDB/FLUSHALL",
+    "Owned disposable container removed",
+    "Temporary upload folder removed"
+  ],
+  "phase": "2B-2",
+  "api_port": 2422,
+  "docker": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+  "docker_host": "npipe:////./pipe/dockerDesktopLinuxEngine",
+  "image": "redis:7-alpine",
+  "docker_server_version": "29.7.2",
+  "nonce": "11a54ef3553d499ead234441ec109d6c",
+  "container": "obelisk-preuat-11a54ef3553d499ead234441ec109d6c",
+  "image_id": "sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+  "redis_port": 2423,
+  "redis_run_id": "2653401f9e913941d81f0c0eaca987e2db14ba67",
+  "redis_version": "7.4.11",
+  "queue_prefix": "obelisk:preuat_11a54ef3553d499ead234441ec109d6c:",
+  "server_pid": 19628,
+  "blocker": "Server shutdown/isolation proof missing or invalid",
+  "server_forced_termination": true,
+  "server_exit_code": 1,
+  "cleanup_error": "Server shutdown/isolation proof missing or invalid"
+}

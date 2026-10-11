@@ -1,0 +1,150 @@
+
+{
+    "comparison_timestamp_utc":  "2026-10-11T06:39:51.9958651Z",
+    "baseline_run":  "20261011T062718_385853Z",
+    "current_run":  "20261011T063734_111127Z",
+    "checks":  [
+                   {
+                       "test_id":  "UT-001",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-001_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-001_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-002",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-002_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-002_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-003",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-003_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-003_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-005",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-005_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-005_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-006",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-006_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-006_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-007",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-007_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-007_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-008",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-008_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-008_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-009",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-009_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-009_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-010",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-010_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-010_result.txt"
+                   },
+                   {
+                       "test_id":  "UT-014",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/UT-014_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/UT-014_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-001",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-001_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-001_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-002",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-002_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-002_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-003",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-003_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-003_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-004",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-004_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-004_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-005",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-005_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-005_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-006",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-006_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-006_result.txt"
+                   },
+                   {
+                       "test_id":  "ST-AI-007",
+                       "baseline_status":  "PASS",
+                       "current_status":  "PASS",
+                       "actual_evidence_equal":  true,
+                       "baseline_evidence":  "testing_modules/pre_uat/evidence/20261011T062718_385853Z/ST-AI-007_result.txt",
+                       "current_evidence":  "testing_modules/pre_uat/evidence/20261011T063734_111127Z/ST-AI-007_result.txt"
+                   }
+               ],
+    "changed_application_files_since_baseline":  [
+                                                     "app/core/exceptions.py",
+                                                     "app/etl/extract/extractor.py"
+                                                 ],
+    "original_scripts_identical_to_baseline":  11,
+    "limitation":  "Comparison covers saved synthetic outputs and deterministic mock observations. No original real workbook, live provider, API lifecycle or persistence was executed."
+}
