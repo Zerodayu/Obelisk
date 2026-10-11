@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	assertCanCaptureClassRecords,
+	assertCanReadAtRiskFlags,
 	CLASS_RECORD_ROLES,
 	CLUSTER_CONFIRM_ROLES,
 	FEATURE_ACCESS,
@@ -62,5 +63,29 @@ describe("feature role gates (lib/role-access)", () => {
 
 	it("names cluster confirm for aqau/system_admin", () => {
 		expect(CLUSTER_CONFIRM_ROLES).toEqual(["aqau", "system_admin"]);
+	});
+
+	it("gates the AI drawer to aqau/vpaa/system_admin and the at-risk watchlist to its union", () => {
+		expect(FEATURE_ACCESS.viewAiInsights).toEqual([
+			"aqau",
+			"vpaa",
+			"system_admin",
+		]);
+		for (const role of ["aqau", "vpaa", "system_admin"]) {
+			expect(() => assertCanReadAtRiskFlags(role)).not.toThrow();
+		}
+		// NOTE: faculty/chair keep the action-taken watchlist picker; dean and
+		// the onboarding role stay out of both the table and the drawer.
+		for (const role of ["faculty", "program_chair"]) {
+			expect(() => assertCanReadAtRiskFlags(role)).not.toThrow();
+		}
+		for (const role of ["dean", "user"]) {
+			expect(() => assertCanReadAtRiskFlags(role)).toThrow(
+				RoleAccessForbiddenError,
+			);
+		}
+		expect(() => assertCanReadAtRiskFlags(undefined)).toThrow(
+			RoleAccessForbiddenError,
+		);
 	});
 });

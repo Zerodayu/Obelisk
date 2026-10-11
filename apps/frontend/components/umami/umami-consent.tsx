@@ -79,20 +79,14 @@ export function UmamiConsentDrawer() {
 					</DrawerDescription>
 				</DrawerHeader>
 				<DrawerFooter>
-					<div className="bg-chart-5/30 flex flex-col gap-2 rounded-4xl p-4">
-						<Button className="w-full" onClick={handleAccept}>
-							Accept
+					<Button className="w-full" onClick={handleAccept}>
+						Accept
+					</Button>
+					<DrawerClose>
+						<Button variant="ghost" className="w-full" onClick={handleDecline}>
+							Decline
 						</Button>
-						<DrawerClose>
-							<Button
-								variant="ghost"
-								className="w-full"
-								onClick={handleDecline}
-							>
-								Decline
-							</Button>
-						</DrawerClose>
-					</div>
+					</DrawerClose>
 				</DrawerFooter>
 			</DrawerContent>
 		</Drawer>

@@ -37,9 +37,16 @@ export interface AtRiskFlagRow {
 		studentNumber: string;
 		firstName: string;
 		lastName: string;
+		/** Grouping key for the AI drawer's by-program table. */
+		program: { name: string };
 	};
 	cloAttainment: {
 		classSectionId: string | null;
+		/** Course §section context — null when the flag has no attainment. */
+		classSection: {
+			sectionCode: string;
+			course: { code: string };
+		} | null;
 		clo: { code: string };
 	} | null;
 }
