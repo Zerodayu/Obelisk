@@ -1,130 +1,81 @@
 "use client";
 
-import Script from "next/script";
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
 	Drawer,
-	DrawerClose,
 	DrawerContent,
 	DrawerDescription,
-	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
 
-const CONSENT_KEY = "umami-consent";
+/* NOTE: there is no consent API for the tracker — the browser (or an extension)
+ * simply blocks it, so consent is read off the script's outcome, never stored */
+type TrackerState = "pending" | "granted" | "blocked";
+
+const domain = process.env.NEXT_PUBLIC_UMAMI_DOMAIN;
+const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
 
 export function UmamiConsentDrawer() {
-	const [open, setOpen] = useState(false);
-	const [consentGiven, setConsentGiven] = useState(false);
+	const [tracker, setTracker] = useState<TrackerState>("pending");
 
 	useEffect(() => {
-		const stored = localStorage.getItem(CONSENT_KEY);
-		if (stored === "granted") {
-			setConsentGiven(true);
-			loadUmamiScript();
-		} else {
-			// Show drawer if not explicitly granted (including "denied" or no value)
-			setOpen(true);
-		}
-	}, []);
-
-	const loadUmamiScript = () => {
-		const domain = process.env.NEXT_PUBLIC_UMAMI_DOMAIN;
-		const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
 		if (!domain || !websiteId) return;
 
-		if (document.querySelector(`script[data-umami-loaded]`)) return;
+		let state: TrackerState = "pending";
 
-		const script = document.createElement("script");
-		script.src = `https://${domain}/script.js`;
-		script.dataset.websiteId = websiteId;
-		script.dataset.umamiLoaded = "true";
-		script.async = true;
-		document.head.appendChild(script);
-	};
+		const load = () => {
+			const script = document.createElement("script");
+			script.src = `https://${domain}/script.js`;
+			script.dataset.websiteId = websiteId;
+			script.dataset.umamiLoaded = "true";
+			script.async = true;
+			script.onload = () => {
+				state = "granted";
+				setTracker("granted");
+			};
+			script.onerror = () => {
+				state = "blocked";
+				setTracker("blocked");
+			};
+			document.head.appendChild(script);
+		};
 
-	const handleAccept = () => {
-		localStorage.setItem(CONSENT_KEY, "granted");
-		setOpen(false);
-		setConsentGiven(true);
-		loadUmamiScript();
-	};
+		load();
 
-	const handleDecline = () => {
-		// Don't store "denied" - just close drawer, will show again on next page load
-		setOpen(false);
-		// Don't set consentGiven - so it shows again on next visit
-	};
+		// NOTE: retry on return so a user who allows the blocked request in their browser gets it on the spot
+		const onVisible = () => {
+			if (document.visibilityState !== "visible" || state !== "blocked") return;
+			document.querySelector("script[data-umami-loaded]")?.remove();
+			load();
+		};
+		document.addEventListener("visibilitychange", onVisible);
 
-	if (consentGiven) return null;
+		return () => {
+			document.removeEventListener("visibilitychange", onVisible);
+			// NOTE: the root layout never unmounts, but this keeps StrictMode's double-mount down to one tag
+			document.querySelector("script[data-umami-loaded]")?.remove();
+		};
+	}, []);
+
+	if (tracker !== "blocked") return null;
 
 	return (
-		<Drawer
-			open={open}
-			onOpenChange={setOpen}
-			showSwipeHandle
-			disablePointerDismissal
-		>
+		<Drawer open showSwipeHandle disablePointerDismissal>
 			<DrawerContent>
 				<DrawerHeader className="py-6">
-					<DrawerTitle>We value your privacy</DrawerTitle>
+					<DrawerTitle>Analytics is blocked</DrawerTitle>
 					<DrawerDescription>
 						<blockquote>
-							helps us improve your experience. No personal data is collected.
-							We use Umami to understand how you interact with our platform.
+							Your browser is blocking Umami, our privacy-friendly analytics.
+							Nothing personal is collected and every feature still works —
+							allow it for this site in your browser settings only if you'd like
+							to help us improve the platform.
 						</blockquote>
 					</DrawerDescription>
 				</DrawerHeader>
-				<DrawerFooter>
-					<Button className="w-full" onClick={handleAccept}>
-						Accept
-					</Button>
-					<DrawerClose>
-						<Button variant="ghost" className="w-full" onClick={handleDecline}>
-							Decline
-						</Button>
-					</DrawerClose>
-				</DrawerFooter>
 			</DrawerContent>
 		</Drawer>
 	);
-}
-
-export function UmamiTracker() {
-	const domain = process.env.NEXT_PUBLIC_UMAMI_DOMAIN;
-	const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
-
-	if (!domain || !websiteId) return null;
-
-	// Only auto-load if consent was already granted
-	const stored =
-		typeof window !== "undefined"
-			? localStorage.getItem(CONSENT_KEY)
-			: "granted";
-
-	if (stored === "granted") {
-		return (
-			<Script
-				src={`https://${domain}/script.js`}
-				strategy="afterInteractive"
-				data-website-id={websiteId}
-			/>
-		);
-	}
-
-	return null;
-}
-
-export function resetUmamiConsent() {
-	if (typeof window !== "undefined") {
-		localStorage.removeItem(CONSENT_KEY);
-		// Remove Umami script if present
-		const script = document.querySelector("script[data-umami-loaded]");
-		if (script) script.remove();
-		// Reload to re-show banner
-		window.location.reload();
-	}
 }

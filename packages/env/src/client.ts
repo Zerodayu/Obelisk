@@ -27,7 +27,7 @@ const envSchema = z.object({
   DEV_SESSION_ENABLED: z.string().optional(),
   NEXT_PUBLIC_API_URL: z.string().min(1),
   // NOTE: `.optional()` alone, not `.min(1)` — local-mode builds pass a
-  // set-but-empty key/ID and UmamiTracker treats "" like absent
+  // set-but-empty key/ID and the umami tracker treats "" like absent
   NEXT_PUBLIC_UMAMI_DOMAIN: z.string().optional(),
   NEXT_PUBLIC_UMAMI_WEBSITE_ID: z.string().optional(),
   API_INTERNAL_URL: z.string().optional(),
