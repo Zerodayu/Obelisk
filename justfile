@@ -235,6 +235,11 @@ test-unit:
 test-integration:
     @just _bun apps/backend test:integration
 
+# unit test coverage table (bun builtin — add `test/integration` to the args for the full-suite number, needs `just db-up` and wipes obelisk_dev)
+[group('quality')]
+coverage:
+    cd apps/backend && bun run test -- --coverage '--coverage-include=src/**' test/unit
+
 # run all quality checks
 [group('quality')]
 check: lint typecheck test
