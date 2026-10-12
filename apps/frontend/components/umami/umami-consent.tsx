@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import {
 	Drawer,
 	DrawerContent,
 	DrawerDescription,
+	DrawerFooter,
 	DrawerHeader,
 	DrawerTitle,
 } from "@/components/ui/drawer";
@@ -14,20 +16,21 @@ import {
  * simply blocks it, so consent is read off the script's outcome, never stored */
 type TrackerState = "pending" | "granted" | "blocked";
 
-const domain = process.env.NEXT_PUBLIC_UMAMI_DOMAIN;
 const websiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
 
 export function UmamiConsentDrawer() {
 	const [tracker, setTracker] = useState<TrackerState>("pending");
+	const [dismissed, setDismissed] = useState(false);
 
 	useEffect(() => {
-		if (!domain || !websiteId) return;
+		if (!websiteId) return;
 
 		let state: TrackerState = "pending";
 
 		const load = () => {
 			const script = document.createElement("script");
-			script.src = `https://${domain}/script.js`;
+			// NOTE: first-party path — umami derives its /umami/api/send endpoint from the script's own directory
+			script.src = "/umami/script.js";
 			script.dataset.websiteId = websiteId;
 			script.dataset.umamiLoaded = "true";
 			script.async = true;
@@ -59,10 +62,14 @@ export function UmamiConsentDrawer() {
 		};
 	}, []);
 
-	if (tracker !== "blocked") return null;
+	if (tracker !== "blocked" || dismissed) return null;
+
+	/* NOTE: the browser never prompts for a tracker script, so the drawer is the only
+	 * say the user gets — dismissing it is per page load, nothing is stored */
+	const dismiss = () => setDismissed(true);
 
 	return (
-		<Drawer open showSwipeHandle disablePointerDismissal>
+		<Drawer open onOpenChange={(open) => !open && dismiss()} showSwipeHandle>
 			<DrawerContent>
 				<DrawerHeader className="py-6">
 					<DrawerTitle>Analytics is blocked</DrawerTitle>
@@ -75,6 +82,11 @@ export function UmamiConsentDrawer() {
 						</blockquote>
 					</DrawerDescription>
 				</DrawerHeader>
+				<DrawerFooter>
+					<Button variant="ghost" className="w-full" onClick={dismiss}>
+						Continue
+					</Button>
+				</DrawerFooter>
 			</DrawerContent>
 		</Drawer>
 	);
