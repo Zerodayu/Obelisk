@@ -1,0 +1,19 @@
+baseline DB counts before any upload in this run:
+computationRun=0
+cloAttainment=0
+atRiskFlag=0
+uploadRecord=0
+### IT-006 — 2026-10-12T02:13:23Z
+$ (a) upload to a classSectionId that does not exist
+expected: 404 ClassSectionNotFoundError, no record written
+{"error":"ClassSection with ID '00000000-0000-4000-8000-000000000000' not found. Sections must exist before uploading class records."}
+HTTP 404
+### IT-006 — 2026-10-12T02:13:23Z
+$ (b) upload a garbage (non-xlsx) file to the real section
+expected: job fails with a clear structured error; zero attainment rows committed
+upload response: {"jobId":"7d5af46b-9fd0-40da-9665-3f69754c51c0"}
+final job status: {"status":"failed","error":{"error_type":"InvalidWorkbook","message":"Invalid workbook: Could not open or read 'uploads/ef93d6f939c048cda1f4d801281326c3.xlsx'.","details":{"file_path":"uploads/ef93d6f939c048cda1f4d801281326c3.xlsx","reason":"File is not a zip file"}}}
+DB counts after invalid uploads:
+computationRun=0
+cloAttainment=0
+atRiskFlag=0

@@ -1,0 +1,55 @@
+### ST-NF-005 — 2026-10-12T02:13:41Z
+$ vpaa GET /audit/logs — latest entries after the approval chain
+expected: entries identify actor, action, timestamp
+parse fail: Expecting value: line 1 column 1 (char 0)
+### ST-NF-005 — 2026-10-12T02:25:07Z
+$ vpaa GET /audit/logs — entries after the completed approval chain
+expected: actor, action, timestamp on every approval
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+### ST-NF-005 — 2026-10-12T02:35:25Z
+$ vpaa GET /audit/logs — parse {entries[].actor} shape
+expected: actor, action, timestamp on every entry
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+  File "/usr/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+### ST-NF-005 — 2026-10-12T02:54:07Z
+$ vpaa GET /audit/logs — actor/action/timestamp per entry
+expected: every entry identifies actor, action, timestamp
+2026-10-12T02:54:06.710Z | form_submission.submitted | forms | target: 53c2216a-025b-4dc9-a4dd-2738641844f2 | actor: program_chair@jmcfi.edu.ph (program_chair)
+2026-10-12T02:54:06.619Z | form_submission.updated | forms | target: 53c2216a-025b-4dc9-a4dd-2738641844f2 | actor: program_chair@jmcfi.edu.ph (program_chair)
+2026-10-12T02:25:07.519Z | form_submission.updated | forms | target: 53c2216a-025b-4dc9-a4dd-2738641844f2 | actor: program_chair@jmcfi.edu.ph (program_chair)
+2026-10-12T02:25:07.408Z | form_submission.created | forms | target: 53c2216a-025b-4dc9-a4dd-2738641844f2 | actor: program_chair@jmcfi.edu.ph (program_chair)
+2026-10-12T02:25:06.314Z | form_submission.approved | forms | target: 6d63736f-9748-4248-8223-e223517d3114 | actor: vpaa@jmcfi.edu.ph (vpaa)
+2026-10-12T02:25:05.732Z | form_submission.approved | forms | target: 6d63736f-9748-4248-8223-e223517d3114 | actor: aqau@jmcfi.edu.ph (aqau)
+2026-10-12T02:25:05.134Z | form_submission.approved | forms | target: 6d63736f-9748-4248-8223-e223517d3114 | actor: dean@jmcfi.edu.ph (dean)
+2026-10-12T02:25:04.481Z | form_submission.approved | forms | target: 6d63736f-9748-4248-8223-e223517d3114 | actor: program_chair@jmcfi.edu.ph (program_chair)
+2026-10-12T02:25:03.727Z | plo_attainment_summary.generated | rollup | target: 11c03c8c-00b9-48f2-9d2b-10da887762e2 | actor: dean@jmcfi.edu.ph (dean)
+2026-10-12T02:13:39.293Z | form_submission.submitted | forms | target: 6d63736f-9748-4248-8223-e223517d3114 | actor: faculty@jmcfi.edu.ph (faculty)

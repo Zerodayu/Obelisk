@@ -1,0 +1,1 @@
+STATS PT-003 concurrent logins x15 (correct credentials) {"n":15,"avg":1965.9,"p50":1986.2,"p95":2249.7,"max":2249.7,"errorPct":0,"statuses":{"200":15}}

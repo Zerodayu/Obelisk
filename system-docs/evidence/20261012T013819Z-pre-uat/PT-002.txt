@@ -1,0 +1,2 @@
+warmup done (1 load, not counted)
+STATS PT-002 dashboard 10 concurrent (dev-mode SSR) {"n":10,"avg":1163.1,"p50":1162.5,"p95":1171.7,"max":1171.7,"errorPct":0,"statuses":{"200":10}}

@@ -1,0 +1,5 @@
+ETL queue->ready: 5362 ms; ready->saved: 1153 ms; end-to-end: 6515 ms
+STATS PT-005 upload end-to-end (accept->ETL ready->saved) {"n":3,"avg":10596.9,"p50":10731.4,"p95":10771.6,"max":10771.6,"errorPct":0,"statuses":{"200":3}}
+  breakdown: ETL 9370 ms, save 1361 ms, total 10731 ms
+  breakdown: ETL 9470 ms, save 1301 ms, total 10772 ms
+  breakdown: ETL 9016 ms, save 1271 ms, total 10288 ms

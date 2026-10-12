@@ -1,0 +1,23 @@
+### IT-004 — 2026-10-12T02:13:33Z
+$ dean POST /rollup/plo-attainment-summary/generate
+expected: F15 PLO values equal the unweighted mean of mapped CLO section means (Formula 7A)
+HTTP 200
+payload keys: ['programId', 'termId', 'computationRunId', 'formSubmissionId', 'generatedAt', 'program', 'term', 'feed', 'summary', 'plos']
+plos: [{"ploCode": "PLO1", "ploDescription": "Apply knowledge of computing, science and mathematics appropriate to the discipline.", "targetAttainmentPct": 70, "attainedPct": 80.31, "achieved": true, "studentsBelowTargetCount": 4, "completenessPct": 100, "rule3Met": true, "mappedClos": [{"cloCode": "CLO1", "meanAttainmentPct": 80.31, "rule1Met": true}]}]
+expected per-PLO (SQL: avg of mapped CLO section means):
+PLO1|80.31
+### IT-004 — 2026-10-12T02:25:03Z
+$ dean POST /rollup/plo-attainment-summary/generate — with all 5 CLO->PLO maps
+expected: 5 PLO rows, each equal to its mapped CLO section mean (Formula 7A)
+HTTP 200
+PLO1: attained=80.31 target=70 achieved=True mapped=[CLO1=80.31]
+PLO2: attained=79.58 target=70 achieved=True mapped=[CLO2=79.58]
+PLO3: attained=80.87 target=70 achieved=True mapped=[CLO3=80.87]
+PLO4: attained=77.53 target=70 achieved=True mapped=[CLO4=77.53]
+PLO5: attained=83.77 target=70 achieved=True mapped=[CLO5=83.77]
+expected per-PLO (SQL: mean of mapped CLO section means):
+PLO1|80.31
+PLO2|79.58
+PLO3|80.87
+PLO4|77.53
+PLO5|83.77

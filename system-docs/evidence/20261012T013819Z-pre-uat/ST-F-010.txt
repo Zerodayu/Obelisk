@@ -1,0 +1,19 @@
+### ST-F-010 — 2026-10-12T02:13:41Z
+$ invalid and incomplete submissions are rejected with clear errors
+expected: 4xx + readable error message; nothing saved
+PUT /forms/{approved CAR} with formData of the wrong type -> 429  (expect 422)
+-- action_taken submit gate:
+init: rate-limit reached
+### ST-F-010 — 2026-10-12T02:25:07Z
+$ invalid and incomplete submissions are rejected with clear errors (retry)
+expected: 4xx + readable error message; nothing saved
+PUT /forms/{CAR} with formData of the wrong type -> 409  (expect 422)
+(cross-unit upload/generate rejection is covered by test/integration/unit-scoping.test.ts — all seeded accounts share one program, so a live foreign-section case needs a synthetic second unit)
+init: {"id":"53c2216a-025b-4dc9-a4dd-2738641844f2"}
+PUT empty selection+note -> HTTP 200
+submit empty action_taken -> HTTP 409  (expect 400 submit-gate)
+### ST-F-010 — 2026-10-12T02:35:25Z
+$ resubmit the empty action_taken draft — the gate's message and status
+expected: clear blocking message; submission stays unsubmitted
+POST /forms/{action_taken}/submit (empty) -> {"error":"Action-Taken blocked: select at least one at-risk student before submitting."} | HTTP 409
+submission state after blocked submit: draft

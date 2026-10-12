@@ -1,0 +1,341 @@
+⟐ injected env (16) from ../../.env.local
+bun test v1.4.2 (744846f84)
+
+test/unit/ai.compute.test.ts:
+(pass) buildSubmission > enriches the snapshot with department and program [0.21ms]
+(pass) buildSubmission > falls back to DB values when the header omits course/section [0.09ms]
+(pass) buildSubmission > treats a malformed clo_plo_mapping as empty [0.12ms]
+(pass) buildSubmission > prefers the DB mapping passed in the meta over the snapshot copy [0.10ms]
+(pass) buildSubmission > falls back to the snapshot mapping when the meta carries none [0.06ms]
+(pass) hasAnalyzableSnapshot > accepts snapshots with attainment rows [0.08ms]
+(pass) hasAnalyzableSnapshot > rejects null, non-arrays, and empty attainment lists [0.06ms]
+(pass) worstFromAnalyticsSummary > maps python rows and converts 0-1 fractions to percent points [0.87ms]
+(pass) worstFromAnalyticsSummary > skips malformed rows and tolerates a missing list [0.12ms]
+(pass) worstFromStoredSummary > round-trips rows written as compact JSON [0.37ms]
+(pass) worstFromStoredSummary > returns no gaps for plain-text or malformed stored summaries [0.23ms]
+(pass) toRecommendationPayload > projects a stored row into the client payload [1.38ms]
+(pass) toRecommendationPayload > nulls the period when the snapshot has none [0.14ms]
+(pass) toRecommendationPayload > reads the alignment block back out of the snapshot [0.18ms]
+(pass) withAlignment > attaches Bloom's / I-P-D / assessments to each mapping entry [0.56ms]
+(pass) withAlignment > leaves the mapping untouched when the section has no alignment [0.18ms]
+(pass) withAlignment > emits a context row for an aligned CLO that has no PLO mapping [0.28ms]
+(pass) buildSectionAlignment > seeds I-P-D from CloToPloMap and lets saved Part 1 win [0.71ms]
+(pass) buildSectionAlignment > drops entries that carry no signal [0.16ms]
+(pass) buildSectionAlignment > tolerates a submission with no saved formData [0.10ms]
+
+test/unit/approval-routes.test.ts:
+(pass) approval routes registry > covers every stable form code [0.09ms]
+(pass) approval routes registry > registers only valid roles in every route [0.90ms]
+(pass) approval routes registry > ends every chain at the VPAA (contiguous ladder from its entry role) [0.27ms]
+(pass) approval routes registry > never lets the VPAA prepare a submission [0.18ms]
+(pass) approval routes registry > falls back to the full canonical chain for unknown codes [0.05ms]
+(pass) approval routes registry > materializes steps with 1-based sequence numbers [0.06ms]
+(pass) approval routes registry > keeps the manual's entry point and climbs to the VPAA [0.07ms]
+(pass) workflow authorization > lets only the step's role decide (admin overrides) [0.21ms]
+(pass) workflow authorization > never lets the owner approve their own submission [0.15ms]
+(pass) workflow authorization > requires owner + preparer role to submit [0.27ms]
+(pass) workflow authorization > restricts archiving to vpaa/system_admin [0.19ms]
+(pass) workflow authorization > lets faculty and program chairs prepare class records [0.04ms]
+
+test/unit/attainment.test.ts:
+(pass) attainment validators > exposes the canonical 70% hard floor and 70/30 weights [0.05ms]
+(pass) attainment validators > flags anything below 70% as below threshold [0.19ms]
+(pass) attainment validators > assertMinAttainment passes at or above the floor [0.15ms]
+(pass) attainment validators > assertMinAttainment throws below the floor [0.25ms]
+(pass) attainment validators > computes the direct x 0.70 + indirect x 0.30 composite [0.46ms]
+(pass) attainment validators > falls back to direct when indirect is omitted or null [0.07ms]
+(pass) attainment validators > preserves an indirect score of zero [0.03ms]
+(pass) computeEditedAttainment (per-student score edits) > uses the direct score when indirect is absent and flags below 70 [0.23ms]
+(pass) computeEditedAttainment (per-student score edits) > preserves indirect data when computing an edited composite [0.06ms]
+(pass) computeEditedAttainment (per-student score edits) > clears the below-threshold flag at or above 70 [0.07ms]
+(pass) computeEditedAttainment (per-student score edits) > rounds composite to two decimals [0.10ms]
+(pass) reconcileAtRisk > creates a flag when below threshold and none exists [0.15ms]
+(pass) reconcileAtRisk > prunes a stale flag when the score recovers to >= 70 [0.17ms]
+(pass) reconcileAtRisk > is a no-op when state already matches [0.19ms]
+
+test/unit/car.compute.test.ts:
+(pass) meanPct > returns the rounded mean of non-null values [0.28ms]
+(pass) meanPct > ignores nulls and empty entries [0.05ms]
+(pass) meanPct > returns null when no non-null values exist [0.08ms]
+(pass) cloLevel > uses the 4-tier boundary constants [0.10ms]
+(pass) cloLevel > classifies each band inclusively [0.13ms]
+(pass) categoryMeans > averages each assessment category across rows [0.32ms]
+(pass) categoryMeans > returns null for wholly absent categories [0.08ms]
+(pass) aggregateClo > computes category means and a composite weighted average [0.29ms]
+(pass) aggregateClo > flags below-benchmark when the mean composite < 70 [0.20ms]
+(pass) aggregateClo > treats all-null composite as 0 and below-benchmark [0.16ms]
+(pass) groupByCohort > groups rows by year level, collapsing nulls into one bucket [0.34ms]
+
+test/unit/check-save-schema.test.ts:
+(pass) check save schemas accept null for nullable fields > F12 clo_perception_survey: divergenceNotes nullable [59.70ms]
+(pass) check save schemas accept null for nullable fields > F17 student_exit_survey: notes/themes nullable [16.79ms]
+(pass) check save schemas accept null for nullable fields > F15 exhibition_feedback: qualitativeFeedback nullable [13.18ms]
+(pass) check save schemas accept null for nullable fields > F19 capstone_panel_evaluation: declaration/flag nullable [13.58ms]
+
+test/unit/cqi.compute.test.ts:
+(pass) computeCohortAttainment > averages composites per PLO cohort and sorts cohorts null-last [0.60ms]
+(pass) computeCohortAttainment > computes the program average from the cohort means [0.09ms]
+(pass) computeCohortAttainment > sorts PLO summaries by code [4.09ms]
+(pass) computeCohortAttainment > drops students with no composite instead of fabricating a 0 cohort [0.32ms]
+(pass) ploStatus > is all_met when every cohort clears the 70% floor [0.17ms]
+(pass) ploStatus > is not_met when no cohort clears the floor [0.08ms]
+(pass) ploStatus > is partial for a mix of met and not-met cohorts [0.20ms]
+(pass) ploStatus > is not_met with no observed cohorts [0.17ms]
+(pass) ploStatus > uses < 70 as the boundary in both directions [0.21ms]
+(pass) computeGapCandidates > emits exactly one candidate per NOT-MET PLO-cohort combo [0.59ms]
+(pass) computeGapCandidates > carries the PLO identity onto each candidate [0.27ms]
+(pass) computeGapCandidates > emits no candidate when every cohort clears the floor [0.14ms]
+(pass) computeLoopStatus > is closed only when all five conditions are met [0.28ms]
+(pass) computeLoopStatus > stays open when any single condition is unmet [0.13ms]
+(pass) computeLoopStatus > is open_not_implemented when the intervention was not implemented [0.13ms]
+(pass) computeLoopStatus > is open_not_implemented when no intervention description exists [0.18ms]
+(pass) computeLoopStatus > is open_reassess when implemented but conditions not fully met [0.08ms]
+(pass) computeDashboardStatus > marks MET / NOT MET against the 70% benchmark [0.22ms]
+(pass) computeDashboardStatus > is null for missing values [0.31ms]
+
+test/unit/csv.test.ts:
+(pass) detectDelimiter > prefers comma when both present [0.09ms]
+(pass) detectDelimiter > detects tab-separated headers [0.07ms]
+(pass) detectDelimiter > falls back to comma for single-cell headers [0.03ms]
+(pass) parseCsv > parses comma-separated rows [0.42ms]
+(pass) parseCsv > auto-detects and parses tab-separated input [0.12ms]
+(pass) parseCsv > handles quoted fields containing the delimiter and quotes [0.11ms]
+(pass) parseCsv > handles CRLF line endings [0.05ms]
+(pass) parseCsv > skips blank lines [0.06ms]
+(pass) parseCsv > returns [] for empty or whitespace-only input [0.05ms]
+(pass) csvCell > trims and collapses blank cells to undefined [0.08ms]
+(pass) csvPercent > parses 0–100 scale values [0.11ms]
+(pass) csvPercent > normalizes 0–1 fraction values (ETL output style) [0.05ms]
+(pass) csvPercent > rejects out-of-range and non-numeric cells [0.06ms]
+
+test/unit/form-meta.test.ts:
+(pass) form metadata registry > returns metadata for every registered form code [0.38ms]
+(pass) form metadata registry > derives retention from the shared validator, not a copy [0.36ms]
+(pass) form metadata registry > mirrors the canonical approval route as the responsible party [0.30ms]
+(pass) form metadata registry > carries a deadline for exactly the forms that state one [0.30ms]
+(pass) form metadata registry > falls back to the default route for an unregistered code [0.15ms]
+
+test/unit/form-tags-sync.test.ts:
+(pass) form-tags registry > mirrors the backend tag map on the frontend [0.03ms]
+(pass) form-tags registry > tags every registered stable form code [0.08ms]
+(pass) form-tags registry > makes only Setup and Record approval-free [0.19ms]
+
+test/unit/forms-state-machine.test.ts:
+(pass) submission state machine > has the canonical approval chain and status transitions [0.06ms]
+(pass) submission state machine > allows only legal transitions [0.10ms]
+(pass) submission state machine > assertTransition throws on illegal moves [0.16ms]
+(pass) submission state machine > treats draft and returned as editable [0.16ms]
+(pass) submission state machine > accepts a strictly ascending approval chain [0.07ms]
+(pass) submission state machine > allows skipping intermediate roles but rejects reordering [0.10ms]
+(pass) submission state machine > resolves the first pending role by lowest sequence number [0.10ms]
+
+test/unit/ingest.test.ts:
+(pass) parseStudentName > parses comma-separated `Last, First` names [0.20ms]
+(pass) parseStudentName > parses `First Last` names [0.08ms]
+(pass) parseStudentName > trims surrounding whitespace in comma form [0.05ms]
+(pass) parseStudentName > returns an empty firstName when only a lastName is provided [0.05ms]
+(pass) parseStudentName > handles a single-name record with an empty firstName [0.04ms]
+(pass) normalizeName > lowercases and strips punctuation for loose matching [0.14ms]
+(pass) normalizeName > removes whitespace entirely [0.07ms]
+(pass) normalizeName > matches identical normalized names regardless of case [0.04ms]
+
+test/unit/justification.test.ts:
+(pass) carJustification > reads Part 1 alignment into rows and prose notes [0.44ms]
+(pass) carJustification > spells each I-P-D stage out instead of showing a bare letter [0.33ms]
+(pass) carJustification > says what is missing and where to record it, not just empty columns [0.12ms]
+(pass) carJustification > flattens Part 2 into assessment-evidence rows under the form's labels [0.11ms]
+(pass) carJustification > stays empty on a payload that has not been filled in yet [0.06ms]
+(pass) curriculumJustification > counts cells per stage and reports PLOs with no D-stage course [0.37ms]
+(pass) curriculumJustification > omits the coverage warning when every PLO reaches stage D [0.09ms]
+(pass) resolveJustification > returns details fallback for a form code with no registered resolver [0.30ms]
+(pass) resolveJustification > returns whatever the registered resolver produced [0.21ms]
+[Forms] Justification resolver failed for 'test_justification_throws': 217 | 		expect(justification?.rows[0]?.bloomsLevel).toBe("Create");
+218 | 	});
+219 | 
+220 | 	it("degrades to null when a resolver throws", async () => {
+221 | 		registerJustification("test_justification_throws", async () => {
+222 | 			throw new Error("no computation run");
+               ^
+error: no computation run
+      at <anonymous> (/home/zerodayu/Projects/Obelisk/apps/backend/test/unit/justification.test.ts:222:10)
+      at resolveJustification (/home/zerodayu/Projects/Obelisk/apps/backend/lib/forms/justification.ts:90:17)
+      at <anonymous> (/home/zerodayu/Projects/Obelisk/apps/backend/test/unit/justification.test.ts:226:10)
+
+(pass) resolveJustification > degrades to null when a resolver throws [0.54ms]
+
+test/unit/plan-plo-role.test.ts:
+(pass) PLO management role guard > lets the dean manage PLOs [0.16ms]
+(pass) PLO management role guard > rejects every other role [0.22ms]
+
+test/unit/plan.compute.test.ts:
+(pass) coverageCheck > marks a PLO covered only when at least one cell has stage D [0.26ms]
+(pass) coverageCheck > keeps coverage true once any course reaches stage D [0.16ms]
+(pass) coverageCheck > returns an empty map with no courses [0.06ms]
+(pass) programPloAverages > averages each year-level column across PLO rows [0.22ms]
+(pass) programPloAverages > rounds to 2 decimal places and treats missing cells as zero [0.07ms]
+(pass) programPloAverages > returns no averages without rows [0.04ms]
+(pass) assertPloTargetsValid > accepts targets at exactly the 70% floor [0.31ms]
+(pass) assertPloTargetsValid > rejects targets below the 70% hard floor [0.43ms]
+(pass) assertPloTargetsValid > requires a rationale when a target exceeds the floor [0.36ms]
+(pass) assertPloTargetsValid > treats whitespace-only rationale as missing [0.13ms]
+(pass) assertPloTargetsValid > passes above-floor targets backed by a rationale [0.07ms]
+(pass) budgetTotals > sums estimated and approved costs across line items [0.13ms]
+(pass) budgetTotals > returns zeros for an empty breakdown [0.04ms]
+
+test/unit/retention.test.ts:
+(pass) retention validators > exposes the two retention classes [0.03ms]
+(pass) retention validators > maps longitudinal/audit forms to Permanent [0.09ms]
+(pass) retention validators > defaults everything else to 5 years [0.05ms]
+
+test/unit/role-access-sync.test.ts:
+(pass) frontend role-access mirror > declares the same feature allow-lists as the backend [0.11ms]
+(pass) frontend role-access mirror > mirrors every form code's preparers and chain [0.42ms]
+(pass) frontend role-access mirror > keeps approveForms equal to the canonical chain + admin override [0.26ms]
+(pass) frontend role-access mirror > keeps the mirror import-free so any runtime can load it [0.59ms]
+(pass) frontend role-access mirror > gates the class-record upload screen to faculty + system_admin [0.33ms]
+
+test/unit/role-request.test.ts:
+(pass) role request validation > exposes exactly the self-selectable roles [0.03ms]
+(pass) role request validation > accepts a first request from a plain `user` account [0.15ms]
+(pass) role request validation > accepts re-filing after a denial [0.04ms]
+(pass) role request validation > rejects a request from an account that already holds a role [0.03ms]
+(pass) role request validation > rejects a duplicate request while one is pending [0.03ms]
+(pass) role request validation > rejects a request from an approved account [0.03ms]
+(pass) role request validation > rejects a non-self-selectable role [0.04ms]
+(pass) role request scope rules > requires a program (and only a program) for faculty/program_chair [0.11ms]
+(pass) role request scope rules > requires a department (and only a department) for dean [0.05ms]
+(pass) role request scope rules > rejects any scope on the institution-wide roles [0.14ms]
+(pass) role request scope rules > derives the scope kind from the requested role [0.20ms]
+(pass) requested-scope mirror > keeps the frontend selects in sync with backend enforcement [0.03ms]
+(pass) requested-scope mirror > only scopes self-selectable roles [0.07ms]
+
+test/unit/root-cause.test.ts:
+(pass) root-cause validators > exposes the 6 canonical categories in order [0.04ms]
+(pass) root-cause validators > validates known categories [0.09ms]
+(pass) root-cause validators > rejects unknown categories [0.03ms]
+(pass) root-cause validators > asserts a valid category and throws otherwise [0.14ms]
+
+test/unit/section-verifier.test.ts:
+(pass) section-verifier: helpers > extractSchoolYear extracts year pairs from various formats [0.27ms]
+(pass) section-verifier: helpers > normalizeSemester standardizes semester indicators [0.36ms]
+(pass) section-verifier: compareSectionToWorkbook > returns match when section and program match exactly with extraction ok [0.76ms]
+(pass) section-verifier: compareSectionToWorkbook > matches regardless of casing and whitespace differences [0.20ms]
+(pass) section-verifier: compareSectionToWorkbook > returns mismatch when section code differs [0.14ms]
+(pass) section-verifier: compareSectionToWorkbook > returns mismatch when program differs (section.program vs course.program.code) [0.12ms]
+(pass) section-verifier: compareSectionToWorkbook > does NOT mismatch when setup.program differs but section.program matches [0.23ms]
+(pass) section-verifier: compareSectionToWorkbook > returns unverified and records warning for each extraction failure status [0.37ms]
+(pass) section-verifier: compareSectionToWorkbook > emits warnings only for course code differences without causing mismatch [0.32ms]
+(pass) section-verifier: compareSectionToWorkbook > emits warnings only for term / semester differences without causing mismatch [0.13ms]
+(pass) section-verifier: compareSectionToWorkbook > handles null / undefined loaded fields safely [0.09ms]
+
+test/unit/systemic-trigger.test.ts:
+(pass) findSystemicTriggers > requires 3 consecutive NOT-MET cycles (the manual's trigger) [0.77ms]
+(pass) findSystemicTriggers > does not trigger when a cycle in the middle recovered [0.14ms]
+(pass) findSystemicTriggers > does not trigger on fewer than 3 cycles of data [0.08ms]
+(pass) findSystemicTriggers > reports the full run length for 4+ consecutive failures [0.11ms]
+(pass) findSystemicTriggers > keeps only the newest snapshot per cycle and skips empty ones [0.11ms]
+(pass) findSystemicTriggers > breaks a PLO's run when an older snapshot lacks that PLO [0.10ms]
+(pass) findSystemicTriggers > evaluates each PLO independently [0.10ms]
+(pass) findSystemicTriggers > returns an empty report for no snapshots at all [0.08ms]
+
+test/unit/platform-stats.test.ts:
+(pass) platform statistics role gate > names the allow-list [0.05ms]
+(pass) platform statistics role gate > lets the system admin through [0.10ms]
+(pass) platform statistics role gate > rejects every other role, including the institution-wide QA roles [0.24ms]
+
+test/unit/rollup.compute.test.ts:
+(pass) cohortMeanPct > returns the rounded mean of row attainments [0.24ms]
+(pass) cohortMeanPct > returns null when there are no rows [0.04ms]
+(pass) trendBetween > derives the direction between the prior and latest term averages [0.07ms]
+(pass) trendBetween > is FLAT when either average is missing [0.03ms]
+(pass) attainmentStatus > flags below the 70% floor [0.03ms]
+(pass) cohortCqiTriggered > triggers CQI when any row misses the floor [0.11ms]
+(pass) scoreBandOf > bands a composite score on the 10-point rubric floors [0.14ms]
+(pass) scoreBandOf > exposes exactly the four bands, highest first [0.03ms]
+(pass) buildCohortLines > groups entries by year level and orders terms chronologically [0.70ms]
+(pass) buildCohortLines > computes per-term averages and a line trend across the last two terms [0.17ms]
+(pass) buildCohortLines > flags CQI when the latest term has a missed CLO, trend flat when a single term [0.11ms]
+(pass) buildCohortLines > sorts null year levels first and collapses them like any cohort [0.09ms]
+(pass) buildCohortLines > per-cohort PLO rows > leaves terms with an empty plos list when none are passed [0.09ms]
+(pass) buildCohortLines > per-cohort PLO rows > attaches PLO rows to the matching year/term and sorts them numerically [0.40ms]
+(pass) buildCohortLines > per-cohort PLO rows > drops PLO rows for a cohort/term that has no CLO rows [0.16ms]
+
+test/unit/unit-scope.test.ts:
+(pass) scopeCaller > defaults every missing field instead of widening [0.20ms]
+(pass) scopeCaller > keeps session-derived unit fields verbatim [0.29ms]
+(pass) unitScopeOf > scopes faculty and program_chair to their program [0.25ms]
+(pass) unitScopeOf > scopes a dean to its department [0.14ms]
+(pass) unitScopeOf > leaves institution-wide roles unscoped (onboarding `user` included) [0.28ms]
+(pass) unitScopeOf > fails closed when a scoped role has no unit on file [0.11ms]
+(pass) unitScopeOf > fails closed for unknown roles and for no caller at all [0.09ms]
+(pass) unitScopeOf > never widens because a unit field claims to be institution-wide [0.06ms]
+(pass) requested scope ↔ enforced unit > enforces exactly the unit onboarding told the account to file [0.14ms]
+(pass) requested scope ↔ enforced unit > keeps the frontend onboarding selects in sync too [0.03ms]
+(pass) unitCacheKey > gives every unit a distinct fragment [0.24ms]
+(pass) unitCacheKey > separates an unauthenticated caller from every unit [0.07ms]
+(pass) submissionUnitWhere > is unrestricted for institution-wide roles [0.10ms]
+(pass) submissionUnitWhere > includes own rows plus the unit (and unit-bound section fallbacks) [0.12ms]
+(pass) submissionUnitWhere > narrows a unit-less scoped caller to its own rows only [0.04ms]
+(pass) reference / entity where-builders > unscopable lists return nothing for a unit-less caller [0.54ms]
+(pass) reference / entity where-builders > programs: program → itself, department → its programs [0.18ms]
+(pass) reference / entity where-builders > departments: program → the carrier department, department → itself [0.16ms]
+(pass) reference / entity where-builders > class sections follow the course's program (own → taught sections) [0.13ms]
+(pass) reference / entity where-builders > students: unit program/department, own → enrolled in own sections [0.11ms]
+(pass) reference / entity where-builders > CLO attainment covers the section's program and the student's program [0.14ms]
+(pass) reference / entity where-builders > at-risk flags follow the flagged student's program [0.12ms]
+(pass) reference / entity where-builders > AI recommendations: institution-wide rows stay institution-only [0.07ms]
+(pass) reference / entity where-builders > upload records hang off a class section for every scoped caller [0.09ms]
+(pass) UnitScopeError > is a 403 the global handler maps once [0.23ms]
+(pass) clusterUnitWhere > scopes a cluster to the caller's program or department [0.73ms]
+(pass) clusterUnitWhere > scopes compiled entries through their cluster [0.23ms]
+
+test/unit/role-access.test.ts:
+(pass) feature role gates (lib/role-access) > restricts class-record capture to faculty/program_chair/system_admin [0.41ms]
+(pass) feature role gates (lib/role-access) > restricts archiving (and the archive screens) to vpaa/system_admin [0.12ms]
+(pass) feature role gates (lib/role-access) > keeps PLO management dean-only — no system_admin bypass [0.20ms]
+(pass) feature role gates (lib/role-access) > restricts role-request management to system_admin [0.25ms]
+(pass) feature role gates (lib/role-access) > names cluster confirm for aqau/system_admin [0.07ms]
+(pass) feature role gates (lib/role-access) > gates the AI drawer to aqau/vpaa/system_admin and the at-risk watchlist to its union [0.33ms]
+-----------------------------------------------------|---------|---------|-------------------
+File                                                 | % Funcs | % Lines | Uncovered Line #s
+-----------------------------------------------------|---------|---------|-------------------
+All files                                            |   91.33 |   96.44 |
+ lib/forms/approval-routes.ts                        |  100.00 |  100.00 | 
+ lib/forms/form-meta.ts                              |  100.00 |  100.00 | 
+ lib/forms/form-tags.ts                              |  100.00 |  100.00 | 
+ lib/forms/justification.ts                          |  100.00 |  100.00 | 
+ lib/forms/state-machine.ts                          |  100.00 |  100.00 | 
+ lib/forms/systemic-trigger.ts                       |  100.00 |  100.00 | 
+ lib/ingest/csv.ts                                   |  100.00 |   98.28 | 65
+ lib/ingest/name-utils.ts                            |  100.00 |  100.00 | 
+ lib/ingest/score-edit.ts                            |  100.00 |  100.00 | 
+ lib/prisma.ts                                       |  100.00 |  100.00 | 
+ lib/role-access.ts                                  |   83.33 |   89.36 | 126-130
+ lib/unit-scope.ts                                   |   73.08 |   75.16 | 411-425,430-441,450-454,464-477,486-494,499-516,529-534
+ lib/validators/attainment.ts                        |  100.00 |  100.00 | 
+ lib/validators/retention.ts                         |  100.00 |  100.00 | 
+ lib/validators/root-cause.ts                        |  100.00 |  100.00 | 
+ prisma/generated/prisma/client.ts                   |  100.00 |  100.00 | 
+ prisma/generated/prisma/enums.ts                    |  100.00 |  100.00 | 
+ prisma/generated/prisma/internal/class.ts           |   25.00 |   85.71 | 41-43,50-51
+ prisma/generated/prisma/internal/prismaNamespace.ts |  100.00 |  100.00 | 
+ src/v1/ai/compute.ts                                |  100.00 |  100.00 | 
+ src/v1/auth/model.ts                                |   80.00 |   96.43 | 144-146
+ src/v1/car/compute.ts                               |  100.00 |  100.00 | 
+ src/v1/check/model.ts                               |  100.00 |  100.00 | 
+ src/v1/cqi/compute.ts                               |  100.00 |  100.00 | 
+ src/v1/ingest/section-verifier.ts                   |  100.00 |   97.03 | 109-111
+ src/v1/plan/compute.ts                              |  100.00 |  100.00 | 
+ src/v1/rollup/compute.ts                            |  100.00 |   99.02 | 193
+ utils/env.ts                                        |  100.00 |  100.00 | 
+ ../frontend/lib/form-tags.ts                        |  100.00 |  100.00 | 
+ ../frontend/lib/role-access.ts                      |   40.00 |   96.15 | 277-281,286,337
+ ../frontend/lib/roles.ts                            |   12.50 |   45.45 | 50-52,68-69,77-82,103-111,136-141,147,152-154
+ ../../packages/env/src/generated/runtime-env.ts     |  100.00 |  100.00 | 
+ ../../packages/env/src/server.ts                    |  100.00 |  100.00 | 
+-----------------------------------------------------|---------|---------|-------------------
+
+ 236 pass
+ 0 fail
+ 1309 expect() calls
+Ran 236 tests across 24 files. [831.00ms]

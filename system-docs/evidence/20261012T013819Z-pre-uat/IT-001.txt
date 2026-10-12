@@ -1,0 +1,6 @@
+### IT-001 — 2026-10-12T02:13:24Z
+$ faculty POST /ingest/upload with the real template workbook
+expected: 200 + a job id
+{"jobId":"18dec5da-2e7b-44fb-a739-db977e2c6c6c"}
+HTTP 200
+jobId=18dec5da-2e7b-44fb-a739-db977e2c6c6c

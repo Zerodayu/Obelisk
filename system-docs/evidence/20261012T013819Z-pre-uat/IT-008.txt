@@ -1,0 +1,25 @@
+### IT-008 — 2026-10-12T02:13:38Z
+$ CAR submission 6d63736f-9748-4248-8223-e223517d3114: wrong-role approvals, then the full chain
+expected: off-turn/foreign-role decides are refused; each valid approve advances currentApproverRole
+draft status: 
+wrong-role attempts:
+dean approves own dean step while chair pending -> 409  (expect 409)
+faculty1 (faculty role, not owner) submits     -> 403  (expect 403)
+faculty1 approves chair step                   -> 403  (expect 403)
+submit -> approve sequence:
+faculty submit -> HTTP 200 ; now: 
+program_chair approve/program_chair -> HTTP 429 ; now: 
+dean approve/dean -> HTTP 429 ; now: 
+aqau approve/aqau -> HTTP 429 ; now: 
+vpaa approve/vpaa -> HTTP 429 ; now: 
+### IT-008 — 2026-10-12T02:25:04Z
+$ resume: wrong-role checks while chair pending, then chair->dean->aqau->vpaa
+expected: off-turn/foreign-role refused; each approve advances currentApproverRole
+state now: submitted / program_chair
+dean approves own dean step while chair pending -> 409  (expect 409)
+vpaa approves while chair pending               -> 409  (expect 409)
+faculty1 (not owner) returns the form          -> 422  (expect 403)
+program_chair approve/program_chair -> HTTP 200 ; now: submitted / dean
+dean approve/dean -> HTTP 200 ; now: submitted / aqau
+aqau approve/aqau -> HTTP 200 ; now: submitted / vpaa
+vpaa approve/vpaa -> HTTP 200 ; now: approved / -

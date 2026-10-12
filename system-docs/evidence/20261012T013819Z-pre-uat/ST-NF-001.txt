@@ -1,0 +1,21 @@
+### ST-NF-001 — 2026-10-12T02:13:22Z
+$ Role x endpoint authorization matrix (backend)
+expected: 401 without session, 403 for roles outside the feature allow-list
+-- no cookie:
+GET  /forms         -> 401
+POST /ingest/upload -> 422
+-- faculty:
+POST /ai/recommendation/generate (vpaa/admin only) -> 403
+GET  /audit/logs    (vpaa/admin only) -> 200
+GET  /reports/exports (system_admin only) -> 403
+-- dean:
+POST /ingest/upload (faculty/chair/admin only) -> 422
+-- user (no duties):
+GET  /forms         -> 200
+-- system_admin (allowed contrast):
+GET  /reports/exports -> 200
+GET  /audit/logs      -> 200
+### ST-NF-001 — 2026-10-12T02:35:25Z
+$ dean POST /ingest/upload with a valid multipart body (role gate, not schema)
+expected: 403 ClassRecordForbidden — earlier 422 was body validation running before the role gate
+dean upload with real file -> 403

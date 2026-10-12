@@ -1,0 +1,11 @@
+### ST-F-001 — 2026-10-12T02:13:38Z
+$ GET /auth/me for every seeded role account
+expected: correct role + email per account (dashboard feature visibility is browser-side)
+faculty: faculty@jmcfi.edu.ph | role: faculty
+faculty1: faculty1@jmcfi.edu.ph | role: faculty
+program_chair: program_chair@jmcfi.edu.ph | role: program_chair
+dean: dean@jmcfi.edu.ph | role: dean
+aqau: aqau@jmcfi.edu.ph | role: aqau
+vpaa: vpaa@jmcfi.edu.ph | role: vpaa
+system_admin: system_admin@jmcfi.edu.ph | role: system_admin
+user: user@jmcfi.edu.ph | role: user
