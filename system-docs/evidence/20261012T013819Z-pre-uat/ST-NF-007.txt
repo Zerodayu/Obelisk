@@ -1,0 +1,21 @@
+### ST-NF-007 — 2026-10-12 (manual, no automation)
+$ desktop / tablet / mobile usability check across supported browsers
+
+browser + version   device class   resolution        pages checked          result
+Zen Browser        desktop        1920x1080         login/dash/F13/F15     usable, no issues
+Zen Browser        tablet         1280x800          login/dash/F13/F15     usable, no issues
+Brave              desktop        1920x1080         login/dash/F13/F15     usable, no issues
+Brave              tablet         1280x800          login/dash/F13/F15     usable, no issues
+Zen Browser        mobile         ~390x844 (CSS)    login/dash/F13/F15     functional but hard to navigate
+Brave              mobile         ~390x844 (CSS)    login/dash/F13/F15     functional but hard to navigate
+
+— mobile observations (both browsers):
+  * all functionality still works — login, dashboards, CAR (F13), PLO report (F15) all render and respond
+  * dense data tables overflow the small viewport, requiring horizontal scrolling to read CLO/PLO values
+  * multi-field forms are cramped on a small screen; fields and action buttons are hard to reach and operate
+  * overall navigation through the system feels difficult on mobile due to the data-heavy nature of
+    the interface (tables, charts, forms) — the layout is not optimized for small screens
+
+OBSERVATION: interface is usable and readable on desktop and tablet in both Zen Browser and Brave.
+Mobile is functional but not recommended for real use — the table/form-heavy layout makes navigation
+and data entry difficult on small screens. Desktop (or tablet) recommended for UAT and production use.

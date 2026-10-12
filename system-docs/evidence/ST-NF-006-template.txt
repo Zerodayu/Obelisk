@@ -1,0 +1,33 @@
+### ST-NF-006 — <YYYY-MM-DD>Z (manual UAT, first-time users — no developer assistance)
+$ first-time faculty user completes core tasks unaided
+
+participants: <N> users (<role/pseudonym e.g. faculty-A; none had seen the system before)
+env: desktop, <browser + version>, 1920x1080, <URL>
+credentials provided: <how the tester got their login — e.g. seeded account handed on a card>
+
+instructions given to tester: <one line, e.g. "log in, upload the sample workbook,
+open your CAR, and submit it — ask me if stuck, but try first">
+
+task                        user-A   user-B   user-C
+sign in                     <ok/h>   <ok/h>   <ok/h>
+upload workbook             <ok/h>   <ok/h>   <ok/h>
+open CAR (F13)              <ok/h>   <ok/h>   <ok/h>
+submit CAR                  <ok/h>   <ok/h>   <ok/h>
+
+  ok = completed unaided; h = needed a hint (note where, below); f = failed
+
+hints / assistance requested:
+  user-A: <e.g. "did not find the upload button on first look — pointed to the sidebar; or none">
+  user-B: <>
+  user-C: <>
+
+difficulties & confusion observed:
+  <e.g. "unsure which file to upload", "did not realize submit requires action-taken first", ...>
+  <or "none observed">
+
+time per user: <e.g. 6-9 min unaided>
+tester feedback (own words, optional): <short quote or "none">
+
+OBSERVATION: core task flow (login -> upload -> CAR -> submit) completable by <N>/<N> users
+<without/with minor> assistance. Coverage is partial (N=<N>; tasks limited to <list>) —
+re-verify with the full UAT participant set before treating this as final.
