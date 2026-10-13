@@ -18,6 +18,11 @@
 		reverse_proxy backend:8080
 	}
 
+	# NOTE: first-party tracker proxy — same origin as the app, past hostname-based blockers; handle_path strips /umami
+	handle_path /umami/* {
+		reverse_proxy umami:3000
+	}
+
 	# NOTE: first match wins — keep this catch-all handle last
 	handle {
 		reverse_proxy frontend:3000

@@ -7,11 +7,11 @@ import "./globals.css";
 import { Theme } from "@/components/theme";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { UmamiConsentDrawer } from "@/components/umami/umami-consent";
 import { StoreProvider } from "@/lib/store";
 import { THEME_STORAGE_KEY } from "@/lib/theme-constants";
 import { cn } from "@/lib/utils";
 import { app } from "@/utils/app-info";
-import { UmamiConsentDrawer, UmamiTracker } from "@/components/umami/umami-consent";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -125,7 +125,6 @@ export default function RootLayout({
 				<StoreProvider>
 					<TooltipProvider>
 						<body className="flex min-h-full flex-col">
-							<UmamiTracker />
 							<UmamiConsentDrawer />
 							<Toaster />
 							{children}

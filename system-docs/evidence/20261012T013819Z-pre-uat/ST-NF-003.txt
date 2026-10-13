@@ -1,0 +1,53 @@
+### ST-NF-003 — 2026-10-12T02:13:41Z
+$ malicious text through a real user-text field (approval comment)
+expected: stored verbatim and safe (parameterised queries; React escapes on render); no execution
+submission: 
+return with payload -> HTTP 429
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    d = json.load(sys.stdin)
+  File "/usr/lib/python3.14/json/__init__.py", line 298, in load
+    return loads(fp.read(),
+        cls=cls, object_hook=object_hook,
+        parse_float=parse_float, parse_int=parse_int,
+        parse_constant=parse_constant, object_pairs_hook=object_pairs_hook, **kw)
+  File "/usr/lib/python3.14/json/__init__.py", line 352, in loads
+    return _default_decoder.decode(s)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 345, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/json/decoder.py", line 363, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+user table still exists: 13 rows
+GET /forms?scope=mine&status=<injected> -> 429
+### ST-NF-003 — 2026-10-12T02:25:07Z
+$ malicious text through a real user-text field (approval comment) — retry
+expected: stored verbatim and safe (parameterised queries; React escapes on render); no execution
+submission: 6d63736f-9748-4248-8223-e223517d3114
+return with payload -> HTTP 422
+user table still exists: 13 rows
+GET /forms?scope=mine&status=<injected> -> 422  (expect 200/422, no crash)
+### ST-NF-003 — 2026-10-12T02:35:25Z
+$ malicious text through the return-comment field (correct request shape)
+expected: stored verbatim and safe; no execution, no SQL effect
+submission: 6d63736f-9748-4248-8223-e223517d3114
+return with payload -> HTTP 409
+status: approved
+user table intact: 13 rows; audit_log intact: 11 rows
+### ST-NF-003 — 2026-10-12T02:54:06Z
+$ XSS payload through a real submitted form's return comment
+expected: comment stored verbatim, no execution, no SQL effect
+PUT valid action_taken (2 students + note) -> 200
+chair submit -> 200 ; state: submitted / program_chair
+dean return with XSS payload -> 409
+status: submitted
+user table intact: 13 rows; audit_log rows: 13
+FINDING (2026-10-12): the same reuse blocks a second CAR pass in one term (see IT-003 note); the XSS check therefore ran on a live action_taken submission instead.
+
+— corrected: return by the PENDING step's role (program_chair), same payload:
+return -> 200
+status: returned
+stored comment (verbatim, unescaped): '<script>alert(\'xss-preuat\')</script>"><img src=x onerror=alert(1)>\'; DROP TABLE "User";--'
+user table intact: 13 rows; audit_log rows: 14

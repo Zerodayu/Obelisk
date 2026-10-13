@@ -1,0 +1,18 @@
+### IT-003 — 2026-10-12T02:13:32Z
+$ faculty POST /car/generate — CAR built from stored attainment
+expected: CAR parts assembled; P3 CLO rows equal stored per-CLO means
+part1.course: null
+part1.noEnrolled: None noCompleted: None
+part3 keys: []
+### IT-003 — 2026-10-12T02:25:00Z
+$ faculty POST /car/generate — CAR built from stored attainment (re-check with correct payload parsing)
+expected: part3 CLO rows equal stored per-CLO means (SQL), P1 header filled
+part1: {'courseCode': 'IT 101', 'sectionCode': '1A', 'programCode': 'BSIT', 'schoolYear': '2026-2027', 'semester': '1st Semester', 'noEnrolled': 30, 'noCompleted': 30, 'term': None, 'yearLevel': 1, 'facultyName': 'Sample: Prof. Juan Dela Cruz'}
+part3 rows: [('CLO1', 80.31, 'Proficient', 'MET'), ('CLO2', 79.58, 'Proficient', 'MET'), ('CLO3', 80.87, 'Proficient', 'MET'), ('CLO4', 77.53, 'Proficient', 'MET'), ('CLO5', 83.77, 'Proficient', 'MET')]
+stored per-CLO means (SQL):
+CLO1|80.31
+CLO2|79.58
+CLO3|80.87
+CLO4|77.53
+CLO5|83.77
+FINDING (2026-10-12): after a CAR is approved, POST /car/generate returns the APPROVED submission instead of opening a fresh draft — the section has exactly one CAR row despite 3 post-approval generate calls. compare clo_raw_data's ensureDraft, which does create a fresh draft once the old one is approved/archived.

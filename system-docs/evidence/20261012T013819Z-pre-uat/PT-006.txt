@@ -1,0 +1,4 @@
+generate #1: 4818 ms, HTTP 200, body: {"recommendation":{"id":"0a2a2137-d08a-4330-8d25-8a260ce23894","generatedAt":"2026-10-12T02:52:11.546Z","status":"pending_review","period":{"type":"semester","l
+generate #2: 4164 ms, HTTP 200, body: {"recommendation":{"id":"340d32a4-eaf9-417b-ac8c-e4ee3ad6cbbe","generatedAt":"2026-10-12T02:52:15.711Z","status":"pending_review","period":{"type":"semester","l
+generate #3: 4229 ms, HTTP 200, body: {"recommendation":{"id":"f0794bfe-2b6c-4473-a5c5-d2367290c273","generatedAt":"2026-10-12T02:52:19.975Z","status":"pending_review","period":{"type":"semester","l
+STATS PT-006 AI recommendation generation x3 {"n":3,"avg":4403.7,"p50":4228.6,"p95":4818,"max":4818,"errorPct":0,"statuses":{"200":3}}

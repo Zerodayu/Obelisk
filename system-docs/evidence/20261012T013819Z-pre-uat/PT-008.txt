@@ -1,0 +1,3 @@
+burst wall time: 1021 ms for 120 concurrent
+STATS PT-008 burst x120 concurrent {"n":120,"avg":830,"p50":983.2,"p95":1016.3,"max":1018.1,"errorPct":17.5,"statuses":{"200":99,"429":21}}
+post-burst probe: HTTP 429; retry-after=898 (window is 100 req / 15 min, so recovery is window-slide based)

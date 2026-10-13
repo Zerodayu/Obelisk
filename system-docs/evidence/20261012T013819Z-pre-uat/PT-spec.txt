@@ -1,0 +1,11 @@
+### PT-server-spec — 2026-10-12T02:51:42Z
+7.2.6-1-cachyos
+Architecture:                            x86_64
+CPU(s):                                  4
+Model name:                              Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
+Thread(s) per core:                      2
+Core(s) per socket:                      2
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       6.2Gi       604Mi       648Mi       2.1Gi       1.4Gi
+frontend: next dev (development-mode SSR, warm), backend: bun --watch (dev), ETL: uvicorn (IS_DEBUG_MODE placeholder AI path)
+rate limit: 100 requests / 15 min (src/index.ts), measured per window after backend restart

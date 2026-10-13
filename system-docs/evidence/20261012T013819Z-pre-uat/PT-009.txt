@@ -1,0 +1,1 @@
+STATS PT-009 dashboard/analytics API sequential x20 {"n":20,"avg":38.6,"p50":16.6,"p95":49.5,"max":391.7,"errorPct":0,"statuses":{"200":20}}

@@ -1,0 +1,115 @@
+$ dotenvx run -f ../../.env.local -- bun test/helpers/run-tests.ts -- test/integration
+⟐ injected env (16) from ../../.env.local
+bun test v1.4.2 (744846f84)
+
+test/integration/ai.test.ts:
+Created new student: Juan Cruz from record name "Cruz, Juan"
+Created new student: Maria Dela Peña from record name "Dela Peña, Maria"
+(pass) AI recommendation generation (integration) > generates and persists a recommendation from stored snapshots [395.47ms]
+(pass) AI recommendation generation (integration) > returns null when no recommendation has been generated [37.97ms]
+(pass) AI recommendation generation (integration) > throws AiNoDataError for a term without class records [96.08ms]
+(pass) AI recommendation generation (integration) > throws AiTermNotFoundError for an unknown term [33.29ms]
+
+test/integration/atrisk.test.ts:
+(pass) at-risk action-taken form (integration) > lists the watchlist scoped to one class section [222.67ms]
+(node:44756) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `bun --trace-warnings ...` to show where the warning was created)
+(pass) at-risk action-taken form (integration) > init resolves term/program from the section and is idempotent [197.69ms]
+(pass) at-risk action-taken form (integration) > submit gate blocks an empty selection / empty note; flags stay on submit [245.07ms]
+(pass) at-risk action-taken form (integration) > return leaves flags intact; final approval clears only selected students in the form's section [413.34ms]
+(pass) at-risk action-taken form (integration) > approving a different form code never clears at-risk flags [138.68ms]
+
+test/integration/audit.test.ts:
+(pass) audit log scoping (integration) > returns only the caller's own rows to a non-privileged role [5.07ms]
+(pass) audit log scoping (integration) > 403s a non-privileged role asking for another user's rows [3.52ms]
+(pass) audit log scoping (integration) > gives vpaa every role's rows including orphans (scope=all) [3.44ms]
+(pass) audit log scoping (integration) > gives system_admin the full view without a userId filter [2.26ms]
+(pass) audit log scoping (integration) > lets a full-view role filter down to one user's rows [1.85ms]
+(pass) audit log scoping (integration) > pages with limit/hasMore and the before keyset cursor [8.49ms]
+(pass) audit log scoping (integration) > rejects an unparseable before cursor with a 400-typed error [0.36ms]
+(pass) audit log scoping (integration) > keeps a dean inside their own rows (no cascade below) [2.45ms]
+
+test/integration/car.test.ts:
+Created new student: John Doe from record name "Doe, John"
+Created new student: Maria Reyes from record name "Reyes, Maria"
+(pass) CAR generation (integration) > rolls up stored attainment into all 7 parts without manual re-entry [501.78ms]
+
+test/integration/check.test.ts:
+(pass) CHECK module (integration) > F08 mid_cycle_attainment: init → save header + cohort rows → get [119.76ms]
+(pass) CHECK module (integration) > F10 peer_observation: init → save header + criteria → get [81.02ms]
+(pass) CHECK module (integration) > F11 exhibition_feedback: submit gate blocks < 3 guests, passes with ≥3 [109.06ms]
+(pass) CHECK module (integration) > F12 clo_perception_survey: init → save cloRows → get [73.35ms]
+(pass) CHECK module (integration) > F17 student_exit_survey: init → save ploRows → get [69.47ms]
+(pass) CHECK module (integration) > F18 portfolio_assessment_record: init → save criteria rows → get [76.57ms]
+(pass) CHECK module (integration) > F19 capstone_panel_evaluation: submit gate blocks < 2 faculty + 1 industry [103.28ms]
+(pass) CHECK module (integration) > ensureDraft is idempotent — re-init returns same submission [59.84ms]
+
+test/integration/cqi.test.ts:
+(pass) CQI / ACT loop chain (integration) > exit check: a gap is traced from analysis → CQI plan → loop closure with computed CLOSED [370.97ms]
+(pass) CQI / ACT loop chain (integration) > loop status is hard-computed: any unmet condition stays OPEN, CLOSED only when all five hold [302.22ms]
+(pass) CQI / ACT loop chain (integration) > APAR validation gate: blocks submission when the Cohort Tracking Sheet is not attached [249.75ms]
+
+test/integration/forms.test.ts:
+(pass) forms service (integration) > derives the chain server-side and enforces workflow RBAC [932.75ms]
+(pass) forms service (integration) > advances a multi-step chain and supports return → resubmit [247.44ms]
+(pass) forms service (integration) > blocks self-approval and keeps the owner's own row out of their inbox [166.55ms]
+(pass) forms service (integration) > files Setup/Record-tagged forms with no approval chain [109.44ms]
+(pass) forms service (integration) > scopes submission reads by visibility and returns section evidence [207.65ms]
+
+test/integration/ingest.test.ts:
+Created new student: Maria Reyes from record name "Reyes, Maria"
+Skipping attainment record for student 'Reyes, Maria'. Reason: CLO code 'CLO999' not found for the course associated with ClassSection 'it-ingest-section'.
+(pass) ingest attainment persistence (integration) > persists ETL attainment results, auto-creating students and at-risk flags [114.37ms]
+(pass) ingest attainment persistence (integration) > throws ClassSectionNotFoundError if classSectionId does not exist during persistence [1.84ms]
+(pass) ingest attainment persistence (integration) > throws SectionMismatchError when section extraction is ok and section does not match [27.73ms]
+(pass) ingest attainment persistence (integration) > rejects polling when query classSectionId does not match bound uploadRecord classSectionId [45.46ms]
+(pass) ingest attainment persistence (integration) > listHistory returns only the current user's uploads, newest first [51.94ms]
+(pass) ingest attainment persistence (integration) > updateScores edits scores, recomputes threshold, and reconciles at-risk flags [114.24ms]
+(pass) ingest attainment persistence (integration) > reimportScores upserts a wide roster CSV and reconciles at-risk flags [122.72ms]
+Created new student: Ana Cruz from record name "Cruz, Ana"
+(pass) ingest attainment persistence (integration) > initSubmission creates/reuses the clo_raw_data draft and the submit gate blocks an empty section [167.46ms]
+(pass) ingest attainment persistence (integration) > buildPreview summarises a finished ETL job without writing anything [40.81ms]
+(pass) ingest attainment persistence (integration) > discardJob marks a queued upload discarded and leaves a saved one alone [52.55ms]
+(pass) ingest attainment persistence (integration) > saveJob replays a stored summary idempotently without re-persisting [37.10ms]
+
+test/integration/periodic.test.ts:
+(pass) Periodic module (integration) > F09 resource_monitoring: init → save resource + CQI implement rows → get [89.28ms]
+(pass) Periodic module (integration) > F20 alumni_tracer: save and retrieve via formData [63.83ms]
+(pass) Periodic module (integration) > F21 employer_satisfaction_survey: save and retrieve via formData [72.33ms]
+(pass) Periodic module (integration) > F26 systemic_gap_report: submit gate blocks without approved cohort_tracking [75.56ms]
+(pass) Periodic module (integration) > F27 capa_plan: submit gate blocks without approved systemic gap report [77.08ms]
+(pass) Periodic module (integration) > F27 capa_plan: max 8 actions validation [52.33ms]
+(pass) Periodic module (integration) > F28 institutional_review: init → save → get [64.24ms]
+(pass) Periodic module (integration) > F02 portfolio_roadmap: init → save roadmap + rubric rows → get [88.06ms]
+(pass) Periodic module (integration) > ensureDraft is idempotent — re-init returns same submission [67.43ms]
+
+test/integration/plan.test.ts:
+(pass) PLAN-phase setup forms (integration) > exit check: all four PLAN forms initialize, save, protect templates, and compute rollups [382.84ms]
+(pass) PLAN-phase setup forms (integration) > PLO entity CRUD: create, list, update, and guarded delete [119.11ms]
+
+test/integration/rollup.test.ts:
+(pass) roll-up chain generation (integration) > F14: assembles the per-section CLO attainment summary and snapshots it [182.89ms]
+(pass) roll-up chain generation (integration) > F15: feeds snapshots to python rollups and persists PloAttainment (exit check) [199.66ms]
+(pass) roll-up chain generation (integration) > F16: builds the cohort grid from stored data and audits annotation writes [200.10ms]
+
+test/integration/unit-scoping.test.ts:
+(pass) unit scoping (integration) > narrows reference lists to the caller's department/program [79.40ms]
+(pass) unit scoping (integration) > refuses a spoofed foreign ?programId= instead of intersecting it [76.01ms]
+(pass) unit scoping (integration) > keeps each unit's approval queues invisible to the other [118.50ms]
+(pass) unit scoping (integration) > 403s a foreign record id instead of leaking or hiding it [111.76ms]
+(pass) unit scoping (integration) > keys the response cache per unit and marks it private [7.07ms]
+
+test/integration/archive.test.ts:
+(pass) archive service (integration) > lists only the caller's department's clusters [107.68ms]
+(pass) archive service (integration) > reads a cluster with its entries only inside the caller's unit [96.05ms]
+(pass) archive service (integration) > counts compiled entries and clusters per unit [72.11ms]
+(pass) archive service (integration) > confirm refuses a foreign unit's cluster without revealing its state [72.73ms]
+(pass) archive service (integration) > confirm stamp the captured PEO snapshot on an open cluster in-scope [60.58ms]
+(pass) archive service (integration) > confirm is a no-op once the cluster has left `open` [69.35ms]
+(pass) archive service (integration) > program filter is refused when it falls outside the caller's unit [91.43ms]
+(pass) archive service without a DB > skips (integration gate) [0.11ms]
+
+ 72 pass
+ 0 fail
+ 563 expect() calls
+Ran 72 tests across 13 files. [9.62s]

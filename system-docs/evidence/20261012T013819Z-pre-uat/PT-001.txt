@@ -1,0 +1,2 @@
+warmup done (2 loads, not counted)
+STATS PT-001 dashboard sequential (dev-mode SSR) {"n":8,"avg":237,"p50":225.5,"p95":288.3,"max":288.3,"errorPct":0,"statuses":{"200":8}}

@@ -1,0 +1,22 @@
+### ST-NF-004 — 2026-10-12T02:13:41Z
+$ password hash format in DB + secret scan of backend logs
+expected: argon2id hashes; no secrets/passwords in runtime logs
+hash prefixes:
+rows whose hash is NOT argon2id/bcrypt: 
+backend log lines containing password123: 0
+0  (seed script prints demo creds at db-seed time — documented caveat)
+backend log lines matching secret|bearer|authorization: 0
+0
+### ST-NF-004 — 2026-10-12T02:25:00Z
+$ password hash format in DB + secret scan of backend logs (fixed query)
+expected: argon2id hashes; no secrets/passwords in runtime logs
+hash prefixes (better-auth stores them on account.password):
+aqau1@jmcfi.edu.ph|$argon2id$v=19$m=
+aqau@jmcfi.edu.ph|$argon2id$v=19$m=
+dean1@jmcfi.edu.ph|$argon2id$v=19$m=
+dean@jmcfi.edu.ph|$argon2id$v=19$m=
+accounts whose hash is NOT argon2id: 0
+backend log lines containing password123: 0
+0  (seed prints demo creds at db-seed time — documented caveat; backend runtime log checked here)
+backend log lines matching secret|bearer|authorization: 0
+0

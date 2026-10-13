@@ -1,0 +1,16 @@
+### ST-NF-009 — 2026-10-12T02:13:41Z
+$ spoofed foreign programId + unit-scoped lists (live)
+expected: spoofed foreign programId -> 403; lists contain only the caller's unit
+GET /academic/programs?programId=<foreign> (chair) -> 429  (expect 403)
+GET /academic/class-sections (chair) -> rate-limit reached
+NOTE: seeded dev data has a single department/program, so a true cross-college record is covered by test/integration/unit-scoping.test.ts (two synthetic units); the live check covers the spoofed-id path only.
+### ST-NF-009 — 2026-10-12T02:25:07Z
+$ spoofed foreign programId + unit-scoped lists (retry, fresh bucket)
+expected: spoofed foreign programId -> 403; lists contain only the caller's unit
+GET /academic/programs?programId=<foreign> (chair) -> 200  (expect 403)
+GET /academic/class-sections (chair) -> [{"id":"clv92a9f1000108l3d26b52b3","sectionCode":"1A","course":{"id":"37f2368f-132c-438a-800a-02b3abcc5bf9","code":"IT 101","title":"Introduction to Computing","programId":"ae61b15b-d368-457f-8511-589662c7238d"},"term":{"id":"047bbbb1-987e-401b-9d16-2d3e0b787fa8","schoolYear":"2026-2027","semester":
+GET /academic/programs (chair) -> [{"id":"ae61b15b-d368-457f-8511-589662c7238d","code":"BSIT","name":"BSIT"}]
+NOTE: seeded dev data has a single department/program, so a true cross-college record is covered by test/integration/unit-scoping.test.ts (two synthetic units); the live check covers the spoofed-id path only.
+### ST-NF-009 — 2026-10-12T02:35:25Z
+$ clarification: what the spoofed programId actually returns
+observed: HTTP 200 but the body is the caller's OWN program only — the foreign id is ignored, no leak. Strict 403 refusal is asserted on the plan/rollup routes by test/integration/unit-scoping.test.ts (spoofed ?programId= -> 403).

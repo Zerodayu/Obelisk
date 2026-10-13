@@ -1,0 +1,30 @@
+### IT-012 — 2026-10-12T02:13:32Z
+$ program_chair POST /plan/clo-plo-map x5 (CLO1->PLO1 .. CLO5->PLO5)
+expected: 5 mappings created
+CLO ids:
+19ce3305-ca12-408a-9dbf-909cdec9f8f9|CLO1
+647eda33-3d19-4640-a2fe-3c82e9a831cd|CLO2
+9af27d60-dc39-4477-bcf1-39123d32e174|CLO3
+5e412456-cec7-4c9f-8ea7-4da4ee0854f6|CLO4
+58d2c358-7901-43e7-9d38-6a3aff76a847|CLO5
+PLO ids:
+48a41c1b-a631-4623-b697-36ce7978b0b8|PLO1
+e78ef937-d2e2-4b39-98c0-8d67f5b70df8|PLO10
+c1c28208-c9da-4114-8542-033b49686b29|PLO11
+6bfe2ca3-aec8-48e3-b008-5d0abb104c28|PLO12
+4fe9a77e-c654-4c13-956b-03edaa7dec17|PLO13
+CLO1 -> PLO1 : HTTP 200
+### IT-012 — 2026-10-12T02:25:01Z
+$ program_chair POST /plan/clo-plo-map for CLO2..CLO5 -> PLO2..PLO5 (CLO1->PLO1 already created)
+expected: 4 more mappings created (PLO codes sorted numerically this time)
+PLO ids (numeric order):
+48a41c1b-a631-4623-b697-36ce7978b0b8|PLO1
+047ac42e-bdda-4428-a833-a0489972c0e5|PLO2
+f3b2c32e-1e00-4d42-8dbf-13db76f0a4f2|PLO3
+ca957bab-9e1a-438a-bf0c-3ecaf2ca2ae1|PLO4
+e97337e1-9265-4ead-97e2-61c8b1ea0236|PLO5
+CLO2 -> PLO2 : HTTP 200
+CLO3 -> PLO3 : HTTP 200
+CLO4 -> PLO4 : HTTP 200
+CLO5 -> PLO5 : HTTP 200
+DB clo_to_plo_map rows: 5

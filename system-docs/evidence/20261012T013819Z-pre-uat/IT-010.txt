@@ -1,0 +1,54 @@
+pending-queue visibility per role BEFORE submit:
+faculty pending: 0
+program_chair pending: 0
+dean pending: 0
+aqau pending: 0
+vpaa pending: 0
+system_admin pending: 0
+pending queues right after submit:
+  faculty pending: 0
+  program_chair pending: 1
+  dean pending: 0
+  aqau pending: 0
+  vpaa pending: 0
+  system_admin pending: 1
+pending queues after full approval (expect 0 everywhere):
+  faculty pending: 
+  program_chair pending: 
+  dean pending: 
+  aqau pending: 
+  vpaa pending: 
+queues after program_chair approve/program_chair:
+  faculty pending: 0
+  program_chair pending: 0
+  dean pending: 1
+  aqau pending: 0
+  vpaa pending: 0
+  system_admin pending: 1
+queues after dean approve/dean:
+  faculty pending: 0
+  program_chair pending: 0
+  dean pending: 0
+  aqau pending: 1
+  vpaa pending: 0
+  system_admin pending: 1
+queues after aqau approve/aqau:
+  faculty pending: 0
+  program_chair pending: 0
+  dean pending: 0
+  aqau pending: 0
+  vpaa pending: 1
+  system_admin pending: 1
+queues after vpaa approve/vpaa:
+  faculty pending: 0
+  program_chair pending: 0
+  dean pending: 0
+  aqau pending: 0
+  vpaa pending: 0
+  system_admin pending: 0
+queues after final approval (expect 0 everywhere):
+  faculty pending: 0
+  program_chair pending: 0
+  dean pending: 0
+  aqau pending: 0
+  vpaa pending: 0

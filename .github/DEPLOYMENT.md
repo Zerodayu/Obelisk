@@ -10,7 +10,7 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
-| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, everything else → frontend (see [`Caddyfile`](../Caddyfile)); second site blocks serve dozzle on `DOZZLE_DOMAIN` and umami on `UMAMI_DOMAIN` |
+| **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, `/umami/*` → umami (the first-party tracker proxy), everything else → frontend (see [`Caddyfile`](../Caddyfile)); second site blocks serve dozzle on `DOZZLE_DOMAIN` and umami on `UMAMI_DOMAIN` |
 | **backend** | `obelisk-backend` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
 | **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
 | **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
@@ -18,7 +18,7 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 | **db** | `postgres:15-alpine` | `127.0.0.1:5432` | The app's Postgres (Prisma) — backend reaches it over `db:5432`, the loopback publish lets `just dev` / `just db-migrate` on the same host reach it (dev uses its own `obelisk_dev` database, the app serves `obelisk`); data in the `db-data` volume |
 | **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer — the public `DOZZLE_DOMAIN` site answers **every** request with 403; real access is the tailnet name served by the sidecar below |
 | **tailscale-dozzle** | `tailscale/tailscale:latest` | — (shares dozzle's netns) | Tailscale sidecar — registers with auto-assigned MagicDNS name and proxies dozzle to tailnet devices only (no published port, no Tailscale install on the host) |
-| **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics — caddy keeps `/script.js` + `/api/send` reachable for every visitor (the frontend tracker) and answers every other path on `UMAMI_DOMAIN` with 403; the dashboard is served on the tailnet by the sidecar below |
+| **umami** | `ghcr.io/umami-software/umami:latest` | — (in-network) | Self-hosted analytics — the frontend tracker loads it first-party through `APP_DOMAIN/umami/*` (caddy strips the prefix and proxies), which gets past hostname-based blockers; caddy also keeps `/script.js` + `/api/send` public on `UMAMI_DOMAIN` and answers every other path there with 403; the dashboard is served on the tailnet by the sidecar below |
 | **tailscale-umami** | `tailscale/tailscale:latest` | — (shares umami's netns) | Tailscale sidecar — registers with auto-assigned MagicDNS name and proxies the umami dashboard to tailnet devices only |
 | **umami-db** | `postgres:15-alpine` | — (in-network) | Umami's datastore — reached only by `umami` over `umami-db:5432`, data in the `umami-db-data` volume |
 
@@ -90,7 +90,7 @@ Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-de
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
 DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
-UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (also baked into the frontend tracker origin)
+UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (the tracker itself is first-party on APP_DOMAIN)
 TS_AUTHKEY="tskey-auth-..."           # reusable Tailscale auth key tagged `tag:obelisk` — both sidecars register with it (admin console → Settings → Keys; see Tailscale admin access)
 OBELISK_DB_PASSWORD="..."             # postgres password for the db container — URL-safe (letters/digits): compose interpolates it straight into the backend's DATABASE_URL, where `@ / : %` break the connection (openssl rand -hex 12)
 UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection

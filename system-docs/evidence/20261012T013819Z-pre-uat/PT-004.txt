@@ -1,0 +1,14 @@
+upload#1: accepted in 410 ms, job c4373406-d69e-4fbb-a469-69ba971380b6
+upload#3: accepted in 477 ms, job 83e543b6-0e1e-493b-b74f-1dc7aab3486b
+upload#2: accepted in 495 ms, job 2085ec50-86d1-414c-a843-ffbe2b21f8d4
+upload#3: ETL -> ready after 9016 ms
+upload#1: ETL -> ready after 9370 ms
+upload#2: ETL -> ready after 9470 ms
+upload#3: save 1271 ms HTTP 200; end-to-end 10288 ms
+upload#1: save 1361 ms HTTP 200; end-to-end 10731 ms
+upload#2: save 1301 ms HTTP 200; end-to-end 10772 ms
+STATS PT-004 concurrent uploads x3 (accept latency) {"n":3,"avg":460.8,"p50":477.3,"p95":495,"max":495,"errorPct":0,"statuses":{"200":3}}
+STATS PT-005 upload end-to-end (accept->ETL ready->saved) {"n":3,"avg":10596.9,"p50":10731.4,"p95":10771.6,"max":10771.6,"errorPct":0,"statuses":{"200":3}}
+  breakdown: ETL 9370 ms, save 1361 ms, total 10731 ms
+  breakdown: ETL 9470 ms, save 1301 ms, total 10772 ms
+  breakdown: ETL 9016 ms, save 1271 ms, total 10288 ms

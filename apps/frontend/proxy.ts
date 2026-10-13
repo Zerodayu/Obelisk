@@ -19,7 +19,10 @@ import { isDevMode } from "@/lib/dev-mode";
  * without an account (frontend-only; the backend still requires a session).
  *
  * The better-auth session cookie is named `<cookiePrefix>.session_token`,
- * where the backend sets `cookiePrefix: "obelisk-app"`.
+ * where the backend sets `cookiePrefix: "obelisk-app"`. In production
+ * better-auth prefixes it with `__Secure-` (it falls back to `isProduction`
+ * when no `baseURL`/`useSecureCookies` is configured on the backend), so both
+ * names must pass the check below.
  */
 const AUTH_COOKIE_PREFIX = "obelisk-app";
 
@@ -51,9 +54,14 @@ export default function nextProxy(
 		return NextResponse.next();
 	}
 
+	// NOTE: prod cookies carry better-auth's `__Secure-` prefix (isProduction fallback without a configured baseURL/useSecureCookies) — plain-name-only bounced every logged-in prod user /login ⇄ /dashboard.
 	const hasSessionCookie = request.cookies
 		.getAll()
-		.some((cookie) => cookie.name.startsWith(`${AUTH_COOKIE_PREFIX}.session`));
+		.some(
+			(cookie) =>
+				cookie.name.startsWith(`__Secure-${AUTH_COOKIE_PREFIX}.session`) ||
+				cookie.name.startsWith(`${AUTH_COOKIE_PREFIX}.session`),
+		);
 
 	if (!hasSessionCookie && request.method === "GET") {
 		log("redirect /login");

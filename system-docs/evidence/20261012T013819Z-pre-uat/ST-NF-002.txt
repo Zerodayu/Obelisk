@@ -1,0 +1,34 @@
+### ST-NF-002 — 2026-10-12T02:43:25Z
+$ sign in faculty1, sign out, then reuse the old cookie
+expected: after sign-out the old cookie no longer unlocks protected data
+GET /auth/me with valid session -> 200
+POST /auth/sign-out -> 403
+GET /auth/me with the SAME cookie after sign-out -> 200
+GET /forms/ with the SAME cookie after sign-out -> 200
+GET /ingest/history with the SAME cookie after sign-out -> 200
+
+— retry with the trusted Origin header (the browser always sends one; curl did not):
+POST /auth/sign-out (Origin: http://localhost:3000) -> 200
+GET /auth/me with the SAME cookie after sign-out -> 401
+GET /forms/ with the SAME cookie after sign-out -> 401
+GET /ingest/history with the SAME cookie after sign-out -> 403
+session rows left for that user: 1
+
+— does sign-out hard-delete the session row?
+faculty1 session rows BEFORE fresh sign-in: 1
+rows after fresh sign-in: 2
+fresh sign-in works: 401
+POST /auth/sign-out (fresh cookie, trusted origin) -> 200
+rows after sign-out: 2  (0 = hard delete)
+fresh cookie after sign-out -> 401
+
+— decisive re-run (cookie extraction fixed; earlier attempt used an empty header, discard that block):
+faculty1 session rows BEFORE fresh sign-in: 3
+rows after fresh sign-in: 4
+GET /auth/me with fresh cookie -> 200  (expect 200)
+POST /auth/sign-out (fresh cookie, trusted origin) -> 200
+GET /auth/me with the SAME cookie after sign-out -> 401  (expect 401)
+GET /forms/ with the SAME cookie after sign-out -> 401  (expect 401)
+faculty1 session rows AFTER sign-out: 3  (hard delete would drop it by 1)
+
+OBSERVATION: the decisive re-run above shows sign-out hard-deletes its session row (4 -> 3) and replaying the cookie afterwards gets 401 everywhere. The very first sign-out attempt in this file (02:43 block) killed the cookie (401) yet its row lingered — session tokens are stored hashed (token column never equals the cookie value), so the orphaned-row cause could not be confirmed; worth a follow-up only if sessions must never outlive their cookie.
