@@ -1,8 +1,8 @@
 # OBELISK ETL & Analytics Service — System Design
 
-> **Status:** Implemented — upload/ETL + analytics endpoints live; job queue is durable (Redis); AI recommendations are integrated via `google-genai` with multi-key pool failover. This records the current design and the integration contract with the webapp for the **v2 AUN-OBE Template**.
+> **Status:** Implemented in source — upload/ETL and analytics routes, Redis queue, and `google-genai` multi-key failover. This describes the current code for the **v2 AUN-OBE Template**, not a claim of deployment readiness or live verification.
 >
-> **Role in the platform:** the authoritative **pure-compute** engine for spreadsheet-derived attainment. It never persists application data and never authenticates — see §7 ownership boundary.
+> **Role in the platform:** the authoritative **pure-compute** engine for spreadsheet-derived attainment, without application database access or user RBAC. Upload files and Redis job state are stored for processing; optional shared-secret caller authentication is implemented — see §7.
 
 **Stack:** Python 3.13 · FastAPI · Pydantic v2 · **Redis** · openpyxl · structlog · `google-genai` · Docker Compose. Runs on port **8000**. Canonical formulas/constants live in `documentations/FORMULAS.md` and `documentations/CONSTANTS.md`.
 
@@ -23,14 +23,14 @@ class-record .xlsx ──POST /upload──> app (FastAPI :8000)
                          Extractor   = ExcelExtractor   (openpyxl; reads Direct CLO & Indirect CLO)
                          Transformer = SimpleTransformer (Formulas 1A & 1B, levels, Rule 1)
                          Loader      = DummyLoader      (returns JSON; no sink)
-             └─ job status stored in Redis Hash: queued → running → completed | failed
+             └─ job status stored as Redis JSON string: queued → running → completed | failed
 
 consolidated JSON payload ──POST /analytics/summary|institutional-summary──>
       └─ institutional_summary.py (Formulas 2A/7A/7C, Rule 3, aggregators)
       └─ cqi_recommender.py (gap detection, prompt build, call_llm_api via google-genai multi-key pool)
 ```
 
-- **Durable Queue:** Job state and the job queue itself are managed in **Redis**. This ensures that jobs are not lost if the application container restarts. Queue list and job hash keys are namespaced as `obelisk:<OBELISK_ENV>:job_queue` / `obelisk:<OBELISK_ENV>:job:*` so a dev stack and a deployed stack sharing one Redis never consume each other's jobs (each side only has its own `UPLOAD_FOLDER` files).
+- **Queue:** Redis stores pending IDs in a list and job objects in JSON string keys (`SET`), namespaced as `obelisk:<OBELISK_ENV>:job_queue` / `obelisk:<OBELISK_ENV>:job:*`. Pending state can outlive a Python process while Redis is retained. Redis restart durability depends on its deployment; `BRPOP` removes jobs before processing and there is no acknowledgement/requeue recovery for interrupted jobs.
 - **Workers:** `settings.JOB_WORKER_COUNT` (default 4) async consumers started on app startup, cancelled on shutdown.
 - **Config:** `app/core/config.py` reads `OBELISK_*` env vars from process env; `app/core/env.py` first decrypts the repo-root `.env.local` / `.env.prod` into it (`OBELISK_ENV` picks the file, `local` by default, `prod` in compose — there is no per-package `.env`): `ALLOWED_ORIGINS`, `UPLOAD_FOLDER`, `MAX_UPLOAD_SIZE`, `JOB_QUEUE_MAXSIZE`, `JOB_WORKER_COUNT`, `DEBUG`, **`REDIS_HOST`**, **`REDIS_PORT`**, **`LLM_API_KEYS`** (or legacy **`LLM_API_KEY`**), **`WEBAPP_SHARED_SECRET`**, **`ENV`** (`OBELISK_ENV` profile, `local` default — namespaces the Redis job keys).
 - **CORS:** `OBELISK_ALLOWED_ORIGINS` from the root env files (comma-separated or JSON list); built-in fallback is `["*"]` with credentials enabled.
@@ -52,8 +52,8 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 | GET | `/jobs/{job_id}` | Poll job status/result; 404 if not found |
 | GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job; 409 if job pending or failed) |
 | POST | `/analytics/summary` | Pure rollups by department/program/AVP group + worst-performing CLOs (safe for any role; no AI) |
-| POST | `/analytics/institutional-summary` | Full institution-wide summary + AI recommendation (VPAA-only; no internal guard) |
-| GET | `/health` | Health check |
+| POST | `/analytics/institutional-summary` | Summary + AI; webapp must authorize VPAA; optional caller-secret dependency |
+| GET | `/health/` | Hardcoded status response with TODO timestamp, not a dependency-readiness probe; `/health` redirects |
 | POST | `/etl/extract`·`/transform`·`/load`·`/pipeline` | Manual debug endpoints with placeholder sources (not used in production flow) |
 
 ## 4. Data schemas (`app/schemas/`)
@@ -61,7 +61,7 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 - **`class_record.py`** (all `extra="forbid"`):
   - `ClassRecordHeader` — course_code/title/type, section, semester_year, instructor, `no_of_students`, `threshold` (workbook's own, informational), grading_system, `workbook_configured_weights_unused`.
   - `StudentRawCloData` (`extracted.py`) — intermediate raw score data: student_id/name, clo_code, prelim_score/max, midterm_score/max, final_score/max, indirect_rating.
-  - `StudentCLOAttainment` — per-CLO output: `direct_clo_attainment_pct`, `indirect_clo_attainment_pct`, `met_threshold`, `clo_level`, `formula_version`, completeness fields (`is_record_complete`, `section_completeness_pct`, `rule1_met`), category pcts (default `None`), and `excluded_reason` (always `None`).
+  - `StudentCLOAttainment` — per-CLO output: direct fraction, indirect/composite percentages, threshold/level from rounded composite, literal `formula_version="70_30_v1"`, completeness fields, category pcts (default `None`), and `excluded_reason` (always `None` for v2 ETL).
 - **`institutional_summary.py`** — `Period` (`semester|year|custom`), `CourseSubmission` (dept/program/avp_group/course/section + header + attainments + clo_plo_mapping), `InstitutionalSummaryPayload` (period + submissions, `extra="forbid"`).
 
 ## 5. ETL pipeline (v2 AUN-OBE Template)
@@ -76,10 +76,10 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 - **`SimpleTransformer`** (`app/etl/transform/transformer.py`):
   - Computes direct attainment independently from raw score cells ($\frac{\text{Prelim}+\text{Midterm}+\text{Final}}{\text{Prelim Max}+\text{Midterm Max}+\text{Final Max}}$).
   - Computes indirect attainment independently as $(\frac{\text{Rating}}{5.0}) \times 100$.
-  - Applies 70% institutional threshold, 4-tier `clo_level`, and Rule 1 completeness.
+  - Computes the 70/30 composite (direct-only fallback when indirect is null), rounds to two decimals, then applies 70% threshold and 4-tier level. Rule 1 checks all three periods. See [FORMULAS.md](documentations/FORMULAS.md).
   - Sets `excluded_reason = None` for all rows.
-  - Emits deterministic `formula_version` hash.
-- **`DummyLoader`** (`app/etl/load/loader.py`): returns `{status, received_records, header, attainments, clo_plo_mapping}`.
+  - Emits the literal `formula_version="70_30_v1"`, not a hash.
+- **`DummyLoader`** (`app/etl/load/loader.py`): returns `{status, received_records, header, section, section_extraction, setup, attainments, clo_plo_mapping}`.
 
 ## 6. Analytics engine (`app/analytics/`)
 
@@ -89,12 +89,16 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
   - On per-key exception (e.g. 429 quota exhaustion or network fault), logs warning `llm_key_failed` and immediately attempts the next key.
   - If all keys fail, logs `llm_all_keys_exhausted` and returns `[LLM API ERROR: All N configured API key(s) were exhausted without success...]`.
   - Propagates `"status": "error"` and `"error"` to callers if LLM generation failed.
+  - `IS_DEBUG_MODE=False` is the production source toggle; offline legacy tests patch it to True and deny real clients. `OBELISK_DEBUG` only affects logging.
+  - Model source default is `gemini-3.6-flash` in `Settings`; `OBELISK_LLM_MODEL` overrides it through root env/runtime values. Pre-set values win during dotenvx loading, and `OBELISK_ENV_FILE` can override file selection. Settings are built at import, not automatically hot-reloaded.
+  - Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); course no-gap results bypass LLM calls. There is no automatic mock fallback.
+  - Outer multiline JSON/plain fences are stripped without truncating embedded backticks; course JSON is validated and institutional nonempty prose remains accepted. See [INTEGRATION.md](documentations/INTEGRATION.md).
 
 ## 7. Ownership boundary (avoid overlap with the webapp)
 
 - **Owned here:** `.xlsx` parsing (AUN-OBE format); Formula 1A direct attainment and Formula 1B indirect attainment; 4-tier levels + completeness; Formulas 2A/7A/7C rollups; AI recommendation text via `google-genai` multi-key pool.
 - **Owned by webapp backend:** persistence (`CloAttainment`, `PloAttainment`, `ComputationRun`), auth/RBAC, curriculum mapping (`curriculum_map` / CLO-PLO correlation), approval workflow, form CRUD/lifecycle, audit trail, report export.
-- **Rule:** the webapp calls this service as the authoritative spreadsheet-compute engine and stores the results; this service never re-implements persistence or auth, and the webapp never re-implements attainment math.
+- **Rule:** the webapp owns application persistence and user auth/RBAC; this service owns spreadsheet computation and optional caller-secret validation. Protected upload/jobs/analytics routes use `X-Webapp-Secret` when configured; health/manual ETL routes do not. The webapp does not duplicate attainment math.
 
 ## 8. Integration contract (with the Elysia webapp)
 
@@ -116,8 +120,23 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 ## 10. Known limitations / deferred
 
 From `documentations/KNOWN_LIMITATIONS.md`:
-- Indirect attainment is now computed per-student from the exit survey Likert rating (`(rating / 5) * 100`). Composite (70/30) combining is handled downstream in the webapp.
+- Indirect and rounded 70/30 composite attainment are computed here, not downstream. Institutional means prefer composite fractions with direct fallback; the retained `plo_attainment_direct_only` name does not change that behavior.
 - CLO-PLO correlation is retired from Excel ingestion (owned by webapp).
 - Granular category breakdown (`tla_pct`, `at_pct`, `exam_pct`, `output_pct`) is `null` because the AUN-OBE template provides period subtotals rather than individual assessment tasks.
 - Rule 1 may false-negative CLOs intentionally not assessed in all three periods.
 - Unused SQLAlchemy/Alembic scaffolding in `app/database` + `app/models` pending removal decision.
+- Worker processing has no configured timeout or completed-upload cleanup. The queue does not recover already-popped interrupted jobs.
+
+## 11. Verification and historical evidence
+
+Use `python -B testing_modules/old_test/run_all.py` from this service directory.
+The [legacy README](testing_modules/old_test/README.md) records the October 13,
+2026 repair verification (50 unittest cases and two standalone checks passed),
+isolation, fixtures and excluded live modes. This documentation audit did not
+rerun tests or services. Mocked provider/queue/API behavior is not live Gemini,
+Redis, performance, deployment or whole-webapp acceptance evidence.
+
+The separate [Pre-UAT package](testing_modules/pre_uat/README.md) retains its
+October 11 dates, test-ID counts, model settings and source manifests. Statements
+about unchanged originals/hash matches apply to that build, before later legacy
+and parser repairs. Its historical results and unresolved findings are preserved.

@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     # Can be specified as a JSON array (e.g. ["key1", "key2"]) or comma-separated string.
     LLM_API_KEY: str | None = None
     LLM_API_KEYS: Annotated[List[str], NoDecode] = []
-    LLM_MODEL: str = "gemini-3.5-flash-lite"
+    LLM_MODEL: str = "gemini-3.6-flash"
 
     @field_validator("LLM_API_KEYS", mode="before")
     @classmethod

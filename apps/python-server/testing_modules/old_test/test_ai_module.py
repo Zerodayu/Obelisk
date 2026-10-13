@@ -4,22 +4,14 @@ from pathlib import Path
 import sys
 
 # Add project root to path to allow imports from `app`
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# NOTE: env comes from the repo-root .env.local / .env.prod — the same
-# decrypting loader the server uses (there is no per-package .env anymore)
-from app.core.env import load_env
-
-load_env()
-
-from app.etl.extract.extractor import ExcelExtractor
-from app.etl.transform.transformer import SimpleTransformer
-from app.analytics.cqi_recommender import generate_cqi_recommendation
+from testing_modules.old_test._support import BASE_WORKBOOK, offline_context
 
 # --- Configuration ---
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
-FILE_PATH = TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE.xlsx"
+FILE_PATH = BASE_WORKBOOK
 
 
 def print_step(message: str):
@@ -38,11 +30,14 @@ async def main():
     Tests the standalone CQI recommendation module (prompt building, gap detection,
     and Google GenAI integration) using the AUN-OBE template.
     """
+    from app.etl.extract.extractor import ExcelExtractor
+    from app.etl.transform.transformer import SimpleTransformer
+    from app.analytics.cqi_recommender import generate_cqi_recommendation, validate_course_recommendation
     print_step("1. Running Extractor and Transformer on AUN-OBE Template")
 
     if not FILE_PATH.exists():
         print(f"ERROR: Test file not found at '{FILE_PATH}'")
-        return
+        return 1
 
     extractor = ExcelExtractor()
     transformer = SimpleTransformer()
@@ -65,7 +60,7 @@ async def main():
     print_json(metadata, title="Metadata & Gaps")
 
     print("\n" + "=" * 50)
-    print("AI RECOMMENDATION REPORT (RENDERED MARKDOWN):")
+    print("AI RECOMMENDATION REPORT (JSON):")
     print("=" * 50 + "\n")
     if cqi_result.get("recommendation"):
         print(cqi_result["recommendation"])
@@ -76,8 +71,10 @@ async def main():
     print_step("4. Privacy & Integrity Verification")
     result_str = json.dumps(cqi_result)
     # Check that real student names are never leaked into the AI output
+    failed = False
     if any(name in result_str for name in ["DELA CRUZ", "DOE", "SANTOS"]):
         print("VERIFICATION FAILED: Real student names were found in the output.")
+        failed = True
     else:
         print(
             "VERIFICATION PASSED: No real student names found in the output (anonymization verified)."
@@ -86,13 +83,22 @@ async def main():
     recommendation_text = cqi_result.get("recommendation", "")
     if cqi_result and cqi_result.get("status") == "no_gaps_found":
         print("VERIFICATION PASSED: No gaps found, so LLM was not called (correct).")
-    elif recommendation_text and "LLM API ERROR" not in recommendation_text:
-        print("VERIFICATION PASSED: A real, non-error recommendation was received.")
+    elif cqi_result.get("status") == "ok" and validate_course_recommendation(recommendation_text):
+        print("VERIFICATION PASSED: A valid, non-error recommendation was received.")
     else:
         print("VERIFICATION FAILED: Recommendation was empty or contained an error.")
+        failed = True
 
     print("\nTest script finished.")
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import argparse
+    parser = argparse.ArgumentParser(description="Legacy CQI integration (mock Gemini by default)")
+    parser.add_argument("--live", action="store_true", help="Allow real Gemini calls and root env loading")
+    args = parser.parse_args()
+    if args.live:
+        raise SystemExit(asyncio.run(main()))
+    with offline_context():
+        raise SystemExit(asyncio.run(main()))

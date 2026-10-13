@@ -102,15 +102,18 @@ Student count is dynamic. Roster discovery ends at the first row where:
 ## 6. Transformation Constants
 
 ### `Transformation`
-Governs attainment calculations, thresholds, completeness, and hash versioning:
+Governs attainment calculations, thresholds and completeness. Some retained
+versioning constants are no longer used to generate the output version:
 
 | Constant | Value | Description |
 | :--- | :--- | :--- |
 | `INSTITUTIONAL_THRESHOLD` | `0.70` | Fixed 70% benchmark for `met_threshold`. |
 | `COMPLETENESS_THRESHOLD` | `0.60` | 60% benchmark for `rule1_met`. |
-| `CLO_LEVEL_*_MIN` | `0.85`, `0.70`, `0.60` | Minimum attainment for "Exceptional", "Proficient", and "Basic" levels. |
-| `FORMULA_VERSION_ID` | `"direct_attainment_v2_aunobe"` | String identifier for calculation logic version. |
-| `FORMULA_VERSION_HASH_LENGTH` | `12` | Length of formula hash. |
+| `DIRECT_WEIGHT`, `INDIRECT_WEIGHT` | `0.70`, `0.30` | Composite weights; direct fraction is converted to a percentage first. |
+| `FORMULA_VERSION` | `"70_30_v1"` | Composite formula label; transformer currently returns the same literal. |
+| `CLO_LEVEL_*_MIN` | `85.0`, `70.0`, `60.0` | Composite percentage minima for Exceptional, Proficient and Basic. |
+| `FORMULA_VERSION_ID` | `"direct_attainment_v2_aunobe"` | Retained constant; current transformer output is the literal `70_30_v1`. |
+| `FORMULA_VERSION_HASH_LENGTH` | `12` | Retained hash-length constant; no current output hash is generated. |
 
 #### `Transformation.CloLevels`
 Standardized descriptive labels:
@@ -121,7 +124,16 @@ Standardized descriptive labels:
 
 #### `Transformation.IntermediateKeys`
 Standardized dictionary keys used internally:
--   `STUDENT_ID`, `STUDENT_NAME`, `CLO_CODE`, `DIRECT_CLO_ATTAINMENT_PCT`, `INDIRECT_CLO_ATTAINMENT_PCT`, `EXCLUDED_REASON`, `IS_RECORD_COMPLETE`, `MET_THRESHOLD`, `CLO_LEVEL`, `SECTION_COMPLETENESS_PCT`, `RULE1_MET`.
+-   `STUDENT_ID`, `STUDENT_NAME`, `CLO_CODE`, `DIRECT_CLO_ATTAINMENT_PCT`, `INDIRECT_CLO_ATTAINMENT_PCT`, `COMPOSITE_CLO_ATTAINMENT_PCT`, `EXCLUDED_REASON`, `IS_RECORD_COMPLETE`, `MET_THRESHOLD`, `CLO_LEVEL`, `GROUP_RECORDS`, `SECTION_COMPLETENESS_PCT`, `RULE1_MET`.
+
+`AttainmentLevels` remains an alias of `Transformation.CloLevels` for existing
+consumers and legacy tests. `FormulaKeys` retains `ID`, `INSTITUTIONAL_THRESHOLD`,
+`COMPLETENESS_THRESHOLD`, `DIRECT_WEIGHT`, and `INDIRECT_WEIGHT`.
+
+For workbook locations and safe verification commands, use the
+[legacy test README](../testing_modules/old_test/README.md). Model selection is
+a runtime setting in `app/core/config.py`, not an ETL constant; see the
+[server configuration reference](../README.md#2-environment-configuration).
 
 ---
 

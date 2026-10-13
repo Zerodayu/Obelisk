@@ -5,7 +5,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 # Add project root to path to allow imports from `app`
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.core.config import settings

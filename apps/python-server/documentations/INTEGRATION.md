@@ -13,17 +13,18 @@ that will not change without a real conversation first:
    something, and returns JSON. Background jobs and queue state are
    managed in Redis, but no application domain data is persisted here.
 
-2. **No authentication or authorization.** This service trusts every
-   request it receives. The webapp backend is responsible for verifying
-   who the requester is and what they're allowed to see BEFORE calling this
-   service.
+2. **No user authentication or role authorization.** The webapp verifies
+   users and roles before calling this service. The optional caller-secret
+   check below protects upload/jobs/analytics routes; health and manual ETL
+   routes do not use that dependency. A valid secret does not prove a VPAA role.
 
 ### Optional: Webapp Shared-Secret Auth
 
 This service can optionally enforce a simple shared-secret caller check
 using the `X-Webapp-Secret` header. It is **disabled by default** — if
-`OBELISK_WEBAPP_SHARED_SECRET` is unset or empty, the service behaves
-and trusts every request.
+`OBELISK_WEBAPP_SHARED_SECRET` resolves to `None`, caller authentication is
+disabled. An empty string is not treated as `None`: the code still requires a
+matching header. Prefer leaving the setting unset when disabling the check.
 
 **To enable it:**
 1. Set `OBELISK_WEBAPP_SHARED_SECRET` on the python-server to a long, random
@@ -73,7 +74,7 @@ A single job object with the following structure:
   "job_id": "uuid-string",
   "type": "etl",
   "status": "completed",
-  "payload": { "file_path": "...", "original_filename": "..." },
+  "payload": { "file_path": "...", "filename": "..." },
   "created_at": "2026-09-26T10:00:00.000Z",
   "updated_at": "2026-09-26T10:00:05.000Z",
   "error": null,
@@ -113,9 +114,10 @@ Each item inside `result.loaded.attainments` is a `StudentCLOAttainment` row:
   "output_pct": null,
   "direct_clo_attainment_pct": 0.8667,
   "indirect_clo_attainment_pct": 80.0,
+  "composite_clo_attainment_pct": 84.67,
   "met_threshold": true,
-  "clo_level": "Exceptional",
-  "formula_version": "0338c8b0a31d",
+  "clo_level": "Proficient",
+  "formula_version": "70_30_v1",
   "is_record_complete": true,
   "section_completeness_pct": 1.0,
   "rule1_met": true,
@@ -126,6 +128,8 @@ Each item inside `result.loaded.attainments` is a `StudentCLOAttainment` row:
 #### Field Notes for the Webapp Consumer:
 - **`direct_clo_attainment_pct`**: Ratio `[0.0, 1.0+]` recomputed from raw Prelim/Midterm/Final score and max sums.
 - **`indirect_clo_attainment_pct`**: Percentage `[0.0, 100.0]` recomputed from raw Likert Rating: `(rating / 5.0) * 100.0`. `null` if survey rating was omitted.
+- **`composite_clo_attainment_pct`**: Rounded percentage using 70% direct + 30% indirect, with direct-only fallback if indirect is null. It is null when direct cannot be measured; threshold/level are then null. Valid extra credit can exceed 100%. See [FORMULAS.md](FORMULAS.md).
+- **`formula_version`**: Current transformer emits the literal `70_30_v1`, not a generated hash.
 - **`excluded_reason`**: Always `null`. Maintained for JSON schema stability.
 - **`tla_pct`, `at_pct`, `exam_pct`, `output_pct`**: Always `null` in the v2 template, as assessment tasks arrive pre-summed into grading period subtotals per CLO.
 
@@ -165,6 +169,7 @@ Per-course AI gap analysis and CQI recommendation.
 - Returns `409 Conflict` if the job is not yet completed.
 - The completed job's `result.loaded.clo_plo_mapping` is passed through to `generate_cqi_recommendation`. Entries carrying the optional [pedagogical alignment keys](#optional-pedagogical-alignment-keys-on-clo_plo_mapping) (rare on this ETL-driven path, since `loaded.clo_plo_mapping` is normally `[]`) are rendered into the prompt's alignment block; bare mappings are skipped. Response shape is unchanged.
 - The `recommendation` string returns schema-compliant JSON with `summary`, `recommendations`, and `pattern`.
+- `strip_code_fences` removes only an outer multiline JSON/plain Markdown fence, preserving embedded triple backticks. CRLF and case-insensitive `json` are supported; surrounding prose, unsupported language fences and incomplete fences remain unchanged for boundary validation.
 - Course responses are parsed and validated before `status: "ok"`: exactly these top-level fields, nonempty string `summary`, a nonempty list of items with exactly nonempty string `title`/`explanation` and an allowed `recommendedFor`, and string-or-null `pattern`. Single recommendations and fenced JSON remain supported; the returned value remains a JSON string.
 - Malformed course JSON and empty, null or non-string provider text return the existing `status: "error"` envelope with matching `error` and `recommendation` strings. Institutional summaries validate nonempty text only and continue to accept prose. Neither boundary adds retries. The no-gap course shortcut still returns a null recommendation without calling the provider.
 - ETL rejects negative non-null PRELIM/MIDTERM/FINAL scores before calculation using `TransformationError` with field/value details only. Zero, null and extra-credit score behavior is preserved; see [FORMULAS.md](FORMULAS.md) for the unchanged calculations.
@@ -244,14 +249,14 @@ Entries are `{ "clo_code", "plo_code", "correlation_strength" }` by default. The
 ```
 
 - The three alignment keys are optional and are only present when they carry a signal; `blooms_level` may be `null`, `ipd_stage` is a bare `i`/`p`/`d` letter (Introduction / Proficiency / Demonstration), `assessment_types` is a list of strings.
-- `CourseSubmission` has **no** `extra="forbid"`, so the extra keys pass validation without a schema change.
+- Mapping entries are `Dict[str, Any]`, so these keys are retained inside `clo_plo_mapping`. `CourseSubmission` and `Period` currently use Pydantic's default extra-field handling (ignore); the top-level payload and class-record models forbid extras. This differs from the agent guide's convention for new schemas.
 - Entries carrying none of the three keys are skipped by the prompt builder — a bare mapping never produces "not recorded" rows.
 - When at least one entry carries them, both `build_prompt` and `build_institutional_prompt` append a **"Pedagogical alignment"** block inside `<DATA>` (capped at `MAX_ALIGNMENT_LINES = 60` with an explicit omission note), and the LLM is instructed to cite the Bloom's level / I-P-D stage behind any CLO it quotes.
 - Alignment is scoped **per section**, never merged across courses: the rollups consolidate CLOs by bare code, so a shared map would attribute one course's alignment to another's CLO.
 
 ### `POST /analytics/institutional-summary` (VPAA ONLY)
 
-> ⚠️ **This endpoint has no internal access control.** The webapp MUST verify the requester is VPAA before calling this. It triggers an AI/LLM call.
+> **The webapp MUST verify VPAA authorization.** This endpoint has no user-role check; it shares the optional caller-secret dependency. It invokes the AI path (mocked only when `IS_DEBUG_MODE=True`).
 
 **Normal Response (`status: "ok"`):**
 ```json
@@ -279,7 +284,9 @@ If all configured API keys fail or exceed quota:
 
 ## LLM API Key Multi-Pool & Failover Specification
 
-The service supports zero-downtime key rotation and failover via `OBELISK_LLM_API_KEYS`.
+The service supports sequential failover via `OBELISK_LLM_API_KEYS`. Settings
+are constructed at import time; changing root-file values is not a live key
+reload and generally requires a process restart.
 
 1. **Configuration**:
    - `OBELISK_LLM_API_KEYS='["AIzaSyKey1", "AIzaSyKey2"]'` (JSON array) or `"AIzaSyKey1,AIzaSyKey2"` (comma-separated string).
@@ -291,3 +298,20 @@ The service supports zero-downtime key rotation and failover via `OBELISK_LLM_AP
 3. **Exhaustion Handling**:
    - Only when **all** keys in the pool fail does the engine stop and log `llm_all_keys_exhausted`.
    - Instead of crashing with a 500 error, it returns a structured payload with `"status": "error"` and the error details so the webapp UI can display a helpful message to the user.
+
+## AI configuration and offline verification
+
+`Settings.LLM_MODEL` defaults to `gemini-3.6-flash`; `OBELISK_LLM_MODEL` in the
+repo-root `.env.local`/`.env.prod` or process environment overrides it. The env
+loader selects the profile with `OBELISK_ENV`, supports `OBELISK_ENV_FILE`, and
+preserves pre-set runtime values (`override=False`). No per-package env is read.
+`IS_DEBUG_MODE=False` enables real SDK calls and is separate from logging
+`OBELISK_DEBUG`. Without valid keys AI routes return HTTP 501; course no-gap
+results bypass the provider. Exhaustion/response-validation failures can return
+HTTP 200 with `status: "error"`, which callers must inspect.
+
+The [legacy runner](../testing_modules/old_test/README.md) performs offline
+verification using provider/Redis/worker mocks. Its October 13 repair results
+do not prove current Gemini availability or webapp persistence/error handling.
+Preserved [Pre-UAT evidence](../testing_modules/pre_uat/README.md) refers to its
+original run dates/models/builds; it is not a verification of later source edits.

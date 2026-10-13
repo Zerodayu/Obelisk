@@ -4,7 +4,7 @@ This document lists known limitations, design trade-offs, and deferred implement
 
 1.  **LLM Integration Status**
     -   **Status**: Implemented (`google-genai` client, Live Multi-Key Gemini API Enabled by Default)
-    -   **Details**: The AI-powered CQI recommendation features are wired to Google's Gemini API (`gemini-3.5-flash-lite` in `app/analytics/cqi_recommender.py`) using the official `google-genai` SDK with sequential multi-key failover (`OBELISK_LLM_API_KEYS` / `OBELISK_LLM_API_KEY`). By default, `IS_DEBUG_MODE` is set to `False` to generate real advisory JSON adhering to the CQI schema (`summary`, `recommendations`, and `pattern`). Setting `IS_DEBUG_MODE = True` provides offline deterministic mock responses without external network calls.
+    -   **Details**: The source default in `app/core/config.py` is `gemini-3.6-flash`, overridden by `OBELISK_LLM_MODEL` from root env/runtime configuration. `IS_DEBUG_MODE=False` enables the real `google-genai` path with sequential key failover. It is separate from logging `OBELISK_DEBUG`. Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); there is no automatic mock fallback. Course no-gap results avoid the provider. Course output is validated JSON encoded as a string; institutional output may be nonempty prose. The legacy runner patches mock mode in memory. See [INTEGRATION.md](INTEGRATION.md).
 
 2.  **Indirect Attainment Ingestion (v2 AUN-OBE Template)**
     -   **Status**: Implemented (Per-Student Indirect Rating and 70/30 Composite Recomputation)
@@ -27,8 +27,9 @@ This document lists known limitations, design trade-offs, and deferred implement
     -   **Details**: The `app/database/__init__.py` file contains SQLAlchemy scaffolding. As this service operates as a pure compute engine with no direct database access, this code is unused and retained only for backwards repository compatibility.
 
 7.  **Asynchronous Capacity, Concurrency Limits & Stress Performance**
-    -   **Status**: Measured & Documented via Async Stress Test Suite (`testing_modules/test_stress_async.py`)
-    -   **Measured Capacity Profile**:
+    -   **Status**: Historical documentary figures, not current verified benchmarks. The present script is `testing_modules/old_test/test_stress_async.py` and requires `--live`. It was not executed in the October 13 legacy repair or this documentation audit.
+    -   **Provenance limitation**: The original date/build/raw artifacts for the figures below are not recorded here. They are retained verbatim rather than assigned invented provenance. [Pre-UAT performance documentation](../testing_modules/pre_uat/PERFORMANCE_README.md) does not accept them as executed PT evidence; its performance workloads remain blocked/skipped in the preserved package.
+    -   **Historical Capacity Profile (unverified attribution)**:
         -   **Baseline ASGI Concurrency (`GET /health/`, `GET /jobs`)**: Achieves ~91 RPS at 25 concurrent connections (mean latency ~133 ms, p95 ~344 ms). Scales to 50 concurrent connections with 100% success rate (~23 RPS, mean latency ~1.7 s).
         -   **CPU-Bound Analytics Rollups (`POST /analytics/summary`)**: Handles ~42 RPS under 25–30 concurrent connections (mean latency ~294 ms, p95 ~516 ms). Because Python executes bytecode under the GIL in a single process, high-volume multi-submission mathematical rollups are CPU-bound; horizontal scaling (e.g. multi-process Uvicorn or container replicas) is required for higher aggregate throughput.
         -   **File Ingestion Pipeline (`POST /upload` -> Redis Queue)**:
@@ -37,5 +38,15 @@ This document lists known limitations, design trade-offs, and deferred implement
             -   **Background Processing Throughput**: Bounded by `JOB_WORKER_COUNT: int = 4` parallel background worker coroutines. Excel extraction (`openpyxl`) executes off the event loop via `asyncio.to_thread` using Python's default thread pool.
         -   **AI Recommendations (`GET /analytics/jobs/{job_id}/recommendation`)**: Concurrency is limited by external Google Gemini rate limits (RPM/TPM on `gemini-3.5-flash-lite`). Sequentially fails over through `OBELISK_LLM_API_KEYS`; exhausts with structured error when all keys exceed rate quotas.
     -   **Recommended Configuration Scaling (`app/core/config.py`)**:
+        -   These are historical tuning suggestions, not verified capacity or deployment recommendations for the current build.
         -   For term-end high-volume batch uploads: increase `JOB_WORKER_COUNT` (e.g., 8–16) and `JOB_QUEUE_MAXSIZE` (e.g., 500–1000).
         -   For fast NVMe storage environments: increase `MAX_CONCURRENT_UPLOAD_WRITES` (e.g., 10–20).
+
+8. **Legacy offline verification boundaries**
+    - The [legacy README](../testing_modules/old_test/README.md) records the October 13 repair run: 50 passing unittest cases and two passing standalone checks. Mocked Gemini/client failures, mocked Redis/workers and in-process API requests do not verify real provider model availability, upload/Redis operation, AI accuracy or performance. Live scripts are excluded by default and require `--live`; `requests` is an undeclared optional live-upload dependency, and the scripts do not send shared-secret headers.
+
+9. **Upload and queue lifecycle**
+    - Upload files and JSON job state are stored for processing; there is no automatic completed-job file cleanup or processing timeout in `worker.py`. Redis uses an environment-prefixed list and JSON string keys, not hashes. `BRPOP` removes an item before processing; there is no acknowledgement/requeue mechanism for interrupted running jobs. Durability across Redis restarts depends on Redis storage configuration. These are implementation limitations, not newly executed failure results.
+
+10. **Cross-submission aggregation and institutional policy review**
+    - Group rollups consolidate bare CLO codes across submissions and use the first eligible record's `rule1_met` for a group's CLO completeness flag. The retained PLO field name `plo_attainment_direct_only` can carry composite-based means. Whether those grouping/completeness semantics match intended institutional policy needs manual review; offline success does not certify it. `CourseSubmission`/`Period` also use default extra-field ignoring rather than the new-schema `extra="forbid"` convention. This audit changed neither implementation nor policy.

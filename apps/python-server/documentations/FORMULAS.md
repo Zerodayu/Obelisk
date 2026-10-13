@@ -1,6 +1,10 @@
 # OBELISK ETL Service - Formula Reference
 
-This document provides a canonical reference for every official Outcomes-Based Education (OBE) calculation formula implemented in this service. Each formula is sourced from the official JMCFI WIN-OBE Assessment Plan manual, the AUN-OBE Template specification, or direct client clarification.
+This document describes the Outcomes-Based Education (OBE) calculations
+implemented in this service. Existing source labels cite the JMCFI WIN-OBE
+Assessment Plan, AUN-OBE specification or client clarification; this code/document
+synchronization does not independently certify institutional approval or source
+manual wording. It changes no calculation code or policy.
 
 ---
 
@@ -36,10 +40,14 @@ These formulas are applied to extracted class records during the ETL process ini
 -   **Formula**:
     $$\text{composite} = (0.70 \times \text{direct\_pct}) + (0.30 \times \text{indirect\_pct})$$
 -   **Scales**: `direct_clo_attainment_pct` is a `0-1` fraction and is converted
-    to `0-100`; indirect attainment is already `0-100`.
+    to `0-100`; indirect attainment is already `0-100`. Accepted extra credit
+    can exceed those nominal direct/composite ranges and is not clamped.
 -   **Fallback**: When indirect is `null`, composite falls back to direct.
     Indirect `0` is a real value.
 -   **Rounding**: Composite is rounded to two decimals before classification.
+-   **Missing direct evidence**: A zero maximum-score sum yields null direct,
+    composite, threshold and level values, rather than a measured zero.
+-   **Version**: `SimpleTransformer._formula_version()` returns `70_30_v1`.
 
 -   **Purpose**: To determine if a student's composite CLO attainment meets the institutional standard for proficiency.
 -   **Source**: Functional Requirements FR-03, FR-12, FR-20
@@ -52,13 +60,13 @@ These formulas are applied to extracted class records during the ETL process ini
 ### 4-Tier Performance Levels for `clo_level`
 
 -   **Purpose**: To classify a student's composite attainment into a descriptive performance level.
--   **Function**: `_compute_clo_level()`
+-   **Function**: `compute_clo_level()` in `app/etl/composite_attainment.py`
 -   **Source**: WIN-OBE Assessment Plan, §3.1.1 ("CLO Attainment Levels")
 -   **Formula**:
-    -   `>= 85%` (0.85) $\rightarrow$ `"Exceptional"`
-    -   `70% – 84%` (0.70–0.84) $\rightarrow$ `"Proficient"`
-    -   `60% – 69%` (0.60–0.69) $\rightarrow$ `"Basic"`
-    -   `< 60%` (< 0.60) $\rightarrow$ `"Below Basic"`
+    -   `>= 85.00%` $\rightarrow$ `"Exceptional"`
+    -   `>= 70.00%` and `< 85.00%` $\rightarrow$ `"Proficient"`
+    -   `>= 60.00%` and `< 70.00%` $\rightarrow$ `"Basic"`
+    -   `< 60.00%` $\rightarrow$ `"Below Basic"`
 
 ### Rule 1: Data Completeness Standard (Per-Student, Per-CLO)
 
@@ -77,7 +85,7 @@ These formulas are applied to extracted class records during the ETL process ini
 ### CLO-PLO Mapping Retirement & `excluded_reason`
 
 -   **Status**: PERMANENTLY RETIRED from python-server.
--   **Details**: CLO-PLO correlation is now configured and managed entirely within the webapp backend (Prisma / `curriculum_map`). Python server does not read, validate, or filter by CLO-PLO mappings.
+-   **Details**: Mapping definitions are managed in the webapp; Python Excel ingestion returns an empty mapping and does not filter student attainments by it. Institutional analytics still consumes mappings supplied in the HTTP payload for PLO rollups.
 -   **Output Contract**: `excluded_reason` is retained in `StudentCLOAttainment` schema for shape stability with existing consumers, but is **always `null`**.
 
 ---
@@ -90,13 +98,24 @@ These formulas are applied when the `POST /analytics/institutional-summary` or `
 
 -   **Purpose**: To calculate average composite attainment for a single CLO across all students in a group.
 -   **Formula**:
-    $$\text{Mean CLO Attainment} = \frac{\sum \text{composite\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
+    $$\text{Mean CLO Attainment} = \frac{\sum \text{eligible attainment fractions}}{\text{Total eligible student records}}$$
+-   **Implementation**: Each eligible value is `composite_clo_attainment_pct / 100`,
+    falling back to `direct_clo_attainment_pct` for that record when composite is
+    null. Excluded records and records with neither value are omitted. API
+    `mean_attainment_pct` is a fraction, not a 0–100 percentage. No eligible
+    values yields `0.0` in the helper; group construction may omit the CLO.
+    Grouping uses bare CLO codes across submissions; course identities are not
+    part of that aggregation key. These are implementation details, not a new
+    longitudinal/curriculum policy.
 
 ### Formula 7A: Per-PLO Attainment (Unweighted Average)
 
 -   **Purpose**: To compute the attainment of a Program Learning Outcome (PLO) by rolling up the attainment of all CLOs mapped to it in the payload.
 -   **Formula**:
     $$\text{PLO Attainment} = \frac{\sum \text{Mean Attainment of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
+-   **API naming**: The retained key `plo_attainment_direct_only` carries this
+    mean of composite-or-direct fractions despite its legacy name. Mapping
+    correlation strengths are informational, not weights in this average.
 
 ### Formula 7C: Program-Level Average PLO Attainment
 

@@ -26,7 +26,10 @@ uv run dev
 
 ## 2. Environment Configuration
 
-All environment configurations are managed via `.env` files located at the root of the repository or passed directly into the container/runtime environment.
+`app/core/env.py` decrypts the repo-root `.env.local` or `.env.prod` selected by
+`OBELISK_ENV` before `Settings()` reads the process environment. There is no
+per-package `.env`. Pre-set process/container values take precedence
+(`override=False`); `OBELISK_ENV_FILE` can select an explicit root-file path.
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
@@ -41,15 +44,24 @@ All environment configurations are managed via `.env` files located at the root 
 | `OBELISK_WEBAPP_SHARED_SECRET` | `None` | Shared secret key for service-to-service auth (`X-Webapp-Secret`). |
 | `OBELISK_LLM_API_KEYS` | `[]` | Comma-separated or JSON array of Gemini API keys for failover. |
 | `OBELISK_LLM_API_KEY` | `None` | Backward-compatible single Gemini API key. |
-| `OBELISK_LLM_MODEL` | `gemini-3.5-flash-lite` | Google Gemini model name used for AI recommendations. |
+| `OBELISK_LLM_MODEL` | `gemini-3.6-flash` | Current source default; root env or pre-set runtime values may override it. |
+
+`IS_DEBUG_MODE=False` in `app/analytics/cqi_recommender.py` enables the real
+Gemini path; it is a code toggle, separate from `OBELISK_DEBUG` logging. Missing
+valid API keys produce HTTP 501 at AI routes, except the course no-gap shortcut
+which makes no provider call. Course recommendations are validated JSON encoded
+as a string; institutional recommendations require nonempty text and may be
+prose. Outer JSON/plain Markdown fences are removed without truncating embedded
+backticks. See [INTEGRATION.md](documentations/INTEGRATION.md). The default model
+is a configuration value, not evidence of live availability or deployment.
 
 ---
 
 ## 3. Architecture Overview
 
 This microservice acts as a **pure computation engine**. It has:
-- **No Direct Database Access**: All persistence is managed by the client webapp.
-- **Asynchronous Task Queue**: Uses Redis lists (`BRPOP`) and hashes to manage ETL job state durability.
+- **No Direct Database Access**: Application-domain persistence is managed by the webapp; this service saves uploads and job results for processing.
+- **Asynchronous Task Queue**: Uses Redis lists (`BRPOP`) and JSON string values (`SET`) for job state, with environment-prefixed keys. Redis durability depends on its deployment; popped jobs have no acknowledgement/requeue recovery.
 - **Independent Recomputation**: Recalculates direct and indirect attainment directly from raw Excel score cells, completely ignoring sheet formulas.
 - **Multi-Key LLM Failover**: Sequential retry and failover across configured Gemini API keys with graceful exhaustion signaling.
 
@@ -59,27 +71,44 @@ For full architectural diagrams and specifications, refer to [`documentations/SY
 
 ## 4. Testing Suite
 
-The service features an automated test suite located in `testing_modules/`.
+Legacy regressions are in `testing_modules/old_test/`; the separate
+`testing_modules/pre_uat/` package contains dated institutional test evidence.
+From `apps/python-server/`, use the configured Python 3.13 environment:
 
-```bash
-# Run all unit and integration tests
-uv run python testing_modules/run_all.py
+```powershell
+python -B testing_modules/old_test/run_all.py
+python -B testing_modules/old_test/run_all.py --suite unittest
+python -B testing_modules/old_test/run_all.py --suite integration
+python -B testing_modules/old_test/run_all.py --list
 ```
 
-### Test Directory Manifest
+The default runs seven allowlisted unittest modules and two standalone offline
+checks. It prints `NOT RUN` for live upload and stress workloads. Unrestricted
+unittest discovery does not install these protections before server imports.
+The runner suppresses root env loading, Redis connection checks and background
+workers, mocks Gemini, blocks outbound connections/DNS/subprocesses, and confines
+writes to disposable temporary fixtures. It creates no persistent reports.
 
-| Script | Type | Focus / Description | Command |
-| :--- | :---: | :--- | :--- |
-| `run_all.py` | Runner | **Test Runner**: Discovers and runs all `unittest` suites in `testing_modules/`. | `uv run python testing_modules/run_all.py` |
-| `test_etl_v2.py` | Unit | **AUN-OBE ETL Core & Edge Cases**: Tests dynamic CLO count discovery (synthetic 3-CLO and 7-CLO workbooks), formula tampering resilience (ignoring sheet formula columns and recalculating directly from raw cells), structured old-template rejection (`MissingWorksheet`), and indirect attainment math. | `uv run python -m unittest testing_modules/test_etl_v2.py` |
-| `test_llm_failover.py` | Unit | **LLM Multi-Key Pool & Failover**: Verifies flexible `.env` parsing (JSON arrays and comma-separated strings), sequential key failover on quota/API errors, key exhaustion signaling, and endpoint error statuses. | `uv run python -m unittest testing_modules/test_llm_failover.py` |
-| `test_institutional_summary_e2e.py` | Integration | **Multi-Course Analytics & Rollups**: Validates departmental, program, and AVP group rollups (Formulas 2A, 7A, 7C, Rule 3) and executive AI summary generation using FastAPI's `TestClient`. | `uv run python -m unittest testing_modules/test_institutional_summary_e2e.py` |
-| `test_shared_secret_auth.py` | Unit | **Caller Security / Auth**: Validates `X-Webapp-Secret` enforcement and rejection (`401 UnauthorizedCaller`) across endpoints. | `uv run python -m unittest testing_modules/test_shared_secret_auth.py` |
-| `test_unsupported_course_type.py` | Unit | **Course Type Gating**: Verifies that non-`LECTURE` courses (e.g., `RESEARCH`) fail gracefully with a structured `UnsupportedCourseType` error. | `uv run python -m unittest testing_modules/test_unsupported_course_type.py` |
-| `test_ai_module.py` | Standalone | **AI Recommendation & Privacy**: Exercises `generate_cqi_recommendation()` using `google-genai`, verifying student anonymization, gap extraction, and Markdown formatting. | `uv run python testing_modules/test_ai_module.py` |
-| `test_validate.py` | Standalone | **Extraction Smoke Test**: Runs direct CLI extraction and transformation sanity checks against `JMCFI_Class_Record_Template_AUN-OBE.xlsx`. | `uv run python testing_modules/test_validate.py` |
-| `test_upload_e2e.py` | Live E2E | **Full Single-Course Flow**: Uploads class record workbooks to `POST /upload`, polls Redis job state until `completed`, verifies attainments, and fetches per-course AI recommendation with schema validation. *(Requires server running on port 8000)* | `uv run python testing_modules/test_upload_e2e.py` |
-| `test_stress_async.py` | Load Test | **Async Stress & Capacity Test**: Benchmarks ASGI baseline (`GET /health/`), CPU rollups (`POST /analytics/summary`), and concurrent workbook ingestion (`POST /upload`) with latency percentiles and RPS metrics. | `uv run python testing_modules/test_stress_async.py --concurrency 25 --requests 100` |
+The **October 13, 2026 legacy repair verification** recorded **50 passing
+unittest cases and two passing standalone checks**, with runner exit 0 and no
+failures or skips. This is the prior repair run, not a new execution during this
+documentation audit. It is not added to the Pre-UAT test-ID totals. Detailed
+structure, fixture paths, exit codes, live prerequisites and verification limits
+are in the [legacy README](testing_modules/old_test/README.md).
+
+| Category | Modules / scripts | Execution |
+| --- | --- | --- |
+| Offline unittest | `test_composite_attainment`, `test_etl_v2`, `test_institutional_summary_e2e`, `test_llm_failover`, `test_shared_secret_auth`, `test_unsupported_course_type`, `test_legacy_runner` | `--suite unittest`; in-process API and provider/queue mocks |
+| Standalone offline | `test_validate.py`, `test_ai_module.py` | `--suite integration`; real archived workbook, mock Gemini |
+| Live API integration | `test_upload_e2e.py` | Separate script; requires `--live`, a disposable server, upload files and Redis jobs; may call Gemini |
+| Live stress | `test_stress_async.py` | Separate script; requires `--live`; not executed by the offline runner |
+| Historical institutional package | `testing_modules/pre_uat/` | See its [README](testing_modules/pre_uat/README.md) and dated evidence; not rerun here |
+
+The legacy verification does not establish Gemini model availability, AI
+accuracy, real Redis/upload operation, performance or deployment readiness.
+Pre-UAT's October 11 records (20 PASS, 0 FAIL, 5 BLOCKED, 1 SKIPPED across 26 IDs)
+use different counting and provenance; preserve their original dates, model and
+build/source manifests. Later legacy repairs do not update those records.
 
 ---
 
@@ -93,7 +122,7 @@ uv run python testing_modules/run_all.py
 | `GET` | `/analytics/jobs/{job_id}/recommendation` | Generate a per-course AI CQI recommendation for a completed job. |
 | `POST` | `/analytics/summary` | Generate pure mathematical department/program/AVP rollups (no AI call). |
 | `POST` | `/analytics/institutional-summary` | Generate institutional rollups + executive VPAA AI recommendation. |
-| `GET` | `/health` | Server health and service readiness check. |
+| `GET` | `/health/` | Hardcoded status with a TODO timestamp, not a Redis/worker readiness probe. `/health` redirects. |
 
 ---
 

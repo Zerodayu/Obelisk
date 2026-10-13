@@ -11,24 +11,21 @@ from pathlib import Path
 from collections import defaultdict
 
 # Add project root to path to allow imports from `app`
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from app.etl.extract.extractor import ExcelExtractor
-from app.etl.transform.transformer import SimpleTransformer
-from app.etl import etl_const
-from app.schemas.class_record import ClassRecordHeader
-from app.schemas.extracted import StudentRawCloData
+from testing_modules.old_test._support import BASE_WORKBOOK, offline_context
 
 # Define the path to the templates directory relative to the project root
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
-TEST_FILE = TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE.xlsx"
+TEST_FILE = BASE_WORKBOOK
 
 
 async def step1_validate_extraction():
     """
     Step 1: Extract data and validate StudentRawCloData counts.
     """
+    from app.etl.extract.extractor import ExcelExtractor
     print("\n" + "=" * 80)
     print("STEP 1: Validate Extraction - Raw CLO Data Counts")
     print("=" * 80)
@@ -62,6 +59,7 @@ async def step2_validate_transform(header, records, clo_plo_mapping):
     """
     Step 2: Transform data and verify independent calculations.
     """
+    from app.etl.transform.transformer import SimpleTransformer
     print("\n" + "=" * 80)
     print("STEP 2: Transform Data and Verify Independent Calculation")
     print("=" * 80)
@@ -109,17 +107,19 @@ async def main():
     header, records, clo_plo_mapping = await step1_validate_extraction()
     if header is None or records is None:
         print("\n[FAIL] Extraction validation failed - exiting")
-        return
+        return 1
 
     attainments = await step2_validate_transform(header, records, clo_plo_mapping)
     if attainments is None:
         print("\n[FAIL] Transform validation failed - exiting")
-        return
+        return 1
 
     print("\n" + "=" * 80)
     print("VALIDATION TEST COMPLETE - ALL TESTS PASSED")
     print("=" * 80)
+    return 0
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    with offline_context():
+        raise SystemExit(asyncio.run(main()))

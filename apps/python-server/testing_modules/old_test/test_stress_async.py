@@ -29,7 +29,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATES_DIR = PROJECT_ROOT / "classrecord_templates"
 SAMPLE_WORKBOOK = TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE(mixed).xlsx"
 
@@ -311,6 +311,15 @@ def create_upload_request_func(base_url: str, file_path: Path):
 
 
 async def main_async(args: argparse.Namespace) -> int:
+    if not getattr(args, "live", False):
+        print("NOT RUN: live stress testing requires --live")
+        return 2
+    if args.concurrency < 1 or args.requests < 1:
+        print("FAIL: concurrency and requests must be positive")
+        return 1
+    if args.mode in ("all", "upload") and not SAMPLE_WORKBOOK.is_file():
+        print(f"FAIL: Required upload fixture is missing: {SAMPLE_WORKBOOK}")
+        return 1
     base_url = args.url.rstrip("/")
     concurrency = args.concurrency
     requests_count = args.requests
@@ -359,16 +368,13 @@ async def main_async(args: argparse.Namespace) -> int:
 
     # 3. File Upload Enqueueing (Disk write semaphore & Redis queue capacity)
     if args.mode in ("all", "upload"):
-        if not SAMPLE_WORKBOOK.exists():
-            print(f"WARN: Sample workbook '{SAMPLE_WORKBOOK.name}' not found; skipping upload stress test.")
-        else:
-            summary_upload = await run_stress_suite(
-                name="3. Concurrent Workbook Ingestion (POST /upload)",
-                total_requests=max(15, requests_count // 4),
-                concurrency=min(concurrency, 20),
-                request_func=create_upload_request_func(base_url, SAMPLE_WORKBOOK),
-            )
-            summaries.append(summary_upload)
+        summary_upload = await run_stress_suite(
+            name="3. Concurrent Workbook Ingestion (POST /upload)",
+            total_requests=max(15, requests_count // 4),
+            concurrency=min(concurrency, 20),
+            request_func=create_upload_request_func(base_url, SAMPLE_WORKBOOK),
+        )
+        summaries.append(summary_upload)
 
     # Final Consolidated Comparison Table
     print("\n" + "=" * 85)
@@ -402,20 +408,21 @@ async def main_async(args: argparse.Namespace) -> int:
         return 0
     else:
         print("\nSome requests failed or encountered load limits during testing. See detailed cards above.")
-        return 0
+        return 1
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description="OBELISK Async Capacity & Stress Tester")
+    parser.add_argument("--live", action="store_true", help="Allow live HTTP load, upload writes and Redis jobs")
     parser.add_argument("--url", default="http://localhost:8000", help="Base URL of Python server")
     parser.add_argument("--concurrency", type=int, default=25, help="Number of concurrent client workers")
     parser.add_argument("--requests", type=int, default=100, help="Total requests per suite")
     parser.add_argument("--mode", choices=["all", "health", "analytics", "upload"], default="all", help="Test mode")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     exit_code = asyncio.run(main_async(args))
-    sys.exit(exit_code)
+    return exit_code
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

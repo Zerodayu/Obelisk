@@ -63,7 +63,7 @@ If you search the codebase for user tables, database migrations, or login checks
 |---|:---:|:---:|
 | User authentication & role checks (RBAC) | **YES** | NO (Trusts calling server) |
 | Optional caller secret check (`X-Webapp-Secret`) | Sends header | Validates header |
-| Excel file storage & long-term persistence | **YES** | NO (Stores temporarily during job) |
+| Application record persistence | **YES** | NO (Upload files and Redis job state are retained for processing; no automatic upload cleanup) |
 | CLO-to-PLO curriculum mapping definition | **YES** (Prisma / DB) | NO (Retired from Excel) |
 | Extracting raw scores from AUN-OBE `.xlsx` | NO | **YES** (`ExcelExtractor`) |
 | Calculating Formula 1A (Student Direct CLO %) | NO | **YES** (`SimpleTransformer`) |
@@ -105,18 +105,18 @@ flowchart TD
 #### 1. Ingestion (`POST /upload`)
 - The instructor submits a `.xlsx` file from the browser.
 - The webapp backend streams the multipart upload to Python's `/upload` endpoint.
-- Python saves the file into `uploads/` using a temporary `.tmp` extension, renaming atomically on completion to prevent partial reads.
-- A job UUID is registered in Redis hash `obelisk:{profile}:job:{job_id}` with `status: "queued"`, and pushed onto the list `obelisk:{profile}:job_queue`.
+- Python saves the file under `OBELISK_UPLOAD_FOLDER` (default `uploads/`) using a UUID filename and `.part` temporary suffix, renaming atomically on completion.
+- A job UUID is registered as a Redis JSON string (`SET`) at `obelisk:{profile}:job:{job_id}` with `status: "queued"`, and pushed onto `obelisk:{profile}:job_queue`.
 - The API immediately returns `202 Accepted` with `{ "job_id": "...", "status": "queued" }`. The HTTP connection terminates here.
 
 #### 2. Background Queue Processing (`app/workers/worker.py`)
-- Independent `asyncio.Task` worker loops continuously block on `BRPOP obelisk:{profile}:job_queue 2`.
+- Independent `asyncio.Task` workers call `BRPOP` with a one-second timeout in `asyncio.to_thread`.
 - When a job arrives, its status in Redis is updated to `running`.
-- The worker executes the pipeline wrapped in an execution timeout:
+- The worker executes the pipeline without a processing timeout:
   - If successful, it stores `status: "completed"`, `result: { "loaded": ... }` into Redis.
   - If a handled business or validation error occurs, it sets `status: "failed"` and stores a structured error object.
-  - If an unexpected crash occurs, it stores a formatted traceback in `error`.
-- The temporary uploaded file is deleted from disk in a `finally` block to prevent disk leakage.
+  - If an unexpected exception occurs, it logs the traceback and stores an `UnexpectedError` type/message in job state.
+- Completed uploads are not deleted by the worker; only partial/failed writes and queue-overload uploads have cleanup paths. Popped jobs have no acknowledgement/requeue recovery if processing is interrupted.
 
 #### 3. Client Polling (`GET /jobs/{job_id}`)
 - The frontend/webapp polls `GET /jobs/{job_id}` at 1–2 second intervals.
@@ -125,9 +125,9 @@ flowchart TD
 
 #### 4. Optional: Per-Course CQI Advisory (`GET /analytics/jobs/{job_id}/recommendation`)
 - Once the ETL job completes, the client may call `GET /analytics/jobs/{job_id}/recommendation`.
-- The recommender checks student attainment against the 70% threshold.
-- If gaps exist, it anonymizes student identities (`Student A`, `Student B`) and builds an advisory prompt for Google Gemini (`gemini-3.5-flash-lite`).
-- Google Gemini responds with structured JSON advisory recommendations with automatic multi-key failover (`OBELISK_LLM_API_KEYS`).
+- The recommender anonymizes students, then checks below-threshold records based on their computed threshold flag (rounded composite in v2 ETL).
+- If gaps exist it builds a prompt and invokes the configured Gemini model. The source default is `gemini-3.6-flash`, overridden by `OBELISK_LLM_MODEL`; no-gap course results return a null recommendation without calling Gemini.
+- Course replies must validate against the JSON contract. Provider exceptions trigger sequential key failover; validation failures return an error envelope rather than a successful recommendation. Institutional summaries separately accept nonempty prose.
 
 ---
 
@@ -168,12 +168,15 @@ Submissions are partitioned using `_generic_aggregator()` into:
 - Assistant Vice President (AVP) group clusters
 
 #### 3. Formula 2A: Section CLO Attainment (True Mean)
-Computes the true arithmetic mean of all student direct CLO attainment percentages in that group:
-$$\text{Mean CLO Attainment} = \frac{\sum \text{direct\_clo\_attainment\_pct}}{\text{Total eligible student records}}$$
+Computes the arithmetic mean of eligible composite percentages converted to
+fractions, with a per-record direct-fraction fallback when composite is absent.
+Missing/excluded measurements are omitted. See [FORMULAS.md](FORMULAS.md) for
+the implemented scales and aggregation rules.
 
 #### 4. Formula 7A: Per-PLO Attainment Rollup
 For every Program Learning Outcome (PLO), finds all CLOs mapped to it across the courses:
-$$\text{PLO Attainment (Direct)} = \frac{\sum \text{Mean Attainment of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
+$$\text{PLO Attainment} = \frac{\sum \text{Mean Attainment of mapped CLOs}}{\text{Total number of mapped CLOs}}$$
+The API retains the legacy name `plo_attainment_direct_only` for this value.
 
 #### 5. Rule 3: PLO Data Completeness Standard
 Checks whether the underlying data for each PLO is statistically reliable:
@@ -188,8 +191,8 @@ $$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments i
 The engine identifies the 3 lowest-scoring CLOs in each department, program, and AVP group, sorted by lowest attainment percentage and highest student impact.
 
 #### 8. Executive AI Summary (For VPAA Endpoint Only)
-- In `POST /analytics/institutional-summary`, the identified worst performers and institutional averages are compiled into an executive-level prompt.
-- Google Gemini generates 2–3 high-level strategic interventions for institutional quality improvement.
+- In `POST /analytics/institutional-summary`, the prompt includes the period, selected worst-performing CLO means and optional pedagogical alignment. It does not render every numerical rollup returned in `summary`.
+- The prompt requests strategic interventions; validation checks nonempty text, not academic usefulness, factual accuracy or the number of interventions. Human review remains necessary.
 - Runs with sequential multi-key pool failover; if all keys in `OBELISK_LLM_API_KEYS` are exhausted, returns `"status": "error"` alongside rollups so dashboard data is never lost.
 
 ---
@@ -204,13 +207,15 @@ The engine identifies the 3 lowest-scoring CLOs in each department, program, and
 | `GET` | `/analytics/jobs/{job_id}/recommendation` | Sync | Instructors / Chairs | Generates per-course AI CQI recommendation for a completed job |
 | `POST` | `/analytics/summary` | Sync | Deans / Chairs / AVPs | Pure numerical OBE rollups (Dept/Prog/AVP); **no AI generated** |
 | `POST` | `/analytics/institutional-summary` | Sync | **VPAA Only** | Full institutional rollup + AI executive strategic recommendations |
-| `GET` | `/health` | Sync | Monitoring | Simple health and status check |
+| `GET` | `/health/` | Sync | Monitoring | Hardcoded status/TODO timestamp; not Redis/worker readiness. `/health` redirects. |
 
 ---
 
 ## 6. How Errors are Handled
 
-The service avoids unhandled 500 crashes. All predictable parsing and business logic issues raise subclasses of `OBELISKError`, which generate structured JSON responses:
+Known parsing/business errors use `OBELISKError` structured metadata. Unexpected
+job exceptions become failed job envelopes; routes may still return HTTP 500.
+This is an error-handling description, not proof that crashes cannot occur:
 
 | Exception Class | Trigger Condition | Details Returned |
 |---|---|---|
@@ -240,11 +245,26 @@ All configuration is managed in `app/core/config.py` via environment variables (
 * **`OBELISK_WEBAPP_SHARED_SECRET`**: If set, activates `X-Webapp-Secret` verification on protected endpoints.
 * **`OBELISK_LLM_API_KEYS`**: List of Google Gemini API keys for live recommendations with automatic failover (supports JSON array e.g. `["key1", "key2"]` or comma-separated `key1,key2`).
 * **`OBELISK_LLM_API_KEY`**: Backward-compatible single API key setting.
-* **`OBELISK_LLM_MODEL`**: Model string (default `gemini-3.5-flash-lite`).
+* **`OBELISK_LLM_MODEL`**: Model string (source default `gemini-3.6-flash`). Root `.env.local`/`.env.prod` values can override it; pre-set runtime values take precedence during loading. `OBELISK_ENV` selects the profile and `OBELISK_ENV_FILE` may supply a file override. There is no package-local env file or automatic settings reload.
 * **`IS_DEBUG_MODE` in `cqi_recommender.py`**:
-  - When `False` (default): Makes real API calls to Google Gemini (`gemini-3.5-flash-lite`) using sequential multi-key failover, returning valid structured JSON recommendations (`summary`, `recommendations`, `pattern`).
+  - When `False` (source default): Attempts the configured Gemini model with valid keys. No keys produces HTTP 501 at AI routes, except course no-gap results. Course replies require valid JSON; institutional replies require nonempty text. Configuration is not proof of provider availability.
   - When `True`: Returns instant deterministic mock CQI JSON responses so the system works offline without API keys.
-* **E2E Test Verification (`testing_modules/test_upload_e2e.py`)**:
-  - Runs end-to-end tests across both worst-performing (`JMCFI_Class_Record_Template_AUN-OBE(worst).xlsx`) and mixed-attainment (`JMCFI_Class_Record_Template_AUN-OBE(mixed).xlsx`) workbooks.
+* **Live E2E script (`testing_modules/old_test/test_upload_e2e.py --live`)**:
+  - Default targets are the worst, mixed and ideal workbooks in `classrecord_templates/`; execution requires a separately managed disposable server and can write files/Redis jobs and call Gemini. It was not run in the legacy offline verification or this documentation audit.
   - Logs concise CLO gap summaries instead of dumping raw student attainment arrays, avoiding console buffer truncations.
-  - Enforces explicit assertions ensuring `recommendation` exists, is non-empty, parses as valid JSON, and contains `summary`, `recommendations`, and `pattern`.
+  - Checks valid JSON recommendations for `status: "ok"`; the intentional `no_gaps_found` response instead requires a null recommendation. Live scripts return nonzero on failures and require explicit `--live` opt-in.
+
+`OBELISK_DEBUG` controls logging, not the AI mock toggle. Outer multiline
+JSON/plain fences are removed while preserving embedded triple backticks;
+unsupported language/incomplete fences and surrounding prose are left unchanged.
+See [INTEGRATION.md](INTEGRATION.md) for boundary validation.
+
+## 8. Offline tests and historical records
+
+Run `python -B testing_modules/old_test/run_all.py` from this service directory.
+The [legacy README](../testing_modules/old_test/README.md) records the prior
+October 13 repair verification: 50 unittest cases and two standalone checks
+passed with isolated fixtures/provider/queue mocks. The runner is not a live
+Gemini, Redis, upload or performance test, and this documentation audit ran no
+tests. The [Pre-UAT package](../testing_modules/pre_uat/README.md) preserves its
+own dated IDs, model and build evidence, unaffected by later legacy repairs.

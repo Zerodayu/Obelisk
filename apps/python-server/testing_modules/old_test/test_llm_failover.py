@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -22,6 +23,12 @@ class TestLLMFailoverAndConfig(unittest.IsolatedAsyncioTestCase):
             ('```\n{"summary": "ok"}\n```', '{"summary": "ok"}'),
             ('{"summary": "ok"}', '{"summary": "ok"}'),
             ('```json\n{"summary": "contains ``` text"}\n```', '{"summary": "contains ``` text"}'),
+            ('  ```JSON\r\n{"summary": "ok"}\r\n```  ', '{"summary": "ok"}'),
+            ('{"summary": "contains ``` text"}', '{"summary": "contains ``` text"}'),
+            ('Before\n```json\n{}\n```\nAfter', 'Before\n```json\n{}\n```\nAfter'),
+            ('```python\nprint(1)\n```', '```python\nprint(1)\n```'),
+            ('```json\n{}', '```json\n{}'),
+            ('```json\n```', ''),
             ("LLM API ERROR: unavailable", "LLM API ERROR: unavailable"),
         ]
 
@@ -128,9 +135,12 @@ class TestLLMFailoverAndConfig(unittest.IsolatedAsyncioTestCase):
 
     async def test_call_llm_api_debug_mode(self):
         """Test that IS_DEBUG_MODE=True returns the placeholder without calling GenAI."""
-        with patch.object(cqi_mod, "IS_DEBUG_MODE", True):
+        with patch.object(cqi_mod, "IS_DEBUG_MODE", True), \
+             patch.object(cqi_mod.genai, "Client") as mock_client:
             response = await cqi_mod.call_llm_api("Test prompt")
-            self.assertIn("[PLACEHOLDER RESPONSE", response)
+            self.assertTrue(cqi_mod.validate_course_recommendation(response))
+            self.assertEqual(json.loads(response)["summary"], "Mock CQI recommendation summary.")
+            mock_client.assert_not_called()
 
     async def test_call_llm_api_no_keys_raises_not_implemented(self):
         """Test that missing or empty API keys raises NotImplementedError."""

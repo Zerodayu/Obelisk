@@ -8,6 +8,7 @@ from app.etl.indirect_attainment import compute_indirect_clo_attainment
 from app.etl.extract.extractor import ExcelExtractor
 from app.etl.transform.transformer import SimpleTransformer
 from app.core.exceptions import MissingWorksheet
+from testing_modules.old_test._support import OLD_WORKBOOK, require_fixture
 
 
 class TestIndirectAttainment(unittest.TestCase):
@@ -179,13 +180,12 @@ class TestETLV2Pipeline(unittest.IsolatedAsyncioTestCase):
 
     async def test_old_template_format_raises_structured_missing_worksheet_error(self):
         """Verify that an old template file raises MissingWorksheet instead of partially extracting."""
-        old_template_path = Path("classrecord_templates/E-classrecord(LECTURE ONLY).xlsx")
-        if old_template_path.exists():
-            with self.assertRaises(MissingWorksheet) as ctx:
-                await self.extractor.extract(old_template_path)
-            err_dict = ctx.exception.to_dict()
-            self.assertEqual(err_dict["error_type"], "MissingWorksheet")
-            self.assertEqual(err_dict["details"]["expected_sheet_name"], etl_const.SheetNames.DIRECT_CLO)
+        old_template_path = require_fixture(OLD_WORKBOOK)
+        with self.assertRaises(MissingWorksheet) as ctx:
+            await self.extractor.extract(old_template_path)
+        err_dict = ctx.exception.to_dict()
+        self.assertEqual(err_dict["error_type"], "MissingWorksheet")
+        self.assertEqual(err_dict["details"]["expected_sheet_name"], etl_const.SheetNames.DIRECT_CLO)
 
 
 if __name__ == "__main__":

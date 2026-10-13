@@ -9,7 +9,7 @@
 This is a **pure compute engine** with two hard boundaries that must not be crossed without explicit product decision:
 
 - **No database access.** Never reads or writes a database. All input arrives via HTTP request body, all results return as JSON. The job queue is Redis-backed (`obelisk:<OBELISK_ENV>:job_queue`) and survives restarts; do not add a database.
-- **No authentication/authorization.** Trusts every request. The Elysia webapp backend is responsible for all auth/RBAC *before* calling here (critical for `POST /analytics/institutional-summary`, which is VPAA-only).
+- **No user authentication/RBAC.** The Elysia backend verifies users and roles before calling here (including VPAA-only institutional summaries). The implemented optional `OBELISK_WEBAPP_SHARED_SECRET` check validates `X-Webapp-Secret` on upload/jobs/analytics routes; it does not implement user authorization. Health/manual ETL routes do not carry that dependency.
 
 ## File Structure
 
@@ -28,7 +28,7 @@ app/
 │   ├── analytics.py               # /analytics/jobs/{id}/recommendation, /summary, /institutional-summary
 │   └── health.py                  # GET /health
 ├── services/
-│   ├── job_queue.py               # InMemoryJobQueue (async), single global instance
+│   ├── job_queue.py               # Redis list queue + JSON string job values, env-prefixed keys
 │   └── upload_service.py          # chunked atomic file save w/ size limit
 ├── workers/worker.py              # background worker loop consuming the queue
 ├── etl/
@@ -47,7 +47,8 @@ app/
     ├── types.py                   # JobStatus enum
     └── excel.py                   # excel helpers
 classrecord_templates/             # sample JMCFI class-record workbooks
-testing_modules/                   # test scripts (validate, e2e)
+testing_modules/old_test/          # original scripts, repaired offline runner and regression support
+testing_modules/pre_uat/           # separate institutional harness and dated evidence/reports
 documentations/                    # CONSTANTS.md, FORMULAS.md, INTEGRATION.md, KNOWN_LIMITATIONS.md
 ```
 
@@ -66,15 +67,15 @@ documentations/                    # CONSTANTS.md, FORMULAS.md, INTEGRATION.md, 
 Do not re-derive or duplicate these in code beyond their canonical home; reference `FORMULAS.md` for the authoritative wording:
 
 - **Formula 1A** — Direct CLO attainment = `Σ(raw scores on CLO assessments) / Σ(max scores)`. No assessment-category weighting.
-- **Institutional threshold** — `met_threshold` is always `direct_clo_attainment_pct >= 0.70` (fixed institutional benchmark; never the workbook's per-course threshold).
+- **Institutional threshold** — current v2 `met_threshold` uses rounded `composite_clo_attainment_pct >= 70.00`; composite is 70% direct + 30% indirect, with direct-only fallback when indirect is absent. The workbook threshold is informational. See `FORMULAS.md` for scales and missing-data behavior.
 - **4-tier CLO level** — ≥85% Exceptional, 70–84% Proficient, 60–69% Basic, <60% Below Basic.
 - **Rule 1 (completeness)** — a student's CLO record is complete iff they have ≥1 non-null score in each of PRELIM, MIDTERM, FINAL. Rolled up to `section_completeness_pct` + `rule1_met` (≥60%).
-- **Formula 2A** — section CLO attainment = true mean of students' `direct_clo_attainment_pct` (not a pass rate).
+- **Formula 2A** — true mean of eligible composite values converted to fractions, with per-record direct-fraction fallback when composite is absent. It is not a pass rate.
 - **Formula 7A** — per-PLO attainment = unweighted mean of mapped CLO mean attainments.
 - **Rule 3** — a PLO is complete if ≥60% of mapped CLOs met Rule 1.
 - **Formula 7C** — program-level average PLO attainment, computed only at the program level.
 - **Privacy** — always `anonymize_students()` before any analytics/LLM payload leaves per-student data; student names become `Student A/B/…`, IDs dropped.
-- **LLM** — `IS_DEBUG_MODE` in `app/analytics/cqi_recommender.py` gates real LLM calls. Keep it `True` (placeholder) unless a real integration is deliberately implemented.
+- **LLM** — integration is implemented and `IS_DEBUG_MODE=False` in source. The legacy offline runner patches mock JSON mode and denies real clients; do not enable live calls during offline verification. `OBELISK_LLM_MODEL` overrides the `gemini-3.6-flash` default; logging `OBELISK_DEBUG` does not select mock mode.
 
 ## Service ownership boundary (avoid duplication with the webapp)
 
@@ -91,8 +92,8 @@ The Elysia webapp backend and this service both touch attainment math. **This se
 | Rendering forms + upload UX (calls backend only, never this service directly) | webapp frontend |
 
 Rules:
-- Do **not** implement persistence, auth, or spreadsheet parsing in the webapp; do **not** implement Formula 1A/rollups there either.
-- The webapp calls this service's endpoints and stores results; this service never stores anything.
+- Keep application persistence and user auth/RBAC in the webapp; do **not** duplicate spreadsheet parsing or Formula 1A/rollups there.
+- The webapp stores application results; this service stores upload files and Redis job state for processing, without application database access.
 - `documentations/INTEGRATION.md` is the contract the webapp follows — update it (and `SYSTEM-DESIGN.md`) whenever endpoints or payloads change.
 
 ## Documentation
@@ -100,7 +101,16 @@ Rules:
 - **`documentations/CONSTANTS.md`** — every constant in `etl_const.py`.
 - **`documentations/FORMULAS.md`** — authoritative formula/rule definitions.
 - **`documentations/INTEGRATION.md`** — the HTTP contract for the webapp backend.
-- **`documentations/KNOWN_LIMITATIONS.md`** — known gaps and deferred items (LLM stubbed, indirect 30% not computed, unused DB scaffolding).
+- **`documentations/KNOWN_LIMITATIONS.md`** — implementation limits, test boundaries and historical performance attribution; LLM and indirect/composite calculations are implemented.
 - **`SYSTEM-DESIGN.md`** — architecture, API endpoints, schemas, deployment. **Update it when you add/modify endpoints, schemas, pipeline stages, or formulas.**
 
 These docs are the single source of truth — link to them, do not copy their content into new files.
+
+## Legacy verification
+
+Run `python -B testing_modules/old_test/run_all.py` from this service directory;
+see [the legacy README](testing_modules/old_test/README.md) for the 50-case
+October 13 offline verification and two standalone checks. Do not use broad
+discovery as a substitute for the runner's isolation. Live modes require
+`--live` and are excluded by default. Preserve dated Pre-UAT evidence and do
+not transfer legacy unittest counts into institutional test-ID totals.

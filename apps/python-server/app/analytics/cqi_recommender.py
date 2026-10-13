@@ -51,10 +51,11 @@ Return ONLY JSON matching the provided schema:
 def strip_code_fences(text: str) -> str:
     """Remove one wrapping JSON or plain Markdown code fence without parsing the body."""
     trimmed = text.strip()
-    match = re.search(
-        r"```(?:json)?\s*(.*?)\s*```", trimmed, flags=re.IGNORECASE | re.DOTALL
+    match = re.fullmatch(
+        r"```(?:json)?[^\S\r\n]*\r?\n(?:(.*)\r?\n)?[^\S\r\n]*```", trimmed,
+        flags=re.IGNORECASE | re.DOTALL,
     )
-    return match.group(1).strip() if match else trimmed
+    return (match.group(1) or "").strip() if match else trimmed
 
 
 def normalize_llm_response(response: object) -> str:

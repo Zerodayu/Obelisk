@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import sys
 import time
-import requests
+import argparse
 
 # Set stdout encoding to UTF-8 on Windows to avoid 'charmap' errors
 if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -12,7 +12,7 @@ if sys.stdout and hasattr(sys.stdout, "reconfigure"):
         pass
 
 # Add project root to path to allow imports from `app`
-PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 # --- Configuration ---
@@ -56,6 +56,8 @@ def run_e2e_for_file(test_file: Path) -> bool:
     if not test_file.exists():
         print(f"ERROR: Test file not found at '{test_file}'")
         return False
+
+    import requests
 
     try:
         # 1. POST the file to /upload
@@ -195,6 +197,11 @@ def run_e2e_for_file(test_file: Path) -> bool:
         print_step("6. Validating Recommendation Schema & Content")
         assert "recommendation" in rec_data, "Response is missing the 'recommendation' field"
         raw_recommendation = rec_data.get("recommendation")
+        if rec_data.get("status") == "no_gaps_found":
+            assert raw_recommendation is None, "No-gap result should not contain a recommendation"
+            print("[OK] No gaps: recommendation correctly omitted.")
+            return True
+        assert rec_data.get("status") == "ok", f"Recommendation failed: {rec_data}"
         assert raw_recommendation is not None, "The 'recommendation' field is null"
         assert raw_recommendation != "", "The 'recommendation' field is empty"
 
@@ -245,19 +252,28 @@ def run_e2e_for_file(test_file: Path) -> bool:
         return False
 
 
-def main():
+def main(argv=None):
     """Runs the end-to-end tests for worst and/or mixed workbooks."""
-    if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
-        if "mixed" in arg:
+    parser = argparse.ArgumentParser(description="Live workbook upload / Redis / Gemini integration")
+    parser.add_argument("--live", action="store_true", help="Allow HTTP requests, uploads, Redis jobs and Gemini calls")
+    parser.add_argument("fixture", nargs="?", help="worst, mixed, ideal, or workbook path")
+    args = parser.parse_args(argv)
+    if not args.live:
+        print("NOT RUN: live upload integration requires --live")
+        return 2
+    if args.fixture:
+        arg = args.fixture.lower()
+        if arg == "mixed":
             target_files = [TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE(mixed).xlsx"]
-        elif "worst" in arg:
+        elif arg == "worst":
             target_files = [TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE(worst).xlsx"]
-        elif Path(sys.argv[1]).exists():
-            target_files = [Path(sys.argv[1])]
+        elif arg == "ideal":
+            target_files = [TEMPLATES_DIR / "JMCFI_Class_Record_Template_AUN-OBE(ideal).xlsx"]
+        elif Path(args.fixture).exists():
+            target_files = [Path(args.fixture)]
         else:
-            print(f"Unknown argument '{sys.argv[1]}'. Expected 'worst', 'mixed', or a file path.")
-            sys.exit(1)
+            print(f"Unknown fixture '{args.fixture}'. Expected worst, mixed, ideal, or a file path.")
+            return 1
     else:
         target_files = DEFAULT_TEST_FILES
 
@@ -279,11 +295,11 @@ def main():
 
     if all_passed:
         print("\nALL WORKBOOK E2E TESTS PASSED SUCCESSFULLY!")
-        sys.exit(0)
+        return 0
     else:
         print("\nONE OR MORE E2E TESTS FAILED.")
-        sys.exit(1)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

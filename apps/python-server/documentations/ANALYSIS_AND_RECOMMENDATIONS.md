@@ -2,6 +2,12 @@
 
 This document summarizes the findings from a review of the OBELISK ETL & Analytics Service, based on its source code and official documentation (`SYSTEM-DESIGN.md`, `FORMULAS.md`, etc.).
 
+Current implementation descriptions were synchronized on October 13, 2026 by
+source inspection only. Recommendations are proposals, not completed work or
+new security/performance measurements. Historical testing remains in the
+[Pre-UAT package](../testing_modules/pre_uat/README.md); the separate
+[legacy verification](../testing_modules/old_test/README.md) uses offline mocks.
+
 ---
 
 ## 1. Security Analysis
@@ -31,7 +37,7 @@ This document summarizes the findings from a review of the OBELISK ETL & Analyti
 ### 2.1. Job Queue Durability & Scaling (Resolved / Evolving)
 
 -   **Observation**: The original queue was an in-memory `asyncio.Queue`, which lost all state upon container restart.
--   **Resolution**: The queue was migrated to a Redis-backed queue (`obelisk:job_queue`) and Redis hash storage (`obelisk:job:*`). Background workers run via `BRPOP` and job progress persists across application restarts.
+-   **Resolution**: The queue uses an environment-prefixed Redis list (`obelisk:<OBELISK_ENV>:job_queue`) and JSON string values (`obelisk:<OBELISK_ENV>:job:*`, stored with `SET`). Worker `BRPOP` calls remove jobs before execution. Pending state survives Python restarts while Redis is retained; already-popped interrupted jobs have no acknowledgement/requeue recovery. Redis restart durability depends on its storage configuration.
 -   **Future Consideration**: For full production durability, ensure the Redis container has a persistent data volume or AOF (`--appendonly yes`) enabled in `docker-compose.yml`. For extreme scale, worker execution could be extracted from FastAPI `asyncio.Task` into dedicated worker processes (e.g., Celery, RQ, or ARQ).
 
 ### 2.2. Synchronous File I/O
@@ -52,7 +58,7 @@ This document summarizes the findings from a review of the OBELISK ETL & Analyti
 
 The following design choices are significant strengths of the service:
 
-1.  **Stateless, Pure-Compute Design**: The strict separation of concerns—where this service handles only computation and the webapp handles persistence and auth—is excellent. It makes the service simple, testable, and independently scalable.
+1.  **Pure-Compute Ownership**: The webapp owns domain persistence and user auth/RBAC. Python owns computation, upload files/Redis processing state and optional service-to-service caller-secret validation. These responsibilities can be tested separately.
 2.  **Centralized Constants & Formulas**: The use of `etl_const.py` and clear documentation in `CONSTANTS.md` and `FORMULAS.md` is a best practice that makes the system highly maintainable and transparent.
 3.  **Structured Error Handling**: The custom `OBELISKError` hierarchy provides structured, machine-readable error details, enabling the client to give clear and specific feedback to the end-user.
 
