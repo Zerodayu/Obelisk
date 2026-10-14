@@ -4,6 +4,8 @@ An authoritative, pure-compute backend microservice for Outcomes-Based Education
 
 Designed for **Jose Maria College Foundation, Inc. (JMCFI)**.
 
+Start with the [documentation index](documentations/README.md) for usage guides and historical evidence.
+
 ---
 
 ## 1. Quick Start
@@ -71,44 +73,11 @@ For full architectural diagrams and specifications, refer to [`documentations/SY
 
 ## 4. Testing Suite
 
-Legacy regressions are in `testing_modules/old_test/`; the separate
-`testing_modules/pre_uat/` package contains dated institutional test evidence.
-From `apps/python-server/`, use the configured Python 3.13 environment:
+Start with the [testing guide](documentations/TESTING.md) for Python/uv commands, legacy regression structure, fixture paths, isolation and Pre-UAT runner selection. Use the separate [AI accuracy guide](documentations/AI_ACCURACY_EVALUATION.md) for the 150-case live/replay benchmark and verification of the actual Gemini model.
 
-```powershell
-python -B testing_modules/old_test/run_all.py
-python -B testing_modules/old_test/run_all.py --suite unittest
-python -B testing_modules/old_test/run_all.py --suite integration
-python -B testing_modules/old_test/run_all.py --list
-```
+The **October 13, 2026 legacy repair verification** recorded **50 passing unittest cases and two passing standalone checks**, with no failures or skips. This historical record is retained in the [legacy README](testing_modules/old_test/README.md); no tests were rerun for this documentation consolidation.
 
-The default runs seven allowlisted unittest modules and two standalone offline
-checks. It prints `NOT RUN` for live upload and stress workloads. Unrestricted
-unittest discovery does not install these protections before server imports.
-The runner suppresses root env loading, Redis connection checks and background
-workers, mocks Gemini, blocks outbound connections/DNS/subprocesses, and confines
-writes to disposable temporary fixtures. It creates no persistent reports.
-
-The **October 13, 2026 legacy repair verification** recorded **50 passing
-unittest cases and two passing standalone checks**, with runner exit 0 and no
-failures or skips. This is the prior repair run, not a new execution during this
-documentation audit. It is not added to the Pre-UAT test-ID totals. Detailed
-structure, fixture paths, exit codes, live prerequisites and verification limits
-are in the [legacy README](testing_modules/old_test/README.md).
-
-| Category | Modules / scripts | Execution |
-| --- | --- | --- |
-| Offline unittest | `test_composite_attainment`, `test_etl_v2`, `test_institutional_summary_e2e`, `test_llm_failover`, `test_shared_secret_auth`, `test_unsupported_course_type`, `test_legacy_runner` | `--suite unittest`; in-process API and provider/queue mocks |
-| Standalone offline | `test_validate.py`, `test_ai_module.py` | `--suite integration`; real archived workbook, mock Gemini |
-| Live API integration | `test_upload_e2e.py` | Separate script; requires `--live`, a disposable server, upload files and Redis jobs; may call Gemini |
-| Live stress | `test_stress_async.py` | Separate script; requires `--live`; not executed by the offline runner |
-| Historical institutional package | `testing_modules/pre_uat/` | See its [README](testing_modules/pre_uat/README.md) and dated evidence; not rerun here |
-
-The legacy verification does not establish Gemini model availability, AI
-accuracy, real Redis/upload operation, performance or deployment readiness.
-Pre-UAT's October 11 records (20 PASS, 0 FAIL, 5 BLOCKED, 1 SKIPPED across 26 IDs)
-use different counting and provenance; preserve their original dates, model and
-build/source manifests. Later legacy repairs do not update those records.
+The separate [October 11 Pre-UAT package](testing_modules/pre_uat/README.md) records **20 PASS, 0 FAIL, 5 BLOCKED, 1 SKIPPED across 26 institutional IDs**. Those IDs are not legacy unittest counts or 150-case AI classifications. Preserve original dates, model IDs and source manifests. Mocked regressions do not establish real Gemini availability, Redis/upload operation, performance, deployment or whole-webapp acceptance.
 
 ---
 
@@ -128,7 +97,11 @@ build/source manifests. Later legacy repairs do not update those records.
 
 ## 6. Official Documentation Links
 
-- [System Design & Architecture](documentations/SYSTEM_PROCESS_EXPLAINED.md)
+- [Documentation index](documentations/README.md)
+- [Testing guide](documentations/TESTING.md)
+- [AI accuracy evaluation guide](documentations/AI_ACCURACY_EVALUATION.md)
+- [System Design & Architecture](documentations/SYSTEM-DESIGN.md)
+- [System Process Explained](documentations/SYSTEM_PROCESS_EXPLAINED.md)
 - [Integration Contract & API Specs](documentations/INTEGRATION.md)
 - [Mathematical Formulas](documentations/FORMULAS.md)
 - [Constants & Configuration Specs](documentations/CONSTANTS.md)

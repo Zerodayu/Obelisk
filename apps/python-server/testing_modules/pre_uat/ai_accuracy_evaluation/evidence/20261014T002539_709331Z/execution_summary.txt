@@ -1,0 +1,16 @@
+OBELISK AI ACCURACY EVALUATION - NEW BOUNDED EVALUATION
+Execution: 2026-10-14T00:25:39.720216+00:00
+Dataset SHA-256: 867873f6fd2dd016e39ffc8a7371dc5e5eff618e74c894eb90865690cb1c8e73
+Positive = AT RISK. Ground truth calculated independently; model labels used as predictions.
+STUDENT-CLO: INCOMPLETE; scored 0/150; missing 150
+  Confusion matrix and accuracy/precision/recall/F1 NOT ASSESSED: no actual predictions.
+  Dataset positives=40; scored positives=0; errors=0
+CLO (PROVISIONAL): INCOMPLETE; scored 0/5; missing 5
+  Confusion matrix and accuracy/precision/recall/F1 NOT ASSESSED: no actual predictions.
+  Dataset positives=0; scored positives=0; errors=0
+CQI: INCOMPLETE; academic quality: PENDING; no quality percentage assigned.
+Current Gemini SDK attempts: 2 (maximum 2; no retry)
+Protected originals unchanged: True; isolated compute, no HTTP/Redis/Docker.
+Evidence: testing_modules/pre_uat/ai_accuracy_evaluation/evidence/20261014T002539_709331Z
+CQI INCOMPLETE: [LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 ([REDACTED]) failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]
+CLASSIFICATION INCOMPLETE: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}

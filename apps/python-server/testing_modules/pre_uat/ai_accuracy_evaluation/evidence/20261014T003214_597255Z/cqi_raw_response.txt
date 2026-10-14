@@ -1,0 +1,18 @@
+```json
+{
+  "summary": "In course IT 101 section BSIT - 1A, multiple students fell below the 70% institutional composite attainment threshold across all five course learning outcomes.",
+  "recommendations": [
+    {
+      "title": "Review Direct and Indirect Attainment Gaps for CLO1 through CLO5",
+      "explanation": "Examine the specific areas where students scored below the 70% threshold across all five CLOs, noting that average composite attainments for these students ranged from 60.2% to 64.0%.",
+      "recommendedFor": "Faculty"
+    },
+    {
+      "title": "Monitor Section Performance and Support Interventions",
+      "explanation": "Evaluate the distribution of students failing to meet the 70% threshold across the class—ranging from 6 students in CLO5 to 12 students in CLO3—to determine appropriate academic support.",
+      "recommendedFor": "Program Chair"
+    }
+  ],
+  "pattern": "Students such as Student A consistently fell below the 70% composite threshold across multiple CLOs."
+}
+```

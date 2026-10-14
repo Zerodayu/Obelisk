@@ -1,0 +1,10 @@
+{
+  "status": "INCOMPLETE",
+  "human_academic_review": "PENDING",
+  "qualitative_quality_percentage": null,
+  "source": "This workbook execution only; existing ST-AI outcomes remain separate.",
+  "limitations": [
+    "No human recommendation-quality judgments recorded."
+  ],
+  "error": "[LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 ([REDACTED]) failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]"
+}

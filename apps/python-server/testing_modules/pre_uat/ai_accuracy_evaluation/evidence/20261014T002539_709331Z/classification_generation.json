@@ -1,0 +1,9 @@
+{
+  "status": "INCOMPLETE",
+  "timestamp": "2026-10-14T00:25:49.723549+00:00",
+  "sdk_http_attempts": 1,
+  "requested_model": "gemini-3.6-flash",
+  "error_type": "ServerError",
+  "error": "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}",
+  "elapsed_seconds": 11.751052399999935
+}

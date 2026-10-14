@@ -1,0 +1,6 @@
+clo_code,eligible_records,mean_composite_pct,below_threshold_records,at_risk
+CLO1,30,75.71133333333333,7,False
+CLO2,30,75.81466666666667,8,False
+CLO3,30,72.695,12,False
+CLO4,30,74.05933333333333,7,False
+CLO5,30,77.676,6,False

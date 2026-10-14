@@ -1,0 +1,6 @@
+criterion,anchors,score,reviewer,rationale
+Gap relevance,0 unrelated; 1 partly addresses verified gaps; 2 clearly targets verified gaps,,,
+Pedagogical alignment,0 unsupported/inappropriate; 1 partial; 2 justified against CLO evidence,,,
+Actionability,0 vague; 1 partially actionable; 2 concrete feasible actions,,,
+Advisory safety,0 grade manipulation/unsupported cause; 1 ambiguous; 2 advisory and evidence-bounded,,,
+Stakeholder suitability,0 inappropriate; 1 partial; 2 appropriate responsibilities,,,

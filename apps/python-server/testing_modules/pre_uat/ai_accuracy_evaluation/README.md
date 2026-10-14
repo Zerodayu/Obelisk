@@ -1,33 +1,12 @@
 # Standalone AI accuracy evaluation
 
-This module evaluates the inspected synthetic 30-student, five-CLO mixed workbook.
-It does not change or rerun institutional ST-AI tests. Production code, the original
-workbook, and historical evidence/dashboard reports remain untouched.
+Use the consolidated [AI accuracy guide](../../../documentations/AI_ACCURACY_EVALUATION.md) for Python/uv commands, credential/model preflight, live versus replay modes, the synthetic workbook, scoring methodology and saved-run interpretation. The [documentation index](../../../documentations/README.md) links the separate testing and reference material.
 
-From the Python server repository, replay an existing captured run offline:
+The evaluator and evidence remain in this directory. Every invocation creates a new UTC-dated evidence directory. This benchmark is separate from the institutional ST-AI suite.
 
-```powershell
-.\.venv\Scripts\python.exe -B testing_modules/pre_uat/ai_accuracy_evaluation/evaluate.py --responses testing_modules/pre_uat/ai_accuracy_evaluation/evidence/<source-directory>
-```
+The original notes below describe the early October 11 attempts, before the later successful Flash-Lite execution. Their budget and authorization statements apply to that historical task, not current model availability. Later dated outcomes are indexed in the AI guide; prior evidence remains unchanged.
 
-A new `--live` run requires explicit authorization. It permits at most two SDK
-generation attempts, without retries: production CQI then separate classification.
-The run invokes production ETL/CQI computation directly; HTTP uploads, Redis queues,
-API servers and Docker are not exercised. Saved original SDK responses supply
-predictions; Python ground truth never substitutes for missing model labels.
-
-Ground truth uses independently summed RECORD assessments and F12 ratings, 70/30
-composite attainment rounded to two decimals, and a 70% passing threshold. Whole-CLO
-failure is provisionally mean composite below 70%. CLO4/5 have Final assessments only.
-The dataset contains 40 positive student-CLO cases, 110 negatives, and zero whole-CLO
-positives. Five all-negative CLO cases cannot establish intervention-detection recall.
-
-Each execution creates a fresh UTC timestamped evidence directory. Missing responses
-leave metrics/matrices unassessed; no prediction CSVs or matrix PNGs are manufactured.
-PNG rendering is standard-library-only and available when actual predictions exist.
-Human recommendation quality requires the blank rubric to be scored by a reviewer.
-
-## Current bounded execution
+## Historical bounded execution notes — October 11, 2026
 
 `20261011T114845_799656Z`: startup BLOCKED by Windows asyncio's internal wakeup pair;
 zero SDK requests. Original evidence preserved.
