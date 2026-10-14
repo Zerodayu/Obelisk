@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """
-Run legacy offline regressions; live API and stress scripts are never discovered.
+Run legacy regressions; real local HTTP/Redis tests require explicit --all-live.
 
 Usage:
     python -B testing_modules/old_test/run_all.py [--suite offline|unittest|integration]
     python -B testing_modules/old_test/run_all.py --list
+    python -B testing_modules/old_test/run_all.py --redis-live
+    python -B testing_modules/old_test/run_all.py --all-live
 
-Exits with status 0 on success, 1 on any test failure.
+Redis live mode runs only a local Compose PING, never the offline tests or workers.
+All-live mode creates disposable local Redis/uploads/server, with mocked Gemini.
+Exits with status 0 on success, 1 on failure, 2 on a blocked Redis prerequisite.
 """
 from __future__ import annotations
 
@@ -39,9 +43,25 @@ PACKAGE = "testing_modules.old_test."
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--suite", choices=("offline", "unittest", "integration"), default="offline")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--suite", choices=("offline", "unittest", "integration"))
+    mode.add_argument("--redis-live", action="store_true",
+                      help="Only PING this checkout's local Compose Redis; no offline tests or jobs")
+    mode.add_argument("--all-live", action="store_true",
+                      help="Offline suite plus real disposable local HTTP/Redis upload and bounded stress; mock Gemini")
     parser.add_argument("--list", action="store_true", help="List categories without importing the server")
     args = parser.parse_args(argv)
+    if args.all_live:
+        if args.list:
+            parser.error("--all-live cannot be combined with --list")
+        from testing_modules.old_test._all_live import run_all_live
+        return run_all_live()
+    if args.redis_live:
+        if args.list:
+            parser.error("--redis-live cannot be combined with --list")
+        from testing_modules.old_test._redis_ping import check_local_redis
+        return check_local_redis()
+    args.suite = args.suite or "offline"
     print("UNITTEST: " + ", ".join(UNITTEST_MODULES))
     print("STANDALONE OFFLINE INTEGRATION (mock Gemini): " + ", ".join(INTEGRATION_MODULES))
     for name, reason in EXCLUDED.items():

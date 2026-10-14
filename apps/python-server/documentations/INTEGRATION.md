@@ -41,13 +41,14 @@ service returns `401 Unauthorized` with a structured error payload
 
 ## Template Format & CLO Discovery (v2 AUN-OBE Template)
 
-1. **Worksheets**: The upload must be in the AUN-OBE template format containing at least `"Direct CLO"` and `"Indirect CLO"` sheets, with their respective marker titles in `A1`. Older templates (e.g. `Database`, `Exam`, `COVERPAGE`) fail immediately with structured `MissingWorksheet` or `InvalidTemplate` errors.
+1. **Worksheets**: The supported AUN-OBE template contains at least `"Direct CLO"` and `"Indirect CLO"` sheets, with their respective marker titles in `A1`. Saving/enqueuing an upload does not validate this layout: an unsupported workbook may initially receive HTTP 202, then fail during worker extraction with a structured `MissingWorksheet`, `InvalidTemplate` or `InvalidWorkbook` error. HTTP acceptance is not successful ETL validation.
 2. **Dynamic CLOs**: CLO blocks are discovered dynamically (scanning until a blank cell). The number of CLOs is not fixed.
 3. **CLO-PLO Mapping Retired**: python-server no longer reads or enforces CLO-PLO mappings from Excel. Mapping is managed solely in the webapp backend (`curriculum_map` / Prisma). `result.loaded.clo_plo_mapping` is always `[]`.
 4. **Independent Recomputation**: Direct attainment is computed from the 6 raw score/max cells ($\frac{\text{Prelim}+\text{Midterm}+\text{Final}}{\text{Prelim Max}+\text{Midterm Max}+\text{Final Max}}$). Indirect attainment is recomputed from raw Likert rating as $(\frac{\text{Rating}}{5.0}) \times 100$. Excel's formula columns are ignored.
 5. **Workbook data validation**: Nonblank period score and indirect-rating cells must contain finite numbers or parseable numeric strings. Null/empty/whitespace cells remain missing; zero remains numeric. Malformed text, Excel errors, booleans and nonfinite values raise `WorkbookValidationError`, with `sheet_name`, `cell`, `field` and `reason` details, plus `conflicting_cell` for repeated IDs/CLOs. Details omit names, IDs and raw invalid values. Metadata parsing is unaffected.
 6. **Identity and CLO collisions**: Repeated nonblank student IDs and repeated discovered CLO codes within either worksheet are rejected before lookup insertion. Existing trimmed identifiers/CLO extraction are preserved; no new case-folding is applied. The same ID/CLO once on each sheet is valid. Optional IDs and unambiguous name fallback remain supported; ambiguous name fallback is rejected rather than choosing a row. Matching unique IDs takes priority over names, so shared names with matching distinct IDs remain valid.
 7. **Extra credit**: Valid nonnegative scores above a period maximum are accepted. Scores and resulting attainments are not clamped; the numerator, denominator and [canonical formulas](FORMULAS.md) are unchanged. Direct attainment can exceed 100%.
+8. **Underlying activities**: The mixed workbook contains `RECORD` activity data and `F12` survey data. Production ETL extracts the six Direct CLO score/max subtotal cells and raw Indirect CLO ratings, plus SETUP metadata; it does not expose individual RECORD activities or use RECORD/F12 as its production score source. The separate accuracy evaluator uses those underlying sheets for independent checks.
 
 ---
 
@@ -56,13 +57,15 @@ service returns `401 Unauthorized` with a structured error payload
 ### `POST /upload`
 Upload one class-record `.xlsx` file.
 
+Send `multipart/form-data` with the upload in the `file` field. The Python upload route checks save/size/queue outcomes, but does not enforce an `.xlsx` extension or MIME type before enqueuing. Workbook format/content validation occurs in the asynchronous worker.
+
 **Response (202):**
 ```json
 { "job_id": "uuid-string", "status": "queued" }
 ```
 
-### `GET /jobs`
-Returns a list of all job objects currently tracked in Redis.
+### `GET /jobs/`
+Returns a list of all job objects currently tracked in Redis. `/jobs/` is the canonical route; `/jobs` redirects with HTTP 307 under the current FastAPI configuration.
 
 ### `GET /jobs/{job_id}`
 Poll until `status` is `"completed"` or `"failed"`.
@@ -75,8 +78,8 @@ A single job object with the following structure:
   "type": "etl",
   "status": "completed",
   "payload": { "file_path": "...", "filename": "..." },
-  "created_at": "2026-09-26T10:00:00.000Z",
-  "updated_at": "2026-09-26T10:00:05.000Z",
+  "created_at": "2026-09-26T10:00:00.000000",
+  "updated_at": "2026-09-26T10:00:05.000000",
   "error": null,
   "result": {
     "loaded": {
@@ -98,6 +101,33 @@ A single job object with the following structure:
   }
 }
 ```
+
+Job timestamps are generated with `datetime.utcnow().isoformat()`: they represent UTC but contain no `Z` or offset. Consumers must interpret these current naive strings as UTC rather than browser-local time. The example above is schematic; `loaded` also includes status/count and section/SETUP metadata.
+
+### Webapp preview and explicit persistence
+
+The browser calls Bun/Elysia, which calls Python. The current successful workflow is:
+
+```text
+Upload -> Python queued/running/completed -> Bun ready/preview
+       -> user reviews and explicitly Saves -> Bun persists computed results
+```
+
+The browser polls Bun's `GET /ingest/upload/{jobId}/status`; Bun retrieves Python's `GET /jobs/{job_id}`. Python `completed` means ETL results are stored in Redis, not that computed application results have been saved to the database. Bun returns `ready` with a preview after successful validation; polling does not persist attainment results. Explicit `POST /ingest/upload/{jobId}/save` performs the idempotent computation-run/attainment persistence and returns Bun `completed`. Upload/history metadata can already exist before Save. `ready` is a Bun status, not a Python `JobStatus` value. See [the process guide](SYSTEM_PROCESS_EXPLAINED.md#3-deep-dive-process-1--per-course-workbook-etl).
+
+### HTTP errors versus worker errors
+
+| Boundary | Current response |
+| --- | --- |
+| Upload too large (413), queue overloaded (503), upload save error (500) | HTTP JSON with string-valued `detail`; the save error uses `"Unable to save uploaded file"` |
+| Missing job (404) / unfinished or failed job recommendation (409) | HTTP JSON with string-valued `detail` |
+| Shared-secret rejection (401) | HTTP JSON whose `detail` is a structured `UnauthorizedCaller` object |
+| Request payload validation (422) | FastAPI validation errors in a list-valued `detail` |
+| Worker workbook/business failure | Polling normally returns HTTP 200 with job `status: "failed"` and structured `error` (`error_type`, `message`, `details`) |
+| Unexpected worker exception | Failed job with `error_type: "UnexpectedError"` and `message`; `details` may be absent |
+| AI provider exhaustion / invalid generated response | Can return HTTP 200 with `status: "error"` and string-valued `error`/`recommendation`; inspect status as well as HTTP success |
+
+For example, a missing job returns `{"detail":"Job not found"}`. A queue-overload HTTP response uses `{"detail":"..."}`, not the worker's structured error shape. Clients must distinguish these boundaries rather than assume every error is an object with `error_type`.
 
 ### `result.loaded.attainments[]` row shape
 
@@ -213,6 +243,8 @@ If all configured API keys fail or exceed rate/quota limits:
 
 This group of endpoints accepts a consolidated payload of multiple course submissions to perform higher-level analysis.
 
+For `worst_performing_clos`, the implementation collects all `(group key, CLO)` entries at each aggregation level and selects up to three across the department level, up to three across the program level and up to three across the AVP level. Each selection sorts by ascending mean attainment, then descending `record_count`. The combined candidates are sorted the same way and limited to five. This is not three CLOs for every individual department/program/AVP group; entries from different levels are not deduplicated. `record_count` counts eligible student-CLO records, not necessarily unique students.
+
 ### `POST /analytics/summary` (For Dean, Program Head, AVP dashboards)
 
 > ✅ **This endpoint is safe for any role.** It performs pure data aggregation and **never** triggers an AI/LLM call.
@@ -233,7 +265,7 @@ This group of endpoints accepts a consolidated payload of multiple course submis
 }
 ```
 
-**Optional pedagogical alignment keys on `clo_plo_mapping`:**
+#### Optional pedagogical alignment keys on `clo_plo_mapping`
 
 Entries are `{ "clo_code", "plo_code", "correlation_strength" }` by default. The webapp backend additionally folds in the section's **latest CAR** (regardless of status) when it carries Part 1 data, falling back to the program's CLO→PLO stage:
 
@@ -301,7 +333,7 @@ reload and generally requires a process restart.
 
 ## AI configuration and offline verification
 
-`Settings.LLM_MODEL` defaults to `gemini-3.6-flash`; `OBELISK_LLM_MODEL` in the
+`Settings.LLM_MODEL` defaults to `gemini-3.5-flash-lite`; `OBELISK_LLM_MODEL` in the
 repo-root `.env.local`/`.env.prod` or process environment overrides it. The env
 loader selects the profile with `OBELISK_ENV`, supports `OBELISK_ENV_FILE`, and
 preserves pre-set runtime values (`override=False`). No per-package env is read.

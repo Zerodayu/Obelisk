@@ -40,15 +40,16 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 
 1. Webapp backend authenticates/authorizes the caller, then calls this service.
 2. Upload path: `POST /upload` → save file → enqueue ETL job in Redis → `202 {job_id, status:"queued"}`; webapp polls `GET /jobs/{job_id}` until `completed`/`failed`.
+   The browser polls Bun's `/ingest/upload/{jobId}/status`; Bun calls Python. Successful Python completion produces Bun `ready` with a review preview. Explicit `POST /ingest/upload/{jobId}/save` then persists computed results and returns Bun `completed`. Upload/history metadata can exist earlier; status polling does not persist attainment results.
 3. Analytics path: webapp assembles a consolidated `InstitutionalSummaryPayload` from stored results → `POST /analytics/summary` (pure rollups, no AI) or `POST /analytics/institutional-summary` (AI; **webapp must gate to VPAA**).
-4. This service returns JSON only; webapp persists everything.
+4. This service returns JSON; the webapp owns application persistence. The upload workflow is **Upload → Python processing → Bun ready/preview → explicit Save → database persistence**. Python retains upload files and Redis job state for processing. See [INTEGRATION.md](INTEGRATION.md#webapp-preview-and-explicit-persistence).
 
 ## 3. API Endpoints (implemented)
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/upload` | Accept class-record `.xlsx`; enqueue ETL job (202 → `job_id`); 413 if too large; 503 if queue full |
-| GET | `/jobs` | List all jobs tracked in Redis |
+| POST | `/upload` | Multipart `file` save/enqueue (202 → `job_id`); 413 if too large; 503 if queue full; workbook validation follows in the worker |
+| GET | `/jobs/` | List jobs tracked in Redis; `/jobs` redirects to this canonical route |
 | GET | `/jobs/{job_id}` | Poll job status/result; 404 if not found |
 | GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job; 409 if job pending or failed) |
 | POST | `/analytics/summary` | Pure rollups by department/program/AVP group + worst-performing CLOs (safe for any role; no AI) |
@@ -68,9 +69,11 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 
 - **`ExcelExtractor`** (`app/etl/extract/extractor.py`):
   - Validates sheet presence (`Direct CLO`, `Indirect CLO`) and marker cells at `A1` *before* extraction.
+  - In the upload path validation runs asynchronously after HTTP 202 acceptance; unsupported/corrupted workbooks can become failed jobs. Upload routing does not check `.xlsx` extension/MIME type.
   - Discovers CLO blocks dynamically (scanning row 3 for Direct CLO, row 4 for Indirect CLO until blank).
   - Dynamically reads student roster starting row 5 until blank row or known summary label (`CLASS AVERAGE`, `MEAN RATING`, `%age CO ATTAINMENT`).
   - Extracts 6 raw score/max cells per student per CLO from Direct CLO and raw Likert rating from Indirect CLO.
+  - The mixed workbook also contains underlying `RECORD` activities/F12 ratings. Production extraction uses Direct/Indirect subtotal data and SETUP metadata; the accuracy evaluator's RECORD/F12 checks are separate. Some SETUP cell addresses remain hardcoded in the extractor rather than `etl_const.py`.
   - CLO-PLO mapping is permanently retired from python-server and returns `[]`.
   - Errors: `InvalidWorkbook`, `MissingWorksheet`, `InvalidTemplate`, `UnsupportedCourseType`.
 - **`SimpleTransformer`** (`app/etl/transform/transformer.py`):
@@ -90,9 +93,11 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
   - If all keys fail, logs `llm_all_keys_exhausted` and returns `[LLM API ERROR: All N configured API key(s) were exhausted without success...]`.
   - Propagates `"status": "error"` and `"error"` to callers if LLM generation failed.
   - `IS_DEBUG_MODE=False` is the production source toggle; offline legacy tests patch it to True and deny real clients. `OBELISK_DEBUG` only affects logging.
-  - Model source default is `gemini-3.6-flash` in `Settings`; `OBELISK_LLM_MODEL` overrides it through root env/runtime values. Pre-set values win during dotenvx loading, and `OBELISK_ENV_FILE` can override file selection. Settings are built at import, not automatically hot-reloaded.
+  - Model source default is `gemini-3.5-flash-lite` in `Settings`; `OBELISK_LLM_MODEL` overrides it through root env/runtime values. Pre-set values win during dotenvx loading, so the effective runtime model may differ. `OBELISK_ENV_FILE` can override file selection. Settings are built at import, not automatically hot-reloaded.
   - Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); course no-gap results bypass LLM calls. There is no automatic mock fallback.
   - Outer multiline JSON/plain fences are stripped without truncating embedded backticks; course JSON is validated and institutional nonempty prose remains accepted. See [INTEGRATION.md](INTEGRATION.md).
+
+Worst-performing CLO selection takes up to three `(group key, CLO)` entries across each aggregation level (department, program, AVP), not per individual group. Candidates sort by ascending mean attainment then descending `record_count`; the combined list is limited to five without cross-level deduplication. See [INTEGRATION.md](INTEGRATION.md#endpoint-2-institutional--program-level-analytics).
 
 ## 7. Ownership boundary (avoid overlap with the webapp)
 
@@ -106,6 +111,7 @@ The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
 - Elysia must run all auth/RBAC **before** calling any endpoint (esp. `POST /analytics/institutional-summary`).
 - `POST /upload` → poll `GET /jobs/{job_id}`; parse structured `error` object (`error_type`/`message`/`details`) for user-facing messages.
+  Worker failures use that job envelope; HTTP `detail` can instead be a string, structured object or validation list. Job timestamps represent UTC but omit `Z`/offset. See [error boundaries](INTEGRATION.md#http-errors-versus-worker-errors).
 - Attainment results now include `indirect_clo_attainment_pct` (`0.0 - 100.0%`), and `excluded_reason` is always `null`.
 - `clo_plo_mapping` returned by `/jobs/{job_id}` is empty (`[]`); the webapp uses its own DB-backed `curriculum_map` to link CLOs to PLOs.
 - `POST /analytics/summary` is safe for any dashboard role; it never triggers AI.

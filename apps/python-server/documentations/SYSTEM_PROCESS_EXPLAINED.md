@@ -84,7 +84,7 @@ This is the background process triggered when an instructor uploads a completed 
 
 ```mermaid
 flowchart TD
-    A["Instructor Uploads .xlsx in Webapp"] --> B["POST /upload"]
+    A["Instructor Uploads .xlsx in Webapp"] --> B["Bun forwards multipart file to Python POST /upload"]
     B --> C["Upload Service: Save file atomically to /uploads"]
     C --> D["Job Enqueued in Redis (obelisk:{profile}:job_queue)"]
     D --> E["API responds immediately: 202 Accepted { job_id }"]
@@ -98,6 +98,13 @@ flowchart TD
     end
     
     D -.-> F
+    E --> P["Browser polls Bun GET /ingest/upload/{jobId}/status"]
+    P --> Q["Bun polls Python GET /jobs/{job_id}"]
+    J --> Q
+    Q -->|Completed ETL, valid preview| R["Bun returns ready + preview"]
+    R --> S["User reviews and explicitly Saves"]
+    S --> T["Bun POST /ingest/upload/{jobId}/save"]
+    T --> U["Persist computed results in database; Bun returns completed"]
 ```
 
 ### Step-by-Step Breakdown
@@ -108,6 +115,7 @@ flowchart TD
 - Python saves the file under `OBELISK_UPLOAD_FOLDER` (default `uploads/`) using a UUID filename and `.part` temporary suffix, renaming atomically on completion.
 - A job UUID is registered as a Redis JSON string (`SET`) at `obelisk:{profile}:job:{job_id}` with `status: "queued"`, and pushed onto `obelisk:{profile}:job_queue`.
 - The API immediately returns `202 Accepted` with `{ "job_id": "...", "status": "queued" }`. The HTTP connection terminates here.
+- Acceptance means the file was saved/enqueued, not that its workbook layout is valid. The Python route does not enforce extension/MIME type; unsupported or corrupted workbooks may fail later during worker validation. See [HTTP and worker error boundaries](INTEGRATION.md#http-errors-versus-worker-errors).
 
 #### 2. Background Queue Processing (`app/workers/worker.py`)
 - Independent `asyncio.Task` workers call `BRPOP` with a one-second timeout in `asyncio.to_thread`.
@@ -116,17 +124,20 @@ flowchart TD
   - If successful, it stores `status: "completed"`, `result: { "loaded": ... }` into Redis.
   - If a handled business or validation error occurs, it sets `status: "failed"` and stores a structured error object.
   - If an unexpected exception occurs, it logs the traceback and stores an `UnexpectedError` type/message in job state.
+- The mixed workbook includes `RECORD` activities, but the production extractor reads Direct/Indirect period subtotals and ratings plus SETUP metadata. Individual activities are not exposed in the ETL output. RECORD/F12 source checks belong to the separate accuracy evaluator.
 - Completed uploads are not deleted by the worker; only partial/failed writes and queue-overload uploads have cleanup paths. Popped jobs have no acknowledgement/requeue recovery if processing is interrupted.
 
-#### 3. Client Polling (`GET /jobs/{job_id}`)
-- The frontend/webapp polls `GET /jobs/{job_id}` at 1–2 second intervals.
-- The response returns `{ "status": "queued" | "running" | "completed" | "failed", "result": ... }`.
-- Once `status` is `completed`, the webapp consumes `result.loaded.attainments` and persists the computed numbers into PostgreSQL via Prisma.
+#### 3. Bun Polling, Preview and Explicit Save
+- The frontend polls Bun's `GET /ingest/upload/{jobId}/status`, with the selected class section. Bun retrieves Python's `GET /jobs/{job_id}`; the browser does not call Python directly.
+- Python returns `queued`, `running`, `completed` or `failed`. Python `completed` means the ETL result is available in Redis.
+- For a completed, valid ETL result, Bun returns `ready` plus a preview for review. Status polling does not persist computed attainment results; upload/history metadata may already exist.
+- The user explicitly Saves through Bun's `POST /ingest/upload/{jobId}/save`. Bun then creates the computation run and persists attainment/flag records through Prisma, marking the upload completed. Save is idempotent; repeated saves replay the stored result. Bun `ready` is distinct from Python job status.
+- The successful workflow is **Upload → Python processing → Bun ready/preview → explicit Save → database persistence**. See [the integration contract](INTEGRATION.md#webapp-preview-and-explicit-persistence).
 
 #### 4. Optional: Per-Course CQI Advisory (`GET /analytics/jobs/{job_id}/recommendation`)
 - Once the ETL job completes, the client may call `GET /analytics/jobs/{job_id}/recommendation`.
 - The recommender anonymizes students, then checks below-threshold records based on their computed threshold flag (rounded composite in v2 ETL).
-- If gaps exist it builds a prompt and invokes the configured Gemini model. The source default is `gemini-3.6-flash`, overridden by `OBELISK_LLM_MODEL`; no-gap course results return a null recommendation without calling Gemini.
+- If gaps exist it builds a prompt and invokes the configured Gemini model. The source default is `gemini-3.5-flash-lite`, overridden by `OBELISK_LLM_MODEL`; pre-set runtime values win during root env loading, so the effective model can differ. No-gap course results return a null recommendation without calling Gemini.
 - Course replies must validate against the JSON contract. Provider exceptions trigger sequential key failover; validation failures return an error envelope rather than a successful recommendation. Institutional summaries separately accept nonempty prose.
 
 ---
@@ -144,7 +155,6 @@ flowchart TD
     
     subgraph Analytics Computation Engine
         C --> E["1. Anonymize Student Data"]
-        D --> E
         E --> F["2. Formula 2A: Section CLO Means"]
         F --> G["3. Formula 7A: PLO Rollups & Rule 3 Completeness"]
         G --> H["4. Formula 7C: Program-Level Average PLO"]
@@ -188,7 +198,7 @@ Calculated **only** at the Program level:
 $$\text{Program PLO Average} = \frac{\sum \text{All individual PLO attainments in program}}{\text{Total number of PLOs in program}}$$
 
 #### 7. Worst-Performing CLO Identification
-The engine identifies the 3 lowest-scoring CLOs in each department, program, and AVP group, sorted by lowest attainment percentage and highest student impact.
+`find_worst_performers` collects `(group key, CLO)` entries across each aggregation level and selects up to three from the department level, three from the program level and three from the AVP level. It sorts by ascending mean attainment, breaking ties by descending eligible `record_count`. The combined candidates are sorted with the same keys and limited to five for `worst_performing_clos`. This is not three per individual department/program/AVP group, and candidates from different levels are not deduplicated. Record counts are not necessarily unique-student counts.
 
 #### 8. Executive AI Summary (For VPAA Endpoint Only)
 - In `POST /analytics/institutional-summary`, the prompt includes the period, selected worst-performing CLO means and optional pedagogical alignment. It does not render every numerical rollup returned in `summary`.
@@ -199,15 +209,15 @@ The engine identifies the 3 lowest-scoring CLOs in each department, program, and
 
 ## 5. API Reference Summary
 
-| Method | Endpoint | Sync / Async | Audience | Purpose |
+| Method | Endpoint | Response pattern | Audience | Purpose |
 |---|---|:---:|---|---|
-| `POST` | `/upload` | Async | Instructors | Accepts `.xlsx`, writes to disk, enqueues ETL job in Redis, returns `202 Accepted` |
-| `GET` | `/jobs` | Sync | Webapp | Lists all jobs currently tracked in Redis |
-| `GET` | `/jobs/{job_id}` | Sync | Webapp | Polling endpoint: returns `queued`, `running`, `completed`, or `failed` with results/errors |
-| `GET` | `/analytics/jobs/{job_id}/recommendation` | Sync | Instructors / Chairs | Generates per-course AI CQI recommendation for a completed job |
-| `POST` | `/analytics/summary` | Sync | Deans / Chairs / AVPs | Pure numerical OBE rollups (Dept/Prog/AVP); **no AI generated** |
-| `POST` | `/analytics/institutional-summary` | Sync | **VPAA Only** | Full institutional rollup + AI executive strategic recommendations |
-| `GET` | `/health/` | Sync | Monitoring | Hardcoded status/TODO timestamp; not Redis/worker readiness. `/health` redirects. |
+| `POST` | `/upload` | Job acceptance | Instructors | Saves/enqueues the file and returns `202`; worker validation/computation follows |
+| `GET` | `/jobs/` | Direct response | Webapp | Lists jobs tracked in Redis; `/jobs` redirects to the canonical trailing-slash route |
+| `GET` | `/jobs/{job_id}` | Direct response | Webapp backend | Returns Python `queued`, `running`, `completed` or `failed` with results/errors |
+| `GET` | `/analytics/jobs/{job_id}/recommendation` | Direct response | Instructors / Chairs via backend | Generates per-course AI CQI recommendation for a completed Python job |
+| `POST` | `/analytics/summary` | Direct response | Deans / Chairs / AVPs via backend | Pure numerical OBE rollups (Dept/Prog/AVP); **no AI generated** |
+| `POST` | `/analytics/institutional-summary` | Direct response | **VPAA Only**, authorized by backend | Institutional rollup + AI executive recommendation |
+| `GET` | `/health/` | Direct response | Monitoring | Hardcoded status/TODO timestamp; not Redis/worker readiness. `/health` redirects. |
 
 ---
 
@@ -216,6 +226,8 @@ The engine identifies the 3 lowest-scoring CLOs in each department, program, and
 Known parsing/business errors use `OBELISKError` structured metadata. Unexpected
 job exceptions become failed job envelopes; routes may still return HTTP 500.
 This is an error-handling description, not proof that crashes cannot occur:
+
+HTTP errors are not uniformly structured: upload-size/queue-overload errors and missing-job errors use string-valued `detail`; shared-secret errors put a structured object inside `detail`; request validation can return a list. Worker business failures instead appear in job `error` objects, usually retrieved with HTTP 200. Unexpected worker errors may omit `details`. Job timestamps are naive UTC ISO strings without `Z`/offset. See [the exact contract](INTEGRATION.md#http-errors-versus-worker-errors).
 
 | Exception Class | Trigger Condition | Details Returned |
 |---|---|---|
@@ -245,7 +257,7 @@ All configuration is managed in `app/core/config.py` via environment variables (
 * **`OBELISK_WEBAPP_SHARED_SECRET`**: If set, activates `X-Webapp-Secret` verification on protected endpoints.
 * **`OBELISK_LLM_API_KEYS`**: List of Google Gemini API keys for live recommendations with automatic failover (supports JSON array e.g. `["key1", "key2"]` or comma-separated `key1,key2`).
 * **`OBELISK_LLM_API_KEY`**: Backward-compatible single API key setting.
-* **`OBELISK_LLM_MODEL`**: Model string (source default `gemini-3.6-flash`). Root `.env.local`/`.env.prod` values can override it; pre-set runtime values take precedence during loading. `OBELISK_ENV` selects the profile and `OBELISK_ENV_FILE` may supply a file override. There is no package-local env file or automatic settings reload.
+* **`OBELISK_LLM_MODEL`**: Model string (source default `gemini-3.5-flash-lite`). Root `.env.local`/`.env.prod` values can override it; pre-set runtime values take precedence during loading. `OBELISK_ENV` selects the profile and `OBELISK_ENV_FILE` may supply a file override. There is no package-local env file or automatic settings reload.
 * **`IS_DEBUG_MODE` in `cqi_recommender.py`**:
   - When `False` (source default): Attempts the configured Gemini model with valid keys. No keys produces HTTP 501 at AI routes, except course no-gap results. Course replies require valid JSON; institutional replies require nonempty text. Configuration is not proof of provider availability.
   - When `True`: Returns instant deterministic mock CQI JSON responses so the system works offline without API keys.

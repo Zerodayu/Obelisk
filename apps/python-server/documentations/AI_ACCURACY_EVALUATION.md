@@ -34,7 +34,7 @@ For `python`, activate `.\.venv\Scripts\Activate.ps1` first. The live mode makes
 
 ## Confirm the effective model before calling it
 
-The source default in `app/core/config.py` is `gemini-3.6-flash`. `OBELISK_LLM_MODEL` in root/runtime configuration can override it. `app/core/env.py` loads the selected encrypted repo-root `.env.local` or `.env.prod`; pre-set process values take precedence. Do not add a per-package `.env`. `OBELISK_DEBUG` controls logging, not mock mode; production `IS_DEBUG_MODE=False` selects real Gemini.
+The current source default in `app/core/config.py` is `gemini-3.5-flash-lite`. `OBELISK_LLM_MODEL` in root/runtime configuration can override it, so a live evaluation uses the effective setting rather than a model fixed by this guide. `app/core/env.py` loads the selected encrypted repo-root `.env.local` or `.env.prod`; pre-set process values take precedence. Do not add a per-package `.env`. `OBELISK_DEBUG` controls logging, not mock mode; production `IS_DEBUG_MODE=False` selects real Gemini.
 
 The unchanged evaluator requires exactly one configured valid key to bound failover, real mode, direct Gemini Developer API transport, one SDK attempt per generation and no custom proxy/endpoint configuration. It checks safety prerequisites but **does not query the available model catalog itself**. Verify the catalog separately before a new live run; do not infer availability from the source default or historical results.
 

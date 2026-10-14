@@ -2,8 +2,9 @@
 
 This document summarizes the findings from a review of the OBELISK ETL & Analytics Service, based on its source code and official documentation (`SYSTEM-DESIGN.md`, `FORMULAS.md`, etc.).
 
-Current implementation descriptions were synchronized on October 13, 2026 by
-source inspection only. Recommendations are proposals, not completed work or
+Current implementation descriptions were synchronized on October 13, 2026,
+with the documented constants-centralization claim clarified on October 14
+against source. Recommendations are proposals, not completed work or
 new security/performance measurements. Historical testing remains in the
 [Pre-UAT package](../testing_modules/pre_uat/README.md); the separate
 [legacy verification](../testing_modules/old_test/README.md) uses offline mocks.
@@ -59,7 +60,7 @@ new security/performance measurements. Historical testing remains in the
 The following design choices are significant strengths of the service:
 
 1.  **Pure-Compute Ownership**: The webapp owns domain persistence and user auth/RBAC. Python owns computation, upload files/Redis processing state and optional service-to-service caller-secret validation. These responsibilities can be tested separately.
-2.  **Centralized Constants & Formulas**: The use of `etl_const.py` and clear documentation in `CONSTANTS.md` and `FORMULAS.md` is a best practice that makes the system highly maintainable and transparent.
+2.  **Shared Constants & Formula References**: `etl_const.py` centralizes Direct/Indirect layouts and calculation defaults, with references in `CONSTANTS.md` and `FORMULAS.md`. Some extractor SETUP cell addresses remain hardcoded, so centralization is incomplete. This is a source-description limitation, not a change to formulas or workbook parsing.
 3.  **Structured Error Handling**: The custom `OBELISKError` hierarchy provides structured, machine-readable error details, enabling the client to give clear and specific feedback to the end-user.
 
 ---

@@ -6,7 +6,7 @@ This document provides a reference for the constants defined in `app/etl/etl_con
 
 ## 1. File Structure
 
-All constants are centralized in `app/etl/etl_const.py`. They are organized into classes that group them by function:
+The Direct/Indirect sheet layout constants and institutional calculation defaults listed here are centralized in `app/etl/etl_const.py`. This is not exhaustive centralization: `extractor.py` still hardcodes some SETUP metadata cell addresses, including `B3`, `D3`, `B4`, `D4`, `B5`, `B6`, `H9` and `E9`. These remain implementation details; this documentation update does not relocate them. The defined constants are organized into classes by function:
 
 -   **Sheet Names**: `SheetNames`
 -   **Template Validation**: `TemplateValidation`
@@ -32,7 +32,7 @@ Contains the standardized worksheet names for the AUN-OBE template:
 ## 3. Template Validation
 
 ### `TemplateValidation`
-Constants used to validate the template version and required worksheets before any data extraction occurs. Uploading an old-format file immediately raises a structured `MissingWorksheet` or `InvalidTemplate` error.
+Constants used to validate the template version and required worksheets before extraction. In the upload workflow these checks occur in the worker after saving/enqueuing, so an old-format workbook can receive HTTP 202 before the job fails with structured `MissingWorksheet` or `InvalidTemplate` metadata. See [the integration contract](INTEGRATION.md#http-errors-versus-worker-errors).
 
 | Constant | Value | Description |
 | :--- | :--- | :--- |

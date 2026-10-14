@@ -4,7 +4,7 @@ This document lists known limitations, design trade-offs, and deferred implement
 
 1.  **LLM Integration Status**
     -   **Status**: Implemented (`google-genai` client, Live Multi-Key Gemini API Enabled by Default)
-    -   **Details**: The source default in `app/core/config.py` is `gemini-3.6-flash`, overridden by `OBELISK_LLM_MODEL` from root env/runtime configuration. `IS_DEBUG_MODE=False` enables the real `google-genai` path with sequential key failover. It is separate from logging `OBELISK_DEBUG`. Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); there is no automatic mock fallback. Course no-gap results avoid the provider. Course output is validated JSON encoded as a string; institutional output may be nonempty prose. The legacy runner patches mock mode in memory. See [INTEGRATION.md](INTEGRATION.md).
+    -   **Details**: The source default in `app/core/config.py` is `gemini-3.5-flash-lite`, overridden by `OBELISK_LLM_MODEL` from root env/runtime configuration. Pre-set runtime values take precedence during root env loading; the source default alone does not establish the effective model. `IS_DEBUG_MODE=False` enables the real `google-genai` path with sequential key failover. It is separate from logging `OBELISK_DEBUG`. Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); there is no automatic mock fallback. Course no-gap results avoid the provider. Course output is validated JSON encoded as a string; institutional output may be nonempty prose. The legacy runner patches mock mode in memory. See [INTEGRATION.md](INTEGRATION.md).
 
 2.  **Indirect Attainment Ingestion (v2 AUN-OBE Template)**
     -   **Status**: Implemented (Per-Student Indirect Rating and 70/30 Composite Recomputation)
@@ -16,7 +16,7 @@ This document lists known limitations, design trade-offs, and deferred implement
 
 4.  **No Granular Assessment Breakdown (TLA/AT/EXAM/OUTPUT)**
     -   **Status**: Layout Decision in v2 Template
-    -   **Details**: In the AUN-OBE template, scores arrive pre-summed into Prelim, Midterm, and Final subtotals per CLO. Individual activity rows (quizzes, exercises, specific exam items) are not present in this template. Consequently, the informational `tla_pct`, `at_pct`, `exam_pct`, and `output_pct` fields are returned as `null`.
+    -   **Details**: The mixed workbook contains individual activities in `RECORD`, but production ETL extracts Prelim, Midterm and Final score/max subtotals from `Direct CLO` and raw ratings from `Indirect CLO`, plus SETUP metadata. It does not expose a granular activity/category breakdown; `tla_pct`, `at_pct`, `exam_pct` and `output_pct` remain `null`. The separate accuracy evaluator checks RECORD activities/F12 ratings independently; that is not a production ETL stage.
 
 5.  **Data Completeness (Rule 1) Interpretive Gap**
     -   **Status**: Implemented, with Known Clarification Item

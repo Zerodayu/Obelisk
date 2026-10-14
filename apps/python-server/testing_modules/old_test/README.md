@@ -1,8 +1,12 @@
 # Legacy regression tests
 
-These original tests are maintained separately from `../pre_uat/`. The directory contains the original 11 Python files plus `_support.py` and `test_legacy_runner.py`.
+These original tests are maintained separately from `../pre_uat/`. The directory contains the original 11 Python files, `_support.py` and `test_legacy_runner.py`, plus the separate `_redis_ping.py` helper and `test_redis_ping.py` safety tests.
 
 Use the consolidated [testing guide](../../documentations/TESTING.md) for Python/uv commands, module categories, fixture paths, isolation, exit codes and live-mode prerequisites. Start with the [documentation index](../../documentations/README.md) if you need help choosing a suite. Operating instructions are maintained there; the repair record below remains historical.
+
+Default: `python -B testing_modules/old_test/run_all.py` retains the offline 50-case allowlist and two standalone checks. Optional: `python -B testing_modules/old_test/run_all.py --redis-live` performs only a verified local Compose Redis PING, without workers or data changes. See the [Redis PING instructions](../../documentations/TESTING.md#optional-local-compose-redis-ping) for prerequisites, timeouts, separate results and uv commands.
+
+For the complete applicable legacy suite, run `python -B testing_modules/old_test/run_all.py --all-live`. **This creates temporary uploads/jobs, starts owned disposable local Redis/workers/HTTP services and generates bounded load.** Gemini remains mocked. The original upload/stress scripts are unchanged; `_all_live.py` supplies isolation and additional terminal-result checks, with `test_all_live_safety.py` providing separate safety regressions. See [the all-live guide](../../documentations/TESTING.md#complete-local-legacy-run---all-live) for exact commands, prerequisites, result categories and coverage limits. Historical verification below is preserved; it is not the current live-run result.
 
 ## Last verified legacy run: October 13, 2026
 

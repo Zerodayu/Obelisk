@@ -46,7 +46,7 @@ per-package `.env`. Pre-set process/container values take precedence
 | `OBELISK_WEBAPP_SHARED_SECRET` | `None` | Shared secret key for service-to-service auth (`X-Webapp-Secret`). |
 | `OBELISK_LLM_API_KEYS` | `[]` | Comma-separated or JSON array of Gemini API keys for failover. |
 | `OBELISK_LLM_API_KEY` | `None` | Backward-compatible single Gemini API key. |
-| `OBELISK_LLM_MODEL` | `gemini-3.6-flash` | Current source default; root env or pre-set runtime values may override it. |
+| `OBELISK_LLM_MODEL` | `gemini-3.5-flash-lite` | Current source default; root env or pre-set runtime values may override the effective model. |
 
 `IS_DEBUG_MODE=False` in `app/analytics/cqi_recommender.py` enables the real
 Gemini path; it is a code toggle, separate from `OBELISK_DEBUG` logging. Missing
@@ -69,6 +69,8 @@ This microservice acts as a **pure computation engine**. It has:
 
 For full architectural diagrams and specifications, refer to [`documentations/SYSTEM_PROCESS_EXPLAINED.md`](documentations/SYSTEM_PROCESS_EXPLAINED.md).
 
+The current webapp upload flow is **Upload → Python processing → Bun ready/preview → explicit Save → database persistence**. Python `completed` means ETL results are available in Redis; it does not mean application attainments have been saved. The browser polls Bun, reviews its `ready` preview, then explicitly Saves. Upload/history metadata may already exist before that step. See [the integration contract](documentations/INTEGRATION.md#webapp-preview-and-explicit-persistence).
+
 ---
 
 ## 4. Testing Suite
@@ -85,8 +87,8 @@ The separate [October 11 Pre-UAT package](testing_modules/pre_uat/README.md) rec
 
 | Method | Path | Purpose |
 | :--- | :--- | :--- |
-| `POST` | `/upload` | Upload an AUN-OBE class-record `.xlsx` file to start a new ETL job. |
-| `GET` | `/jobs` | Get a list of all jobs currently tracked in Redis. |
+| `POST` | `/upload` | Send multipart `file` to save/enqueue an ETL job; HTTP 202 precedes asynchronous workbook validation. |
+| `GET` | `/jobs/` | List jobs tracked in Redis; `/jobs` redirects to the canonical route. |
 | `GET` | `/jobs/{job_id}` | Get the status and result of a specific ETL job. |
 | `GET` | `/analytics/jobs/{job_id}/recommendation` | Generate a per-course AI CQI recommendation for a completed job. |
 | `POST` | `/analytics/summary` | Generate pure mathematical department/program/AVP rollups (no AI call). |
@@ -94,6 +96,8 @@ The separate [October 11 Pre-UAT package](testing_modules/pre_uat/README.md) rec
 | `GET` | `/health/` | Hardcoded status with a TODO timestamp, not a Redis/worker readiness probe. `/health` redirects. |
 
 ---
+
+Job timestamps currently represent UTC without a `Z`/offset. HTTP errors may use string-valued `detail`, while worker failures are structured objects in the polled job's `error` field. See [the integration error contract](documentations/INTEGRATION.md#http-errors-versus-worker-errors) before implementing client error handling.
 
 ## 6. Official Documentation Links
 
