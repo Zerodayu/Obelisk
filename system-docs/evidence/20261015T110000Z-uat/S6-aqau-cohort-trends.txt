@@ -1,0 +1,27 @@
+Scenario 6 — UAT-4 AQAU — "Read the trends"
+Goal: Look at the trend arrows and flags; tell which cohorts need attention.
+Role: aqau
+
+Setup: a synthetic prior term was added so the same cohort has two terms of data —
+  academic_term 2025-2026 1st Semester + section 'uat-prior-section-1a' + 150 attainment rows
+  (CLO means 65/55/70/60/68).
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/rollup/cohort-tracking/generate  {"programId":"5d169d74-..."}   (no termId -> all terms)
+
+Observed: HTTP 200
+  1 cohort line (yearLevel null): trend = UP ; cqiTriggered (needs attention) = true
+    2025-2026 1st Semester  avg 63.6
+      CLO1 65 NOT MET | CLO2 55 NOT MET | CLO3 70 MET | CLO4 60 NOT MET | CLO5 68 NOT MET
+    2026-2027 1st Semester  avg 76.5
+      CLO1 80.31 MET | CLO2 60 NOT MET | CLO3 80.87 MET | CLO4 77.53 MET | CLO5 83.77 MET
+
+Expected: trend arrows + flags show which cohorts need attention.
+Result: PASS (API level) — the cohort shows an UP arrow with an active CQI flag.
+
+Browser step (to confirm on screen): open the Cohort Tracking Sheet and read the arrows/flags.
+[PENDING]
+
+Finding: a real trend is only produced when the report is generated across terms. Generating for a
+single term (the literal scenario-5 step) always yields FLAT, because the term filter narrows the
+grid to one term. The on-screen "generate for the active term" view therefore cannot show an arrow.

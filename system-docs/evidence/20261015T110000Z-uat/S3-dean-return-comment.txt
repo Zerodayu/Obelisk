@@ -1,0 +1,19 @@
+Scenario 3 — UAT-3 DEAN — "Return a report with a comment"
+Goal: Click Return with Comment, type a short comment, and send it.
+Role: dean
+Preconditions: CAR 50fcc3da-a73e-4e4b-9050-df9a32d47e6e pending at the dean step.
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/forms/50fcc3da-a73e-4e4b-9050-df9a32d47e6e/return
+  body: {"role":"dean","comment":"Please attach the revised PLO attainment summary; Part 3 numbers are stale."}
+
+Observed: HTTP 200
+  form_submission.status = returned ; current_approver_role = null
+  approval_step 2 (dean) decision = returned, comment recorded verbatim
+  the earlier program_chair comment ("Chair OK") is preserved
+
+Expected: the report is returned and the dean's comment is recorded on the step.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): sign in as dean, open the pending CAR, click
+"Return with Comment", type the text, send. [PENDING]

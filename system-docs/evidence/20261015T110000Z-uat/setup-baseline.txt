@@ -1,0 +1,37 @@
+UAT run 2026-10-15 — setup baseline
+===================================
+Environment: local dev stack — Next SSR :3000, Bun backend :8080, uvicorn ETL :8000,
+Postgres + Redis in Docker (host Linux x86_64, Intel i7-7500U 4 threads @2.70GHz, 7.6GiB).
+Method: backend HTTP API with real per-role sessions (`just session <role>`), plus SSR curl
+on the form pages. No browser automation attached — on-screen rendering is marked
+"browser pending" and a manual click-list is provided.
+
+Reference IDs
+  program (BSIT)      = 5d169d74-017f-4e73-a42e-d362ee27e2b3
+  term (active)       = 03a11dd5-51a3-4554-b3db-d682f76ba36b  (2026-2027 1st Semester)
+  class section 1A    = clv92a9f1000108l3d26b52b3
+  course IT 101       = 9f1ef933-9a90-45f3-b6b0-d3df3afb9fdd
+
+Baseline (just db-seed -> upload template workbook to 1A as faculty -> save)
+  workbook: JMCFI_Class_Record_Template_AUN-OBE(ideal).xlsx
+  upload jobId = 0613e56a-cce5-4551-9214-837fc4d13276  (status ready -> save completed)
+  DB after save: computationRun=1  cloAttainment=150  atRiskFlag=28  enrollment=30  student=30
+  per-CLO composite means: CLO1=80.31  CLO2=79.58  CLO3=80.87  CLO4=77.53  CLO5=83.77  (all >= 70)
+
+CLO-to-PLO mappings created as program_chair (POST /plan/clo-plo-map, weight 1):
+  CLO1->PLO1, CLO2->PLO2, CLO3->PLO3, CLO4->PLO4, CLO5->PLO5   (clo_to_plo_map = 5)
+
+CAR submitted and walked to the Dean step (for scenarios 1 and 3)
+  CAR submission id = 50fcc3da-a73e-4e4b-9050-df9a32d47e6e
+  faculty submit -> 200 (status submitted, currentApproverRole program_chair)
+  program_chair approve -> 200 (status submitted, currentApproverRole dean; steps chair approved, dean/aqau/vpaa pending)
+
+Synthetic prior term (for scenario 6)
+  inserted academic_term 'uat-prior-term-2025-1' (2025-2026 1st Semester, inactive)
+  + class_section 'uat-prior-section-1a' (course IT 101)
+  + computation_run 'uat-prior-run-1'
+  + 150 clo_attainment rows (CLO means 65/55/70/60/68) for the same 30 students (student.yearLevel is null -> one cohort bucket)
+
+To lower CLO2 below the floor (for gap analysis):
+  PUT /ingest/attainments -> {"updated":30,"flagsCreated":26,"flagsRemoved":0,"failures":[]}
+  CLO means then: CLO1=81.30 CLO2=50.00 CLO3=84.67 CLO4=79.33 CLO5=82.53

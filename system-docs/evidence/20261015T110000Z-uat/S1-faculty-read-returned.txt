@@ -1,0 +1,26 @@
+Scenario 1 — UAT-7 FACULTY — "Read a returned report"
+Goal: Open a report returned by the Dean and read the comment.
+Role: faculty
+Preconditions: CAR 50fcc3da-a73e-4e4b-9050-df9a32d47e6e submitted by faculty, approved by
+program_chair, then returned by the dean (scenario 3).
+
+Steps (API-approximate; browser pending):
+  GET /api/v1/forms?scope=mine&status=returned
+  GET /api/v1/forms/50fcc3da-a73e-4e4b-9050-df9a32d47e6e
+
+Observed:
+  scope=mine&status=returned -> 200, the CAR is listed with status "returned"
+  GET /forms/<id> -> status = returned
+    step 1  program_chair  approved  comment="Chair OK"
+    step 2  dean           returned  comment="Please attach the revised PLO attainment summary; Part 3 numbers are stale."
+    step 3  aqau           pending
+    step 4  vpaa           pending
+
+Expected: the preparer sees the form as returned and can read the Dean's comment.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): sign in as faculty, open /submissions, open the returned
+CAR, read the comment. [PENDING]
+
+Known caveat (testing_results.md 9.7): the comment is visible only while the form is `returned`;
+it is wiped from the steps if the form is resubmitted (originals survive only in the audit log).

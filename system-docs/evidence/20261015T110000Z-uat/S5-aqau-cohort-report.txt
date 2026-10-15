@@ -1,0 +1,21 @@
+Scenario 5 — UAT-3 AQAU — "Generate a cohort report"
+Goal: Open the Cohort Tracking Sheet and generate the report for the active term.
+Role: aqau
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/rollup/cohort-tracking/generate  {"programId":"5d169d74-...","termId":"03a11dd5-..."}
+
+Observed: HTTP 200 ; formSubmissionId 58ccac07-7e67-4d86-9771-2d2429448f05
+  1 cohort line (yearLevel null — all seeded students have yearLevel null):
+    trend = FLAT ; cqiTriggered (needs attention) = true
+    term 2026-2027 1st Semester, avg 76.5
+      CLO1 80.31 MET | CLO2 60 NOT MET | CLO3 80.87 MET | CLO4 77.53 MET | CLO5 83.77 MET
+  cohort_tracking submissions = 1
+
+Expected: the report generates for the active term and is saved as a submission.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/attainment/cohort-tracking and confirm the grid
+renders for the active term. [PENDING]
+
+Finding: generating for a single term forces trend = FLAT (a trend needs two terms — see S6).

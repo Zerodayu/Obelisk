@@ -1,0 +1,27 @@
+Scenario 8 — UAT-6 AQAU — "Check Closing the Loop"
+Goal: Select a CQI entry and tick conditions 1 to 4; status stays OPEN. Tick condition 5 -> CLOSED.
+Role: aqau
+
+Setup chain:
+  gap analysis for the term (PLO2 not_met, from S2)
+  POST /api/v1/cqi/cqi-action-plan/generate   -> 1 entry (PLO2, status planned)
+  PUT  /api/v1/cqi/cqi-action-plan/0d4b2be9-0da8-4f18-a5e5-ea8e9c0501bf/track
+        {"entries":[{"id":"bfc5d875-...","interventionImplemented":"yes","currentAttainmentPct":72}]} -> {"updated":1}
+  POST /api/v1/cqi/closing-the-loop/generate  -> opens 1 CTL row (8093b1e9-...)
+
+Steps (API-approximate; browser pending):
+  PUT /api/v1/cqi/closing-the-loop/3761c3e6-6a1e-4b4c-84e2-b6a01ba36e3a
+    tick C1+C2, C3, C4 (conditions12Met, condition3Met, condition4Met = true) with an intervention text
+  then PUT the same row with condition5Met = true
+
+Observed (DB ctl_row.loop_status):
+  initial row (nothing ticked)                     -> open_not_implemented
+  tick C1+C2, C3, C4 (description supplied)        -> open_reassess   (still OPEN)
+  tick C5 as well                                  -> closed
+  re-verified by toggling C5: false -> open_reassess ; true -> closed
+
+Expected: stays OPEN until all five documented conditions hold, becomes CLOSED only on the fifth.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/cqi/closing-the-loop, tick the C1+C2 / C3 / C4
+columns and watch the status badge stay OPEN, then tick C5 and watch it become CLOSED. [PENDING]

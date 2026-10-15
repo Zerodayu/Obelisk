@@ -1,0 +1,19 @@
+Scenario 2 — UAT-5 PROG CHAIR — "Check the gap analysis"
+Goal: Open PLO Gap Analysis, generate for the term, and check that low results are flagged.
+Role: program_chair
+Precondition: CLO2 lowered to 50% so a PLO falls below the 70% floor.
+
+Steps (API-approximate; browser pending):
+  PUT  /api/v1/ingest/attainments      (30 CLO2 rows -> 50)  -> {"updated":30,"flagsCreated":26,"flagsRemoved":0,"failures":[]}
+  POST /api/v1/cqi/plo-gap-analysis/generate  {"programId":"5d169d74-...","termId":"03a11dd5-..."}
+
+Observed: HTTP 200 ; draft id 94bd7e84-0986-4590-a941-cd6d923f85a6
+  PLO statuses: PLO1 all_met, PLO2 not_met, PLO3 all_met, PLO4 all_met, PLO5 all_met
+  gapRows: 1 row -> PLO2, cohortYearLevel 0, attainmentPct 60  (below the 70 floor)
+  DB gap_row count = 1
+
+Expected: results below 70% are flagged; one gap row per NOT-MET PLO/cohort.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/cqi/plo-gap-analysis, generate for the term,
+confirm the sub-70% PLO row renders as flagged. [PENDING]

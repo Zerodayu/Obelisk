@@ -1,0 +1,17 @@
+Scenario 7 — UAT-5 AQAU — "Check the gap analysis"
+Goal: Generate the term and check that results below 70% are flagged.
+Role: aqau
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/cqi/plo-gap-analysis/generate  {"programId":"5d169d74-...","termId":"03a11dd5-..."}
+
+Observed: HTTP 200
+  PLO2 = not_met (attainmentPct 60); PLO1/3/4/5 = all_met
+  1 gap row for PLO2
+  Same draft id as the program_chair/dean runs (94bd7e84-...)
+
+Expected: sub-70% results are flagged for AQAU.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/cqi/plo-gap-analysis as aqau and confirm the
+sub-70% row is flagged. [PENDING]

@@ -1,0 +1,21 @@
+Scenario 4 — UAT-5 DEAN — "Check the gap analysis"
+Goal: Open PLO Gap Analysis, generate for the term, and check that low results are flagged.
+Role: dean
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/cqi/plo-gap-analysis/generate  {"programId":"5d169d74-...","termId":"03a11dd5-..."}
+
+Observed: HTTP 200
+  PLO2 = not_met (attainmentPct 60); PLO1/3/4/5 = all_met
+  1 gap row for PLO2
+  Same draft id returned as the program_chair run (94bd7e84-...)
+
+Expected: low results (<70%) are flagged for the dean as well.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/cqi/plo-gap-analysis as dean and confirm the
+sub-70% row is flagged. [PENDING]
+
+Finding: `plo_gap_analysis` is registry-prepared by **program_chair**, with dean/aqau/vpaa as the
+approvers. The generate endpoint is only auth+unit-scoped, and `ensureDraft` is program+term unique,
+so dean/aqau "generate" the *same* draft the chair prepares rather than reviewing a distinct one.
