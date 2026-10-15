@@ -550,16 +550,12 @@ export function FormWorkflow({
 										{DECISION_LABELS[step.decision]}
 									</Badge>
 								</div>
-								{step.comment ? (
-									<p
-										className={
-											isPage
-												? "text-muted-foreground mt-1.5 text-sm italic"
-												: "text-muted-foreground mt-1 text-xs italic"
-										}
-									>
-										“{step.comment}”
-									</p>
+								{step.comment && step.decision === "returned" ? (
+									<div className="typeset">
+										<blockquote className="text-warning py-2 font-mono text-sm">
+											{step.comment}
+										</blockquote>
+									</div>
 								) : null}
 								{step.decidedAt ? (
 									<p className="text-muted-foreground mt-0.5 text-xs">
