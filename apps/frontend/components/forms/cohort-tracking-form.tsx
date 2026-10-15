@@ -1,6 +1,7 @@
 "use client";
 
 import { useAtomValue } from "jotai";
+import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
@@ -99,9 +100,31 @@ function codeOrder(a: string, b: string): number {
 }
 
 function trendIcon(trend: string) {
-	if (trend === "UP") return <span className="text-success">↑</span>;
-	if (trend === "DOWN") return <span className="text-destructive">↓</span>;
-	return <span className="text-muted-foreground">→</span>;
+	if (trend === "UP") {
+		return (
+			<ArrowUpIcon
+				aria-label="Improving"
+				className="text-success mx-auto size-4"
+				role="img"
+			/>
+		);
+	}
+	if (trend === "DOWN") {
+		return (
+			<ArrowDownIcon
+				aria-label="Declining"
+				className="text-destructive mx-auto size-4"
+				role="img"
+			/>
+		);
+	}
+	return (
+		<ArrowRightIcon
+			aria-label="Flat"
+			className="text-muted-foreground mx-auto size-4"
+			role="img"
+		/>
+	);
 }
 
 function AttainmentCell({ pct, met }: { pct: number; met: boolean }) {
