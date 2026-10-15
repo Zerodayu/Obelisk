@@ -420,6 +420,31 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 						codes: ["closing_the_loop", "capa_plan"],
 					},
 				},
+				{
+					id: "aqau-closing-the-loop",
+					title: "Open the Closing-the-Loop report",
+					detail:
+						"Inspect the CTL grid and the five computed loop-closure conditions.",
+					url: "/forms/cqi/closing-the-loop",
+					icon: RefreshCwIcon,
+					status: { kind: "link" },
+					roles: ["program_chair", "aqau", "vpaa", "system_admin"],
+				},
+			],
+		},
+		{
+			label: "Cohort Monitoring",
+			steps: [
+				{
+					id: "aqau-cohort-tracking",
+					title: "Open the Cohort Tracking Sheet",
+					detail:
+						"Longitudinal per-cohort attainment — generate the grid and read the trends.",
+					url: "/forms/attainment/cohort-tracking",
+					icon: BarChart3Icon,
+					status: { kind: "link" },
+					roles: ["program_chair", "aqau", "vpaa", "system_admin"],
+				},
 			],
 		},
 		{
