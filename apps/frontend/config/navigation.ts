@@ -241,6 +241,35 @@ const FORM_SECTIONS: NavSection[] = [
 			},
 		],
 	},
+	{
+		label: "Institutional & Periodic",
+		items: [
+			{
+				title: "Resource Monitoring",
+				url: "/forms/periodic/resource-monitoring",
+				icon: WalletIcon,
+				code: "resource_monitoring",
+			},
+			{
+				title: "Systemic Gap Report",
+				url: "/forms/periodic/systemic-gap-report",
+				icon: TargetIcon,
+				code: "systemic_gap_report",
+			},
+			{
+				title: "CAPA Plan",
+				url: "/forms/periodic/capa-plan",
+				icon: ListChecksIcon,
+				code: "capa_plan",
+			},
+			{
+				title: "Institutional Review",
+				url: "/forms/periodic/institutional-review",
+				icon: LandmarkIcon,
+				code: "institutional_review",
+			},
+		],
+	},
 ];
 
 /**

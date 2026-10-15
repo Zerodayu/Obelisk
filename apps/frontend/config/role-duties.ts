@@ -371,6 +371,37 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 				},
 			],
 		},
+		{
+			label: "Monitoring & Escalation",
+			steps: [
+				{
+					id: "dean-resource-monitoring",
+					title: "Monitor resources & CQI implementation",
+					detail:
+						"Resource acquisition by PDCA phase plus CQI implementation tracking.",
+					url: "/forms/periodic/resource-monitoring",
+					icon: FileTextIcon,
+					status: { kind: "prepare", code: "resource_monitoring" },
+				},
+				{
+					id: "dean-systemic-gap",
+					title: "File the Systemic Gap Report",
+					detail:
+						"On a 3rd consecutive PLO-cohort failure — the escalation to the VPAA.",
+					url: "/forms/periodic/systemic-gap-report",
+					icon: TargetIcon,
+					status: { kind: "prepare", code: "systemic_gap_report" },
+				},
+				{
+					id: "dean-capa",
+					title: "Formulate the CAPA Plan",
+					detail: "The structural fix, senior-leader owned and AQAU-monitored.",
+					url: "/forms/periodic/capa-plan",
+					icon: ListChecksIcon,
+					status: { kind: "prepare", code: "capa_plan" },
+				},
+			],
+		},
 	],
 
 	aqau: [
@@ -416,6 +447,20 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 					icon: ArchiveIcon,
 					status: { kind: "link" },
 					roles: FEATURE_ACCESS.confirmClusterCompile,
+				},
+			],
+		},
+		{
+			label: "Institutional Review",
+			steps: [
+				{
+					id: "aqau-institutional-review",
+					title: "Compile the Institutional Management Review",
+					detail:
+						"Program APAR compliance, institutional CQI completion, and pending CAPAs — the VPAA presides.",
+					url: "/forms/periodic/institutional-review",
+					icon: ShieldCheckIcon,
+					status: { kind: "prepare", code: "institutional_review" },
 				},
 			],
 		},

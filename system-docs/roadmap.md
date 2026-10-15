@@ -241,15 +241,17 @@ Purpose: compile finished cohorts into compact, permanent, read-only snapshots t
 
 > **Done:** all 7 now carry the shared `FormWorkflow` approval bar — their `payload.id` *is* the `FormSubmission` id (created by the CHECK `init`), so it is passed straight to the bar; each screen re-syncs only `status` via `onChanged` and locks Save outside `draft`/`returned`.
 
-#### Periodic module (`/forms/periodic/`) — not started (backend `/api/v1/periodic` is live)
+#### Periodic module (`/forms/periodic/`) — manual-named screens built; the rest pending (backend `/api/v1/periodic` is live)
 
-- [ ] `resource_monitoring` — resource items + CQI implementation rows
+- [x] `resource_monitoring` — resource items + CQI implementation rows
 - [ ] `alumni_tracer` — employment indicators + PLO sufficiency table
 - [ ] `employer_survey` — employer profiles + PLO competency table
-- [ ] `systemic_gap_report` — 3-cycle evidence, root cause, structural response
-- [ ] `capa_plan` — action rows (≤8), progress reviews, closure declaration
-- [ ] `institutional_review` — program reviews + CQI completion table
+- [x] `systemic_gap_report` — 3-cycle evidence, root cause, structural response
+- [x] `capa_plan` — action rows (≤8), progress reviews, closure declaration
+- [x] `institutional_review` — program reviews + CQI completion table
 - [ ] `portfolio_roadmap` — 4-year roadmap rows + rubric standards with weight validation
+
+> **Done (manual-named 4):** `resource_monitoring`, `systemic_gap_report`, `capa_plan`, and `institutional_review` now have screens under `/forms/periodic/`, wired through `lib/periodic-slugs.ts` + `server/actions/periodic.ts` (generic `initPeriodicForm`/`getPeriodicForm`/`savePeriodicForm`/`listPeriodicForm` → `/api/v1/periodic/*`), registered in `config/navigation.ts` and the per-role duty registry. `capa_plan` selects its referenced **approved** F26 report; `systemic_gap_report` carries the 3-consecutive-NOT-MET note and the F26/F27 submit gates stay server-side.
 
 ### Workflow UI (partially done)
 

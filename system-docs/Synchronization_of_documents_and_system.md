@@ -232,7 +232,7 @@ Cross-examination against the manual:
   - [x] Frontend UI: All 7 screens built under `/forms/check/` and wired with the shared `FormWorkflow` approval bar.
 - **Periodic / Institutional Instruments (Periodic Module `/api/v1/periodic`):**
   - [x] Backend services & submit gates live: F09 (Resource Monitoring), F20 (Alumni Tracer), F21 (Employer Survey), F26 (Systemic Gap), F27 (CAPA Plan), F28 (Institutional Review), F02 (Portfolio Roadmap).
-  - [ ] Frontend UI: **Screens unbuilt.** No Next.js routes exist under `/forms/periodic/`.
+  - [x] Frontend UI: **Screens built for the manual-named four** — `resource_monitoring`, `systemic_gap_report`, `capa_plan`, `institutional_review` under `/forms/periodic/`, via `lib/periodic-slugs.ts` + `server/actions/periodic.ts`. Still unbuilt: `alumni_tracer`, `employer_survey`, `portfolio_roadmap`.
 - **Client-Requirement Instrument:**
   - [x] `action_taken` (At-Risk Action-Taken Record): backend `/api/v1/atrisk/*`, frontend `/forms/cqi/action-taken`, approval effect clearing flags on final approval (§3.2).
 
@@ -258,7 +258,7 @@ Cross-examination against the manual:
 | **F06** | Approved Assessment Budget | PLAN | `AssessmentBudgetService`<br>`/api/v1/plan/assessment-budget` | `/forms/plan/assessment-budget` | `['vpaa']` | **Fully Implemented** |
 | **F07** | Per-Student CLO Raw Data Sheet | DO | `IngestService`<br>`/api/v1/ingest/upload` | `/forms/clo-raw-data` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** (no FormType row; data-capture route) |
 | **F08** | Mid-Cycle CLO Attainment | DO | `MidCycleAttainmentService`<br>`/api/v1/check/mid-cycle-attainment` | `/forms/check/mid-cycle-attainment` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
-| **F09** | Resource Monitoring | DO | `ResourceMonitoringService`<br>`/api/v1/periodic/resource-monitoring` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
+| **F09** | Resource Monitoring | DO | `ResourceMonitoringService`<br>`/api/v1/periodic/resource-monitoring` | `/forms/periodic/resource-monitoring` | `['vpaa']` | **Fully Implemented** |
 | **F10** | Peer Observation Record | DO | `PeerObservationService`<br>`/api/v1/check/peer-observation` | `/forms/check/peer-observation` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
 | **F11** | Exhibition Industry Feedback | DO | `ExhibitionFeedbackService`<br>`/api/v1/check/exhibition-feedback` | `/forms/check/exhibition-feedback` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
 | **F12** | CLO Perception Survey | DO | `CloPerceptionSurveyService`<br>`/api/v1/check/clo-perception-survey` | `/forms/check/clo-perception-survey` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** |
@@ -275,9 +275,9 @@ Cross-examination against the manual:
 | **F23** | CQI Action Plan | ACT | `CqiActionPlanService`<br>`/api/v1/cqi/cqi-action-plan` | `/forms/cqi/cqi-action-plan` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
 | **F24** | Annual Program Report (APAR) | ACT | `AnnualProgramReportService`<br>`/api/v1/cqi/annual-program-report` | `/forms/cqi/annual-program-report` | `['dean', 'aqau', 'vpaa']` | **Fully Implemented** |
 | **F25** | Closing-the-Loop (CTL) Report | ACT | `ClosingTheLoopService`<br>`/api/v1/cqi/closing-the-loop` | `/forms/cqi/closing-the-loop` | `['aqau', 'vpaa']` | **Fully Implemented** |
-| **F26** | Systemic Gap Report | ACT | `SystemicGapReportService`<br>`/api/v1/periodic/systemic-gap-report` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
-| **F27** | CAPA Plan | ACT | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | **MISSING** (No UI route) | `['aqau', 'vpaa']` | **Backend-Only** |
-| **F28** | Institutional Review | ACT | `InstitutionalReviewService`<br>`/api/v1/periodic/institutional-review` | **MISSING** (No UI route) | `['vpaa']` | **Backend-Only** |
+| **F26** | Systemic Gap Report | ACT | `SystemicGapReportService`<br>`/api/v1/periodic/systemic-gap-report` | `/forms/periodic/systemic-gap-report` | `['vpaa']` | **Fully Implemented** |
+| **F27** | CAPA Plan | ACT | `CapaPlanService`<br>`/api/v1/periodic/capa-plan` | `/forms/periodic/capa-plan` | `['aqau', 'vpaa']` | **Fully Implemented** |
+| **F28** | Institutional Review | ACT | `InstitutionalReviewService`<br>`/api/v1/periodic/institutional-review` | `/forms/periodic/institutional-review` | `['vpaa']` | **Fully Implemented** |
 | **Seq 35** | Action-Taken Record (At-Risk) | ACT | `AtRiskService`<br>`/api/v1/atrisk/*` | `/forms/cqi/action-taken` | `['program_chair', 'dean', 'aqau', 'vpaa']` | **Fully Implemented** (client requirement, not in manual) |
 | **F29–F37, F41** | Specialty & Consolidation Schedules | VARIOUS | None (Undefined in manual) | None | None | **Unspecified / Future Scope** |
 
@@ -288,7 +288,7 @@ Cross-examination against the manual:
 ### 5.1 Architecture & Role-Scoped Gating
 - **Shell & Navigation:** Layouts, theme, sidebar, and login are operational. Routing is config-driven via `lib/roles.ts` (7 role labels: `user` + the 6 institutional roles) and `config/navigation.ts`.
 - **Adaptive Dashboards:** A single entry point at `/dashboard` loads adaptive views for each of the 6 system roles (`faculty`, `program_chair`, `dean`, `aqau`, `vpaa`, `system_admin`).
-- **Workflow Stepper Bar (`FormWorkflow`):** Embedded on **21 screens** — all 13 Phase 0–5 forms (the `clo_raw_data` data-capture page carries `submissionId={null}`), all 7 Phase 6 CHECK forms, and the new action-taken form. Provides real-time status badges, reviewer comments, and role-authorized buttons (`Submit`, `Approve`, `Return with Comment`, `Archive`). The 8 screens without it are exactly the unbuilt ones (7 periodic + `stakeholder_consultation`).
+- **Workflow Stepper Bar (`FormWorkflow`):** Embedded on **21 screens** — all 13 Phase 0–5 forms (the `clo_raw_data` data-capture page carries `submissionId={null}`), all 7 Phase 6 CHECK forms, and the new action-taken form. Provides real-time status badges, reviewer comments, and role-authorized buttons (`Submit`, `Approve`, `Return with Comment`, `Archive`). The screens without it are the still-unbuilt periodic forms (`alumni_tracer`, `employer_survey`, `portfolio_roadmap`) and `stakeholder_consultation`; the four newly built periodic screens (`resource_monitoring`, `systemic_gap_report`, `capa_plan`, `institutional_review`) use the newer compact `SubmissionStatusCard`, which links into `/submissions/[id]` where the workflow actions live.
 - **Submission Inboxes:** Dedicated user views at `/submissions` ("My Submissions") and `/approvals` ("Pending Approvals") backed by `GET /forms?scope=mine|pending`.
 - **Known workflow caveat:** approval-step comments are wiped when a submission is resubmitted — both original comments survive only in `audit_log` (`testing_results.md` 9.7).
 
