@@ -11,5 +11,6 @@ The authoritative OBELISK system documents.
 | [`COMPOSITE_CLO_ATTAINMENT_70_30.md`](COMPOSITE_CLO_ATTAINMENT_70_30.md) | Implementation reference for the Python/backend 70/30 composite CLO attainment flow, scales, compatibility fields, and verification gaps. |
 | [`Synchronization_of_documents_and_system.md`](Synchronization_of_documents_and_system.md) | Architecture audit and single source of truth: institutional docs vs. codebase state, active backlog, risk register. |
 | [`JMCFI-WIN-OBE-Forms-Digitization-Reference.md`](JMCFI-WIN-OBE-Forms-Digitization-Reference.md) | Domain reference — the 37-form, 8-level institutional manual mapped field by field. |
+| [`USER-MANUAL.md`](USER-MANUAL.md) | **Role User Manual** — simple one-pager per role: Section 1 system flow + 5 universal rules, then Faculty, Program Chair, Dean, AQAU, VPAA each as "where to start" steps + a what-you-do table. |
 
 Cross-links between these documents are sibling-relative (same directory). Links into the codebase are repo-root-relative, e.g. [`apps/backend/SYSTEM-DESIGN.md`](../apps/backend/SYSTEM-DESIGN.md).
