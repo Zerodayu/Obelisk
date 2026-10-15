@@ -61,7 +61,7 @@ db-migrate:
 db-generate:
     @just _bun apps/backend db:generate
 
-# seed dev data: one account per role (`<id>@jmcfi.edu.ph` / `password123`) plus a second `<role>1` account for the data-bearing roles (faculty, program_chair, dean, aqau, vpaa — same role, separate user, so you can check which data is shared between users of one role), department, program, active term, course, section A, CLO1-7. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
+# seed dev data: one account per role (`<id>@jmcfi.edu.ph` / `password123`) plus a second `<role>1` account for the data-bearing roles (faculty, program_chair, dean, aqau, vpaa — same role, separate user, so you can check which data is shared between users of one role), department, program, active term, course, section A, CLO1-7, plus 3 pending role requests (`pending_faculty`/`pending_dean`/`pending_aqau`) so the System Admin dashboard's Role requests panel has rows to approve. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
 [group('setup')]
 db-seed:
     @just _bun apps/backend db:seed

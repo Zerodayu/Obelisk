@@ -404,6 +404,60 @@ async function main() {
 		);
 	}
 
+	// NOTE: pending role requests so the System Admin's "Role requests" panel
+	// has something to act on. These are ordinary `user`-role accounts that
+	// have filed a request — the same shape `/onboarding` writes
+	// (`requestedRole` + `roleRequestStatus: "pending"` + the role's scope, see
+	// `REQUESTED_SCOPE` in src/v1/auth/model.ts). They are deliberately NOT in
+	// `ROLE_ACCOUNTS`/`dev-accounts.ts`: they exercise the approval UI, they are
+	// not demo roles to sign in as.
+	const PENDING_ROLE_REQUESTS = [
+		{
+			id: "pending_faculty",
+			name: "Pending Faculty Applicant",
+			requestedRole: "faculty",
+			programId: program.id,
+			departmentId: department.id,
+		},
+		{
+			id: "pending_dean",
+			name: "Pending Dean Applicant",
+			requestedRole: "dean",
+			programId: null,
+			departmentId: department.id,
+		},
+		{
+			id: "pending_aqau",
+			name: "Pending AQAU Applicant",
+			requestedRole: "aqau",
+			programId: null,
+			departmentId: null,
+		},
+	] as const;
+
+	for (const request of PENDING_ROLE_REQUESTS) {
+		const email = `${request.id}@jmcfi.edu.ph`;
+		await seedAuth.api.signUpEmail({
+			body: { email, password: devPassword, name: request.name },
+		});
+		const created = await prisma.user.findUnique({ where: { email } });
+		if (!created) {
+			throw new Error(`Failed to create pending-request user ${email}`);
+		}
+		await prisma.user.update({
+			where: { id: created.id },
+			data: {
+				requestedRole: request.requestedRole,
+				roleRequestStatus: "pending",
+				programId: request.programId,
+				departmentId: request.departmentId,
+			},
+		});
+		console.log(
+			`Created pending role request: ${email} (${request.requestedRole})`,
+		);
+	}
+
 	// Seed 13 BSIT Program Learning Outcomes (PLOs)
 	for (const plo of BSIT_PLOS) {
 		const existingPlo = await prisma.plo.findFirst({
