@@ -1,4 +1,4 @@
-Scenario 4 — UAT-5 DEAN — "Check the gap analysis"
+ST-F-014 — Scenario 4 — UAT-5 DEAN — "Check the gap analysis"
 Goal: Open PLO Gap Analysis, generate for the term, and check that low results are flagged.
 Role: dean
 

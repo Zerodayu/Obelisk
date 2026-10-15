@@ -1,4 +1,4 @@
-Scenario 6 — UAT-4 AQAU — "Read the trends"
+ST-F-016 — Scenario 6 — UAT-4 AQAU — "Read the trends"
 Goal: Look at the trend arrows and flags; tell which cohorts need attention.
 Role: aqau
 

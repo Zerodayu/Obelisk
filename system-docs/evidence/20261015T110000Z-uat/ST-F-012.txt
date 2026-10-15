@@ -1,4 +1,4 @@
-Scenario 2 — UAT-5 PROG CHAIR — "Check the gap analysis"
+ST-F-012 — Scenario 2 — UAT-5 PROG CHAIR — "Check the gap analysis"
 Goal: Open PLO Gap Analysis, generate for the term, and check that low results are flagged.
 Role: program_chair
 Precondition: CLO2 lowered to 50% so a PLO falls below the 70% floor.

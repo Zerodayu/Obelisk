@@ -1,4 +1,4 @@
-Scenario 8 — UAT-6 AQAU — "Check Closing the Loop"
+ST-F-018 — Scenario 8 — UAT-6 AQAU — "Check Closing the Loop"
 Goal: Select a CQI entry and tick conditions 1 to 4; status stays OPEN. Tick condition 5 -> CLOSED.
 Role: aqau
 

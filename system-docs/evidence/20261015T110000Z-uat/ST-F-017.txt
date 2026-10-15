@@ -1,4 +1,4 @@
-Scenario 7 — UAT-5 AQAU — "Check the gap analysis"
+ST-F-017 — Scenario 7 — UAT-5 AQAU — "Check the gap analysis"
 Goal: Generate the term and check that results below 70% are flagged.
 Role: aqau
 

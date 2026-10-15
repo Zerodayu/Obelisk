@@ -1,4 +1,4 @@
-Scenario 1 — UAT-7 FACULTY — "Read a returned report"
+ST-F-011 — Scenario 1 — UAT-7 FACULTY — "Read a returned report"
 Goal: Open a report returned by the Dean and read the comment.
 Role: faculty
 Preconditions: CAR 50fcc3da-a73e-4e4b-9050-df9a32d47e6e submitted by faculty, approved by

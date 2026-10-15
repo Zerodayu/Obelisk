@@ -1,4 +1,4 @@
-Scenario 5 — UAT-3 AQAU — "Generate a cohort report"
+ST-F-015 — Scenario 5 — UAT-3 AQAU — "Generate a cohort report"
 Goal: Open the Cohort Tracking Sheet and generate the report for the active term.
 Role: aqau
 
