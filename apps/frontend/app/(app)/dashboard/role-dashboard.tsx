@@ -56,7 +56,8 @@ const ROLE_DASHBOARDS: Record<string, DashboardConfig> = {
 	},
 	system_admin: {
 		title: "System Admin",
-		description: "Platform administration, audits, and archival confirmation.",
+		description:
+			"Reference data (departments & programs) and role-request administration.",
 		component: SystemAdminDashboard,
 	},
 	user: {

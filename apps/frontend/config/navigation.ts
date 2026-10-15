@@ -94,10 +94,12 @@ const FORM_SECTIONS: NavSection[] = [
 				url: "/forms/clo-raw-data",
 				icon: ClipboardListIcon,
 				code: "clo_raw_data",
-				// The upload screen is faculty's capture step (admin bypass kept) —
-				// narrower than the form's preparers (which include program_chair).
-				// Nav here follows the screen's route gate, not its preparers.
-				roles: screenRoles("clo_raw_data"),
+				// The upload screen is faculty's capture step. Nav lists it for
+				// faculty only (not the form's other preparer, program_chair);
+				// `system_admin` keeps URL access via the screen's route gate
+				// (`screenRoles`) but gets no nav entry, so the admin sidebar
+				// stays free of academic screens.
+				roles: ["faculty"] as const,
 			},
 			{
 				title: "Course Assessment Report",
@@ -421,6 +423,10 @@ export function workspaceNav(role: UserRole): NavItem[] {
 	const items: NavItem[] = [
 		{ title: "Dashboard", url: "/dashboard", icon: LayoutDashboardIcon },
 	];
+	// NOTE: the system admin's only screens are reference data (programs &
+	// departments) and role requests — both panels on `/dashboard` — so it gets
+	// no academic workflow nav (submissions, approvals, archives, audit) for now.
+	if (role === "system_admin") return items;
 	if (hasAccess(role, PLO_MANAGEMENT_ROLES))
 		items.push({
 			title: "PLO Management",

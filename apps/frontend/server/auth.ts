@@ -50,6 +50,11 @@ export async function requireGuest(): Promise<void> {
  * to `/dashboard` when authenticated but not allowed (matching the "client
  * hides/navigates" model — the backend still enforces authority).
  *
+ * The platform admin (`system_admin`) opens **every** screen by URL even though
+ * its sidebar is trimmed to its admin panels; that is a navigation convenience,
+ * not expanded authority — the backend still enforces per call (e.g. PLO
+ * mutations stay dean-only).
+ *
  * In dev mode the simulated role (`DEV_ROLE` in `server/api-client.ts`) gates
  * access exactly like production unless `DEV_ENFORCE_ROLE_ACCESS` is set to
  * `false`, which restores open navigation for inspecting any route.
@@ -59,7 +64,11 @@ export async function requireRole(
 ): Promise<ApiUser> {
 	const user = await currentUser();
 	if (!user) redirect("/login");
-	if ((!isDevMode || DEV_ENFORCE_ROLE_ACCESS) && !hasAccess(user.role, allowed))
+	if (
+		(!isDevMode || DEV_ENFORCE_ROLE_ACCESS) &&
+		user.role !== "system_admin" &&
+		!hasAccess(user.role, allowed)
+	)
 		redirect("/dashboard");
 	return user;
 }
@@ -70,7 +79,11 @@ export async function requireRoleOrNotFound(
 ): Promise<ApiUser> {
 	const user = await currentUser();
 	if (!user) redirect("/login");
-	if ((!isDevMode || DEV_ENFORCE_ROLE_ACCESS) && !hasAccess(user.role, allowed))
+	if (
+		(!isDevMode || DEV_ENFORCE_ROLE_ACCESS) &&
+		user.role !== "system_admin" &&
+		!hasAccess(user.role, allowed)
+	)
 		notFound();
 	return user;
 }

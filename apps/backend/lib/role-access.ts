@@ -27,6 +27,8 @@ export const FEATURE_ACCESS = {
 	managePlos: ["dean"],
 	/** List/approve/deny role requests. */
 	manageRoleRequests: ["system_admin"],
+	/** Create the institution's reference data — departments and programs. */
+	manageReferenceData: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
 	confirmClusterCompile: ["aqau", "system_admin"],
 	/**
@@ -71,6 +73,9 @@ export const PLO_MANAGEMENT_ROLES: readonly string[] =
 /** Roles that may list/approve/deny role requests. */
 export const ROLE_REQUEST_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageRoleRequests;
+/** Roles that may create reference data (departments, programs). */
+export const REFERENCE_DATA_ROLES: readonly string[] =
+	FEATURE_ACCESS.manageReferenceData;
 /** Roles that may confirm graduation-cluster compile. */
 export const CLUSTER_CONFIRM_ROLES: readonly string[] =
 	FEATURE_ACCESS.confirmClusterCompile;
@@ -118,6 +123,15 @@ export function assertCanViewPlatformStats(role: string | undefined): void {
 	if (!hasRole(role, PLATFORM_STATS_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not read platform-wide statistics — expected one of: ${PLATFORM_STATS_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** May `role` create reference data (departments, programs)? */
+export function assertCanManageReferenceData(role: string | undefined): void {
+	if (!hasRole(role, REFERENCE_DATA_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not manage reference data — expected one of: ${REFERENCE_DATA_ROLES.join(", ")}`,
 		);
 	}
 }

@@ -44,6 +44,8 @@ export const FEATURE_ACCESS = {
 	managePlos: ["dean"],
 	/** List/approve/deny role requests. */
 	manageRoleRequests: ["system_admin"],
+	/** Create the institution's reference data — departments and programs. */
+	manageReferenceData: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
 	confirmClusterCompile: ["aqau", "system_admin"],
 	/**

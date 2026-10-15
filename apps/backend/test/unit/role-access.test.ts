@@ -2,12 +2,14 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	assertCanCaptureClassRecords,
+	assertCanManageReferenceData,
 	assertCanReadAtRiskFlags,
 	CLASS_RECORD_ROLES,
 	CLUSTER_CONFIRM_ROLES,
 	FEATURE_ACCESS,
 	hasRole,
 	PLO_MANAGEMENT_ROLES,
+	REFERENCE_DATA_ROLES,
 	ROLE_REQUEST_ROLES,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
@@ -59,6 +61,19 @@ describe("feature role gates (lib/role-access)", () => {
 		expect(hasRole("system_admin", ROLE_REQUEST_ROLES)).toBe(true);
 		expect(hasRole("vpaa", ROLE_REQUEST_ROLES)).toBe(false);
 		expect(hasRole(undefined, ROLE_REQUEST_ROLES)).toBe(false);
+	});
+
+	it("restricts reference-data creation to system_admin", () => {
+		expect(REFERENCE_DATA_ROLES).toEqual(["system_admin"]);
+		expect(() => assertCanManageReferenceData("system_admin")).not.toThrow();
+		for (const role of ["vpaa", "aqau", "dean", "faculty", "user"]) {
+			expect(() => assertCanManageReferenceData(role)).toThrow(
+				RoleAccessForbiddenError,
+			);
+		}
+		expect(() => assertCanManageReferenceData(undefined)).toThrow(
+			RoleAccessForbiddenError,
+		);
 	});
 
 	it("names cluster confirm for aqau/system_admin", () => {

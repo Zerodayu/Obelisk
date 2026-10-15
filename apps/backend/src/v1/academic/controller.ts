@@ -1,21 +1,51 @@
 import { cached } from "@lib/cache";
+import {
+	assertCanManageReferenceData,
+	RoleAccessForbiddenError,
+} from "@lib/role-access";
 import { unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 
-import { ClassSectionQuerySchema } from "./model";
 import {
+	ClassSectionQuerySchema,
+	CreateDepartmentSchema,
+	CreateProgramSchema,
+} from "./model";
+import {
+	createDepartment,
+	createProgram,
 	listAssessmentTypeCounts,
 	listClassSections,
 	listDepartments,
 	listPrograms,
 	listStudentYearLevels,
 	listTerms,
+	ReferenceDataError,
 } from "./service";
 
 const SECURITY = {
 	security: [{ bearerAuth: [] as string[], apiKeyCookie: [] as string[] }],
 };
+
+/**
+ * Map reference-data write errors onto HTTP statuses: `ReferenceDataError`
+ * carries its own status (409 duplicate, 404 unknown department), a role
+ * refusal is a 403. Anything else is re-thrown.
+ */
+function mapAcademicErrors(
+	error: unknown,
+	set: { status?: string | number },
+): unknown {
+	if (
+		error instanceof ReferenceDataError ||
+		error instanceof RoleAccessForbiddenError
+	) {
+		set.status = error.status;
+		return { error: error.message };
+	}
+	throw error;
+}
 
 export const academicPlugin = new Elysia({
 	prefix: "/academic",
@@ -25,7 +55,9 @@ export const academicPlugin = new Elysia({
 	.use(authPlugin)
 	.get(
 		"/programs",
-		cached(300, async ({ user }) => listPrograms(unitScopeOf(user))),
+		// NOTE: not cached — system_admin creates programs through the UI, and a
+		// cached list would serve the pre-create rows (see createProgram).
+		async ({ user }) => listPrograms(unitScopeOf(user)),
 		{
 			auth: true,
 			detail: {
@@ -42,7 +74,9 @@ export const academicPlugin = new Elysia({
 	)
 	.get(
 		"/departments",
-		cached(300, async ({ user }) => listDepartments(unitScopeOf(user))),
+		// NOTE: not cached — system_admin creates departments through the UI, and
+		// a cached list would serve the pre-create rows (see createDepartment).
+		async ({ user }) => listDepartments(unitScopeOf(user)),
 		{
 			auth: true,
 			detail: {
@@ -125,6 +159,61 @@ export const academicPlugin = new Elysia({
 					200: { description: "List of class sections" },
 					401: { description: "Unauthorized" },
 					403: { description: "programId is outside the caller's unit" },
+				},
+			},
+		},
+	)
+	.post(
+		"/departments",
+		async ({ body, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				return await createDepartment(body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreateDepartmentSchema,
+			detail: {
+				summary: "Create a department",
+				description:
+					"System admin only. Adds a college/department with a globally unique code.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created department" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					409: { description: "Department code already exists" },
+				},
+			},
+		},
+	)
+	.post(
+		"/programs",
+		async ({ body, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				return await createProgram(body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreateProgramSchema,
+			detail: {
+				summary: "Create a program",
+				description:
+					"System admin only. Adds a program under an existing department; the code is globally unique.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created program" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					404: { description: "Department not found" },
+					409: { description: "Program code already exists" },
 				},
 			},
 		},

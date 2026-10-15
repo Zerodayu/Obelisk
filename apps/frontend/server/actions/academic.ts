@@ -2,12 +2,14 @@
 
 import { ApiError } from "@/lib/api-client";
 import { isDevMode } from "@/lib/dev-mode";
+import { featureRoles } from "@/lib/role-access";
 import {
 	type AcademicDepartment,
 	SAMPLE_CLASS_SECTIONS,
 	SAMPLE_DEPARTMENTS,
 } from "@/lib/store/atoms/academic";
 import { actionApi } from "@/server/api-client";
+import { requireRole } from "@/server/auth";
 
 export type ActionResult<TData = void> =
 	| { ok: true; data: TData }
@@ -21,6 +23,7 @@ export interface AcademicProgram {
 	id: string;
 	code: string;
 	name: string;
+	departmentId: string;
 }
 
 export interface AcademicTerm {
@@ -49,28 +52,38 @@ export async function listPrograms(): Promise<ActionResult<AcademicProgram[]>> {
 					id: "prog-1",
 					code: "BSCE",
 					name: "Bachelor of Science in Civil Engineering",
+					departmentId: "dept-1",
 				},
 				{
 					id: "prog-2",
 					code: "BSCPE",
 					name: "Bachelor of Science in Computer Engineering",
+					departmentId: "dept-1",
 				},
 				{
 					id: "prog-3",
 					code: "BSIT",
 					name: "Bachelor of Science in Information Technology",
+					departmentId: "dept-1",
 				},
 				{
 					id: "prog-4",
 					code: "BSBA",
 					name: "Bachelor of Science in Business Administration",
+					departmentId: "dept-1",
 				},
 				{
 					id: "prog-5",
 					code: "BSA",
 					name: "Bachelor of Science in Accountancy",
+					departmentId: "dept-1",
 				},
-				{ id: "prog-6", code: "BSN", name: "Bachelor of Science in Nursing" },
+				{
+					id: "prog-6",
+					code: "BSN",
+					name: "Bachelor of Science in Nursing",
+					departmentId: "dept-1",
+				},
 			],
 		};
 	}
@@ -178,5 +191,51 @@ export async function listClassSections(
 			ok: false,
 			error: errorMessage(err, "Failed to load class sections."),
 		};
+	}
+}
+
+// --- Reference-data writes (system admin) ----------------------------------
+
+export type AcademicReferenceRecord = {
+	id: string;
+	code: string;
+	name: string;
+};
+
+/** Create a department (`manageReferenceData` — system_admin only). */
+export async function createDepartment(input: {
+	code: string;
+	name: string;
+}): Promise<ActionResult<AcademicReferenceRecord>> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		const data = await actionApi.post<AcademicReferenceRecord>(
+			"/academic/departments",
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to create department."),
+		};
+	}
+}
+
+/** Create a program under a department (`manageReferenceData` — system_admin only). */
+export async function createProgram(input: {
+	code: string;
+	name: string;
+	departmentId: string;
+}): Promise<ActionResult<AcademicProgram>> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		const data = await actionApi.post<AcademicProgram>(
+			"/academic/programs",
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to create program.") };
 	}
 }
