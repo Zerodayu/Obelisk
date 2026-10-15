@@ -43,6 +43,7 @@ import {
 	ARCHIVE_ROLES,
 	FEATURE_ACCESS,
 	PLO_MANAGEMENT_ROLES,
+	screenRoles,
 	type UserRole,
 } from "@/lib/role-access";
 
@@ -347,6 +348,16 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 					status: { kind: "link" },
 					roles: PLO_MANAGEMENT_ROLES,
 				},
+				{
+					id: "dean-plo-attainment",
+					title: "View PLO attainment",
+					detail:
+						"Formula 7A rollup of mapped CLO attainments per PLO — read before endorsing.",
+					url: "/forms/attainment/plo-attainment-summary",
+					icon: BarChart3Icon,
+					status: { kind: "link" },
+					roles: screenRoles("plo_attainment_summary"),
+				},
 			],
 		},
 		{
@@ -374,6 +385,16 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 		{
 			label: "Monitoring & Escalation",
 			steps: [
+				{
+					id: "dean-gap-analysis",
+					title: "Check the gap analysis",
+					detail:
+						"Review which PLO-cohorts fell below 70% and their root causes.",
+					url: "/forms/cqi/plo-gap-analysis",
+					icon: TargetIcon,
+					status: { kind: "link" },
+					roles: screenRoles("plo_gap_analysis"),
+				},
 				{
 					id: "dean-resource-monitoring",
 					title: "Monitor resources & CQI implementation",
@@ -444,6 +465,16 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 					icon: BarChart3Icon,
 					status: { kind: "link" },
 					roles: ["program_chair", "aqau", "vpaa", "system_admin"],
+				},
+				{
+					id: "aqau-gap-analysis",
+					title: "Check the gap analysis",
+					detail:
+						"Review which PLO-cohorts fell below 70% and their root causes.",
+					url: "/forms/cqi/plo-gap-analysis",
+					icon: TargetIcon,
+					status: { kind: "link" },
+					roles: screenRoles("plo_gap_analysis"),
 				},
 			],
 		},
