@@ -4,6 +4,7 @@ import {
 	ApprovalForbiddenError,
 	NotOwnerError,
 } from "@lib/forms/approval-routes";
+import { InvalidTransitionError } from "@lib/forms/state-machine";
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
 import {
@@ -479,6 +480,27 @@ describe.skipIf(!db)("forms service (integration)", () => {
 				"vpaa",
 			);
 			expect(archived.status).toBe("archived");
+
+			// --- archived is immutable and terminal ------------------------------
+			// The permanent lock-in: an archived record refuses a re-archive, an
+			// edit and a resubmit, and its stored payload is untouched.
+			await expect(
+				submissionService.archive(draft.id, IDS.owner, "vpaa"),
+			).rejects.toThrow(InvalidTransitionError);
+			await expect(
+				submissionService.update(draft.id, IDS.owner, "faculty", {
+					formData: { note: "altered" },
+				}),
+			).rejects.toThrow(InvalidTransitionError);
+			await expect(
+				submissionService.submit(draft.id, IDS.owner, "faculty"),
+			).rejects.toThrow(InvalidTransitionError);
+			const locked = await prisma.formSubmission.findUnique({
+				where: { id: draft.id },
+			});
+			expect(locked?.status).toBe("archived");
+			expect(locked?.currentApproverRole).toBeNull();
+			expect(locked?.formData).toEqual({ note: "seed" });
 		} finally {
 			await cleanup();
 		}

@@ -394,6 +394,7 @@ describe.skipIf(!db)("Periodic module (integration)", () => {
 						overallPloAttainmentPct: 75,
 						ctlSubmitted: true,
 						aparComplete: true,
+						systemicGapReported: false,
 					},
 				],
 				cqiCompletions: [
@@ -404,11 +405,33 @@ describe.skipIf(!db)("Periodic module (integration)", () => {
 						completionRatePct: 80,
 					},
 				],
+				decisions: {
+					capaStatusUpdates: "2 CAPAs open (BSIT-01, BSIT-02)",
+				},
 			});
 
 			expect(saved.programReviews).toHaveLength(1);
 			expect(saved.cqiCompletions).toHaveLength(1);
 			expect(saved.header).toMatchObject({ qaDirector: "Dr. Admin" });
+			// The review record must carry the three reads the VPAA's meeting
+			// works from: per-program APAR/CTL status, institutional CQI
+			// completion, and the CAPA status note.
+			expect(saved.programReviews).toContainEqual({
+				programCode: "BSIT",
+				overallPloAttainmentPct: 75,
+				ctlSubmitted: true,
+				aparComplete: true,
+				systemicGapReported: false,
+			});
+			expect(saved.cqiCompletions).toContainEqual({
+				programCode: "BSIT",
+				totalPlanned: 10,
+				completed: 8,
+				completionRatePct: 80,
+			});
+			expect(saved.decisions).toMatchObject({
+				capaStatusUpdates: "2 CAPAs open (BSIT-01, BSIT-02)",
+			});
 		} finally {
 			await cleanup(draftIds);
 		}

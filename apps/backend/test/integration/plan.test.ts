@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import { ApprovalForbiddenError } from "@lib/forms/approval-routes";
 import { prisma } from "@lib/prisma";
 import { unitScopeOf } from "@lib/unit-scope";
 import { isDbReachable } from "@test/helpers/db-gate";
@@ -25,6 +26,8 @@ const IDS = {
 	program: "it-plan-prog",
 	term: "it-plan-term",
 	user: "it-plan-user",
+	/** Second account for approval steps — the owner may never sign their own row. */
+	approver: "it-plan-approver",
 	plo1: "it-plan-plo-1",
 	plo2: "it-plan-plo-2",
 };
@@ -85,6 +88,14 @@ async function seedAcademicChain() {
 			email: "plan@obelisktest.local",
 		},
 	});
+	await prisma.user.create({
+		data: {
+			id: IDS.approver,
+			name: "PLAN VPAA",
+			email: "plan-vpaa@obelisktest.local",
+			role: "vpaa",
+		},
+	});
 }
 
 /** Clears any rows left over by an aborted earlier run (timeouts skip `finally`). */
@@ -102,7 +113,9 @@ async function resetPlanData() {
 	await prisma.academicTerm.deleteMany({ where: { id: IDS.term } });
 	await prisma.program.deleteMany({ where: { id: IDS.program } });
 	await prisma.department.deleteMany({ where: { id: IDS.department } });
-	await prisma.user.deleteMany({ where: { id: IDS.user } });
+	await prisma.user.deleteMany({
+		where: { id: { in: [IDS.user, IDS.approver] } },
+	});
 	await prisma.formType.deleteMany({
 		where: { code: { in: PLAN_FORM_CODES } },
 	});
@@ -438,6 +451,41 @@ describe.skipIf(!db)("PLAN-phase setup forms (integration)", () => {
 				estimatedTotal: 15000,
 				approvedTotal: 12000,
 			});
+
+			// --- assessment_budget → VPAA, no rung in between --------------------
+			// The dean files it; the registered chain is `["vpaa"]` only, so the
+			// budget lands on the VPAA's desk directly and no lower role can
+			// decide it.
+			const budgetSubmitted = await submissionService.submit(
+				budget.draft.id,
+				IDS.user,
+				"dean",
+			);
+			expect(budgetSubmitted.status).toBe("submitted");
+			expect(budgetSubmitted.currentApproverRole).toBe("vpaa");
+			expect(budgetSubmitted.approvalSteps.map((s) => s.approverRole)).toEqual([
+				"vpaa",
+			]);
+
+			await expect(
+				submissionService.decide(
+					budget.draft.id,
+					"vpaa",
+					IDS.approver,
+					"aqau",
+					{ decision: "approved" },
+				),
+			).rejects.toThrow(ApprovalForbiddenError);
+
+			const budgetApproved = await submissionService.decide(
+				budget.draft.id,
+				"vpaa",
+				IDS.approver,
+				"vpaa",
+				{ decision: "approved" },
+			);
+			expect(budgetApproved.status).toBe("approved");
+			expect(budgetApproved.currentApproverRole).toBeNull();
 
 			// --- shared lifecycle -------------------------------------------------
 			// Re-initializing reuses the same active draft instead of duplicating.
