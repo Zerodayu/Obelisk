@@ -20,6 +20,7 @@ import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api-client";
 import { featureRoles } from "@/lib/role-access";
+import type { PlatformUserRecord } from "@/lib/store/atoms/governance";
 import { actionApi } from "@/server/api-client";
 import { requireRole } from "@/server/auth";
 
@@ -95,6 +96,32 @@ export async function decideRoleRequest(
 		return {
 			ok: false,
 			error: errorMessage(err, "Action failed. Please retry."),
+		};
+	}
+}
+
+/**
+ * Create a user account with a role (`manageUsers` — system_admin only).
+ * `scope` carries the role's `REQUESTED_SCOPE` id — a `programId` for
+ * faculty/program_chair, a `departmentId` for dean, neither for aqau/vpaa — and
+ * the backend validates the combination.
+ */
+export async function createUser(input: {
+	name: string;
+	email: string;
+	password: string;
+	role: string;
+	programId?: string;
+	departmentId?: string;
+}): Promise<ActionResult<PlatformUserRecord>> {
+	await requireRole(featureRoles("manageUsers"));
+	try {
+		const data = await actionApi.post<PlatformUserRecord>("/auth/users", input);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Could not create the account."),
 		};
 	}
 }

@@ -32,6 +32,7 @@ import type {
 	UserRoleDatum,
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
+import type { UserRole } from "@/lib/roles";
 import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
 import {
 	formStatusCountsAtom,
@@ -275,6 +276,37 @@ export const {
 		})),
 	),
 );
+
+/**
+ * Platform users (`GET /auth/users`) — the system-admin users table's rows.
+ *
+ * Admin-only and platform-wide by design, so a non-admin caller gets a 403 —
+ * `atomWithAsyncData` keeps the atom non-ready and the table renders its empty
+ * state rather than an error surface. The table pages the whole list
+ * client-side.
+ */
+export const {
+	dataAtom: platformUsersDataAtom,
+	stateAtom: platformUsersStateAtom,
+	refreshAtom: refreshPlatformUsersAtom,
+} = atomWithAsyncData<PlatformUserRecord[]>([], (_get, signal) =>
+	api.get<PlatformUserRecord[]>("/auth/users", { signal }),
+);
+
+/** One row of `GET /auth/users` as the users table renders it. */
+export interface PlatformUserRecord {
+	id: string;
+	name: string;
+	email: string;
+	role: UserRole;
+	requestedRole: UserRole | null;
+	roleRequestStatus: "none" | "pending" | "approved" | "denied";
+	employeeId: string | null;
+	isActive: boolean;
+	createdAt: string;
+	program: { id: string; name: string; code: string } | null;
+	department: { id: string; name: string; code: string } | null;
+}
 
 /**
  * Graduation-cluster lifecycle statuses (`GET /archives/status-counts`).
