@@ -1,0 +1,40 @@
+UAT-DEAN-006 — DEAN — "Check Resource Monitoring"
+Goal: budget spend and CQI implementation tracking are shown.
+Role: dean  (applies to /forms/periodic/resource-monitoring)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/periodic/resource-monitoring/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  draft id d40c1520-d72f-482c-b4c6-f3deda23a10a
+       (resource items can FK a budget line item: budgetLineItemId, and CQI rows
+        can FK a CQI entry: cqiEntryId)
+
+  PUT /api/v1/periodic/resource-monitoring/d40c1520-…
+      {"header":{"program":"BSIT","dean":"Dr. Dean","academicYear":"2026-2027","reportCovers":"Mid-year"},
+       "resourceItems":[
+         {"name":"Industry Practitioner Calibration","phase":"do","acquisitionStatus":"acquired","remarks":"Conducted June 2026"},
+         {"name":"Peer Observation support","phase":"do","acquisitionStatus":"pending","remarks":"Awaiting procurement"}],
+       "cqiImplementRows":[
+         {"interventionDescription":"Add formative quizzes in CLO2","implementationStatus":"fully","evidenceNotes":"Quiz bank built; mean 65 -> 71"},
+         {"interventionDescription":"Remedial sessions for at-risk cohort","implementationStatus":"partially","evidenceNotes":"2 of 4 sessions run"}]}
+    -> HTTP 200
+       resourceItems (acquisition / budget spend):  Calibration -> acquired, Peer Observation -> pending
+       cqiImplementRows (implementation tracking): quizzes -> fully, remedial -> partially
+
+Expected: budget spend and CQI implementation tracking are shown back.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/periodic/resource-monitoring as
+dean, confirm the resource-acquisition table and the CQI-implementation table
+render with their status chips. [PENDING]
+
+Automated coverage:
+  test/integration/periodic.test.ts — "F09 resource_monitoring: init → save
+  resource + CQI implement rows → get" (pass line in INTEGRATION-suite-run.txt).
+
+Finding: as on the mid-cycle form, the status enums are unvalidated strings.
+Sending `implementationStatus:"implemented"` (the requirement-word, not the
+enum) reached Prisma and returned HTTP 500 with a raw `createMany` error; the
+accepted values are `fully` / `partially` / `not_yet` (`CqiImplementationStatus`),
+and `acquired` / `pending` / `not_acquired` / `na` for `AcquisitionStatus`. The
+model declares both as `t.Optional(t.String())`, so the API answers 500 rather
+than 422 for a bad value.

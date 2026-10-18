@@ -1,0 +1,67 @@
+Unit suite — 2026-10-18
+Command: bun test -- test/unit   (no DB)
+
+Summary
+-------
+ 238 pass
+ 0 fail
+ 1325 expect() calls
+Ran 238 tests across 24 files. [1167.00ms]
+
+Per-test results for the guards behind these UAT cases (junit capture)
+---------------------------------------------------------------------
+pass approval routes registry > covers every stable form code
+pass approval routes registry > registers only valid roles in every route
+pass approval routes registry > ends every chain at the VPAA (contiguous ladder from its entry role)
+pass approval routes registry > never lets the VPAA prepare a submission
+pass approval routes registry > falls back to the full canonical chain for unknown codes
+pass approval routes registry > materializes steps with 1-based sequence numbers
+pass approval routes registry > keeps the manual's entry point and climbs to the VPAA
+pass workflow authorization > lets only the step's role decide (admin overrides)
+pass workflow authorization > never lets the owner approve their own submission
+pass workflow authorization > requires owner + preparer role to submit
+pass workflow authorization > restricts archiving to vpaa/system_admin
+pass workflow authorization > lets faculty and program chairs prepare class records
+pass form-tags registry > mirrors the backend tag map on the frontend
+pass form-tags registry > tags every registered stable form code
+pass form-tags registry > makes only Setup and Record approval-free
+pass submission state machine > has the canonical approval chain and status transitions
+pass submission state machine > allows only legal transitions
+pass submission state machine > assertTransition throws on illegal moves
+pass submission state machine > treats draft and returned as editable
+pass submission state machine > accepts a strictly ascending approval chain
+pass submission state machine > allows skipping intermediate roles but rejects reordering
+pass submission state machine > resolves the first pending role by lowest sequence number
+pass PLO management role guard > lets the dean manage PLOs
+pass PLO management role guard > rejects every other role
+pass coverageCheck > marks a PLO covered only when at least one cell has stage D
+pass coverageCheck > keeps coverage true once any course reaches stage D
+pass coverageCheck > returns an empty map with no courses
+pass programPloAverages > averages each year-level column across PLO rows
+pass programPloAverages > rounds to 2 decimal places and treats missing cells as zero
+pass programPloAverages > returns no averages without rows
+pass assertPloTargetsValid > accepts targets at exactly the 70% floor
+pass assertPloTargetsValid > rejects targets below the 70% hard floor
+pass assertPloTargetsValid > requires a rationale when a target exceeds the floor
+pass assertPloTargetsValid > treats whitespace-only rationale as missing
+pass assertPloTargetsValid > passes above-floor targets backed by a rationale
+pass budgetTotals > sums estimated and approved costs across line items
+pass budgetTotals > returns zeros for an empty breakdown
+pass retention validators > exposes the two retention classes
+pass retention validators > maps longitudinal/audit forms to Permanent
+pass retention validators > defaults everything else to 5 years
+pass frontend role-access mirror > declares the same feature allow-lists as the backend
+pass frontend role-access mirror > mirrors every form code's preparers and chain
+pass frontend role-access mirror > keeps approveForms equal to the canonical chain + admin override
+pass frontend role-access mirror > keeps the mirror import-free so any runtime can load it
+pass frontend role-access mirror > gates the class-record upload screen to faculty + system_admin
+pass feature role gates (lib/role-access) > restricts class-record capture to faculty/program_chair/system_admin
+pass feature role gates (lib/role-access) > restricts archiving (and the archive screens) to vpaa/system_admin
+pass feature role gates (lib/role-access) > keeps PLO management dean-only — no system_admin bypass
+pass feature role gates (lib/role-access) > restricts role-request management to system_admin
+pass feature role gates (lib/role-access) > restricts reference-data creation to system_admin
+pass feature role gates (lib/role-access) > restricts user-account creation to system_admin
+pass feature role gates (lib/role-access) > names cluster confirm for aqau/system_admin
+pass feature role gates (lib/role-access) > gates the AI drawer to aqau/vpaa/system_admin and the at-risk watchlist to its union
+
+TOTAL 238 tests / 1325 assertions / 0 failures

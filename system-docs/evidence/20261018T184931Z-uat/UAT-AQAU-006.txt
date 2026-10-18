@@ -1,0 +1,55 @@
+UAT-AQAU-006 — AQAU — "Confirm cluster compilation"
+Goal: a graduation cluster compilation can be confirmed in /archives.
+Role: aqau  (applies to /archives)
+
+Preconditions: the compile/write pipeline is NOT built (backend AGENTS:
+"Write pipeline not built"), so no cluster is produced by the app yet. A single
+`graduation_cluster` row (`uat-cluster-1`, status `open`, program BSIT, active
+term) was inserted directly to exercise the confirm path — the same shape the
+integration test seeds.
+
+Steps (API-approximate; browser pending):
+  GET /api/v1/archives  (as aqau)
+    -> HTTP 200  []        <- see Finding 1 (stale Redis cache)
+  GET /api/v1/archives?status=open  (fresh cache key)
+    -> HTTP 200  [ {id "uat-cluster-1", label "BSIT graduates — 2026-2027 1st
+                   Semester", status "open", program BSIT, graduationTerm
+                   2026-2027 1st Semester} ]
+  GET /api/v1/archives/uat-cluster-1  (as aqau)
+    -> HTTP 200  cluster detail (entries [], studentCount 0)
+
+  Confirm as AQAU:
+  POST /api/v1/archives/uat-cluster-1/confirm  {"peoAttainment":{"PEO1":82.5,"PEO2":78.1}}
+    -> HTTP 200  {"confirmed":true}
+       row after: confirmedAt + peoAttainmentCapturedAt set,
+                  stats.peoAttainment = {"PEO1":80} (last confirm wins)
+
+  Confirm as dean (must be refused):
+  POST /api/v1/archives/uat-cluster-1/confirm  (as dean)
+    -> HTTP 403  Your role may not confirm a graduation cluster
+
+Expected: a cluster compilation can be confirmed (by AQAU).
+Result: PASS (API level, against a directly-inserted cluster row).
+
+Browser step (to confirm on screen): open /archives as aqau, confirm the cluster
+row renders and the Confirm action is available; as dean, confirm it is refused.
+[PENDING]
+
+Automated coverage: `test/integration/archive.test.ts` — "confirm refuses a
+foreign unit's cluster without revealing its state", "confirm stamps the
+captured PEO snapshot on an open cluster in-scope", "confirm is a no-op once the
+cluster has left `open`", plus the list/read scoping tests (pass lines in
+INTEGRATION-suite-run.txt). Role gate: `test/unit/role-access.test.ts` — "names
+cluster confirm for aqau/system_admin".
+
+Finding 1 (caching): the first `GET /archives` (as aqau) returned `[]` and kept
+doing so after the cluster row existed; the same route with `?status=open`
+returned it immediately. The list is wrapped in Redis `cached(...)`, so a cluster
+created/compiled out-of-band (or by the future write pipeline) stays invisible
+for the TTL. The `/archives` screen calls the bare `/archives` route
+(`lib/store/atoms/governance.ts`), so it inherits the stale window.
+
+Finding 2 (scope, not a defect): the confirm handler returns `{"confirmed":true}`
+again while the cluster is still `open` (confirm is idempotent); the
+"no-op once left open" behaviour in the integration test is driven by the status
+having moved to `compiling`/`confirmed`.

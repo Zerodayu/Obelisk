@@ -1,0 +1,64 @@
+Integration suite — 2026-10-18 (local dev stack, obelisk_dev)
+Command: bun run test:integration   (wrapper wipes obelisk_dev before and after)
+Captured after the final formatting pass on the changed test files.
+
+Summary
+-------
+ 77 pass
+ 0 fail
+ 594 expect() calls
+Ran 77 tests across 14 files. [20.81s]
+
+Per-test results for the files this run touches (junit capture)
+---------------------------------------------------------------
+pass at-risk action-taken form (integration) > lists the watchlist scoped to one class section
+pass at-risk action-taken form (integration) > init resolves term/program from the section and is idempotent
+pass at-risk action-taken form (integration) > submit gate blocks an empty selection / empty note; flags stay on submit
+pass at-risk action-taken form (integration) > return leaves flags intact; final approval clears only selected students in the form's section
+pass at-risk action-taken form (integration) > approving a different form code never clears at-risk flags
+pass CHECK module (integration) > F08 mid_cycle_attainment: init → save header + cohort rows → get
+pass CHECK module (integration) > F10 peer_observation: init → save header + criteria → get
+pass CHECK module (integration) > F11 exhibition_feedback: submit gate blocks < 3 guests, passes with ≥3
+pass CHECK module (integration) > F12 clo_perception_survey: init → save cloRows → get
+pass CHECK module (integration) > F17 student_exit_survey: init → save ploRows → get
+pass CHECK module (integration) > F18 portfolio_assessment_record: init → save criteria rows → get
+pass CHECK module (integration) > F19 capstone_panel_evaluation: submit gate blocks < 2 faculty + 1 industry
+pass CHECK module (integration) > ensureDraft is idempotent — re-init returns same submission
+pass archive service (integration) > lists only the caller's department's clusters
+pass archive service (integration) > reads a cluster with its entries only inside the caller's unit
+pass archive service (integration) > counts compiled entries and clusters per unit
+pass archive service (integration) > confirm refuses a foreign unit's cluster without revealing its state
+pass archive service (integration) > confirm stamp the captured PEO snapshot on an open cluster in-scope
+pass archive service (integration) > confirm is a no-op once the cluster has left `open`
+pass archive service (integration) > program filter is refused when it falls outside the caller's unit
+pass archive service without a DB > skips (integration gate)
+pass forms service (integration) > derives the chain server-side and enforces workflow RBAC
+pass forms service (integration) > advances a multi-step chain and supports return → resubmit
+pass forms service (integration) > blocks self-approval and keeps the owner's own row out of their inbox
+pass forms service (integration) > files Setup/Record-tagged forms with no approval chain
+pass forms service (integration) > scopes submission reads by visibility and returns section evidence
+pass Periodic module (integration) > F09 resource_monitoring: init → save resource + CQI implement rows → get
+pass Periodic module (integration) > F20 alumni_tracer: save and retrieve via formData
+pass Periodic module (integration) > F21 employer_satisfaction_survey: save and retrieve via formData
+pass Periodic module (integration) > F26 systemic_gap_report: submit gate blocks without approved cohort_tracking
+pass Periodic module (integration) > F27 capa_plan: submit gate blocks without approved systemic gap report
+pass Periodic module (integration) > F27 capa_plan: max 8 actions validation
+pass Periodic module (integration) > F28 institutional_review: init → save → get
+pass Periodic module (integration) > F02 portfolio_roadmap: init → save roadmap + rubric rows → get
+pass Periodic module (integration) > ensureDraft is idempotent — re-init returns same submission
+pass PLAN-phase setup forms (integration) > exit check: all four PLAN forms initialize, save, protect templates, and compute rollups
+pass PLAN-phase setup forms (integration) > PLO entity CRUD: create, list, update, and guarded delete
+
+TOTAL 77 tests / 594 assertions / 0 failures
+
+Notes
+-----
+- 77 pass / 0 fail across 14 files; the three assertions added for this run are inside
+  'PLAN-phase setup forms (integration) > exit check…' (budget → VPAA),
+  'Periodic module (integration) > F28 institutional_review…' (record content) and
+  'forms service (integration) > derives the chain server-side…' (archived immutability).
+- Test-isolation caveat (pre-existing, not caused by this run): running forms.test.ts
+  ALONE fails 'scopes submission reads…' (expects justification kind 'car', gets
+  'details') because the car module that registers the justification resolver is not
+  imported in that single-file process. In the full-suite run it passes. Always run the
+  suite as a whole (as above).

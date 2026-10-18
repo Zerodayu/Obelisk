@@ -1,0 +1,37 @@
+UAT run 2026-10-18 — setup baseline
+===================================
+Environment: local dev stack — Bun backend :8080, Postgres + Redis in Docker
+(obelisk-dev DB). The Next SSR frontend was NOT started for this run, so every
+item below is verified at the **API + DB level**; on-screen rendering is marked
+"browser pending" per file.
+
+Method: real per-role sessions minted with `just session <role>` (better-auth
+cookie per role), then `curl` against `/api/v1/*`; the automated-test evidence
+is the backend integration suite (`just test-integration`) with the three
+assertions added for this run (see INTEGRATION-suite-run.txt).
+
+Build under test
+  commit  d694a50 "fix: render login form field validation errors" + working tree
+          (3 test files changed: plan.test.ts, forms.test.ts, periodic.test.ts)
+
+Reference IDs
+  program (BSIT)      = a904d53f-f36e-46fa-a073-2c12c14b274c
+  term (active)       = a6038532-3beb-4578-bc2b-3b8121bc15d0  (2026-2027 1st Semester)
+  class section 1A    = clv92a9f1000108l3d26b52b3  (course IT 101)
+  graduation cluster  = uat-cluster-1  (inserted directly; see UAT-AQAU-006.txt)
+
+Baseline: `just db-seed` (8 role accounts, CITE/BSIT, 13 PLOs, active term,
+34 courses, section 1A, CLO1-7). No class record was uploaded for this run —
+none of the nine cases below needs attainment data, except where noted.
+
+Records created/touched during the run
+  mid_cycle_attainment   58d14a3b-0447-4de5-8d9a-998b50dbaded  (submitted)
+  assessment_calendar    9f00ed60-05d6-44c7-9bc5-c53e95e71c94  (draft)
+  target_setting_matrix  342a3bff-601a-487c-bfa1-0b0bc97f476d  (draft)
+  assessment_budget      457b5982-0050-4813-b90d-e981b0b69f40  (archived)
+  resource_monitoring    d40c1520-d72f-482c-b4c6-f3deda23a10a  (draft)
+  institutional_review   431f0bf3-5f24-462f-89fd-b0192392413d  (submitted)
+  PLO UAT-PLO-X          c92c453b-568e-40f1-a567-4ac84d178132  (created → retired)
+
+NOTE: `just test*` truncates every table in obelisk_dev, so the integration-suite
+evidence capture below ran last and the seeded rows above are gone afterwards.

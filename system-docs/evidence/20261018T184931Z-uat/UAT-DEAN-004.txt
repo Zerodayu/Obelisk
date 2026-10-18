@@ -1,0 +1,42 @@
+UAT-DEAN-004 — DEAN — "Manage PLOs"
+Goal: the Dean can create, edit and retire a PLO in /plo-management. No other role can.
+Role: dean  (applies to /plo-management)
+
+Steps (API-approximate; browser pending):
+  Create as dean:
+  POST /api/v1/plan/plos  {programId:"a904d53f-…", code:"UAT-PLO-X",
+                           description:"UAT probe PLO (created by dean)", targetAttainmentPct:72}
+    -> HTTP 200  {"id":"c92c453b-568e-40f1-a567-4ac84d178132", … "targetAttainmentPct":72}
+
+  Create as faculty (must be refused):
+  POST /api/v1/plan/plos  {…code:"UAT-PLO-Y"…}
+    -> HTTP 403  {"error":"Only the dean may create, update, or delete PLOs"}
+
+  Edit as dean:
+  PUT /api/v1/plan/plos/c92c453b-…  {"description":"UAT probe PLO (edited by dean)","targetAttainmentPct":75}
+    -> HTTP 200  description + targetAttainmentPct 75 persisted
+
+  Edit as aqau (must be refused):
+  PUT /api/v1/plan/plos/c92c453b-…  {"targetAttainmentPct":80}
+    -> HTTP 403  {"error":"Only the dean may create, update, or delete PLOs"}
+
+  Retire as dean:
+  DELETE /api/v1/plan/plos/c92c453b-…
+    -> HTTP 200  {"ok":true}
+
+Expected: dean-only create/edit/retire.
+Result: PASS (API level).
+
+NOTE: the PLO **list** route (GET /plan/plos) answers any authenticated role
+(HTTP 200 as faculty) — read is open so the curriculum map can map PLOs to CLOs;
+only mutations are dean-gated. That matches the case wording ("create, edit and
+retire"), which is about mutations.
+
+Browser step (to confirm on screen): open /plo-management as dean (expect the
+CRUD table), then as faculty (expect a redirect to /dashboard). [PENDING]
+
+Automated coverage:
+  test/unit/plan-plo-role.test.ts      — "lets the dean manage PLOs" / "rejects every other role"
+  test/unit/role-access.test.ts        — FEATURE_ACCESS.ploManagement === ["dean"] (no admin bypass)
+  test/integration/plan.test.ts        — "PLO entity CRUD: create, list, update, and guarded delete"
+  (all three pass lines are in the run's UNIT/INTEGRATION evidence files)

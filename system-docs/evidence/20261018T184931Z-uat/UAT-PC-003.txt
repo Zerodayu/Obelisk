@@ -1,0 +1,38 @@
+UAT-PC-003 — PROGRAM CHAIR — "File the Assessment Calendar"
+Goal: the pre-seeded institutional milestones are shown and can be adjusted.
+Role: program_chair  (applies to /forms/plan/assessment-calendar)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/plan/assessment-calendar/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  draft id 9f00ed60-05d6-44c7-9bc5-c53e95e71c94
+       events: 17 of 17 are institutional templates (isTemplate=true)
+       first three:
+         pac_convening        | PAC convening and assessment planning | semester1 | June-July
+         syllabi_finalization | OBE syllabi finalization              | semester1 | June-July
+         orientation          | Orientation and expectations setting   | semester1 | Weeks 1-2
+
+  Adjust a template milestone (allowed):
+  PUT /api/v1/plan/assessment-calendar/9f00ed60-…
+      {"header":{"dateApprovedByDean":"2026-06-01"},
+       "events":[{"id":"2d0e32fc-…","section":"semester1",
+                  "periodWeeks":"June 1 - July 15","responsibleParty":"PAC Chair"}]}
+    -> HTTP 200
+       pac_convening now: periodWeeks "June 1 - July 15", responsibleParty "PAC Chair"
+       templates still present: 17 of 17
+       header.dateApprovedByDean: 2026-06-01
+
+  Delete a template milestone (must be refused):
+  PUT /api/v1/plan/assessment-calendar/9f00ed60-…  {"events":[],"removeEventIds":["2d0e32fc-…"]}
+    -> HTTP 403  {"error":"Assessment calendar template rows cannot be deleted."}
+
+Expected: the pre-seeded milestones are shown and adjustable.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/plan/assessment-calendar as
+program_chair and confirm the 17 milestone rows render with editable date /
+responsible-party fields. [PENDING]
+
+Automated coverage: `test/integration/plan.test.ts` -> "exit check: all four PLAN
+forms initialize, save, protect templates, and compute rollups" asserts the 17
+template rows, the editable date, the `PlanTemplateProtectedError` on delete, and
+that a program-specific row is fully free-form (INTEGRATION-suite-run.txt).

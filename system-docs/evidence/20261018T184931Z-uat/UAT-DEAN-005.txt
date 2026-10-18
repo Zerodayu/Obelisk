@@ -1,0 +1,50 @@
+UAT-DEAN-005 — DEAN — "Submit the Assessment Budget"
+Goal: fixed line items are filled in and the budget goes directly to the VPAA.
+Role: dean  (applies to /forms/plan/assessment-budget)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/plan/assessment-budget/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  draft id 457b5982-0050-4813-b90d-e981b0b69f40
+       line items: 12 (all isFixed=true) — phases plan 2, do 5, check 3, act 2
+       names: Industry Practitioner Calibration, Peer Observation support, CLO
+              Perception Survey, CQI planning support, Employer Survey, Portfolio
+              Exhibition, Stakeholder Consultation, Survey tabulation, Capstone
+              Panel honoraria, Alumni Tracer, Contingency/Miscellaneous,
+              Student Exit Survey admin
+
+  Fill them in:
+  PUT …/457b5982-…  {"header":{"totalBudgetRequested":50000,"vpaaName":"Dr. VPAA"},
+                     "lineItems":[{Calibration, estimated 15000, approved 12000, source "vpaa"},
+                                  {Program-specific rubric printing, 2000/1800, source "dean"}]}
+    -> HTTP 200  totals {estimatedTotal 17000, approvedTotal 13800}; 13 rows
+
+  Submit as dean:
+  POST /api/v1/forms/457b5982-…/submit  {}
+    -> HTTP 200  status "submitted"  currentApproverRole "vpaa"
+       approvalSteps [(vpaa, pending)]        <- the only rung; nothing between
+
+  AQAU tries to decide the VPAA step (must be refused):
+  POST /api/v1/forms/457b5982-…/approve/vpaa   (as aqau)
+    -> HTTP 403  {"error":"Only the vpaa (or a system admin) may decide this approval step"}
+
+  Dean tries its own role (no pending dean step):
+  POST /api/v1/forms/457b5982-…/approve/dean   (as dean)
+    -> HTTP 403  {"error":"You may not approve your own submission — another holder of this role must sign it"}
+
+  VPAA decides:
+  POST /api/v1/forms/457b5982-…/approve/vpaa   (as vpaa)
+    -> HTTP 200  status "approved"  currentApproverRole null
+
+Expected: fixed line items filled in; the budget goes directly to the VPAA.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/plan/assessment-budget as dean,
+confirm the 12 fixed line items render, submit, then open /approvals as vpaa and
+confirm the row is pending. [PENDING]
+
+Automated coverage (added for this run): `test/integration/plan.test.ts` now
+submits the budget, asserts `currentApproverRole === "vpaa"` with a single
+`["vpaa"]` step, that aqau is refused (`ApprovalForbiddenError`) and that the
+VPAA approval lands on `approved`. The registry-level assertion
+(`approvalRouteFor("assessment_budget").chain === ["vpaa"]`) lives in
+`test/unit/approval-routes.test.ts`.

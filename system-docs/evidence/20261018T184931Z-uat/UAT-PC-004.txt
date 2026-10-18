@@ -1,0 +1,36 @@
+UAT-PC-004 — PROGRAM CHAIR — "File the Target-Setting Matrix"
+Goal: a target of at least 70% per PLO per cohort is filed.
+Role: program_chair  (applies to /forms/plan/target-setting-matrix)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/plan/target-setting-matrix/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  draft id 342a3bff-601a-487c-bfa1-0b0bc97f476d
+       plo rows: 13 (one per program PLO), programPloAvg [70,70,70,70]
+       every row seeds targets Y1-Y4 = [70,70,70,70]
+
+  Below-floor target (must be refused):
+  PUT …/342a3bff-…  {"ploRows":[{"ploCode":"PLO1","y1TargetPct":65,…}],"courseRows":[]}
+    -> HTTP 409
+       {"error":"Target 65% for 'PLO1' is below the 70% institutional hard floor."}
+
+  At/above-floor targets with rationale (filed):
+  PUT …/342a3bff-…  {"header":{"priorYearProgramPloAvg":72.5},
+                     "ploRows":[{PLO1: 74/75/76/77, rationale "Consistently strong cohort history"},
+                                {PLO2: 70/70/70/70}], "courseRows":[]}
+    -> HTTP 200
+       PLO1 targets [74, 75, 76, 77]
+       PLO2 targets [70, 70, 70, 70]
+       programPloAvg [72, 72.5, 73, 73.5]
+       minimum target across all rows: 70
+
+Expected: at least 70% per PLO per cohort is filed; below-floor refused.
+Result: PASS (API level).
+
+Browser step (to confirm on screen): open /forms/plan/target-setting-matrix as
+program_chair, confirm the 4-cohort columns render per PLO and that a 65% entry
+is rejected inline. [PENDING]
+
+Automated coverage: `test/integration/plan.test.ts` (same exit check) asserts the
+70 default per cohort, `TargetBelowFloorError` on an under-floor save, and
+`MissingRationaleError` when a target above the floor has no rationale
+(INTEGRATION-suite-run.txt).

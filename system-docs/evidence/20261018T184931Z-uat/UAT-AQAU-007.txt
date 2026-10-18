@@ -1,0 +1,56 @@
+UAT-AQAU-007 — AQAU — "Compile the Institutional Review record"
+Goal: the record covers program APAR compliance, institutional CQI completion
+(≥70%) and pending CAPAs, and is prepared for the VPAA's review meeting.
+Role: aqau  (applies to /forms/periodic/institutional-review)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/periodic/institutional-review/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  draft id 431f0bf3-5f24-462f-89fd-b0192392413d
+
+  Compile the record:
+  PUT /api/v1/periodic/institutional-review/431f0bf3-…
+      {"header":{"meetingDate":"2026-07-15","venueMode":"Hybrid","presidedBy":"VPAA",
+                 "qaDirector":"Dr. AQAU"},
+       "programReviews":[{"programCode":"BSIT","programName":"BS Information Technology",
+                          "overallPloAttainmentPct":75,"ctlSubmitted":true,
+                          "aparComplete":true,"systemicGapReported":false,
+                          "priorityNotes":"CLO2 needs attention"}],
+       "cqiCompletions":[{"programCode":"BSIT","totalPlanned":10,"completed":8,
+                          "completionRatePct":80,"notes":"2 ongoing"}],
+       "decisions":{"institutionalPriorities":"Close CLO2 gap in AY 2026-2027",
+                    "capaStatusUpdates":"2 CAPAs open (BSIT-01, BSIT-02)",
+                    "resourceAllocations":"Calibration budget released"}}
+    -> HTTP 200; GET returns verbatim:
+       programReviews[0]:  aparComplete true, ctlSubmitted true,
+                           systemicGapReported false, overallPloAttainmentPct 75
+       cqiCompletions[0]:  completed 8 / totalPlanned 10, completionRatePct 80
+       decisions:          capaStatusUpdates "2 CAPAs open (BSIT-01, BSIT-02)"
+
+  Prepare for the VPAA review meeting:
+  POST /api/v1/forms/431f0bf3-…/submit  {}
+    -> HTTP 200  status "submitted"  currentApproverRole "vpaa"
+       approvalSteps [(vpaa, pending)]
+
+Expected: the record covers APAR compliance, institutional CQI completion
+(≥70%) and pending CAPAs, and reaches the VPAA.
+Result: PASS for content + routing; PASS WITH CAVEATS on the two "computed"
+phrases.
+
+Caveat A (APAR compliance): `aparComplete` / `ctlSubmitted` / `systemicGapReported`
+are **hand-entered booleans** on `ProgramReviewRow`, not read from the APAR
+(`annual_program_report`) or CTL (`closing_the_loop`) submissions.
+Caveat B (CQI ≥70% and pending CAPAs): `completionRatePct` is a **free number**
+with no ≥70% floor validated (the ≥70% hard-floor validator is applied to
+attainment targets, not completion rates), and the CAPA status is free text
+(`decisions.capaStatusUpdates`) — there is no link to `capa_plan` records, so
+"pending CAPAs" cannot be derived or counted. The record is a compiled meeting
+sheet, not a computed roll-up.
+
+Browser step (to confirm on screen): open /forms/periodic/institutional-review
+as aqau, confirm the per-program review table, the CQI completion table and the
+decisions block render, then submit and open /approvals as vpaa. [PENDING]
+
+Automated coverage (added for this run): `test/integration/periodic.test.ts` ->
+"F28 institutional_review: init → save → get" now also asserts the
+APAR/CTL/systemic-gap flags, the institutional CQI completion row and the
+`capaStatusUpdates` decision round-trip.

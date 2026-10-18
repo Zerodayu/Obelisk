@@ -1,0 +1,44 @@
+UAT-FACULTY (no ID in the supplied list) — FACULTY — "File the Mid-Cycle Summary"
+Goal: file the term mid-cycle snapshot; it must go to the Program Chair.
+Role: faculty  (applies to /forms/check/mid-cycle-attainment)
+
+Steps (API-approximate; browser pending):
+  POST /api/v1/check/mid-cycle-attainment/init  {"programId":"a904d53f-…","termId":"a6038532-…"}
+    -> HTTP 200  {"id":"58d14a3b-0447-4de5-8d9a-998b50dbaded"}
+  PUT  /api/v1/check/mid-cycle-attainment/58d14a3b-0447-4de5-8d9a-998b50dbaded
+       header {courseTitle "Introduction to Computing", courseCode "IT 101",
+               academicYear 2026-2027, semester "1st Semester", section "1A",
+               studentCountEnrolled 30, program BSIT, yearLevelCohort "Year 1",
+               assessmentWeek "Midterm (Week 8)", periodCovered "Weeks 1-8",
+               facultyName "Prof. Faculty"}
+       cohortRows [ {Y1, CLO1, 80.31, benchmark 70, status "met",    belowTargetCount 5},
+                    {Y1, CLO2, 65.00, benchmark 70, status "not_met", belowTargetCount 11} ]
+    -> HTTP 200; GET returns both rows persisted verbatim
+  POST /api/v1/forms/58d14a3b-…/submit  {}
+    -> HTTP 200  status "submitted"  currentApproverRole "program_chair"
+       approvalSteps (program_chair, dean, aqau, vpaa) all "pending"
+
+Expected: the term snapshot is filed and routed to the Program Chair.
+Result: PASS for the snapshot + routing.
+        PASS WITH CAVEAT for the phrase "with the at-risk watchlist".
+
+Caveat (deviation, code-confirmed): the mid-cycle record is keyed by
+**program × term** and stores only the header + per-cohort `MidCycleCohortRow`
+rows (`apps/backend/src/v1/check/service.ts`, `prisma.mid_cycle_cohort_row`).
+There is no at-risk sub-table and no `AtRiskFlag` link anywhere in the check
+module — `grep -rn "AtRisk" apps/backend/src/v1/check` returns nothing. The
+screen description in `app/(app)/forms/check/mid-cycle-attainment/page.tsx`
+promises "per-CLO mid-cycle status and at-risk watchlist", but the form
+component and payload carry no watchlist. The live at-risk watchlist is on the
+**CAR Part 4** and the **Action-Taken** screen (`/forms/cqi/action-taken`,
+section-scoped). A program×term record has no section to scope a watchlist to,
+so the UAT wording does not match the implementation as built.
+
+Browser step (to confirm on screen): open /forms/check/mid-cycle-attainment as
+faculty, confirm the cohort rows render, submit, then open /approvals as
+program_chair and confirm the row is pending. [PENDING]
+
+Finding: invalid `status` values are not validated. Sending `status:"MET"`
+(uppercase — the display label) reaches Prisma and returns an HTTP 500 with a
+raw `createMany` error; only the lowercase enum (`met`/`early_warning`/
+`not_met`/`pending`) is accepted. The model types `status` as `t.Optional(t.String())`.

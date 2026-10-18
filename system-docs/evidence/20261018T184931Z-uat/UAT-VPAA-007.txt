@@ -1,0 +1,53 @@
+UAT-VPAA-007 — VPAA — "Archive an approved form"
+Goal: an approved submission is locked into permanent, immutable storage in /archives.
+Role: vpaa  (archived from the approval flow; read back via /archives)
+
+Subject: the assessment budget approved in UAT-DEAN-005
+  submission 457b5982-0050-4813-b90d-e981b0b69f40  (status "approved")
+
+Steps (API-approximate; browser pending):
+  Non-archive roles (must be refused):
+  POST /api/v1/forms/457b5982-…/archive   (as faculty)
+    -> HTTP 403  {"error":"Only vpaa/system_admin may archive submissions"}
+  POST /api/v1/forms/457b5982-…/archive   (as aqau)
+    -> HTTP 403  {"error":"Only vpaa/system_admin may archive submissions"}
+
+  VPAA archives:
+  POST /api/v1/forms/457b5982-…/archive   (as vpaa)
+    -> HTTP 200  status "archived"  currentApproverRole null
+       (audit entry form_submission.archived written)
+
+  Immutability — re-archive:
+  POST /api/v1/forms/457b5982-…/archive   (as vpaa)
+    -> HTTP 409  {"error":"Invalid status transition: archived -> archived"}
+
+  Immutability — edit after archive:
+  PUT /api/v1/plan/assessment-budget/457b5982-…  {"lineItems":[]}  (as dean)
+    -> HTTP 409  {"error":"Assessment budget content may only be edited while the
+                  submission is draft or returned."}
+  (An earlier attempt with a body missing `lineItems` returned HTTP 422 — schema
+   validation runs before the status check; the valid-shaped body is what reaches
+   the archive guard.)
+
+Expected: an approved submission is locked into permanent, immutable storage.
+Result: PASS (API level) for the lock-in: role-gated archive, terminal status,
+no re-archive, no edit, no resubmit.
+
+VERIFY (deviation, scope): "in /archives" — for **submissions**, the archive
+verb is the forms endpoint above; `/archives` is the **graduation-cluster**
+browser (see UAT-AQAU-006), and cluster records only appear there once the
+(unbuilt) compile pipeline produces them. This case therefore verifies the
+lock-in of the approved submission, not a visible row in the `/archives` screen.
+The `archived` status is terminal (`STATUS_TRANSITIONS.archived = []`) and
+`EDITABLE_STATUSES` is `["draft","returned"]`.
+
+Browser step (to confirm on screen): open the approved budget as vpaa, click
+Archive, confirm the record shows archived and the edit/submit controls are gone.
+[PENDING]
+
+Automated coverage (added for this run): `test/integration/forms.test.ts`
+(archive block) now asserts, after the VPAA archive, that re-archive / update /
+submit all throw `InvalidTransitionError` and that the stored `formData` is
+unchanged. `test/integration/forms.test.ts` already covered the role gate
+(faculty and aqau refused) and `test/unit/forms-state-machine.test.ts` pins
+`archived` as terminal.
