@@ -46,6 +46,8 @@ export const FEATURE_ACCESS = {
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
 	manageReferenceData: ["system_admin"],
+	/** Create a user account and grant it a role (admin-provisioned accounts). */
+	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
 	confirmClusterCompile: ["aqau", "system_admin"],
 	/**
@@ -68,10 +70,11 @@ export const FEATURE_ACCESS = {
 	 */
 	viewAllAuditLogs: ["vpaa", "system_admin"],
 	/**
-	 * Read platform-wide aggregates that are scoped to no unit — the user
-	 * role distribution (`GET /auth/users/role-counts`) and the report-export
-	 * format counts (`GET /reports/exports`). Institution-level statistics,
-	 * so admin-only rather than open to every role like a unit-scoped read.
+	 * Read platform-wide data that is scoped to no unit — the platform user
+	 * list (`GET /auth/users`), the user role distribution
+	 * (`GET /auth/users/role-counts`), and the report-export format counts
+	 * (`GET /reports/exports`). Institution-level data, so admin-only rather
+	 * than open to every role like a unit-scoped read.
 	 */
 	viewPlatformStats: ["system_admin"],
 } as const satisfies Record<string, readonly UserRole[]>;

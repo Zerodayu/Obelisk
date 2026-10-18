@@ -1,5 +1,6 @@
 import { prisma } from "@lib/prisma";
 import {
+	assertCanManageUsers,
 	assertCanViewPlatformStats,
 	hasRole,
 	ROLE_REQUEST_ROLES,
@@ -16,7 +17,7 @@ import {
 	type SelfSelectableRole,
 	validateRoleRequest,
 } from "./model";
-import { auth, userService } from "./service";
+import { auth, userListSelect, userService } from "./service";
 
 const ROLE_REQUEST_STATUS = {
 	none: "none",
@@ -26,22 +27,6 @@ const ROLE_REQUEST_STATUS = {
 } as const;
 
 const ROLE_REQUEST_STATUS_ENUM = t.Enum(ROLE_REQUEST_STATUS);
-
-const roleRequestSelect = {
-	id: true,
-	name: true,
-	email: true,
-	role: true,
-	requestedRole: true,
-	roleRequestStatus: true,
-	employeeId: true,
-	programId: true,
-	departmentId: true,
-	isActive: true,
-	createdAt: true,
-	program: { select: { id: true, name: true, code: true } },
-	department: { select: { id: true, name: true, code: true } },
-} as const;
 
 export const roleRequestService = {
 	/**
@@ -106,7 +91,7 @@ export const roleRequestService = {
 	async list(status: keyof typeof ROLE_REQUEST_STATUS = "pending") {
 		return prisma.user.findMany({
 			where: { roleRequestStatus: status },
-			select: roleRequestSelect,
+			select: userListSelect,
 			orderBy: { createdAt: "asc" },
 		});
 	},
@@ -157,6 +142,11 @@ function requireSystemAdmin(user: User) {
 /** Throws a 403 when the caller may not read platform-wide aggregates. */
 function requirePlatformStats(user: User) {
 	assertCanViewPlatformStats((user as { role?: string }).role);
+}
+
+/** Throws a 403 when the caller may not create user accounts. */
+function requireUserManagement(user: User) {
+	assertCanManageUsers((user as { role?: string }).role);
 }
 
 export const authPlugin = new Elysia({ name: "auth" })
@@ -315,6 +305,85 @@ export const authPlugin = new Elysia({ name: "auth" })
 							200: { description: "Role -> user count" },
 							401: { description: "Unauthorized" },
 							403: { description: "System admin only" },
+						},
+					},
+				},
+			)
+			.get(
+				"/auth/users",
+				async ({ user, set }) => {
+					// NOTE: platform-wide by design — every account, so it is
+					// admin-only (`viewPlatformStats`), NOT unit-scoped.
+					try {
+						requirePlatformStats(user);
+						return await userService.listUsers();
+					} catch (error) {
+						if (error instanceof RoleAccessForbiddenError) {
+							set.status = 403;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					detail: {
+						tags: ["Auth"],
+						summary: "List platform users",
+						description:
+							"System admin only. Every user account — name, email, role, program/department, active flag, role-request status — newest first. Platform-wide, not unit-scoped.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Platform users" },
+							401: { description: "Unauthorized" },
+							403: { description: "System admin only" },
+						},
+					},
+				},
+			)
+			.post(
+				"/auth/users",
+				async ({ user, body, set }) => {
+					// NOTE: admin-provisioned accounts — a system_admin creates
+					// an account and grants it a role directly (no role-request
+					// round trip). Not unit-scoped: `manageUsers` is admin-only.
+					try {
+						requireUserManagement(user);
+						return await userService.createUser(body);
+					} catch (error) {
+						if (error instanceof RoleRequestError) {
+							set.status = error.status;
+							return { error: error.message };
+						}
+						if (error instanceof RoleAccessForbiddenError) {
+							set.status = 403;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					body: t.Object({
+						name: t.String(),
+						email: t.String(),
+						password: t.String(),
+						role: t.String(),
+						// Which one applies is role-derived; the service rejects a
+						// missing/unknown scope or the wrong id for the role.
+						programId: t.Optional(t.String()),
+						departmentId: t.Optional(t.String()),
+					}),
+					detail: {
+						tags: ["Auth"],
+						summary: "Create a user account",
+						description:
+							"System admin only. Creates an account with the given role (one of the self-selectable roles) and scope — `programId` for faculty/program_chair, `departmentId` for dean, neither for aqau/vpaa. A duplicate email is a 409.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Created user" },
+							400: { description: "Invalid role or scope" },
+							401: { description: "Unauthorized" },
+							403: { description: "System admin only" },
+							409: { description: "Email already in use" },
 						},
 					},
 				},

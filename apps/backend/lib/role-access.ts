@@ -29,6 +29,8 @@ export const FEATURE_ACCESS = {
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
 	manageReferenceData: ["system_admin"],
+	/** Create a user account and grant it a role (admin-provisioned accounts). */
+	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
 	confirmClusterCompile: ["aqau", "system_admin"],
 	/**
@@ -51,10 +53,11 @@ export const FEATURE_ACCESS = {
 	 */
 	viewAllAuditLogs: ["vpaa", "system_admin"],
 	/**
-	 * Read platform-wide aggregates that are scoped to no unit — the user
-	 * role distribution (`GET /auth/users/role-counts`) and the report-export
-	 * format counts (`GET /reports/exports`). These are institution-level
-	 * statistics (an institution's role headcount, its export volume), so they
+	 * Read platform-wide data that is scoped to no unit — the platform user
+	 * list (`GET /auth/users`), the user role distribution
+	 * (`GET /auth/users/role-counts`), and the report-export format counts
+	 * (`GET /reports/exports`). These are institution-level data (an
+	 * institution's accounts, its role headcount, its export volume), so they
 	 * are admin-only rather than open to every role like a unit-scoped read.
 	 */
 	viewPlatformStats: ["system_admin"],
@@ -76,6 +79,9 @@ export const ROLE_REQUEST_ROLES: readonly string[] =
 /** Roles that may create reference data (departments, programs). */
 export const REFERENCE_DATA_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageReferenceData;
+/** Roles that may create user accounts and grant them a role. */
+export const USER_MANAGEMENT_ROLES: readonly string[] =
+	FEATURE_ACCESS.manageUsers;
 /** Roles that may confirm graduation-cluster compile. */
 export const CLUSTER_CONFIRM_ROLES: readonly string[] =
 	FEATURE_ACCESS.confirmClusterCompile;
@@ -132,6 +138,15 @@ export function assertCanManageReferenceData(role: string | undefined): void {
 	if (!hasRole(role, REFERENCE_DATA_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not manage reference data — expected one of: ${REFERENCE_DATA_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** May `role` create user accounts and grant them a role? */
+export function assertCanManageUsers(role: string | undefined): void {
+	if (!hasRole(role, USER_MANAGEMENT_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not manage users — expected one of: ${USER_MANAGEMENT_ROLES.join(", ")}`,
 		);
 	}
 }

@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import {
 	assertCanCaptureClassRecords,
 	assertCanManageReferenceData,
+	assertCanManageUsers,
 	assertCanReadAtRiskFlags,
 	CLASS_RECORD_ROLES,
 	CLUSTER_CONFIRM_ROLES,
@@ -12,6 +13,7 @@ import {
 	REFERENCE_DATA_ROLES,
 	ROLE_REQUEST_ROLES,
 	RoleAccessForbiddenError,
+	USER_MANAGEMENT_ROLES,
 } from "@lib/role-access";
 import { assertCanManagePlos, PloForbiddenError } from "@v1/plan/compute";
 
@@ -72,6 +74,19 @@ describe("feature role gates (lib/role-access)", () => {
 			);
 		}
 		expect(() => assertCanManageReferenceData(undefined)).toThrow(
+			RoleAccessForbiddenError,
+		);
+	});
+
+	it("restricts user-account creation to system_admin", () => {
+		expect(USER_MANAGEMENT_ROLES).toEqual(["system_admin"]);
+		expect(() => assertCanManageUsers("system_admin")).not.toThrow();
+		for (const role of ["vpaa", "aqau", "dean", "faculty", "user"]) {
+			expect(() => assertCanManageUsers(role)).toThrow(
+				RoleAccessForbiddenError,
+			);
+		}
+		expect(() => assertCanManageUsers(undefined)).toThrow(
 			RoleAccessForbiddenError,
 		);
 	});
