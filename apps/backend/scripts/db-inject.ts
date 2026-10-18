@@ -49,7 +49,9 @@ try {
 	// NOTE: Bun.file resolves relative paths against cwd, so no node:path resolve needed
 	raw = JSON.parse(await Bun.file(file).text());
 } catch (e) {
-	console.error(`FATAL: cannot read or parse ${file}: ${e instanceof Error ? e.message : e}`);
+	console.error(
+		`FATAL: cannot read or parse ${file}: ${e instanceof Error ? e.message : e}`,
+	);
 	process.exit(1);
 }
 
@@ -102,9 +104,14 @@ function fail(msg: string): never {
 }
 
 for (const dept of data.departments) {
-	const existing = await prisma.department.findUnique({ where: { code: dept.code } });
+	const existing = await prisma.department.findUnique({
+		where: { code: dept.code },
+	});
 	if (existing) {
-		await prisma.department.update({ where: { id: existing.id }, data: { name: dept.name } });
+		await prisma.department.update({
+			where: { id: existing.id },
+			data: { name: dept.name },
+		});
 		count("department", false);
 	} else {
 		await prisma.department.create({
@@ -115,9 +122,14 @@ for (const dept of data.departments) {
 }
 
 for (const prog of data.programs) {
-	const department = await prisma.department.findUnique({ where: { code: prog.department } });
-	if (!department) fail(`program ${prog.code}: department ${prog.department} not found`);
-	const existing = await prisma.program.findUnique({ where: { code: prog.code } });
+	const department = await prisma.department.findUnique({
+		where: { code: prog.department },
+	});
+	if (!department)
+		fail(`program ${prog.code}: department ${prog.department} not found`);
+	const existing = await prisma.program.findUnique({
+		where: { code: prog.code },
+	});
 	if (existing) {
 		await prisma.program.update({
 			where: { id: existing.id },
@@ -138,10 +150,15 @@ for (const prog of data.programs) {
 }
 
 for (const section of data.sections) {
-	const program = await prisma.program.findUnique({ where: { code: section.program } });
-	if (!program) fail(`section ${section.code}: program ${section.program} not found`);
+	const program = await prisma.program.findUnique({
+		where: { code: section.program },
+	});
+	if (!program)
+		fail(`section ${section.code}: program ${section.program} not found`);
 	let course = await prisma.course.findUnique({
-		where: { programId_code: { programId: program.id, code: section.course.code } },
+		where: {
+			programId_code: { programId: program.id, code: section.course.code },
+		},
 	});
 	if (course) {
 		await prisma.course.update({

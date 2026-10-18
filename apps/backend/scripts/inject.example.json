@@ -1,8 +1,14 @@
 {
 	"term": { "schoolYear": "2026-2027", "semester": "1st Semester" },
-	"departments": [{ "code": "CITE", "name": "College of Information Technology" }],
+	"departments": [
+		{ "code": "CITE", "name": "College of Information Technology" }
+	],
 	"programs": [
-		{ "code": "BSIT", "name": "BS Information Technology", "department": "CITE" }
+		{
+			"code": "BSIT",
+			"name": "BS Information Technology",
+			"department": "CITE"
+		}
 	],
 	"sections": [
 		{

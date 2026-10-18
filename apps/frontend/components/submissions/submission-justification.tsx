@@ -244,7 +244,11 @@ export function SubmissionJustification({
 					<h3 className="text-base font-semibold">Pedagogical justification</h3>
 					{justification ? (
 						<Badge variant="outline">
-							{justification.kind === "car" ? "CAR" : justification.kind === "curriculum_map" ? "Curriculum map" : "Form details"}
+							{justification.kind === "car"
+								? "CAR"
+								: justification.kind === "curriculum_map"
+									? "Curriculum map"
+									: "Form details"}
 						</Badge>
 					) : null}
 				</div>

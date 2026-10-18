@@ -187,7 +187,6 @@ export const archivePlugin = new Elysia({
 					401: { description: "Unauthorized" },
 					403: { description: "Role may not confirm, or unit mismatch" },
 					404: { description: "Cluster not found" },
-					
 				},
 			},
 		},

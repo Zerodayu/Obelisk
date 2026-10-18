@@ -362,7 +362,9 @@ const FORM_DETAILS: Record<string, string[]> = {
  * form-specific notes so approvers see meaningful context instead of the
  * generic "No pedagogical justification recorded" empty state.
  */
-export function detailsJustification(formCode: string): SubmissionJustification {
+export function detailsJustification(
+	formCode: string,
+): SubmissionJustification {
 	const notes = FORM_DETAILS[formCode] ?? [];
 	return {
 		kind: "details",
