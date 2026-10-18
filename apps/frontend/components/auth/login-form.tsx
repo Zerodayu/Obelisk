@@ -13,9 +13,15 @@ import { toastError } from "@/components/ui/toast";
 import { signInWithEmail } from "@/server/actions/auth";
 
 const formSchema = z.object({
-	email: z.email({
-		message: "Invalid email address.",
-	}),
+	email: z
+		.string()
+		.min(1, { message: "Email is required." })
+		.pipe(
+			z.email({
+				message:
+					"Enter a valid email address including @domain, e.g. name@jmcfi.edu.ph.",
+			}),
+		),
 	password: z.string().min(8, {
 		message: "Password must be at least 8 characters.",
 	}),
@@ -32,6 +38,9 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
+		// NOTE: surface field errors as soon as the user leaves the field, not only
+		// on submit — a silently blocked submit reads as "nothing happened".
+		mode: "onTouched",
 		defaultValues: {
 			email: "",
 			password: "",
@@ -64,7 +73,7 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
 					control={form.control}
 					name="email"
 					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
+						<Field invalid={fieldState.invalid}>
 							<FieldLabel>Email</FieldLabel>
 							<Input
 								aria-invalid={fieldState.invalid}
@@ -74,7 +83,7 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
 								type="email"
 								{...field}
 							/>
-							<FieldError errors={[fieldState.error]} />
+							<FieldError>{fieldState.error?.message}</FieldError>
 						</Field>
 					)}
 				/>
@@ -83,7 +92,7 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
 					control={form.control}
 					name="password"
 					render={({ field, fieldState }) => (
-						<Field data-invalid={fieldState.invalid}>
+						<Field invalid={fieldState.invalid}>
 							<FieldLabel>Password</FieldLabel>
 							<Input
 								aria-invalid={fieldState.invalid}
@@ -93,7 +102,7 @@ export const LoginForm = ({ next = "/dashboard" }: LoginFormProps) => {
 								type="password"
 								{...field}
 							/>
-							<FieldError errors={[fieldState.error]} />
+							<FieldError>{fieldState.error?.message}</FieldError>
 						</Field>
 					)}
 				/>
