@@ -239,3 +239,29 @@ export async function createProgram(input: {
 		return { ok: false, error: errorMessage(err, "Failed to create program.") };
 	}
 }
+
+/**
+ * Create a class section (plus its course/CLOs when new) — capture roles only
+ * (`manageClassSections`); the backend narrows faculty/chair to their program.
+ */
+export async function createClassSection(input: {
+	sectionCode: string;
+	courseCode: string;
+	courseTitle?: string;
+	programId?: string;
+	clos?: { code: string; description: string }[];
+}): Promise<ActionResult<ClassSection>> {
+	await requireRole(featureRoles("manageClassSections"));
+	try {
+		const data = await actionApi.post<ClassSection>(
+			"/academic/class-sections",
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to create class section."),
+		};
+	}
+}

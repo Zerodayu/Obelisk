@@ -29,6 +29,12 @@ export const FEATURE_ACCESS = {
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
 	manageReferenceData: ["system_admin"],
+	/**
+	 * Create class sections (and their course/CLOs) — faculty/chair only for
+	 * their own program, system_admin for any. Uploads bind to a section, so
+	 * capture roles must be able to bring their own section into existence.
+	 */
+	manageClassSections: ["faculty", "program_chair", "system_admin"],
 	/** Create a user account and grant it a role (admin-provisioned accounts). */
 	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
@@ -79,6 +85,9 @@ export const ROLE_REQUEST_ROLES: readonly string[] =
 /** Roles that may create reference data (departments, programs). */
 export const REFERENCE_DATA_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageReferenceData;
+/** Roles that may create class sections (scoped to their own program). */
+export const CLASS_SECTION_ROLES: readonly string[] =
+	FEATURE_ACCESS.manageClassSections;
 /** Roles that may create user accounts and grant them a role. */
 export const USER_MANAGEMENT_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageUsers;
@@ -138,6 +147,15 @@ export function assertCanManageReferenceData(role: string | undefined): void {
 	if (!hasRole(role, REFERENCE_DATA_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not manage reference data — expected one of: ${REFERENCE_DATA_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** May `role` create class sections? (program scope is enforced separately) */
+export function assertCanManageClassSections(role: string | undefined): void {
+	if (!hasRole(role, CLASS_SECTION_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not create class sections — expected one of: ${CLASS_SECTION_ROLES.join(", ")}`,
 		);
 	}
 }

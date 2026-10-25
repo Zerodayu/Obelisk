@@ -131,6 +131,8 @@ Or apply migrations from your machine against the prod database with `cd apps/ba
 
 > ⚠️ **Do not run `db:seed` against production.** The seed wipes and recreates accounts/reference data and now refuses on production by itself (`NODE_ENV=production` or the in-network `db` host — added 2026-10-02, see [`system-docs/testing_results.md`](../system-docs/testing_results.md) 1.3); never set its `OBELISK_SEED_ALLOW_PROD=1` override against a live instance.
 
+**First reference data (no seed).** After the schema is applied, the first System Admin creates the department/program on the dashboard ("Programs & departments"), then any faculty/chair (or the admin) uses **Add class section** in the Dashboard's Academic Context card — that creates the section, its course, and its CLOs, and attaches it to the active term (bootstrapping the current school year if the DB has no term yet). `just db-inject-prod <file>` remains the bulk path for departments/programs/sections (it does not create CLOs), and the very first `system_admin` account is still provisioned by hand in the DB.
+
 ---
 
 ## Deploying

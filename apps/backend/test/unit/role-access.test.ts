@@ -2,10 +2,12 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	assertCanCaptureClassRecords,
+	assertCanManageClassSections,
 	assertCanManageReferenceData,
 	assertCanManageUsers,
 	assertCanReadAtRiskFlags,
 	CLASS_RECORD_ROLES,
+	CLASS_SECTION_ROLES,
 	CLUSTER_CONFIRM_ROLES,
 	FEATURE_ACCESS,
 	hasRole,
@@ -74,6 +76,25 @@ describe("feature role gates (lib/role-access)", () => {
 			);
 		}
 		expect(() => assertCanManageReferenceData(undefined)).toThrow(
+			RoleAccessForbiddenError,
+		);
+	});
+
+	it("lets capture roles create class sections, not reviewers", () => {
+		expect(CLASS_SECTION_ROLES).toEqual([
+			"faculty",
+			"program_chair",
+			"system_admin",
+		]);
+		for (const role of ["faculty", "program_chair", "system_admin"]) {
+			expect(() => assertCanManageClassSections(role)).not.toThrow();
+		}
+		for (const role of ["vpaa", "aqau", "dean", "user"]) {
+			expect(() => assertCanManageClassSections(role)).toThrow(
+				RoleAccessForbiddenError,
+			);
+		}
+		expect(() => assertCanManageClassSections(undefined)).toThrow(
 			RoleAccessForbiddenError,
 		);
 	});

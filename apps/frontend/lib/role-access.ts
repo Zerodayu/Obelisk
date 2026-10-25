@@ -46,6 +46,11 @@ export const FEATURE_ACCESS = {
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
 	manageReferenceData: ["system_admin"],
+	/**
+	 * Create class sections (and their course/CLOs) — faculty/chair only for
+	 * their own program, system_admin for any. Mirrors the backend gate.
+	 */
+	manageClassSections: ["faculty", "program_chair", "system_admin"],
 	/** Create a user account and grant it a role (admin-provisioned accounts). */
 	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */

@@ -1,5 +1,6 @@
 import { cached } from "@lib/cache";
 import {
+	assertCanManageClassSections,
 	assertCanManageReferenceData,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
@@ -9,10 +10,12 @@ import { Elysia } from "elysia";
 
 import {
 	ClassSectionQuerySchema,
+	CreateClassSectionSchema,
 	CreateDepartmentSchema,
 	CreateProgramSchema,
 } from "./model";
 import {
+	createClassSection,
 	createDepartment,
 	createProgram,
 	listAssessmentTypeCounts,
@@ -93,7 +96,9 @@ export const academicPlugin = new Elysia({
 	)
 	.get(
 		"/terms",
-		cached(300, async () => listTerms()),
+		// NOTE: not cached — the first section create can bootstrap a term, and
+		// a cached list would hide it from the picker (see createClassSection).
+		async () => listTerms(),
 		{
 			auth: true,
 			detail: {
@@ -144,9 +149,10 @@ export const academicPlugin = new Elysia({
 	)
 	.get(
 		"/class-sections",
-		cached(120, async ({ query, user }) =>
+		// NOTE: not cached — capture roles create sections through the UI, and a
+		// cached list would serve the pre-create rows (same as programs).
+		async ({ query, user }) =>
 			listClassSections(unitScopeOf(user), query.programId, query.termId),
-		),
 		{
 			auth: true,
 			query: ClassSectionQuerySchema,
@@ -159,6 +165,50 @@ export const academicPlugin = new Elysia({
 					200: { description: "List of class sections" },
 					401: { description: "Unauthorized" },
 					403: { description: "programId is outside the caller's unit" },
+				},
+			},
+		},
+	)
+	.post(
+		"/class-sections",
+		async ({ body, user, set }) => {
+			// NOTE: the auth macro answers 401 by returning `undefined` from its
+			// resolve but Elysia still runs the handler — fail closed here instead
+			// of crashing on `user.role` (same as GET /audit/logs).
+			if (!user) {
+				set.status = 401;
+				return { error: "Unauthorized" };
+			}
+			try {
+				const actor = user as { id?: string; role?: string };
+				assertCanManageClassSections(actor.role);
+				return await createClassSection(unitScopeOf(user), body, {
+					id: actor.id ?? "",
+					role: actor.role ?? "",
+				});
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreateClassSectionSchema,
+			detail: {
+				summary: "Create a class section",
+				description:
+					"Faculty/program_chair (their own program) and system_admin. Creates the course + CLOs when they don't exist; attaches to the active term unless `termId` is given.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created class section" },
+					400: {
+						description: "Missing program/course title, or a CLO-less course",
+					},
+					401: { description: "Unauthorized" },
+					403: {
+						description: "Role may not create sections / foreign program",
+					},
+					404: { description: "Term not found" },
+					409: { description: "Section already exists for this course + term" },
 				},
 			},
 		},
