@@ -203,7 +203,9 @@ export function RoleRequestsPanel() {
 				email: request.email,
 				requestedRole: request.requestedRole,
 				roleLabel: ROLE_LABELS[request.requestedRole] ?? request.requestedRole,
-				scopeLabel: [request.program?.name, request.department?.name]
+				// Codes, not names: full program/department names overflow the
+				// column and bleed into "Requested at".
+				scopeLabel: [request.program?.code, request.department?.code]
 					.filter(Boolean)
 					.join(" · "),
 				createdAt: request.createdAt,
@@ -302,11 +304,9 @@ export function RoleRequestsPanel() {
 					row.original.scopeLabel ? (
 						<Badge variant="secondary">{row.original.scopeLabel}</Badge>
 					) : (
-						<span className="text-muted-foreground text-xs">
-							No program/department on file
-						</span>
+						<span className="text-muted-foreground text-xs">—</span>
 					),
-				size: 220,
+				size: 120,
 				enableSorting: true,
 				enableHiding: true,
 			},
