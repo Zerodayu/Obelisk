@@ -45,6 +45,7 @@ import { type DutyStep, dutiesFor } from "@/config/role-duties";
 import {
 	APPROVER_ROLES,
 	ARCHIVE_ROLES,
+	ARCHIVE_VIEW_ROLES,
 	PLO_MANAGEMENT_ROLES,
 	preparerRoles,
 	screenRoles,
@@ -454,7 +455,7 @@ export function workspaceNav(role: UserRole): NavItem[] {
 			url: "/approvals",
 			icon: ClipboardCheckIcon,
 		});
-	if (hasAccess(role, ARCHIVE_ROLES))
+	if (hasAccess(role, ARCHIVE_VIEW_ROLES))
 		items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
 	// NOTE: visible to every role — the backend serves self-scoped rows only,
 	// vpaa/system_admin get the full waterfall (viewAllAuditLogs).

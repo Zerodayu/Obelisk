@@ -20,7 +20,7 @@ export const FEATURE_ACCESS = {
 	/** Archive an approved submission (`POST /forms/:id/archive`). */
 	archive: ["vpaa", "system_admin"],
 	/** Open the graduation-cluster archive browse screens (read-only). */
-	viewArchives: ["vpaa", "system_admin"],
+	viewArchives: ["aqau", "vpaa", "system_admin"],
 	/** Sit on the approval inbox / decide an approval step. */
 	approveForms: ["program_chair", "dean", "aqau", "vpaa", "system_admin"],
 	/** Create/update/delete PLO entities — dean only, no admin bypass. */

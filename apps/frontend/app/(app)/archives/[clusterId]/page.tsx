@@ -1,4 +1,4 @@
-import { ARCHIVE_ROLES } from "@/lib/roles";
+import { ARCHIVE_VIEW_ROLES } from "@/lib/roles";
 import { serverApi } from "@/server/api-client";
 import { requireRole } from "@/server/auth";
 
@@ -48,7 +48,7 @@ export default async function ClusterDetailPage({
 }: {
 	params: Promise<{ clusterId: string }>;
 }) {
-	await requireRole(ARCHIVE_ROLES);
+	await requireRole(ARCHIVE_VIEW_ROLES);
 	const { clusterId } = await params;
 
 	// NOTE: `serverFetch` throws on a non-2xx, so an unknown or out-of-unit

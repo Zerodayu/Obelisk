@@ -451,6 +451,16 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 					status: { kind: "link" },
 					roles: ["program_chair", "aqau", "vpaa", "system_admin"],
 				},
+				{
+					id: "aqau-capa",
+					title: "Open the CAPA Plan",
+					detail:
+						"Inspect the structural fix and its action progress — approved plans stay under AQAU monitoring.",
+					url: "/forms/periodic/capa-plan",
+					icon: ListChecksIcon,
+					status: { kind: "link" },
+					roles: screenRoles("capa_plan"),
+				},
 			],
 		},
 		{

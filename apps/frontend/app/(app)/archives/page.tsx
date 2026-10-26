@@ -10,17 +10,17 @@ import {
 	FramePanel,
 	FrameTitle,
 } from "@/components/reui/frame";
-import { ARCHIVE_ROLES } from "@/lib/roles";
+import { ARCHIVE_VIEW_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
 /**
  * `/archives` — graduation-cluster archive list (label, program, graduation
  * term, status, live student count, confirm/archive timestamps) plus the
  * composition and lifecycle distributions. Read-only; gated to the archive
- * roles (`vpaa`/`system_admin`).
+ * view roles (`aqau`/`vpaa`/`system_admin`).
  */
 export default async function ArchivesIndexPage() {
-	await requireRole(ARCHIVE_ROLES);
+	await requireRole(ARCHIVE_VIEW_ROLES);
 	return (
 		<div className="space-y-6 px-4 lg:px-6">
 			<div className="space-y-1">

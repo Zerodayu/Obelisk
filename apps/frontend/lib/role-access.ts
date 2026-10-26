@@ -37,7 +37,7 @@ export const FEATURE_ACCESS = {
 	/** Archive an approved submission (the Archive action). */
 	archive: ["vpaa", "system_admin"],
 	/** Open the graduation-cluster archive browse screens (read-only). */
-	viewArchives: ["vpaa", "system_admin"],
+	viewArchives: ["aqau", "vpaa", "system_admin"],
 	/** Sit on the approval inbox / decide an approval step. */
 	approveForms: ["program_chair", "dean", "aqau", "vpaa", "system_admin"],
 	/** Create/edit/delete PLO entities (`/plo-management`) — dean only. */
@@ -125,6 +125,9 @@ export const CLASS_RECORD_SCREEN_ROLES: readonly UserRole[] = [
 ];
 /** Archive an approved submission **and** open `/archives`. */
 export const ARCHIVE_ROLES: readonly UserRole[] = FEATURE_ACCESS.archive;
+/** Open `/archives` read-only — VPAA/admin plus the AQAU cluster confirmer. */
+export const ARCHIVE_VIEW_ROLES: readonly UserRole[] =
+	FEATURE_ACCESS.viewArchives;
 /**
  * May sit on an approval step (`ApproverRole`) or open `/approvals` — the
  * canonical chain plus the `system_admin` override. Broader than

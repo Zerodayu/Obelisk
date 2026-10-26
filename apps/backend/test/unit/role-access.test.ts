@@ -46,9 +46,13 @@ describe("feature role gates (lib/role-access)", () => {
 		);
 	});
 
-	it("restricts archiving (and the archive screens) to vpaa/system_admin", () => {
+	it("restricts archiving to vpaa/system_admin; AQAU may view archives", () => {
 		expect(FEATURE_ACCESS.archive).toEqual(["vpaa", "system_admin"]);
-		expect(FEATURE_ACCESS.viewArchives).toEqual(FEATURE_ACCESS.archive);
+		expect(FEATURE_ACCESS.viewArchives).toEqual([
+			"aqau",
+			"vpaa",
+			"system_admin",
+		]);
 	});
 
 	it("keeps PLO management dean-only — no system_admin bypass", () => {
