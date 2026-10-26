@@ -18,6 +18,8 @@ import {
 } from "@/lib/store/atoms/forms";
 import { userAtom } from "@/lib/store/atoms/user";
 
+import { SubmissionDetails } from "./submission-details";
+import { SubmissionRelatedData } from "./submission-related-data";
 import { SubmissionEvidence } from "./submission-evidence";
 import { SubmissionJustification } from "./submission-justification";
 
@@ -123,8 +125,16 @@ export function SubmissionApprovalScreen({
 				submissionId={submissionId}
 			/>
 
-			{/* NOTE: above the evidence card so the approver reads the alignment
-          (Bloom's / I-P-D / assessment evidence) before the raw payload. */}
+			{/* Form-specific detail cards — rendered only when they carry data, so
+          the approval screen shows what the form actually contains instead of
+          a fixed set of panels. */}
+			<SubmissionDetails formData={submission.formData} />
+
+			<SubmissionRelatedData
+				formCode={submission.formType?.code}
+				submissionId={submissionId}
+			/>
+
 			<SubmissionJustification submissionId={submissionId} />
 
 			<SubmissionEvidence submissionId={submissionId} />

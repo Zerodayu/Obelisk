@@ -216,6 +216,10 @@ export function SubmissionJustification({
 		void load();
 	}, [load]);
 
+	if (!justification && !loading) {
+		return null;
+	}
+
 	if (loading && !justification) {
 		return (
 			<section className="bg-card rounded-xl border p-5 shadow-sm sm:p-6">
@@ -227,14 +231,7 @@ export function SubmissionJustification({
 	}
 
 	if (failed) {
-		return (
-			<section className="bg-card rounded-xl border p-5 shadow-sm sm:p-6">
-				<h3 className="text-base font-semibold">Pedagogical justification</h3>
-				<p className="text-muted-foreground mt-2 text-sm">
-					Justification could not be loaded for this submission.
-				</p>
-			</section>
-		);
+		return null;
 	}
 
 	return (

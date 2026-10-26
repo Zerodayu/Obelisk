@@ -13,12 +13,6 @@ import { userAtom } from "@/lib/store/atoms/user";
 
 import type { SubmissionJustificationRecord } from "./submission-justification";
 
-/**
- * Mirrors `SubmissionEvidence` from `apps/backend/src/v1/forms/service.ts`
- * (`GET /forms/:id/evidence`). Counts only — the backend never returns raw
- * student scores to this endpoint, so any reviewer in the approval chain can
- * read it.
- */
 export interface SubmissionEvidenceRecord {
 	code: string;
 	classSectionId: string | null;
@@ -40,7 +34,6 @@ export interface SubmissionEvidenceRecord {
 	} | null;
 }
 
-/** One server-computed counter; `highlight` reddens non-zero problem counts. */
 function Stat({
 	label,
 	value,
@@ -64,21 +57,12 @@ function Stat({
 	);
 }
 
-/**
- * Read-only evidence panel for the approval screen: the bound class section
- * (course/term), the capture summary for it (rows, students, below-threshold,
- * at-risk, latest computation run), and the stored `formData` payload — the
- * last one collapsed behind a toggle now, since the pedagogical
- * justification above carries what an approver actually reads. Data comes
- * from `GET /forms/:id/evidence` — nothing is derived client-side.
- */
 export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 	const [evidence, setEvidence] = useState<SubmissionEvidenceRecord | null>(
 		null,
 	);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(false);
-	// NOTE: raw JSON is advanced detail — approvers read the justification card.
 	const [showPayload, setShowPayload] = useState(false);
 	const user = useAtomValue(userAtom);
 
@@ -93,8 +77,6 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 			);
 			setError(false);
 		} catch {
-			// The screen already passed the visibility gate; a failed refresh just
-			// leaves the panel empty with a retry-free muted note.
 			setError(true);
 		} finally {
 			setLoading(false);
@@ -105,7 +87,6 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 		void load();
 	}, [load]);
 
-	// Role-aware: capture-only screens stay unlinked for roles that lost them.
 	const formPath = evidence
 		? formPathForCode(evidence.code, user?.role)
 		: undefined;
@@ -204,7 +185,7 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 								type="button"
 								variant="ghost"
 							>
-								Stored payload
+								Stored payload (raw JSON)
 								<ChevronDownIcon
 									className={`transition-transform duration-200 ${
 										showPayload ? "rotate-180" : ""
@@ -217,11 +198,7 @@ export function SubmissionEvidence({ submissionId }: { submissionId: string }) {
 								</pre>
 							) : null}
 						</div>
-					) : (
-						<p className="text-muted-foreground text-sm">
-							No stored payload — the content lives on the form screen.
-						</p>
-					)}
+					) : null}
 				</div>
 			)}
 		</section>

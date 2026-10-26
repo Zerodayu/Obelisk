@@ -678,6 +678,79 @@ async function main() {
 		});
 	}
 
+	function demoExtraFormData(code: string): Record<string, unknown> {
+		switch (code) {
+			case "systemic_gap_report":
+				return {
+					cycleRows: [
+						{
+							yearLevel: 1,
+							cloCode: "CLO1",
+							attainmentPct: 62.5,
+							status: "NOT MET",
+						},
+						{
+							yearLevel: 2,
+							cloCode: "CLO2",
+							attainmentPct: 71.0,
+							status: "MET",
+						},
+					],
+					evidenceNarrative:
+						"Three consecutive cohorts show CLO1 attainment below the 70% floor; root cause traced to assessment design.",
+					rootCauseCategory: "3-Assessment Design",
+					rootCauseAnalysis:
+						"Assessment items over-weight memorization; rubrics lack application-level tasks.",
+					recommendedStructuralResponse:
+						"Redesign CLO1 assessments to include application tasks; pilot in the next term.",
+					capaPlanOutline: "Draft CAPA plan referencing this systemic gap report.",
+					signatures: { preparedBy: "dean" },
+				};
+			case "capa_plan":
+				return {
+					actions: [
+						{
+							actionNo: 1,
+							description: "Redesign CLO1 assessment rubric",
+							owner: "faculty",
+							dueDate: "2026-12-15",
+							status: "planned",
+						},
+						{
+							actionNo: 2,
+							description: "Faculty workshop on assessment design",
+							owner: "program_chair",
+							dueDate: "2027-01-30",
+							status: "planned",
+						},
+					],
+					progressReviews: [],
+					closureDeclaration: null,
+					benchmarkSustainedCycles: 0,
+				};
+			case "institutional_review":
+				return {
+					programReviews: [
+						{
+							program: "BSIT",
+							highlights: "CLO2 and CLO4 met the 70% benchmark across all cohorts.",
+							concerns: "CLO1 and CLO3 remain below benchmark for three cycles.",
+						},
+					],
+					cqiCompletions: [
+						{ cqiEntry: "CQI-001", status: "completed" },
+					],
+					decisions: {
+						decision1: "Approve the CAPA plan for CLO1 redesign.",
+						decision2: "Schedule a follow-up review next term.",
+					},
+					signatures: { preparedBy: "aqau" },
+				};
+			default:
+				return {};
+		}
+	}
+
 	// --- Governance: mixed-status filings + approval chains ------------------
 	console.log("Creating mixed-status submissions and approval chains...");
 	for (const [index, item] of MIXED_SUBMISSIONS.entries()) {
@@ -705,6 +778,7 @@ async function main() {
 						term: `${latestTerm.schoolYear} ${latestTerm.semester}`,
 						preparedBy: item.preparer,
 					},
+					...demoExtraFormData(item.code),
 				},
 				createdAt,
 				updatedAt: createdAt,
