@@ -1,4 +1,5 @@
-import { ARCHIVE_VIEW_ROLES } from "@/lib/roles";
+import { ConfirmClusterButton } from "@/components/governance/confirm-cluster-button";
+import { ARCHIVE_VIEW_ROLES, FEATURE_ACCESS, hasAccess } from "@/lib/roles";
 import { serverApi } from "@/server/api-client";
 import { requireRole } from "@/server/auth";
 
@@ -48,7 +49,7 @@ export default async function ClusterDetailPage({
 }: {
 	params: Promise<{ clusterId: string }>;
 }) {
-	await requireRole(ARCHIVE_VIEW_ROLES);
+	const user = await requireRole(ARCHIVE_VIEW_ROLES);
 	const { clusterId } = await params;
 
 	// NOTE: `serverFetch` throws on a non-2xx, so an unknown or out-of-unit
@@ -56,21 +57,28 @@ export default async function ClusterDetailPage({
 	const cluster = await serverApi.get<ClusterDetail>(`/archives/${clusterId}`);
 
 	const compiled = cluster.status !== "open" && cluster.entries.length > 0;
+	// Confirming is an `open`-cluster lifecycle action, not an entry edit.
+	const canConfirm =
+		cluster.status === "open" &&
+		hasAccess(user.role, FEATURE_ACCESS.confirmClusterCompile);
 
 	return (
 		<div className="space-y-6 px-4 lg:px-6">
-			<div className="space-y-1">
-				<h2 className="text-xl font-semibold tracking-tight">
-					{cluster.label}
-				</h2>
-				<p className="text-muted-foreground text-sm">
-					{cluster.program.name} · {cluster.graduationTerm.schoolYear}{" "}
-					{cluster.graduationTerm.semester} ·{" "}
-					{STATUS_LABELS[cluster.status] ?? cluster.status}
-				</p>
-				<p className="text-muted-foreground text-sm">
-					Permanent, read-only snapshot. No data here can be modified.
-				</p>
+			<div className="flex flex-wrap items-start justify-between gap-3">
+				<div className="space-y-1">
+					<h2 className="text-xl font-semibold tracking-tight">
+						{cluster.label}
+					</h2>
+					<p className="text-muted-foreground text-sm">
+						{cluster.program.name} · {cluster.graduationTerm.schoolYear}{" "}
+						{cluster.graduationTerm.semester} ·{" "}
+						{STATUS_LABELS[cluster.status] ?? cluster.status}
+					</p>
+					<p className="text-muted-foreground text-sm">
+						Permanent snapshot — student entries are read-only.
+					</p>
+				</div>
+				{canConfirm ? <ConfirmClusterButton clusterId={cluster.id} /> : null}
 			</div>
 
 			<dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
