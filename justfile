@@ -61,10 +61,15 @@ db-migrate:
 db-generate:
     @just _bun apps/backend db:generate
 
-# seed dev data: one account per role (`<id>@jmcfi.edu.ph` / `password123`) plus a second `<role>1` account for the data-bearing roles (faculty, program_chair, dean, aqau, vpaa — same role, separate user, so you can check which data is shared between users of one role), department, program, active term, course, section A, CLO1-7, plus 3 pending role requests (`pending_faculty`/`pending_dean`/`pending_aqau`) so the System Admin dashboard's Role requests panel has rows to approve. Wipes previous seed rows first. No demo submissions are seeded — rollup/CQI/PLAN dashboards stay empty until real forms are submitted. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
+# seed dev data: one account per role (`<id>@jmcfi.edu.ph` / `password123`) plus a second `<role>1` account for the data-bearing roles (faculty, program_chair, dean, aqau, vpaa — same role, separate user, so you can check which data is shared between users of one role), department, program, active term, course, section A, CLO1-7, plus 3 pending role requests (`pending_faculty`/`pending_dean`/`pending_aqau`) so the System Admin dashboard's Role requests panel has rows to approve. Wipes previous seed rows first. No demo submissions are seeded — run `just db-seed-demo` afterwards to populate the dashboard charts. Re-run this after `just test`: the test wrapper wipes the whole database before and after every run.
 [group('setup')]
 db-seed:
     @just _bun apps/backend db:seed
+
+# seed the dev-only demo dataset that makes every dashboard graph render: demo terms, 24 students, class records/attainment runs, roll-up + CQI + PLAN submissions, approval chains, uploads, audit logs, AI statuses and an archived cluster. Run `just db-seed` first; only `demo-*` rows are reset. The PLO attainment chart needs python-server, so view it with `just dev` (not `just dev-backend`).
+[group('setup')]
+db-seed-demo:
+    @just _bun apps/backend db:seed-demo
 
 # inject departments/programs/sections from a JSON file (additive upserts, never deletes — safe on dev and prod; see apps/backend/scripts/inject.example.json). For the deployed DB use `just db-inject-prod <file>`.
 [group('setup')]
