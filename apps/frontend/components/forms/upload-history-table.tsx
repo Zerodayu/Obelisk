@@ -196,7 +196,7 @@ export function UploadHistoryTable() {
 		getRowId: (row: UploadHistoryRecord) => row.id,
 		getRowCanExpand: (row) =>
 			row.original.status === "failed" ||
-			(row.original.summary?.cloMatchFailures.length ?? 0) > 0,
+			(row.original.summary?.cloMatchFailures?.length ?? 0) > 0,
 		state: {
 			pagination,
 			sorting,
