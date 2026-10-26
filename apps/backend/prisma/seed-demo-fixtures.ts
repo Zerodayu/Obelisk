@@ -98,11 +98,13 @@ export function compositeScoreFor(
 	studentIndex: number,
 	cloIndex: number,
 ): number {
-	const base = [64, 70, 74, 78][yearLevel - 1] ?? 70;
+	const base = [62, 68, 72, 76][yearLevel - 1] ?? 68;
 	const drift = termIndex * 2;
 	const student = ((studentIndex * 5) % 7) - 3;
-	const clo = ((cloIndex * 3) % 5) - 2;
-	const raw = base + drift + student + clo;
+	const cloOffsets = [-6, 2, -8, 3, -4];
+	const studentBonus = studentIndex % 4 === 0 ? 6 : 0;
+	const clo = cloOffsets[cloIndex] ?? 0;
+	const raw = base + drift + student + clo + studentBonus;
 	return Math.round(Math.min(95, Math.max(50, raw)) * 10) / 10;
 }
 

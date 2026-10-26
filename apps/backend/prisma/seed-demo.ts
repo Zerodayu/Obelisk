@@ -309,9 +309,11 @@ async function main() {
 	});
 	const stages = ["i", "p", "d"] as const;
 	await prisma.cloToPloMap.createMany({
-		data: demoClos.flatMap((clo, index) => {
-			const first = program.plos[index % program.plos.length];
-			const second = program.plos[(index * 5 + 7) % program.plos.length];
+		data: demoClos.flatMap((clo) => {
+			const cloIndex = Number(clo.code.replace("CLO", "")) - 1;
+			const first = program.plos[cloIndex % program.plos.length];
+			const second = program.plos[(cloIndex * 5 + 7) % program.plos.length];
+			const heavy = cloIndex % 5 === 0 || cloIndex % 5 === 2 || cloIndex % 5 === 4;
 			const mappings: Array<{
 				id: string;
 				cloId: string;
@@ -323,8 +325,8 @@ async function main() {
 					id: crypto.randomUUID(),
 					cloId: clo.id,
 					ploId: first.id,
-					weight: 1,
-					stage: stages[index % stages.length],
+					weight: heavy ? 2.0 : 0.3,
+					stage: stages[cloIndex % stages.length],
 				},
 			];
 			if (second.id !== first.id) {
@@ -332,12 +334,33 @@ async function main() {
 					id: crypto.randomUUID(),
 					cloId: clo.id,
 					ploId: second.id,
-					weight: 0.5,
+					weight: heavy ? 2.0 : 0.3,
 					stage: null,
 				});
 			}
 			return mappings;
 		}),
+	});
+
+	// Ensure the PLOs not covered by the per-CLO-code mapping above still have
+	// data: map each of them to CLO1 of every demo course (neutral weight).
+	const mappedPloIds = new Set(
+		program.plos
+			.filter((_, i) => [0, 1, 2, 3, 4, 7, 9, 12].includes(i))
+			.map((plo) => plo.id),
+	);
+	const unmappedPlos = program.plos.filter((plo) => !mappedPloIds.has(plo.id));
+	const clo1s = demoClos.filter((clo) => clo.code === "CLO1");
+	await prisma.cloToPloMap.createMany({
+		data: unmappedPlos.flatMap((plo) =>
+			clo1s.map((clo) => ({
+				id: crypto.randomUUID(),
+				cloId: clo.id,
+				ploId: plo.id,
+				weight: 1,
+				stage: null,
+			})),
+		),
 	});
 
 	const peoDefs = [
