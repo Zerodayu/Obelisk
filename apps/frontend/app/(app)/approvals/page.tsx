@@ -9,8 +9,15 @@ import { requireRole } from "@/server/auth";
  * pending step). Gated to approver roles — the backend still enforces the
  * per-step role match on every decision.
  */
-export default async function PendingApprovalsPage() {
+export default async function PendingApprovalsPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ codes?: string }>;
+}) {
 	await requireRole(APPROVER_ROLES);
+	// NOTE: `codes` narrows the inbox to specific form types (the VPAA's duty
+	// buttons deep-link here); absent → every pending row for the role.
+	const codes = (await searchParams).codes?.split(",").filter(Boolean);
 	return (
 		<div className="space-y-6 px-4 lg:px-6">
 			<div className="space-y-1">
@@ -22,7 +29,7 @@ export default async function PendingApprovalsPage() {
 					return with a comment.
 				</p>
 			</div>
-			<SubmissionInbox devPreview={isDevMode} scope="pending" />
+			<SubmissionInbox devPreview={isDevMode} scope="pending" codes={codes} />
 		</div>
 	);
 }

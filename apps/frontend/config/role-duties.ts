@@ -547,6 +547,32 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			],
 		},
 		{
+			label: "Executive Review",
+			steps: [
+				{
+					id: "vpaa-systemic-gap",
+					title: "Rule on systemic gaps & CAPA",
+					detail:
+						"Three-cycle PLO failures and the structural fixes that follow them.",
+					url: "/approvals?codes=systemic_gap_report,capa_plan",
+					icon: TargetIcon,
+					status: {
+						kind: "approve",
+						codes: ["systemic_gap_report", "capa_plan"],
+					},
+				},
+				{
+					id: "vpaa-institutional-review",
+					title: "Approve the institutional review",
+					detail:
+						"AQAU compiles APAR/CTL/CAPA compliance — you preside and close the record.",
+					url: "/approvals?codes=institutional_review",
+					icon: ShieldCheckIcon,
+					status: { kind: "approve", codes: ["institutional_review"] },
+				},
+			],
+		},
+		{
 			label: "Archival",
 			steps: [
 				{

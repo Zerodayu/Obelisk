@@ -161,10 +161,13 @@ const SCOPE_COPY: Record<InboxScope, { header: string; empty: string }> = {
 export function SubmissionInbox({
 	scope,
 	devPreview = false,
+	codes,
 }: {
 	scope: InboxScope;
 	/** True when `DEVELOPMENT=true` — render the canned rows, skip the API. */
 	devPreview?: boolean;
+	/** Narrow to these form-type codes (the VPAA's duty deep links). */
+	codes?: readonly string[];
 }) {
 	const atoms = devPreview ? PREVIEW_ATOMS[scope] : INBOX_ATOMS[scope];
 	const submissions = useAtomValue(atoms.data);
@@ -188,9 +191,17 @@ export function SubmissionInbox({
 					(s) => s.formType === undefined || formNeedsApproval(s.formType.code),
 				)
 			: submissions;
+	// NOTE: `codes` is a view filter only — the pending scope already comes from
+	// the backend, so narrowing never widens what the caller can act on.
+	const scoped =
+		codes && codes.length > 0
+			? visible.filter(
+					(s) => s.formType != null && codes.includes(s.formType.code),
+				)
+			: visible;
 	const rows = statusFilter
-		? visible.filter((submission) => submission.status === statusFilter)
-		: visible;
+		? scoped.filter((submission) => submission.status === statusFilter)
+		: scoped;
 	const canArchive = user != null && ARCHIVE_ROLES.includes(user.role);
 
 	async function archive(id: string) {

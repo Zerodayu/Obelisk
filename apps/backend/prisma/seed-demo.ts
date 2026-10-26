@@ -77,6 +77,21 @@ const FORM_TYPE_META: Record<
 		pdcaStage: "ACT",
 		sequenceNo: 19,
 	},
+	systemic_gap_report: {
+		name: "Systemic Gap Report",
+		pdcaStage: "ACT",
+		sequenceNo: 31,
+	},
+	capa_plan: {
+		name: "Corrective and Preventive Action (CAPA) Plan",
+		pdcaStage: "ACT",
+		sequenceNo: 32,
+	},
+	institutional_review: {
+		name: "Institutional Management Review Records",
+		pdcaStage: "ACT",
+		sequenceNo: 33,
+	},
 	peer_observation: {
 		name: "Peer Observation Record",
 		pdcaStage: "CHECK",
@@ -98,7 +113,7 @@ const FORM_TYPE_META: Record<
 const MIXED_SUBMISSIONS: Array<{
 	code: keyof typeof FORM_TYPE_META;
 	status: DemoSubmissionStatus;
-	preparer: "faculty" | "program_chair";
+	preparer: "faculty" | "program_chair" | "dean" | "aqau";
 }> = [
 	{ code: "curriculum_map", status: "approved", preparer: "program_chair" },
 	{
@@ -115,6 +130,17 @@ const MIXED_SUBMISSIONS: Array<{
 	{ code: "action_taken", status: "draft", preparer: "faculty" },
 	{ code: "peer_observation", status: "submitted", preparer: "faculty" },
 	{ code: "alumni_tracer", status: "approved", preparer: "program_chair" },
+	{
+		code: "systemic_gap_report",
+		status: "submitted",
+		preparer: "dean",
+	},
+	{ code: "capa_plan", status: "submitted", preparer: "dean" },
+	{
+		code: "institutional_review",
+		status: "submitted",
+		preparer: "aqau",
+	},
 ];
 
 const ACCOUNT_EMAILS = {
