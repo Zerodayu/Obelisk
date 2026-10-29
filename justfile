@@ -83,6 +83,13 @@ db-inject file:
 db-export:
     @just _bun apps/backend db:export
 
+# import per-table CSVs from a directory back into the dev DB, replacing all
+# existing rows (the export side is `just db-export`) — dev-only, reads
+# DATABASE_URL from .env.local
+[group('setup')]
+db-import dir:
+    @just _bun apps/backend "db:import $(realpath '{{dir}}')"
+
 # --- dev ---
 
 # run backend + frontend + etl in parallel with colored log prefixes (Ctrl+C stops all)
