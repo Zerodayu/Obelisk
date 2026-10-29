@@ -76,6 +76,13 @@ db-seed-demo:
 db-inject file:
     @just _bun apps/backend "db:inject $(realpath '{{file}}')"
 
+# export the whole dev database to per-table CSVs (header row + rows; one file per
+# table, e.g. exports/user.csv) for later seeding — dev-only, reads DATABASE_URL
+# from .env.local
+[group('setup')]
+db-export:
+    @just _bun apps/backend db:export
+
 # --- dev ---
 
 # run backend + frontend + etl in parallel with colored log prefixes (Ctrl+C stops all)

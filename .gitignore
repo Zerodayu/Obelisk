@@ -50,6 +50,9 @@
 # prisma
 **/src/generated/prisma
 
+# db export output (just db-export → per-table CSVs, one file per table)
+/apps/backend/exports/
+
 # vercel / turbo (unanchored — matched at any depth, incl. apps/*/.vercel)
 .vercel/
 .turbo/

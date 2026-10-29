@@ -95,3 +95,21 @@ export function csvPercent(value: string | undefined): number | undefined {
 	if (normalized < 0 || normalized > 100) return undefined;
 	return Math.round(normalized * 100) / 100;
 }
+
+/**
+ * Serializes a header row + data rows (string cells) into a single CSV
+ * document: header row first, then one row per input, LF-terminated.
+ * No new dependencies — the export side of the same payload.
+ */
+export function toCsv(header: string[], rows: string[][]): string {
+	const lines = [header.map(csvEscape).join(",")];
+	for (const row of rows) {
+		lines.push(row.map(csvEscape).join(","));
+	}
+	return `${lines.join("\n")}\n`;
+}
+
+/** Quotes a CSV cell when it contains the delimiter, a quote, or a newline. */
+export function csvEscape(value: string): string {
+	return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}

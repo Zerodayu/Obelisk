@@ -2,9 +2,11 @@ import { describe, expect, it } from "bun:test";
 
 import {
 	csvCell,
+	csvEscape,
 	csvPercent,
 	detectDelimiter,
 	parseCsv,
+	toCsv,
 } from "@lib/ingest/csv";
 
 describe("detectDelimiter", () => {
@@ -86,5 +88,31 @@ describe("csvPercent", () => {
 		expect(csvPercent("abc")).toBeUndefined();
 		expect(csvPercent("")).toBeUndefined();
 		expect(csvPercent(undefined)).toBeUndefined();
+	});
+});
+
+describe("toCsv", () => {
+	it("joins header and rows with LF and terminates the document", () => {
+		expect(toCsv(["a", "b"], [["1", "2"]])).toBe("a,b\n1,2\n");
+	});
+
+	it("emits a header-only document for zero rows", () => {
+		expect(toCsv(["a"], [])).toBe("a\n");
+	});
+
+	it("quotes cells containing the delimiter, quotes, or newlines", () => {
+		expect(toCsv(["name"], [['He said "hi", ok\nnow']])).toBe(
+			'name\n"He said ""hi"", ok\nnow"\n',
+		);
+	});
+});
+
+describe("csvEscape", () => {
+	it("leaves plain cells untouched", () => {
+		expect(csvEscape("abc")).toBe("abc");
+	});
+
+	it("quotes and doubles embedded quotes", () => {
+		expect(csvEscape('a"b')).toBe('"a""b"');
 	});
 });

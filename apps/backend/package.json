@@ -19,6 +19,7 @@
 		"db:seed": "dotenvx run -f ../../.env.local -- bun prisma/seed.ts",
 		"db:seed-demo": "dotenvx run -f ../../.env.local -- bun prisma/seed-demo.ts",
 		"db:inject": "dotenvx run -f ../../.env.local -- bun scripts/db-inject.ts",
+		"db:export": "dotenvx run -f ../../.env.local -- bun scripts/db-export.ts",
 		"db:studio": "dotenvx run -f ../../.env.local -- bunx prisma studio",
 		"db:migrate": "dotenvx run -f ../../.env.local -- bunx prisma migrate dev",
 		"db:push-prod": "dotenvx run -f ../../.env.prod -- bunx prisma db push",
