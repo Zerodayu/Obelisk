@@ -83,7 +83,7 @@ const dir = process.argv[2] ?? "exports";
 for (const file of readdirSync(dir)
 	.filter((f) => f.endsWith(".csv"))
 	.sort()) {
-	const table = file.replace(/\.csv$/, "");
+	const table = file.replace(/\.csv$/, "").replace(/^users$/, "user");
 	const columns = await listColumns(table);
 	if (columns.length === 0) continue;
 
