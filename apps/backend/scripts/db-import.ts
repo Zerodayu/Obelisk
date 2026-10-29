@@ -3,21 +3,23 @@ import { readdirSync } from "node:fs";
 import { parseCsv } from "@lib/ingest/csv";
 import { prisma } from "@lib/prisma";
 
-/* NOTE: dev-only whole-database CSV import (`just db-import <dir>`) — replaces
- * all existing rows by truncating every table, then re-inserting from the
- * per-table CSVs in `<dir>` (the export side: `just db-export`).
+/* NOTE: dev-only whole-database CSV import (`just db-import <dir>`) — adds the
+ * per-table CSVs in `<dir>` on top of the existing data, overwriting rows that
+ * collide via upsert (the export side: `just db-export`).
  * Dev-only by construction: wired to the dev DATABASE_URL via .env.local, never
- * a prod path.
- * NOTE: `session_replication_role = replica` disables FK enforcement for the
- * insert phase so CSV rows can land in any order — dev restore tool. */
+ * a prod path. */
 
 const SCHEMA = "public";
 
-type TableRow = { table_name: string };
 type ColumnRow = { column_name: string; data_type: string };
 
 type InsertDelegate = {
 	create: (args: { data: Record<string, unknown> }) => Promise<unknown>;
+	upsert: (args: {
+		where: Record<string, unknown>;
+		create: Record<string, unknown>;
+		update: Record<string, unknown>;
+	}) => Promise<unknown>;
 };
 
 function toCamelCase(snake: string): string {
@@ -49,18 +51,6 @@ function convertValue(dataType: string, cell: string): unknown {
 	return text;
 }
 
-async function listTables(): Promise<string[]> {
-	const tables = await prisma.$queryRawUnsafe<TableRow[]>(`
-		SELECT table_name
-		FROM information_schema.tables
-		WHERE table_schema = '${SCHEMA}'
-		  AND table_type = 'BASE TABLE'
-		  AND table_name NOT LIKE '\\_%' ESCAPE '\\'
-		ORDER BY table_name;
-	`);
-	return tables.map((t) => t.table_name);
-}
-
 async function listColumns(table: string): Promise<ColumnRow[]> {
 	const columns = await prisma.$queryRawUnsafe<ColumnRow[]>(
 		`SELECT column_name, data_type
@@ -72,17 +62,23 @@ async function listColumns(table: string): Promise<ColumnRow[]> {
 	return columns;
 }
 
-const dir = process.argv[2] ?? "exports";
-const tables = await listTables();
-if (tables.length > 0) {
-	await prisma.$transaction(async (tx) => {
-		await tx.$executeRawUnsafe(
-			`TRUNCATE TABLE ${tables.map((t) => `"${t}"`).join(", ")} CASCADE`,
-		);
-	});
-	console.log(`Truncated ${tables.length} table(s).`);
+async function listPrimaryKeys(table: string): Promise<string[]> {
+	const pks = await prisma.$queryRawUnsafe<{ column_name: string }[]>(
+		`SELECT kcu.column_name
+		FROM information_schema.table_constraints tc
+		JOIN information_schema.key_column_usage kcu
+		  ON tc.constraint_name = kcu.constraint_name
+		 AND tc.table_schema = kcu.table_schema
+		WHERE tc.table_schema = '${SCHEMA}'
+		  AND tc.table_name = $1
+		  AND tc.constraint_type = 'PRIMARY KEY'
+		ORDER BY kcu.ordinal_position`,
+		table,
+	);
+	return pks.map((p) => p.column_name);
 }
-await prisma.$executeRawUnsafe(`SET session_replication_role = replica`);
+
+const dir = process.argv[2] ?? "exports";
 
 for (const file of readdirSync(dir)
 	.filter((f) => f.endsWith(".csv"))
@@ -112,8 +108,17 @@ for (const file of readdirSync(dir)
 		console.log(`${table}: skipped (no prisma delegate)`);
 		continue;
 	}
+	const pks = await listPrimaryKeys(table);
 	for (const entry of data) {
-		await delegate.create({ data: entry });
+		const where: Record<string, unknown> = {};
+		for (const pk of pks) {
+			where[toCamelCase(pk)] = entry[toCamelCase(pk)];
+		}
+		if (Object.keys(where).length > 0) {
+			await delegate.upsert({ where, create: entry, update: entry });
+		} else {
+			await delegate.create({ data: entry });
+		}
 	}
 	console.log(`${table}: imported ${data.length} row(s)`);
 }
