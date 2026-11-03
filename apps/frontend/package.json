@@ -23,6 +23,7 @@
 		"@hookform/resolvers": "^5.5.7",
 		"@obelisk/app-info": "workspace:*",
 		"@obelisk/env": "workspace:*",
+		"@react-pdf/renderer": "^4.9.0",
 		"@tanstack/react-table": "^9.1.2",
 		"@tanstack/react-virtual": "^3.14.9",
 		"better-auth": "^1.6.26",

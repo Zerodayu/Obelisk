@@ -1,6 +1,7 @@
 "use client";
 
 import { AiSuggestionsDrawer } from "@/components/dashboard/ai-suggestions-drawer";
+import { ExportPdfMenu } from "@/components/dashboard/export-pdf-menu";
 
 /**
  * Shared presentational shell for role dashboards. Renders a scoped header
@@ -56,7 +57,8 @@ export function DashboardShell({
 					) : null}
 				</div>
 
-				<div className="flex">
+				<div className="flex items-center gap-2">
+					<ExportPdfMenu />
 					<AiSuggestionsDrawer />
 				</div>
 			</div>
