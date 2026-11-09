@@ -1,50 +1,38 @@
-# Home server setup — spare PC to `just docker-deploy`
+# Home server setup — spare PC to `just deploy-tunnel`
 
-Running the production stack on a spare PC behind a residential connection, with the domain still served from it. This is the **public-IP + port-forwarding** path: no tunnel, no reverse-proxy SaaS — Caddy keeps doing TLS exactly as described in [`DEPLOYMENT.md`](DEPLOYMENT.md).
+Running the production stack on a spare PC behind a residential line, published through a **Cloudflare Tunnel**. The connector dials out from the PC, so there is no port forwarding, no public IP, no DDNS and no inbound firewall rule. Cloudflare terminates public TLS at the edge; Caddy keeps routing, guards, headers and logs behind it.
 
-Target: Fedora host, domain `mini-mal.tech` (registered at Hostinger, DNS hosted at Cloudflare), three public hostnames:
+Target: Fedora host, domain `mini-mal.tech` (registered at Hostinger, DNS hosted at Cloudflare). The public hostnames are the ones in `.env.docker`:
 
 | Hostname | Role |
 | :--- | :--- |
 | `obelisk.mini-mal.tech` | the app (`APP_DOMAIN`) |
-| `logs.mini-mal.tech` | Dozzle site block — always answers `403`, cert only |
-| `stats.mini-mal.tech` | umami site block — tracker public, dashboard `403` |
+| `logs.mini-mal.tech` | Dozzle site block — always answers `403`, tunneled only so the host resolves |
+| `stats.*` | umami (`UMAMI_DOMAIN`) — only relevant if it is a `mini-mal.tech` name, not a `*.ts.net` tailnet name |
 
-> No VPS required. A VPS is still the easier option if you have one — this guide exists because the server is a home machine with a dynamic address and Fedora's firewall/SELinux defaults.
+> No VPS required. A VPS is still simpler if you have one — this guide exists because the server is a home machine.
+
+This is the second of two deployment shapes in this repo:
+
+| Shape | Ingress | Recipe | TLS |
+| :--- | :--- | :--- | :--- |
+| Direct (VPS or forwarded ports) | Caddy on host `80/443` | `just docker-deploy` | Let's Encrypt via ACME |
+| Tunnel (this guide) | `cloudflared` → Caddy | `just deploy-tunnel` | Cloudflare edge; Caddy uses its internal CA |
+
+Both are the same compose project, so never run `just docker-deploy` on a tunnel host — it recreates Caddy with the ACME config and republishes `80/443`.
 
 ---
 
-## 0. Check before you start
+## 0. Trade-offs to accept first
 
-Two things decide whether this path works at all.
+| Pro | Con |
+| :--- | :--- |
+| Works behind CGNAT and ISPs that block 80/443 | Cloudflare sits in front of every request; a Cloudflare or tunnel outage takes the site down |
+| Nothing listens on the router; no DDNS | Free plan caps request bodies at **100 MB** — the ETL workbook uploads are the thing to watch |
+| DNS is a proxied CNAME managed by the tunnel — no A record to keep in sync | The origin is only reachable through the tunnel, so LAN access to the public URL goes out to Cloudflare and back |
+| Certificates never touch the host — no ACME rate limits | Caddy serves an internal cert behind the tunnel; do not bypass the tunnel and expect a valid cert |
 
-### Public IP, not CGNAT
-
-```sh
-curl -4 -s ifconfig.me        # public address as the internet sees it
-```
-
-Compare it with the **WAN IP** on your router's status page. If they differ, you are behind carrier-grade NAT — no port forward can help. Use a Cloudflare Tunnel instead; nothing below applies.
-
-### Ports 80 and 443 actually reachable
-
-Many residential ISPs block inbound 80/443. Forward the ports (step 2), start a listener, then test **from mobile data**, not from your LAN:
-
-```sh
-# on the spare PC, temporarily — port 80 is privileged, hence sudo
-sudo dnf -y install uv                    # system-wide, so root's PATH finds it
-sudo uv run --no-project python -m http.server 80
-# from the phone: http://<public-ip>/ → must return the directory listing
-```
-
-If that fails, the ISP blocks the port and this path is out. Let's Encrypt HTTP-01 needs 80; there is no way around it without a tunnel.
-
-### Static or dynamic IP
-
-Note `curl -4 -s ifconfig.me`, reboot the router, check again.
-
-- **Same** → static/sticky. Use `A` records; skip step 4.
-- **Different** → dynamic. You need DDNS (step 4) or the site dies whenever the lease changes.
+If the 100 MB cap or the Cloudflare dependency is a dealbreaker, use the direct path described in [`DEPLOYMENT.md`](DEPLOYMENT.md) instead.
 
 ---
 
@@ -69,7 +57,7 @@ curl -fsSL https://bun.sh/install | bash    # dotenvx runs via bunx
 
 ### SELinux — the step people forget
 
-Fedora runs SELinux in `Enforcing` mode, and Docker bind mounts stay unlabeled. The stack bind-mounts `./Caddyfile`, `./caddy/guards`, `./.env.prod`, `./.env.keys` and `./tailscale`; without a label the containers start but fail with `permission denied` reading those files.
+Fedora runs SELinux in `Enforcing` mode, and Docker bind mounts stay unlabeled. The stack bind-mounts `./Caddyfile`, `./Caddyfile.tunnel`, `./caddy/guards`, `./.env.prod`, `./.env.keys` and `./tailscale`; without a label the containers start but fail with `permission denied` reading those files.
 
 Label the repo directory once (adjust the path — `/srv/obelisk` below):
 
@@ -82,41 +70,25 @@ ls -Zd /srv/obelisk                          # → ...:container_file_t:...
 
 Re-run `restorecon` after moving the checkout. Named volumes (Postgres data, uploads) need nothing — Docker creates them already labeled.
 
-### firewalld (Fedora's default; there is no `ufw` here)
+### Firewall
+
+Nothing needs to be opened: the tunnel is **outbound only** (TCP/UDP 7844 to Cloudflare), and the compose override publishes no host ports for Caddy. Leave firewalld at its default zone; do not add `http`/`https` services for this path.
+
+Confirm the stack owns no public listener after the first deploy:
 
 ```sh
-sudo firewall-cmd --permanent --add-service=http --add-service=https
-sudo firewall-cmd --permanent --add-port=443/udp     # optional, HTTP/3
-sudo firewall-cmd --reload
-sudo firewall-cmd --list-all
+sudo ss -ltnup | grep -E ':(80|443)\b'       # expect no output
 ```
 
-Docker publishes container ports through its own iptables rules and bypasses firewalld, so 80/443 work even without these — the rules still matter for the rest of the host.
-
-Check nothing else owns the ports:
-
-```sh
-sudo ss -ltnp '( sport = :80 or sport = :443 )'
-```
-
-`httpd`/`nginx` from a stock install is the usual offender — `sudo systemctl disable --now httpd`.
+`httpd`/`nginx` from a stock install is the usual port-80 offender in the direct path — `sudo systemctl disable --now httpd` if you ever switch.
 
 ---
 
-## 2. Router
+## 2. Cloudflare: zone and tunnel
 
-- **DHCP reservation** (or a static LAN address) for the spare PC, so the forward never drifts.
-- Forward `TCP 80` and `TCP 443` (plus `UDP 443` if you want HTTP/3) to that LAN address.
-- **Do not forward 22.** Admin access stays on the LAN or your existing Tailscale sidecars.
-- Hairpin NAT: from inside the LAN, `https://obelisk.mini-mal.tech` often fails because the router won't loop the public IP back. That's expected — test with the local stack (`just deploy-local`, `:8443`) and test the domain from mobile data.
+The domain stays registered at Hostinger; only the zone moves to Cloudflare (free plan).
 
----
-
-## 3. Cloudflare DNS
-
-The domain stays registered at Hostinger; only the zone moves to Cloudflare (free plan). Registration, billing and the registrar remain at Hostinger.
-
-### 3.1 Move the nameservers
+### 2.1 Move the nameservers
 
 1. Cloudflare → **Add a site** → `mini-mal.tech` (Free). Cloudflare scans the current Hostinger records and shows two nameservers (yours will differ from the examples).
 2. Check the imported records **before** switching: MX / SPF / DKIM / DMARC must match the Hostinger zone, or mail breaks at cutover.
@@ -129,84 +101,44 @@ dig +short NS mini-mal.tech    # must answer with the Cloudflare pair
 
 Keep the Hostinger zone untouched until the switch settles — it's the rollback.
 
-### 3.2 Records
+### 2.2 Create the tunnel
 
-The three app hostnames, all with **Proxy status: DNS only (grey cloud)**:
+Zero Trust → **Networks → Tunnels → Create a tunnel** → *Cloudflared* → name it (e.g. `obelisk-home`) → copy the connector token on the install page. That token is the whole credential; it goes into `.env.docker` in step 4, never into the repo in plaintext.
 
-| Name | Type | Value | TTL |
-| :--- | :--- | :--- | :--- |
-| `obelisk` | `A` | your public IP (or DDNS-updated) | Auto / 300 |
-| `logs` | `A` | same | Auto / 300 |
-| `stats` | `A` | same | Auto / 300 |
+Then add one **public hostname** per site Caddy serves:
 
-The app only needs those three; leave `mini-mal.tech`/`www` alone unless you also host a site there, and remove any `*` wildcard that shadows them.
+| Public hostname | Service | TLS setting |
+| :--- | :--- | :--- |
+| `obelisk.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
+| `logs.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
+| `stats.mini-mal.tech` (only if `UMAMI_DOMAIN` is this name) | `https://caddy:443` | **No TLS Verify** |
 
-Grey cloud is deliberate, not an oversight:
+- `caddy` is the compose service name — the connector resolves it on the `edge` network, no host port involved.
+- **No TLS Verify** is required because Caddy serves a certificate from its own internal CA (see `Caddyfile.tunnel`); Cloudflare terminates the browser-facing TLS with its own edge certificate.
+- Cloudflare creates a **proxied** CNAME (`<uuid>.cfargotunnel.com`) for each hostname. Do not replace it with an A record and do not grey-cloud it — the tunnel only routes proxied records.
+- A hostname that Caddy has no site block for answers `404` through the tunnel. Keep this table in sync with `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN`.
+- A `*.ts.net` value in `UMAMI_DOMAIN` is a tailnet name: leave it out of the tunnel and reach the dashboard over Tailscale.
 
-- **Orange cloud breaks Caddy's HTTP-01** — Cloudflare answers the challenge, so Let's Encrypt issuance fails. It also caps request bodies at **100 MB** on the free plan (the ETL workbook uploads).
-- It doesn't really hide the origin either — Certificate Transparency logs still list the hostnames.
-- If you later want the proxy, that's a separate ingress change (Cloudflare Origin Certificate or DNS-01 with a custom Caddy build), not a DNS toggle.
+Optional but recommended in **SSL/TLS → Edge Certificates**: enable **Always Use HTTPS**.
 
-Do **not** add AAAA records unless IPv6 is genuinely reachable — a stale AAAA breaks HTTP-01 validation when the IPv6 path is closed.
+Grey cloud is no longer part of this setup; if you later move to the direct path, the A records and Caddy's ACME config come back.
 
 **DNSSEC**: enabling it in Cloudflare requires adding the DS record at the registrar (Hostinger). Disable it at Hostinger before ever moving DNS away again.
 
 ---
 
-## 4. Dynamic DNS (only if the IP changes)
+## 3. Router
 
-Static IP → skip this section, the A records in step 3 are final.
+Nothing to configure. No port forward, no DHCP reservation, no hairpin NAT concern — the connector is an outbound connection, so a changing LAN or public address does not matter.
 
-### Cloudflare + `ddclient`
+Two things stay true:
 
-1. Create a scoped API token: Cloudflare → **My Profile → API Tokens → Create Token → Edit zone DNS**. Permissions: **Zone → DNS → Edit**, Zone Resources: **Include → Specific zone → `mini-mal.tech`**. Nothing broader — this token lives on the host.
-2. Install and configure:
-
-```sh
-sudo dnf -y install ddclient
-sudo dnf -y install perl-IO-Socket-SSL perl-JSON      # ddclient's Cloudflare protocol
-```
-
-```conf
-# /etc/ddclient/ddclient.conf  — chmod 600, it holds the token
-daemon=300
-syslog=yes
-ssl=yes
-protocol=cloudflare
-zone=mini-mal.tech
-ttl=60
-login=token
-password=<scoped-api-token>
-obelisk.mini-mal.tech, logs.mini-mal.tech, stats.mini-mal.tech
-```
-
-```sh
-sudo systemctl enable --now ddclient
-journalctl -u ddclient -n 20 --no-pager      # "SUCCESS" per hostname
-```
-
-3. Set the three records from step 3 to `A`, value = current public IP, **grey cloud**, TTL 60–300. `ddclient` rewrites those A records in place when the lease changes — the names never change, so nothing else needs touching.
-
-Sanity check after an IP change (or after forcing one):
-
-```sh
-dig +short A obelisk.mini-mal.tech
-curl -4 -s ifconfig.me
-```
-
-### Alternatives
-
-| Option | Notes |
-| :--- | :--- |
-| Router's built-in DDNS | Check the router admin page. Works with generic `dyndns2` providers; Cloudflare is not one of them. |
-| `cloudflared` / API script via systemd timer | Same result as `ddclient` with more moving parts — only if `ddclient` can't be installed. |
-| Manual updates | Edit the three A records when the site breaks; fine only for a sticky IP. |
-
-Without DDNS on a dynamic line, the A records keep pointing at the old address and the site stays down until you notice. If the ISP hands out a *static* address there is nothing to automate.
+- Do not forward `22`; admin access is the LAN or the Tailscale sidecars.
+- The Tailscale sidecars still need outbound UDP 41641 (or DERP fallback) — that is already the default.
 
 ---
 
-## 5. Clone, configure, deploy
+## 4. Clone, configure, deploy
 
 `.env.keys` is gitignored — **copy it from the machine that encrypted the env files** (or you cannot decrypt them):
 
@@ -217,15 +149,17 @@ cd /srv/obelisk
 
 # copy .env.keys here first, then:
 just env-decrypt
-# edit .env.docker (APP_DOMAIN / DOZZLE_DOMAIN / UMAMI_DOMAIN / TS_AUTHKEY / DB passwords)
-# edit .env.prod (auth secrets, OAuth, ETL keys)
+# edit .env.docker: APP_DOMAIN / DOZZLE_DOMAIN / UMAMI_DOMAIN / TUNNEL_TOKEN / DB passwords
+# edit .env.prod: auth secrets, OAuth, ETL keys
 just env-encrypt
 ```
+
+`TUNNEL_TOKEN` is the connector token from step 2.2. Every other value is unchanged by the tunnel.
 
 Apply the SELinux label to the real path before the first start (step 1).
 
 ```sh
-just docker-deploy        # build + start all eleven services
+just deploy-tunnel        # build + start all twelve services through the tunnel overlay
 just db-status            # read-only: pending migrations?
 just docker-migrate       # apply the schema on a fresh database
 just db-check             # tables exist?
@@ -236,25 +170,27 @@ Never run `db:seed` against production — the seed refuses on its own, but don'
 ### Verify
 
 ```sh
-dig +short NS mini-mal.tech                # must be the Cloudflare pair
-dig +short A obelisk.mini-mal.tech         # must be the home IP
-dig +short A logs.mini-mal.tech stats.mini-mal.tech
+# connector registered a connection to each Cloudflare edge?
+docker compose -f docker-compose.yml -f docker-compose.tunnel.yml logs --tail 50 cloudflared
+
+# caddy is up with the tunnel config and serves the hostnames locally
+docker compose exec caddy wget -qO- --no-check-certificate --header 'Host: obelisk.mini-mal.tech' https://localhost/ | head -c 200
 ```
 
-From **mobile data** (not the LAN):
+From anywhere (the tunnel does not care about your network):
 
 ```sh
-curl -I https://obelisk.mini-mal.tech      # valid Let's Encrypt cert, 200/308
-curl -I https://stats.mini-mal.tech/script.js   # 200 — tracker path
+curl -I https://obelisk.mini-mal.tech      # 200/308, Cloudflare edge certificate
+curl -I https://logs.mini-mal.tech         # 403 — guard by design
 ```
 
-First boot: watch `just docker-logs` for Caddy's ACME lines. Certificates live in the `caddy-data` volume and survive redeploys — recreating Caddy does not re-issue them.
+The Zero Trust tunnel page should show **Healthy**; certificate warnings only appear if you bypass the tunnel and hit the host directly, which is expected.
 
 ---
 
-## 6. Running the local stack alongside prod
+## 5. Running the local stack alongside prod
 
-The separation added in this release is what makes that possible on one machine. Local mode is a second Compose project (`obelisk-local`) on `127.0.0.1:8443`; prod keeps `80/443`.
+Local mode is a second Compose project (`obelisk-local`) on `127.0.0.1:8443`; it never starts `cloudflared`.
 
 ```sh
 just deploy-local      # https://obelisk.mini-mal.localhost:8443
@@ -275,34 +211,34 @@ Google sign-in from local mode needs `https://obelisk.mini-mal.localhost:8443/ap
 
 ---
 
-## 7. Day-2 on a home host
+## 6. Day-2 on a home host
 
 | Task | Command / action |
 | :--- | :--- |
-| Survive a reboot | `sudo systemctl enable docker`; containers use `restart: unless-stopped`. Test once with `sudo reboot`. |
-| Update the app | `just docker-update` (pull → rebuild → prune), then `just docker-migrate` if the schema changed |
+| Survive a reboot | `sudo systemctl enable docker`; containers (including `cloudflared`) use `restart: unless-stopped`. Test once with `sudo reboot`. |
+| Update the app | `just docker-update-tunnel` (pull → rebuild through the overlay → prune), then `just docker-migrate` if the schema changed |
+| Reload Caddy config | `just docker-caddy-reload` — it picks `Caddyfile.tunnel` from `CADDYFILE` |
 | Back up the database | `docker compose exec -T db pg_dump -U obelisk obelisk \| gzip > ~/backups/obelisk-$(date +%F).sql.gz` |
 | Back up uploads | archive the `uploads` volume (Docker volume), store offsite |
-| Back up secrets | keep `.env.keys` somewhere safe and offline — losing it makes the committed env files unreadable |
+| Back up secrets | `.env.keys` offline; `TUNNEL_TOKEN` can be re-issued from the dashboard, the DB passwords cannot be re-derived |
 | Host updates | `sudo dnf -y install dnf-automatic` + `systemctl enable --now dnf-automatic.timer`, or a weekly manual `dnf upgrade` |
 | Power loss | UPS if possible; Postgres survives a dirty stop, repeated ones do not |
-| ISP terms | residential lines often forbid running public servers — check your contract |
-| Exposure check | `sudo ss -ltnup` — only Caddy should listen on 80/443; `5432`/`6379` stay loopback; SSH not forwarded |
+| Rotate the tunnel token | Zero Trust → delete the connector on the tunnel → regenerate → `just env-decrypt`, update `TUNNEL_TOKEN`, `just env-encrypt`, `just deploy-tunnel` |
+| Exposure check | `sudo ss -ltnup` — only loopback `5432`/`6379` from this stack; nothing on `80/443` |
 
 ---
 
-## 8. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause / fix |
 | :--- | :--- |
-| Caddy loops on ACME, no certificate | A record missing/stale, **proxy status orange** instead of grey, or port 80 blocked upstream. `just docker-logs`, `dig +short A <host>` |
-| Cloudflare shows the record proxied / cert fails right after a DNS edit | Proxy must be **DNS only** — HTTP-01 has to reach the host. Toggle grey, then restart Caddy (`docker compose restart caddy`) |
-| DDNS stopped updating | `journalctl -u ddclient -n 50` — usual causes: token lacks `Zone.DNS:Edit`, wrong `zone=`, or `ddclient` missing the Cloudflare protocol package |
+| Cloudflare answers `502` / `1033` for a hostname | Connector down or origin wrong — `docker compose ... logs cloudflared`, and confirm the public hostname points at `https://caddy:443` with **No TLS Verify** on |
+| Tunnel shows **Down** in Zero Trust | `TUNNEL_TOKEN` empty/wrong, or the container is crash-looping — `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps` |
+| `404` through the tunnel, works with `curl --resolve` locally | Caddy has no site block for that hostname — add it to `.env.docker` and redeploy, or remove the tunnel hostname |
+| `403` on `logs.` / `stats.` | By design — the dashboards are tailnet-only (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) |
+| Upload fails with `413` | Cloudflare's free-plan **100 MB** request-body cap — shrink or split the workbook |
+| Browser warns about the certificate when hitting the host directly | Expected: Caddy uses its internal CA behind the tunnel. Use the tunnel URL, or the local stack on `:8443` |
 | `permission denied` reading `.env.prod` / `Caddyfile` | SELinux label missing — step 1 `semanage fcontext` + `restorecon` |
-| `bind: address already in use` on 80/443 | another service owns the port — `sudo ss -ltnp '( sport = :80 or sport = :443 )'`, stop it |
-| Worked for weeks, then site unreachable | dynamic IP changed and DDNS/DNS wasn't updated — `curl -4 ifconfig.me` vs `dig +short A obelisk.mini-mal.tech` |
-| DNS correct, nothing answers from outside | port forward missing, or ISP blocks 80/443 (CGNAT/port filters) |
-| Domain fails from the LAN only | hairpin NAT — test the domain from mobile data, use the local stack internally |
+| Public site broke after `just docker-deploy` | That recreates Caddy with the ACME config and republishes `80/443` — the tunnel host must use `just deploy-tunnel` |
 | Containers not back after reboot | `systemctl is-enabled docker` |
 | `dotenvx` cannot decrypt | `.env.keys` missing/mismatched for this checkout |
-| Public admin hostnames answer `403` | by design — Dozzle/umami dashboards are tailnet-only (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) |

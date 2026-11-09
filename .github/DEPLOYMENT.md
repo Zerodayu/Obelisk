@@ -86,13 +86,14 @@ The same key set as `.env.local` ([`CONTRIBUTING.md` §2](CONTRIBUTING.md)) with
 
 ### 4. Fill `.env.docker`
 
-Eight keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — three for Caddy, one for Tailscale, three for umami, one for the app Postgres:
+Nine keys consumed by the compose file (via the dotenvx wrap in `just docker-deploy`) — three for Caddy, one for Tailscale, three for umami, one for the app Postgres, one for the Cloudflare Tunnel connector used by `just deploy-tunnel`:
 
 ```env
 APP_DOMAIN="obelisk.example.com"      # the public site address — Caddy refuses to boot without it
 DOZZLE_DOMAIN="dozzle.example.com"    # second hostname for the log viewer — create the matching DNS record first
 UMAMI_DOMAIN="umami.example.com"      # analytics hostname — create its DNS record too (the tracker itself is first-party on APP_DOMAIN)
 TS_AUTHKEY="tskey-auth-..."           # reusable Tailscale auth key tagged `tag:obelisk` — both sidecars register with it (admin console → Settings → Keys; see Tailscale admin access)
+TUNNEL_TOKEN="eyJ..."                 # connector token from Zero Trust → Networks → Tunnels — only read by `just deploy-tunnel` (see HOME_SERVER_SETUP.md)
 OBELISK_DB_PASSWORD="..."             # postgres password for the db container — URL-safe (letters/digits): compose interpolates it straight into the backend's DATABASE_URL, where `@ / : %` break the connection (openssl rand -hex 12)
 UMAMI_DB_PASSWORD="..."               # postgres password for the umami-db container — URL-safe (letters/digits): compose interpolates it straight into umami's DATABASE_URL, where `@ / : %` break the connection
 UMAMI_APP_SECRET="..."                # umami's JWT/session signing secret — openssl rand -base64 32
@@ -261,6 +262,8 @@ Local-mode recipes: `just local-logs`, `just local-migrate`, `just local-down` (
 | Task | Command |
 | :--- | :--- |
 | Update to latest code (pull + rebuild + prune old images) | `just docker-update` |
+| Publish through a Cloudflare Tunnel instead of `80/443` | `just deploy-tunnel` (see [`HOME_SERVER_SETUP.md`](HOME_SERVER_SETUP.md)) |
+| Update a tunnel-hosted stack | `just docker-update-tunnel` |
 | Check for pending DB migrations (read-only) | `just db-status` |
 | Apply pending DB migrations after an update | `just docker-migrate` |
 | List app DB tables (no rows = blank DB, never migrated) | `just db-check` |

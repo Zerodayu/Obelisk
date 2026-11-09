@@ -27,7 +27,7 @@ Each service has its own README and agent guide with deeper details:
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Development — prerequisites, environment setup, running the services, justfile recipes, quality checks, dev mode, troubleshooting. |
 | [`DEPLOYMENT.md`](DEPLOYMENT.md) | Deployment — self-hosted eleven-service Docker stack behind Caddy (TLS, Dozzle / umami on the tailnet, machine-local mode, updates, migrations). |
 | [`VPS_SETUP.md`](VPS_SETUP.md) | VPS setup — packages to install on a fresh server (apt / pacman), firewall + DNS, up to the first `just docker-deploy`. |
-| [`HOME_SERVER_SETUP.md`](HOME_SERVER_SETUP.md) | Home server setup — the same stack on a spare PC over a residential line (Fedora): public IP, port forwarding, Cloudflare DNS + DDNS, up to the first `just docker-deploy`. |
+| [`HOME_SERVER_SETUP.md`](HOME_SERVER_SETUP.md) | Home server setup — the same stack on a spare PC over a residential line (Fedora), published through a Cloudflare Tunnel: no port forwarding, no DDNS, up to `just deploy-tunnel`. |
 | [`CHANGELOG.md`](../CHANGELOG.md) | Release notes — what changed in each version. |
 | [`FORKING.md`](FORKING.md) | Forking — starting your own instance for a different institution (fresh keys, env, branding). |
 | [`system-docs/`](../system-docs/README.md) | Project docs — roadmap, testing results, domain reference, architecture audits. |
