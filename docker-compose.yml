@@ -26,7 +26,7 @@ services:
       sh -c 'test -n "$$APP_DOMAIN" || { echo "APP_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$DOZZLE_DOMAIN" || { echo "DOZZLE_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
       test -n "$$UMAMI_DOMAIN" || { echo "UMAMI_DOMAIN not set - deploy via just docker-deploy" >&2; exit 1; };
-      exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile'
+      exec caddy run --config "$${CADDYFILE:-/etc/caddy/Caddyfile}" --adapter caddyfile'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       # NOTE: admin guard snippets (deny = public mode, local = deploy-local)

@@ -292,6 +292,12 @@ local-logs:
 local-migrate:
     docker compose -p obelisk-local exec backend bun run db:migrate-prod
 
+# run the stack behind a Cloudflare Tunnel (no port forward, no public IP) — set TUNNEL_TOKEN in .env.docker first
+# NOTE: same compose project as docker-deploy; the overlay swaps in Caddyfile.tunnel and adds the cloudflared connector
+[group('deploy')]
+deploy-tunnel:
+    bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.tunnel.yml up -d --build
+
 # restart the running containers in place — no rebuild, for config/resource tweaks
 [group('deploy')]
 docker-restart:
@@ -302,6 +308,13 @@ docker-restart:
 docker-update:
     git pull --ff-only
     just docker-deploy
+    docker image prune -f
+
+# update the app behind the tunnel: same as docker-update, but rebuilds through the tunnel overlay (keeps Caddyfile.tunnel)
+[group('deploy')]
+docker-update-tunnel:
+    git pull --ff-only
+    just deploy-tunnel
     docker image prune -f
 
 # apply pending Prisma migrations inside the running backend container (.env.prod — the dev `just db-migrate` reads .env.local)
@@ -334,7 +347,7 @@ docker-db-shell db="obelisk":
 # stop the Docker stack (containers stay around for lazydocker; `docker compose down -v` also drops the uploads volume)
 [group('deploy')]
 docker-down:
-    docker compose down
+    docker compose down --remove-orphans
 
 # follow logs of all services (Ctrl+C detaches, containers keep running)
 [group('deploy')]
@@ -344,4 +357,4 @@ docker-logs:
 # reload caddy in place after editing the Caddyfile — no rebuild, no downtime
 [group('deploy')]
 docker-caddy-reload:
-    docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+    docker compose exec caddy sh -c 'caddy reload --config "$${CADDYFILE:-/etc/caddy/Caddyfile}"'

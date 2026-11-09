@@ -1,0 +1,26 @@
+# NOTE: tunnel-mode overlay — layered only by `just deploy-tunnel`, same compose project as the plain stack
+# NOTE: Cloudflare terminates public TLS and cloudflared dials out, so no port forward and no public IP needed
+services:
+  caddy:
+    # NOTE: nothing listens on the host — cloudflared reaches caddy over the compose network only
+    ports: !reset []
+    environment:
+      # NOTE: picked up by the base command — swaps the active config for the tunnel header
+      CADDYFILE: /etc/caddy/Caddyfile.tunnel
+    volumes:
+      # NOTE: header only (internal certs + visitor IP recovery); it imports the base Caddyfile unchanged
+      - ./Caddyfile.tunnel:/etc/caddy/Caddyfile.tunnel:ro
+
+  # NOTE: outbound-only connector — the three public hostnames are configured in the Zero Trust dashboard
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    # NOTE: remotely-managed tunnel — token from Zero Trust → Networks → Tunnels
+    command: tunnel --no-autoupdate run
+    environment:
+      # NOTE: injected by the dotenvx wrap in `just deploy-tunnel`
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - caddy
+    networks:
+      - edge

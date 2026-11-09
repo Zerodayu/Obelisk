@@ -1,0 +1,14 @@
+# NOTE: tunnel-mode header — `just deploy-tunnel` selects this file; the base Caddyfile is imported unchanged
+# NOTE: Cloudflare terminates public TLS at the edge; Caddy serves an internal cert that cloudflared ignores
+{
+	# NOTE: kill ACME — the host is not publicly reachable, so Let's Encrypt could never validate it
+	local_certs
+
+	servers {
+		# NOTE: cloudflared connects from the compose bridge; recover the real visitor IP for logs and audit
+		trusted_proxies static private_ranges
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+import Caddyfile
