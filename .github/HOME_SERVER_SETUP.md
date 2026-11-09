@@ -59,13 +59,13 @@ curl -fsSL https://bun.sh/install | bash    # dotenvx runs via bunx
 
 Fedora runs SELinux in `Enforcing` mode, and Docker bind mounts stay unlabeled. The stack bind-mounts `./Caddyfile`, `./Caddyfile.tunnel`, `./caddy/guards`, `./.env.prod`, `./.env.keys` and `./tailscale`; without a label the containers start but fail with `permission denied` reading those files.
 
-Label the repo directory once (adjust the path — `/srv/obelisk` below):
+Label the repo directory once (adjust the path — `/servers/obelisk` below):
 
 ```sh
 getenforce                                  # Enforcing
-sudo semanage fcontext -a -t container_file_t "/srv/obelisk(/.*)?"
-sudo restorecon -Rv /srv/obelisk
-ls -Zd /srv/obelisk                          # → ...:container_file_t:...
+sudo semanage fcontext -a -t container_file_t "/servers/obelisk(/.*)?"
+sudo restorecon -Rv /servers/obelisk
+ls -Zd /servers/obelisk                      # → ...:container_file_t:...
 ```
 
 Re-run `restorecon` after moving the checkout. Named volumes (Postgres data, uploads) need nothing — Docker creates them already labeled.
@@ -143,9 +143,9 @@ Two things stay true:
 `.env.keys` is gitignored — **copy it from the machine that encrypted the env files** (or you cannot decrypt them):
 
 ```sh
-sudo mkdir -p /srv/obelisk && sudo chown "$USER" /srv/obelisk
-git clone https://github.com/Zerodayu/Obelisk.git /srv/obelisk
-cd /srv/obelisk
+sudo mkdir -p /servers/obelisk && sudo chown "$USER" /servers/obelisk
+git clone https://github.com/Zerodayu/Obelisk.git /servers/obelisk
+cd /servers/obelisk
 
 # copy .env.keys here first, then:
 just env-decrypt
