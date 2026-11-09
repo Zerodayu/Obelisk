@@ -103,18 +103,20 @@ Keep the Hostinger zone untouched until the switch settles — it's the rollback
 
 ### 2.2 Create the tunnel
 
-Zero Trust → **Networks → Tunnels → Create a tunnel** → *Cloudflared* → name it (e.g. `obelisk-home`) → copy the connector token on the install page. That token is the whole credential; it goes into `.env.docker` in step 4, never into the repo in plaintext.
+**Networking → Tunnels** ([dash.cloudflare.com/?to=/:account/tunnels](https://dash.cloudflare.com/?to=/:account/tunnels)) → **Create a tunnel** → *Cloudflared* → name it (e.g. `obelisk-home`) → **Create tunnel**. The next screen picks an OS and shows a `docker run … --token eyJ…` command: **the part after `--token` is `TUNNEL_TOKEN`** — the whole credential, ~150+ characters starting `eyJ`. You do not run that command; `cloudflared` in compose runs the same thing. Paste the token into `.env.docker` in step 4, never into the repo in plaintext.
 
-Then add one **public hostname** per site Caddy serves:
+If you skipped that screen: open the tunnel → **Configure / Install connector** shows the command again. If it isn't offered, **Refresh token** / rotate it and copy the new value — the tunnel **ID** (a 36-character UUID) is not a token and will not authenticate.
 
-| Public hostname | Service | TLS setting |
+Wait until the tunnel shows **Healthy** (a connector connected), then add one **published application route** per site Caddy serves — tunnel → **Routes** → **Add route** → *Published application*:
+
+| Public hostname | Service URL | TLS setting |
 | :--- | :--- | :--- |
 | `obelisk.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
 | `logs.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
 | `stats.mini-mal.tech` (only if `UMAMI_DOMAIN` is this name) | `https://caddy:443` | **No TLS Verify** |
 
 - `caddy` is the compose service name — the connector resolves it on the `edge` network, no host port involved.
-- **No TLS Verify** is required because Caddy serves a certificate from its own internal CA (see `Caddyfile.tunnel`); Cloudflare terminates the browser-facing TLS with its own edge certificate.
+- **No TLS Verify** lives under the route's *Additional application settings → TLS*; it is required because Caddy serves a certificate from its own internal CA (see `Caddyfile.tunnel`), while Cloudflare terminates the browser-facing TLS with its edge certificate.
 - Cloudflare creates a **proxied** CNAME (`<uuid>.cfargotunnel.com`) for each hostname. Do not replace it with an A record and do not grey-cloud it — the tunnel only routes proxied records.
 - A hostname that Caddy has no site block for answers `404` through the tunnel. Keep this table in sync with `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN`.
 - A `*.ts.net` value in `UMAMI_DOMAIN` is a tailnet name: leave it out of the tunnel and reach the dashboard over Tailscale.
@@ -184,7 +186,7 @@ curl -I https://obelisk.mini-mal.tech      # 200/308, Cloudflare edge certificat
 curl -I https://logs.mini-mal.tech         # 403 — guard by design
 ```
 
-The Zero Trust tunnel page should show **Healthy**; certificate warnings only appear if you bypass the tunnel and hit the host directly, which is expected.
+The tunnel page should show **Healthy**; certificate warnings only appear if you bypass the tunnel and hit the host directly, which is expected.
 
 ---
 
@@ -223,7 +225,7 @@ Google sign-in from local mode needs `https://obelisk.mini-mal.localhost:8443/ap
 | Back up secrets | `.env.keys` offline; `TUNNEL_TOKEN` can be re-issued from the dashboard, the DB passwords cannot be re-derived |
 | Host updates | `sudo dnf -y install dnf-automatic` + `systemctl enable --now dnf-automatic.timer`, or a weekly manual `dnf upgrade` |
 | Power loss | UPS if possible; Postgres survives a dirty stop, repeated ones do not |
-| Rotate the tunnel token | Zero Trust → delete the connector on the tunnel → regenerate → `just env-decrypt`, update `TUNNEL_TOKEN`, `just env-encrypt`, `just deploy-tunnel` |
+| Rotate the tunnel token | **Networking → Tunnels** → tunnel → **Refresh token** → `just env-decrypt`, update `TUNNEL_TOKEN`, `just env-encrypt`, `just deploy-tunnel` |
 | Exposure check | `sudo ss -ltnup` — only loopback `5432`/`6379` from this stack; nothing on `80/443` |
 
 ---
@@ -233,7 +235,7 @@ Google sign-in from local mode needs `https://obelisk.mini-mal.localhost:8443/ap
 | Symptom | Cause / fix |
 | :--- | :--- |
 | Cloudflare answers `502` / `1033` for a hostname | Connector down or origin wrong — `docker compose ... logs cloudflared`, and confirm the public hostname points at `https://caddy:443` with **No TLS Verify** on |
-| Tunnel shows **Down** in Zero Trust | `TUNNEL_TOKEN` empty/wrong, or the container is crash-looping — `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps` |
+| Tunnel shows **Down** in **Networking → Tunnels** | `TUNNEL_TOKEN` empty/wrong, or the container is crash-looping — `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps` |
 | `404` through the tunnel, works with `curl --resolve` locally | Caddy has no site block for that hostname — add it to `.env.docker` and redeploy, or remove the tunnel hostname |
 | `403` on `logs.` / `stats.` | By design — the dashboards are tailnet-only (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) |
 | Upload fails with `413` | Cloudflare's free-plan **100 MB** request-body cap — shrink or split the workbook |
