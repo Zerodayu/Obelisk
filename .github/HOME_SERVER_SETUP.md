@@ -2,7 +2,7 @@
 
 Running the production stack on a spare PC behind a residential connection, with the domain still served from it. This is the **public-IP + port-forwarding** path: no tunnel, no reverse-proxy SaaS — Caddy keeps doing TLS exactly as described in [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
-Target: Fedora host, domain `mini-mal.tech` (DNS at Hostinger), three public hostnames:
+Target: Fedora host, domain `mini-mal.tech` (registered at Hostinger, DNS hosted at Cloudflare), three public hostnames:
 
 | Hostname | Role |
 | :--- | :--- |
@@ -112,84 +112,97 @@ sudo ss -ltnp '( sport = :80 or sport = :443 )'
 
 ---
 
-## 3. Hostinger DNS
+## 3. Cloudflare DNS
 
-The zone is managed at Hostinger (`ns1`/`ns2.dns-parking.com`), so edit it under **Domains → DNS → mini-mal.tech**.
+The domain stays registered at Hostinger; only the zone moves to Cloudflare (free plan). Registration, billing and the registrar remain at Hostinger.
 
-Current records (as of this writing) and what to do:
+### 3.1 Move the nameservers
 
-| Name | Current | Action |
-| :--- | :--- | :--- |
-| `obelisk` | `A 148.230.96.85` (Hostinger parking) | **replace** — it points at Hostinger, not your PC |
-| `logs` | none | **add** — Caddy requests a cert for it |
-| `stats` | none | **add** — same |
-| `mini-mal.tech`, `www` | parking IP | leave alone unless you also host a site there |
-| AAAA on the three subdomains | none | keep it that way |
+1. Cloudflare → **Add a site** → `mini-mal.tech` (Free). Cloudflare scans the current Hostinger records and shows two nameservers (yours will differ from the examples).
+2. Check the imported records **before** switching: MX / SPF / DKIM / DMARC must match the Hostinger zone, or mail breaks at cutover.
+3. Hostinger → Domains → `mini-mal.tech` → **Nameservers** → *Custom* → paste both Cloudflare nameservers.
+4. Wait for the zone to show **Active** in Cloudflare (minutes to a few hours, 24 h worst case):
 
-The app only needs the three subdomains. No wildcard record is needed, and a `*` record should be removed if it shadows them.
+```sh
+dig +short NS mini-mal.tech    # must answer with the Cloudflare pair
+```
 
-**Static IP** — three A records:
+Keep the Hostinger zone untouched until the switch settles — it's the rollback.
 
-| Name | Type | Value | TTL |
-| :--- | :--- | :--- | :--- |
-| `obelisk` | `A` | your public IP | 300 |
-| `logs` | `A` | your public IP | 300 |
-| `stats` | `A` | your public IP | 300 |
+### 3.2 Records
 
-**Dynamic IP** — CNAMEs to a DDNS name (step 4). Delete the existing `obelisk` A record first; a name cannot hold both:
+The three app hostnames, all with **Proxy status: DNS only (grey cloud)**:
 
 | Name | Type | Value | TTL |
 | :--- | :--- | :--- | :--- |
-| `obelisk` | `CNAME` | `yourname.duckdns.org` | 300 |
-| `logs` | `CNAME` | `yourname.duckdns.org` | 300 |
-| `stats` | `CNAME` | `yourname.duckdns.org` | 300 |
+| `obelisk` | `A` | your public IP (or DDNS-updated) | Auto / 300 |
+| `logs` | `A` | same | Auto / 300 |
+| `stats` | `A` | same | Auto / 300 |
 
-Keep TTL at 300 — it bounds how long a changed IP takes to propagate. Let's Encrypt follows the CNAME, so the certificate is still issued for `*.mini-mal.tech`; the DDNS name only supplies the address.
+The app only needs those three; leave `mini-mal.tech`/`www` alone unless you also host a site there, and remove any `*` wildcard that shadows them.
 
-Do **not** add AAAA records. A stale IPv6 record breaks HTTP-01 validation when the IPv6 path is closed.
+Grey cloud is deliberate, not an oversight:
+
+- **Orange cloud breaks Caddy's HTTP-01** — Cloudflare answers the challenge, so Let's Encrypt issuance fails. It also caps request bodies at **100 MB** on the free plan (the ETL workbook uploads).
+- It doesn't really hide the origin either — Certificate Transparency logs still list the hostnames.
+- If you later want the proxy, that's a separate ingress change (Cloudflare Origin Certificate or DNS-01 with a custom Caddy build), not a DNS toggle.
+
+Do **not** add AAAA records unless IPv6 is genuinely reachable — a stale AAAA breaks HTTP-01 validation when the IPv6 path is closed.
+
+**DNSSEC**: enabling it in Cloudflare requires adding the DS record at the registrar (Hostinger). Disable it at Hostinger before ever moving DNS away again.
 
 ---
 
 ## 4. Dynamic DNS (only if the IP changes)
 
-### DuckDNS + `ddclient` (simplest free option)
+Static IP → skip this section, the A records in step 3 are final.
 
-1. Create `yourname.duckdns.org` at [duckdns.org](https://www.duckdns.org) and note the token.
+### Cloudflare + `ddclient`
+
+1. Create a scoped API token: Cloudflare → **My Profile → API Tokens → Create Token → Edit zone DNS**. Permissions: **Zone → DNS → Edit**, Zone Resources: **Include → Specific zone → `mini-mal.tech`**. Nothing broader — this token lives on the host.
 2. Install and configure:
 
 ```sh
 sudo dnf -y install ddclient
+sudo dnf -y install perl-IO-Socket-SSL perl-JSON      # ddclient's Cloudflare protocol
 ```
 
 ```conf
-# /etc/ddclient/ddclient.conf
+# /etc/ddclient/ddclient.conf  — chmod 600, it holds the token
 daemon=300
 syslog=yes
 ssl=yes
-protocol=duckdns
-login=<token>
-password=<token>
-yourname.duckdns.org
+protocol=cloudflare
+zone=mini-mal.tech
+ttl=60
+login=token
+password=<scoped-api-token>
+obelisk.mini-mal.tech, logs.mini-mal.tech, stats.mini-mal.tech
 ```
 
 ```sh
 sudo systemctl enable --now ddclient
-journalctl -u ddclient -n 20 --no-pager
+journalctl -u ddclient -n 20 --no-pager      # "SUCCESS" per hostname
 ```
 
-1. Point the three Hostinger CNAMEs at `yourname.duckdns.org` (step 3).
+3. Set the three records from step 3 to `A`, value = current public IP, **grey cloud**, TTL 60–300. `ddclient` rewrites those A records in place when the lease changes — the names never change, so nothing else needs touching.
+
+Sanity check after an IP change (or after forcing one):
+
+```sh
+dig +short A obelisk.mini-mal.tech
+curl -4 -s ifconfig.me
+```
 
 ### Alternatives
 
 | Option | Notes |
 | :--- | :--- |
-| Router's built-in DDNS | Check the router admin page; if it speaks `dyndns2`/No-IP, it can update a provider without a host daemon. |
-| Cloudflare DNS + `ddclient` | Move the nameservers to Cloudflare, `protocol=cloudflare` with an API token, use `A` records directly. |
-| Manual updates | Works, but you must notice the change; the site is down until you do. |
+| Router's built-in DDNS | Check the router admin page. Works with generic `dyndns2` providers; Cloudflare is not one of them. |
+| `cloudflared` / API script via systemd timer | Same result as `ddclient` with more moving parts — only if `ddclient` can't be installed. |
+| Manual updates | Edit the three A records when the site breaks; fine only for a sticky IP. |
 
-Hostinger's hPanel does not document a stable DNS-update API, so don't script the Hostinger records directly.
-
-If the IP is static, skip this whole section.
+Without DDNS on a dynamic line, the A records keep pointing at the old address and the site stays down until you notice. If the ISP hands out a *static* address there is nothing to automate.
 
 ---
 
@@ -223,8 +236,8 @@ Never run `db:seed` against production — the seed refuses on its own, but don'
 ### Verify
 
 ```sh
-dig +short CNAME obelisk.mini-mal.tech     # dynamic IP setup
-dig +short A obelisk.mini-mal.tech         # resolves to the home IP
+dig +short NS mini-mal.tech                # must be the Cloudflare pair
+dig +short A obelisk.mini-mal.tech         # must be the home IP
 dig +short A logs.mini-mal.tech stats.mini-mal.tech
 ```
 
@@ -282,7 +295,9 @@ Google sign-in from local mode needs `https://obelisk.mini-mal.localhost:8443/ap
 
 | Symptom | Cause / fix |
 | :--- | :--- |
-| Caddy loops on ACME, no certificate | A/CNAME missing or stale, or port 80 blocked upstream. `just docker-logs`, `dig +short A <host>` |
+| Caddy loops on ACME, no certificate | A record missing/stale, **proxy status orange** instead of grey, or port 80 blocked upstream. `just docker-logs`, `dig +short A <host>` |
+| Cloudflare shows the record proxied / cert fails right after a DNS edit | Proxy must be **DNS only** — HTTP-01 has to reach the host. Toggle grey, then restart Caddy (`docker compose restart caddy`) |
+| DDNS stopped updating | `journalctl -u ddclient -n 50` — usual causes: token lacks `Zone.DNS:Edit`, wrong `zone=`, or `ddclient` missing the Cloudflare protocol package |
 | `permission denied` reading `.env.prod` / `Caddyfile` | SELinux label missing — step 1 `semanage fcontext` + `restorecon` |
 | `bind: address already in use` on 80/443 | another service owns the port — `sudo ss -ltnp '( sport = :80 or sport = :443 )'`, stop it |
 | Worked for weeks, then site unreachable | dynamic IP changed and DDNS/DNS wasn't updated — `curl -4 ifconfig.me` vs `dig +short A obelisk.mini-mal.tech` |
