@@ -11,9 +11,9 @@ The root [`docker-compose.yml`](../docker-compose.yml) runs the whole stack from
 | Service | Container | Exposed | Role |
 | :--- | :--- | :--- | :--- |
 | **caddy** | `caddy:2-alpine` | **80 / 443 (+443/udp)** | The only public entrypoint — terminates TLS (Let's Encrypt, HTTP-01), routes `/api/*` → backend, `/umami/*` → umami (the first-party tracker proxy), everything else → frontend (see [`Caddyfile`](../Caddyfile)); second site blocks serve dozzle on `DOZZLE_DOMAIN` and umami on `UMAMI_DOMAIN` |
-| **backend** | `obelisk-backend` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
-| **frontend** | `obelisk-frontend` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
-| **etl** | `obelisk-etl` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
+| **backend** | `obelisk-backend-1` | — (in-network) | Elysia API on `:8080`, reached by caddy over the `edge` network |
+| **frontend** | `obelisk-frontend-1` | — (in-network) | Next.js on `:3000`, served by caddy over the `edge` network |
+| **etl** | `obelisk-etl-1` | — (in-network) | Python ETL on `:8000`, reached by the backend over the `internal` network (no auth by design) |
 | **redis** | `redis:alpine` | `127.0.0.1:6379` | Cache/bull queue — loopback only (no password), so `just dev` on the same host still reaches it |
 | **db** | `postgres:15-alpine` | `127.0.0.1:5432` | The app's Postgres (Prisma) — backend reaches it over `db:5432`, the loopback publish lets `just dev` / `just db-migrate` on the same host reach it (dev uses its own `obelisk_dev` database, the app serves `obelisk`); data in the `db-data` volume |
 | **dozzle** | `amir20/dozzle:latest` | — (in-network) | Container log viewer — the public `DOZZLE_DOMAIN` site answers **every** request with 403; real access is the tailnet name served by the sidecar below |
@@ -28,13 +28,14 @@ Design notes:
 - In-network addresses are injected as `environment:` entries (`REDIS_HOST=redis`, `PYTHON_SERVER_URL=http://etl:8000`, `DATABASE_URL`/`DIRECT_URL=…@db:5432` — these two override whatever `.env.prod` holds, dotenvx never overrides a set var); the frontend's server-side fetch/auth rewrite uses the build arg `API_INTERNAL_URL=http://backend:8080`.
 - Everything browser-facing (`NEXT_PUBLIC_API_URL`, `BETTER_AUTH_URL`, `FRONTEND_URL`, `NEXT_PUBLIC_UMAMI_*`) is **baked at build time** — see [Rebuild rules](#rebuild-rules).
 - Only caddy faces the network. The ETL service has no auth and Redis has no password; they stay in-network / loopback. Dozzle mounts `docker.sock` (root-equivalent) but keeps no published port — on `DOZZLE_DOMAIN` caddy answers **every** request with 403 (fail-closed), and the only working entrypoint is the `tailscale-dozzle` sidecar (auto-assigned MagicDNS name, gated by tailnet membership + ACL), with container actions/shell disabled. Umami follows the same pattern on `UMAMI_DOMAIN`: only the tracker endpoints (`/script.js`, `/api/send`) are public, the dashboard paths 403 and live on the `tailscale-umami` sidecar's auto-assigned MagicDNS name.
+- Container names are auto-generated (`<project>-<service>-1`), not pinned: `just docker-deploy` uses project `obelisk`, `just deploy-local` uses `obelisk-local`, so both stacks fit on one machine — see [Local deployment](#local-deployment).
 - Persisted volumes: `uploads` (ETL file drops), `caddy-data` + `caddy-config` (TLS certs — they must survive recreates or Let's Encrypt rate limits get burned), `dozzle-data` (dozzle settings), `db-data` (app Postgres), `umami-db-data` (analytics events), `ts-dozzle-state` + `ts-umami-state` (the sidecars' tailnet identity — losing them re-registers the nodes).
 
 ---
 
 ## Requirements
 
-> Copy-paste walkthrough from a bare VPS (packages → `just docker-deploy`): **[`VPS_SETUP.md`](VPS_SETUP.md)**.
+> Copy-paste walkthrough from a bare VPS (packages → `just docker-deploy`): **[`VPS_SETUP.md`](VPS_SETUP.md)**. No VPS? A spare PC on Fedora behind a residential line is covered in **[`HOME_SERVER_SETUP.md`](HOME_SERVER_SETUP.md)**.
 
 On the server:
 
@@ -101,12 +102,12 @@ UMAMI_WEBSITE_ID="..."                # website key from the umami dashboard, ba
 Plus seven `LOCAL_*` keys consumed only by [`docker-compose.local.yml`](../docker-compose.local.yml) (see [Local deployment](#local-deployment)):
 
 ```env
-LOCAL_APP_DOMAIN="obelisk.mini-mal.localhost"  # any *.localhost depth resolves to loopback (RFC 6761); Caddy signs it with its internal CA (no ACME)
-LOCAL_DOZZLE_DOMAIN="logs.mini-mal.localhost"
-LOCAL_UMAMI_DOMAIN="stats.mini-mal.localhost"
+LOCAL_APP_DOMAIN="obelisk.mini-mal.localhost:8443"  # *.localhost resolves to loopback (RFC 6761); :8443 keeps it off the prod stack; Caddy signs it with its internal CA (no ACME)
+LOCAL_DOZZLE_DOMAIN="logs.mini-mal.localhost:8443"
+LOCAL_UMAMI_DOMAIN="stats.mini-mal.localhost:8443"
 LOCAL_ADMIN_IPS="127.0.0.1 ::1 192.168.1.14 172.16.0.0/12"
-LOCAL_FRONTEND_URL="https://obelisk.mini-mal.localhost"
-LOCAL_API_URL="https://obelisk.mini-mal.localhost/api/v1"
+LOCAL_FRONTEND_URL="https://obelisk.mini-mal.localhost:8443"
+LOCAL_API_URL="https://obelisk.mini-mal.localhost:8443/api/v1"
 LOCAL_UMAMI_WEBSITE_ID=""                     # website key of the LOCAL umami instance — empty = no tracker in local builds
 ```
 
@@ -147,7 +148,7 @@ That runs `bunx dotenvx run -f .env.docker -- docker compose up -d --build` — 
 
 Verify: `https://<APP_DOMAIN>` (frontend), `https://<APP_DOMAIN>/api/v1` (backend), `https://<DOZZLE_DOMAIN>` (log viewer — **403 by design**, the public hostname is fail-closed), `https://<UMAMI_DOMAIN>` (dashboard paths — 403 by design; `curl -I https://<UMAMI_DOMAIN>/script.js` answers 200 from anywhere), plus both tailnet names from a tailnet device (see [Tailscale admin access](#tailscale-admin-access)). Logs: `just docker-logs`.
 
-> Stop `just dev` first — the dev stack and the Docker stack bind the same host ports (Redis aside, which is shared via loopback).
+> `just dev` keeps using the default project's `db`/`redis` containers (loopback `5432`/`6379`), so it shares the Postgres instance with prod but stays on its own `obelisk_dev` database. The local Docker stack is separate (`5433`/`6380`) and is not used by `just dev`.
 
 ### Tailscale admin access
 
@@ -215,28 +216,43 @@ Browser-facing values are **inlined into the JS bundle at build time**, so the i
 
 ### Local deployment
 
-`just deploy-local` runs the same eleven services for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement:
+`just deploy-local` runs a second, fully isolated copy of the stack for **machine-local access only** — no public exposure, no router/ufw/CGNAT involvement — and it can run **alongside** the prod stack on the same machine:
 
 ```sh
-just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+just deploy-local    # bunx dotenvx run -f .env.docker -- docker compose -p obelisk-local -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
-The second `-f` layers [`docker-compose.local.yml`](../docker-compose.local.yml) over the base file (later file wins per key): Caddy's site addresses swap to the `LOCAL_*` values, the frontend build receives the local origins as `ARG`s (public mode passes none, so `just docker-deploy` is unaffected), and backend/etl get them injected at runtime. `*.localhost` is ineligible for public certificates, so Caddy issues from its internal CA automatically — the ACME retry loop never starts. Origins are baked at build, so switching modes rebuilds (same rule as [Rebuild rules](#rebuild-rules)).
+Isolation comes from two things:
 
-Trust the local CA once per machine:
+- **Project name** — prod is the default project (`obelisk`), local is `obelisk-local`. Containers, networks, images (`obelisk-local-backend:latest`) and named volumes (`obelisk-local_db-data`, …) are project-scoped, so the stacks never share data and deploying one never recreates the other.
+- **Ports** — prod keeps `80`/`443` (`+443/udp`), `5432` and `6379`; local answers on `8443` (loopback only), `5433` and `6380`. The local Tailscale sidecars are scaled to zero (`deploy.replicas: 0`) so they never register a second tailnet node.
+
+| | Prod (`just docker-deploy`) | Local (`just deploy-local`) |
+| :--- | :--- | :--- |
+| Project | `obelisk` | `obelisk-local` |
+| Public entrypoint | `0.0.0.0:80` / `443` (+`443/udp`) | `127.0.0.1:8443` (+`8443/udp`) |
+| App Postgres | `127.0.0.1:5432` | `127.0.0.1:5433` |
+| Redis | `127.0.0.1:6379` | `127.0.0.1:6380` |
+| Tailscale sidecars | on | off |
+| Volumes | `obelisk_*` | `obelisk-local_*` |
+
+The second `-f` layers [`docker-compose.local.yml`](../docker-compose.local.yml) over the base file (later file wins per key): Caddy's site addresses swap to the `LOCAL_*` values, the frontend build receives the local origins as `ARG`s (public mode passes none, so `just docker-deploy` is unaffected), and backend/etl get them injected at runtime. `*.localhost` is ineligible for public certificates, so Caddy issues from its internal CA automatically — the ACME retry loop never starts. Origins are baked at build, so each mode keeps its own frontend image (same rule as [Rebuild rules](#rebuild-rules)).
+
+> ⚠️ Every `LOCAL_*` URL carries `:8443` — the port is part of the browser origin, and `obelisk.mini-mal.localhost` without it would resolve to the prod stack on `443`. Caddy serves HTTPS on the non-standard port automatically.
+
+First run: apply the schema to the local database, then trust the local CA once per machine:
 
 ```sh
-docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-local-root.crt
+just local-migrate   # prisma migrate deploy inside the local backend container
+docker compose -p obelisk-local cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-local-root.crt
 # import into the OS/browser trust store (Arch: sudo trust anchor --store caddy-local-root.crt; Firefox has its own store — Settings → Certificates), then delete the file
 ```
 
 Until the root is imported the browser shows a certificate interstitial.
 
-Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>` (log viewer — `403` unless the peer Caddy sees is in `LOCAL_ADMIN_IPS`; the peer appears in `just docker-logs`), `https://<LOCAL_UMAMI_DOMAIN>` (analytics dashboard — same `403` rule; the tracker records locally only when `LOCAL_UMAMI_WEBSITE_ID` is set). Google sign-in needs the local redirect URI registered in the Google console.
+Verify: `https://<LOCAL_APP_DOMAIN>` (frontend), `https://<LOCAL_DOZZLE_DOMAIN>` (log viewer — `403` unless the peer Caddy sees is in `LOCAL_ADMIN_IPS`; the peer appears in `just local-logs`), `https://<LOCAL_UMAMI_DOMAIN>` (analytics dashboard — same `403` rule; the tracker records locally only when `LOCAL_UMAMI_WEBSITE_ID` is set). Google sign-in needs `https://<LOCAL_APP_DOMAIN>/api/auth/callback/google` registered in the Google console.
 
-Notes:
-
-- `just docker-deploy` (and `just docker-update`, which runs it) switches back to public mode — re-run `just deploy-local` to return.
+Local-mode recipes: `just local-logs`, `just local-migrate`, `just local-down` (stops only the local stack). `just docker-deploy`, `just docker-update` and the other `docker-*` recipes keep targeting the prod project.
 
 ---
 
@@ -253,8 +269,11 @@ Notes:
 | Check a sidecar's tailnet registration | `docker compose exec tailscale-dozzle tailscale status` |
 | Restart containers in place (no rebuild) | `just docker-restart` |
 | Reload Caddy after editing the `Caddyfile` (no downtime) | `just docker-caddy-reload` |
-| Stop the stack (containers/images stay) | `just docker-down` |
-| Deploy for machine-local access only (`*.localhost`, no public exposure) | `just deploy-local` |
+| Stop the prod stack (containers/images stay) | `just docker-down` |
+| Run the local stack alongside prod (`*.localhost:8443`, no public exposure) | `just deploy-local` |
+| Tail the local stack's logs | `just local-logs` |
+| Apply pending migrations to the local stack | `just local-migrate` |
+| Stop only the local stack | `just local-down` |
 
 ### Update workflow
 
@@ -264,7 +283,7 @@ just db-status           # read-only: does the release include new Prisma migrat
 just docker-migrate      # apply them (skip when db-status reports none pending)
 ```
 
-Plain Compose equivalents work too (`docker compose up -d --build`, `docker compose logs -f`, `docker compose down`) — but without the dotenvx wrap Caddy will not start, so prefer the recipes. Managing containers via [lazydocker](https://github.com/jesseduffield/lazydocker) is fine for inspection.
+Plain Compose equivalents work too (`docker compose up -d --build`, `docker compose logs -f`, `docker compose down`) — but without the dotenvx wrap Caddy will not start, so prefer the recipes. For the local stack add `-p obelisk-local -f docker-compose.yml -f docker-compose.local.yml`. Managing containers via [lazydocker](https://github.com/jesseduffield/lazydocker) is fine for inspection.
 
 ---
 
@@ -277,7 +296,7 @@ Plain Compose equivalents work too (`docker compose up -d --build`, `docker comp
 - **No pageviews in umami** — the frontend bundle has no tracker: `UMAMI_WEBSITE_ID` empty in `.env.docker` (or changed without a rebuild — run `just docker-deploy`), or the page source lacks `data-website-id`. The umami dashboard also needs the website's domain to match the origin being visited.
 - **No certificate for `https://<DOZZLE_DOMAIN>`** — the DNS record for that name doesn't point at the server yet (each hostname needs its own A record, `umami` included). Cert progress is in `just docker-logs` (caddy).
 - **Log viewer loads but streams don't appear** — dozzle streams over SSE; the `flush_interval -1` in the `DOZZLE_DOMAIN` block must stay, otherwise caddy buffers the events.
-- **No request lines in the log viewer** — per-request access logs come from caddy (JSON access log from the `log` blocks: `APP_DOMAIN`, plus the `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` sites with tracker paths skipped), `obelisk-frontend` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.
+- **No request lines in the log viewer** — per-request access logs come from caddy (JSON access log from the `log` blocks: `APP_DOMAIN`, plus the `DOZZLE_DOMAIN` / `UMAMI_DOMAIN` sites with tracker paths skipped), `obelisk-frontend-1` (`[frontend] METHOD path decision` from `proxy.ts` — `next start` itself logs nothing per request in production), and `obelisk-backend-1` (`[backend] METHOD path status ms` from the Elysia `onRequest`/`onAfterResponse` hooks). Missing caddy lines after a Caddyfile edit = `just docker-caddy-reload` (or redeploy); missing frontend/backend lines = the images predate this change, run `just docker-deploy`.
 - **`[DECRYPTION_FAILED]` / dotenvx private-key errors** — the gitignored `.env.keys` is missing from the repo root or does not match the committed `.env.prod` / `.env.docker` public keys. Restore the correct file and redeploy.
 - **No TLS certificate / `404` from Caddy** — the domain's A record does not point at this server, or port 80 is blocked (HTTP-01 needs it). Check DNS and the firewall; cert progress is in `just docker-logs` (caddy).
 - **Backend restarts with a missing-var error** — all required vars are Zod-validated at startup (`packages/env/src/server.ts`); fill the missing key in `.env.prod` (it must be a complete key set) and redeploy.

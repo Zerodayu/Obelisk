@@ -1,9 +1,14 @@
 # NOTE: local-mode override — layered only by `just deploy-local`, later file wins per key
+# NOTE: runs as its own project (obelisk-local) so containers, volumes and images never touch prod's
 # NOTE: LOCAL_* names are *.localhost on loopback with Caddy's internal CA (no ACME)
 # NOTE: local origins reach the frontend at build (ARGs) and backend/etl at runtime
 
 services:
   caddy:
+    # NOTE: replaces the base 80/443 publish — prod keeps those, local answers on 8443
+    ports: !override
+      - "127.0.0.1:8443:8443"
+      - "127.0.0.1:8443:8443/udp"
     environment:
       # NOTE: LOCAL_* flow from .env.docker through the dotenvx wrap in `just deploy-local`
       APP_DOMAIN: ${LOCAL_APP_DOMAIN:-}
@@ -12,6 +17,16 @@ services:
       ADMIN_IPS: ${LOCAL_ADMIN_IPS:-}
       # NOTE: local mode swaps the public deny for the LOCAL_ADMIN_IPS allow-list
       CADDY_ADMIN_GUARD: /etc/caddy/guards/local.caddy
+
+  db:
+    # NOTE: remapped so the prod stack can keep loopback 5432
+    ports: !override
+      - "127.0.0.1:5433:5432"
+
+  redis:
+    # NOTE: remapped so the prod stack can keep loopback 6379
+    ports: !override
+      - "127.0.0.1:6380:6379"
 
   frontend:
     build:
@@ -38,3 +53,10 @@ services:
     environment:
       # NOTE: the ETL CORS check must allow the local origin
       OBELISK_ALLOWED_ORIGINS: ${LOCAL_FRONTEND_URL:-}
+
+  # NOTE: sidecars stay off in local mode — they would register duplicate tailnet nodes
+  tailscale-dozzle:
+    deploy: { replicas: 0 }
+
+  tailscale-umami:
+    deploy: { replicas: 0 }

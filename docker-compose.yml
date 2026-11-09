@@ -1,12 +1,11 @@
 # NOTE: whole stack (11 services), .env.prod-only — fill .env.prod + `just env-encrypt` first
-# NOTE: only caddy publishes ports — stop `just dev` before deploying so host ports don't clash
+# NOTE: only caddy publishes ports — `just deploy-local` adds an isolated second stack on 8443
 # TODO(prod): NEXT_PUBLIC_API_URL / BETTER_AUTH_URL / FRONTEND_URL are baked — rebuild on change
 
 services:
   # NOTE: only public entrypoint — TLS plus /api split, admin sites deny by default (see the Caddyfile)
   caddy:
     image: caddy:2-alpine
-    container_name: obelisk-caddy
     restart: unless-stopped
     ports:
       - "80:80"
@@ -49,8 +48,6 @@ services:
       target: backend
       secrets:
         - envkeys
-    image: obelisk-backend:latest
-    container_name: obelisk-backend
     restart: unless-stopped
     # NOTE: no published ports — in-network only (caddy /api over edge, etl/redis over internal)
     environment:
@@ -86,8 +83,6 @@ services:
         NEXT_PUBLIC_UMAMI_WEBSITE_ID: ${UMAMI_WEBSITE_ID:-}
       secrets:
         - envkeys
-    image: obelisk-frontend:latest
-    container_name: obelisk-frontend
     restart: unless-stopped
     # NOTE: no published ports — served by caddy over the edge network
     # NOTE: API_INTERNAL_URL is baked as ARG + ENV; the browser keeps the baked NEXT_PUBLIC_API_URL
@@ -103,8 +98,6 @@ services:
     build:
       context: .
       target: etl
-    image: obelisk-etl:latest
-    container_name: obelisk-etl
     restart: unless-stopped
     # NOTE: no auth by design and no ports — backend reaches http://etl:8000 over the internal network
     environment:
@@ -124,7 +117,6 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: obelisk-redis
     restart: unless-stopped
     # WARN: no password — loopback only (`just dev` still reaches it via localhost:6379)
     ports:
@@ -137,7 +129,6 @@ services:
   # NOTE: schema via `just db-migrate` (dev) / `just docker-migrate` (containers)
   db:
     image: postgres:15-alpine
-    container_name: obelisk-db
     restart: unless-stopped
     environment:
       # NOTE: password from .env.docker — must stay URL-safe for the backend's DATABASE_URL
@@ -162,7 +153,6 @@ services:
   # NOTE: log viewer at DOZZLE_DOMAIN — no published port, public host answers 403 in the Caddyfile
   dozzle:
     image: amir20/dozzle:latest
-    container_name: obelisk-dozzle
     restart: unless-stopped
     # WARN: docker.sock is root-equivalent — the :ro bind only freezes the file, keep actions/shell off
     # TODO(hardening): front the socket with tecnativa/docker-socket-proxy
@@ -176,7 +166,6 @@ services:
   # NOTE: tailnet node serving the log viewer — no published port, WireGuard is the only ingress
   tailscale-dozzle:
     image: tailscale/tailscale:latest
-    container_name: obelisk-tailscale-dozzle
     restart: unless-stopped
     # NOTE: shares dozzle's netns — userspace mode (image default), so no TUN or cap_add
     network_mode: "service:dozzle"
@@ -201,7 +190,6 @@ services:
   # NOTE: analytics at UMAMI_DOMAIN — tracker paths public, dashboard moves to the tailnet name
   umami:
     image: ghcr.io/umami-software/umami:latest
-    container_name: obelisk-umami
     restart: unless-stopped
     # NOTE: umami's own init (signal handling / zombie reaping), as in upstream's compose
     init: true
@@ -228,7 +216,6 @@ services:
   # NOTE: tailnet node serving the analytics dashboard — tracker stays on the public hostname
   tailscale-umami:
     image: tailscale/tailscale:latest
-    container_name: obelisk-tailscale-umami
     restart: unless-stopped
     # NOTE: shares umami's netns — userspace mode (image default), so no TUN or cap_add
     network_mode: "service:umami"
@@ -253,7 +240,6 @@ services:
   # NOTE: umami's datastore — in-network only, no published port
   umami-db:
     image: postgres:15-alpine
-    container_name: obelisk-umami-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: umami

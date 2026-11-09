@@ -271,11 +271,26 @@ check: lint typecheck test
 docker-deploy:
     bunx dotenvx run -f .env.docker -- docker compose up -d --build
 
-# deploy for machine-local access only — *.localhost → loopback, Caddy internal CA, no ACME/public exposure (LOCAL_* from .env.docker; `just docker-deploy` switches back to public mode)
+# run the stack in local mode (own project, *.localhost on :8443, internal CA) — runs alongside `just docker-deploy` (LOCAL_* from .env.docker)
 # NOTE: second -f layers docker-compose.local.yml over the base file — origins are baked, so this rebuilds like docker-deploy does
 [group('deploy')]
 deploy-local:
-    bunx dotenvx run -f .env.docker -- docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+    bunx dotenvx run -f .env.docker -- docker compose -p obelisk-local -f docker-compose.yml -f docker-compose.local.yml up -d --build
+
+# stop the local-mode stack only — the prod stack keeps running
+[group('deploy')]
+local-down:
+    docker compose -p obelisk-local down
+
+# follow logs of the local-mode stack (Ctrl+C detaches)
+[group('deploy')]
+local-logs:
+    docker compose -p obelisk-local logs -f
+
+# apply pending Prisma migrations to the local-mode database (needs `just deploy-local` first)
+[group('deploy')]
+local-migrate:
+    docker compose -p obelisk-local exec backend bun run db:migrate-prod
 
 # restart the running containers in place — no rebuild, for config/resource tweaks
 [group('deploy')]
