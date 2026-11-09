@@ -90,7 +90,7 @@ The domain stays registered at Hostinger; only the zone moves to Cloudflare (fre
 
 ### 2.1 Move the nameservers
 
-1. Cloudflare → **Add a site** → `mini-mal.tech` (Free). Cloudflare scans the current Hostinger records and shows two nameservers (yours will differ from the examples).
+1. Cloudflare dashboard → **Domains** ([dash.cloudflare.com/?to=/:account/domains/overview](https://dash.cloudflare.com/?to=/:account/domains/overview)) → **Onboard a domain** (the old *Add a site* button) → apex `mini-mal.tech`. Cloudflare scans the current Hostinger records and shows two nameservers (yours will differ from the examples).
 2. Check the imported records **before** switching: MX / SPF / DKIM / DMARC must match the Hostinger zone, or mail breaks at cutover.
 3. Hostinger → Domains → `mini-mal.tech` → **Nameservers** → *Custom* → paste both Cloudflare nameservers.
 4. Wait for the zone to show **Active** in Cloudflare (minutes to a few hours, 24 h worst case):
