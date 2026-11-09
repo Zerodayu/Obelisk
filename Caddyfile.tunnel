@@ -11,4 +11,9 @@
 	}
 }
 
+# NOTE: the tunnel origin is addressed as the compose service name (caddy) — serve that SNI too
+caddy {
+	respond "tunnel-origin-ok"
+}
+
 import Caddyfile
