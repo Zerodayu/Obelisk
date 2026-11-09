@@ -357,4 +357,4 @@ docker-logs:
 # reload caddy in place after editing the Caddyfile — no rebuild, no downtime
 [group('deploy')]
 docker-caddy-reload:
-    docker compose exec caddy sh -c 'caddy reload --config "$${CADDYFILE:-/etc/caddy/Caddyfile}"'
+    docker compose exec caddy sh -c 'caddy reload --config "${CADDYFILE:-/etc/caddy/Caddyfile}"'
