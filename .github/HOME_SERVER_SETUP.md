@@ -111,12 +111,13 @@ Wait until the tunnel shows **Healthy** (a connector connected), then add one **
 
 | Public hostname | Service URL | TLS setting |
 | :--- | :--- | :--- |
-| `obelisk.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
-| `logs.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** |
-| `stats.mini-mal.tech` (only if `UMAMI_DOMAIN` is this name) | `https://caddy:443` | **No TLS Verify** |
+| `obelisk.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** · **Origin Server Name: `obelisk.mini-mal.tech`** |
+| `logs.mini-mal.tech` | `https://caddy:443` | **No TLS Verify** · **Origin Server Name: `logs.mini-mal.tech`** |
+| `stats.mini-mal.tech` (only if `UMAMI_DOMAIN` is this name) | `https://caddy:443` | **No TLS Verify** · **Origin Server Name: `stats.mini-mal.tech`** |
 
 - `caddy` is the compose service name — the connector resolves it on the `edge` network, no host port involved.
 - **No TLS Verify** lives under the route's *Additional application settings → TLS*; it is required because Caddy serves a certificate from its own internal CA (see `Caddyfile.tunnel`), while Cloudflare terminates the browser-facing TLS with its edge certificate.
+- **Origin Server Name** must be the public hostname each route serves (the name the internal cert covers) — without it the cloudflared→Caddy origin TLS handshake fails and Cloudflare answers `502`.
 - Cloudflare creates a **proxied** CNAME (`<uuid>.cfargotunnel.com`) for each hostname. Do not replace it with an A record and do not grey-cloud it — the tunnel only routes proxied records.
 - A hostname that Caddy has no site block for answers `404` through the tunnel. Keep this table in sync with `APP_DOMAIN` / `DOZZLE_DOMAIN` / `UMAMI_DOMAIN`.
 - A `*.ts.net` value in `UMAMI_DOMAIN` is a tailnet name: leave it out of the tunnel and reach the dashboard over Tailscale.
@@ -234,7 +235,7 @@ Google sign-in from local mode needs `https://obelisk.mini-mal.localhost:8443/ap
 
 | Symptom | Cause / fix |
 | :--- | :--- |
-| Cloudflare answers `502` / `1033` for a hostname | Connector down or origin wrong — `docker compose ... logs cloudflared`, and confirm the public hostname points at `https://caddy:443` with **No TLS Verify** on |
+| Cloudflare answers `502` / `1033` for a hostname | Connector down or origin wrong — `docker compose ... logs cloudflared`, and confirm the public hostname points at `https://caddy:443` with **No TLS Verify** + **Origin Server Name** on |
 | Tunnel shows **Down** in **Networking → Tunnels** | `TUNNEL_TOKEN` empty/wrong, or the container is crash-looping — `docker compose -f docker-compose.yml -f docker-compose.tunnel.yml ps` |
 | `404` through the tunnel, works with `curl --resolve` locally | Caddy has no site block for that hostname — add it to `.env.docker` and redeploy, or remove the tunnel hostname |
 | `403` on `logs.` / `stats.` | By design — the dashboards are tailnet-only (see [`DEPLOYMENT.md`](DEPLOYMENT.md)) |
