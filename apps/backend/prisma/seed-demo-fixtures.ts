@@ -48,6 +48,10 @@ const NAMES_BY_YEAR: Array<Array<[string, string]>> = [
 		["Bautista", "Noel"],
 		["Garcia", "Trisha"],
 		["Mendoza", "Paolo"],
+		["Ramos", "Aileen"],
+		["Dela Cruz", "Jomar"],
+		["Flores", "Kim"],
+		["Navaro", "Ella"],
 	],
 	// Y2
 	[
@@ -57,6 +61,10 @@ const NAMES_BY_YEAR: Array<Array<[string, string]>> = [
 		["Villanueva", "Carlo"],
 		["Aquino", "Joy"],
 		["Domingo", "Rafael"],
+		["Salcedo", "Mika"],
+		["Ocampo", "Jules"],
+		["Manalo", "Rico"],
+		["Perez", "Lian"],
 	],
 	// Y3
 	[
@@ -66,6 +74,10 @@ const NAMES_BY_YEAR: Array<Array<[string, string]>> = [
 		["Ocampo", "Jules"],
 		["Alvarez", "Nina"],
 		["Castillo", "Ben"],
+		["Bautista", "Rina"],
+		["Gonzales", "Paolo"],
+		["Villar", "Mico"],
+		["Rosales", "Tina"],
 	],
 	// Y4
 	[
@@ -75,10 +87,14 @@ const NAMES_BY_YEAR: Array<Array<[string, string]>> = [
 		["Gonzales", "Luis"],
 		["Padilla", "Rica"],
 		["Mercado", "Tomas"],
+		["Reyes", "Andrea"],
+		["Cruz", "Miguel"],
+		["Mendoza", "Sofia"],
+		["Garcia", "Lorenzo"],
 	],
 ];
 
-/** 24 demo students — six per cohort, fixed student numbers for idempotency. */
+/** 40 demo students — ten per cohort, fixed student numbers for idempotency. */
 export const DEMO_STUDENTS: DemoStudentSeed[] = NAMES_BY_YEAR.flatMap(
 	(names, yearIndex) =>
 		names.map(([lastName, firstName], studentIndex) => ({

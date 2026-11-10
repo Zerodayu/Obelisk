@@ -201,6 +201,7 @@ async function main() {
 		select: {
 			id: true,
 			name: true,
+			departmentId: true,
 			plos: {
 				orderBy: { code: "asc" },
 				select: { id: true, code: true, description: true },
@@ -267,6 +268,15 @@ async function main() {
 		where: { id: { startsWith: DEMO_PREFIX } },
 	});
 	await prisma.peo.deleteMany({ where: { id: { startsWith: DEMO_PREFIX } } });
+	// NOTE: second demo program (multi-program view) rows.
+	await prisma.enrollment.deleteMany({ where: { classSectionId: `${DEMO_PREFIX}section-2` } });
+	await prisma.cloAttainment.deleteMany({ where: { classSectionId: `${DEMO_PREFIX}section-2` } });
+	await prisma.computationRun.deleteMany({ where: { scope: `${DEMO_PREFIX}section-2` } });
+	await prisma.student.deleteMany({ where: { id: { startsWith: `${DEMO_PREFIX}student-bs-` } } });
+	await prisma.cloToPloMap.deleteMany({ where: { cloId: { startsWith: `${DEMO_PREFIX}clo-2-` } } });
+	await prisma.clo.deleteMany({ where: { id: { startsWith: `${DEMO_PREFIX}clo-2-` } } });
+	await prisma.course.deleteMany({ where: { id: `${DEMO_PREFIX}course-2` } });
+	await prisma.program.deleteMany({ where: { id: `${DEMO_PREFIX}program-2` } });
 
 	// --- Academic scaffolding ------------------------------------------------
 	console.log("Seeding demo terms, students, CLO mappings and PEOs...");
@@ -523,6 +533,120 @@ async function main() {
 		});
 	}
 
+	// --- Second demo program (multi-program institutional report view) --------
+	console.log("Seeding second demo program (BSIS)...");
+	const secondProgram = await prisma.program.create({
+		data: {
+			id: `${DEMO_PREFIX}program-2`,
+			code: "BSIS",
+			name: "BS Business Information Systems",
+			departmentId: program.departmentId,
+		},
+	});
+	const secondCourse = await prisma.course.create({
+		data: {
+			id: `${DEMO_PREFIX}course-2`,
+			programId: secondProgram.id,
+			code: "BSIS 101",
+			title: "Business Information Systems",
+		},
+	});
+	const secondClos = DEMO_CLO_CODES.map((code) => ({
+		id: `${DEMO_PREFIX}clo-2-${code}`,
+		courseId: secondCourse.id,
+		code,
+		description: `${code} for ${secondCourse.code} (demo)`,
+	}));
+	for (const clo of secondClos) {
+		await prisma.clo.create({
+			data: {
+				id: clo.id,
+				courseId: clo.courseId,
+				code: clo.code,
+				description: clo.description,
+			},
+		});
+	}
+	await prisma.cloToPloMap.createMany({
+		data: secondClos.map((clo, index) => ({
+			id: crypto.randomUUID(),
+			cloId: clo.id,
+			ploId: program.plos[(index + 1) % program.plos.length].id,
+			weight: 1,
+			stage: null,
+		})),
+	});
+	const secondPlos = await prisma.plo.findMany({
+		where: { programId: secondProgram.id },
+		select: { id: true, code: true },
+	});
+	const secondStudents = Array.from({ length: 12 }, (_, index) => ({
+		studentNumber: `BSIS-${index + 1}`,
+		firstName: `Biz${index}`,
+		lastName: `Student${index}`,
+		yearLevel: (index % 4) + 1,
+	}));
+	await prisma.student.createMany({
+		data: secondStudents.map((student, index) => ({
+			id: `${DEMO_PREFIX}student-bs-${index + 1}`,
+			studentNumber: student.studentNumber,
+			anonymizedId: `${DEMO_PREFIX}anon-bs-${index + 1}`,
+			programId: secondProgram.id,
+			firstName: student.firstName,
+			lastName: student.lastName,
+			yearLevel: student.yearLevel,
+			studentStatus: "active",
+		})),
+	});
+	const secondSectionId = `${DEMO_PREFIX}section-2`;
+	await prisma.classSection.create({
+		data: {
+			id: secondSectionId,
+			courseId: secondCourse.id,
+			termId: latestTerm.id,
+			sectionCode: "BS2",
+			facultyId,
+		},
+	});
+	await attainmentService.persistAttainment(
+		{
+			header: buildHeader({
+				courseCode: secondCourse.code,
+				courseTitle: secondCourse.title,
+				sectionCode: "BS2",
+				schoolYear: latestTerm.schoolYear,
+				semester: latestTerm.semester,
+				studentCount: secondStudents.length,
+			}),
+			attainments: buildAttainments(secondStudents, DEMO_CLO_CODES, 2),
+			clo_plo_mapping: [],
+			formula_version: "70_30_v1",
+			section_extraction: "missing_sheet",
+		},
+		secondSectionId,
+		facultyId,
+	);
+	const secondTargetDraft = await targetSettingMatrixService.init(
+		secondProgram.id,
+		latestTerm.id,
+		deanId,
+	);
+	const secondTargetRows = await prisma.ploTargetRow.findMany({
+		where: { targetSettingMatrixId: secondTargetDraft.draft.id },
+		orderBy: { sortOrder: "asc" },
+		select: { id: true },
+	});
+	for (const row of secondTargetRows) {
+		await prisma.ploTargetRow.update({
+			where: { id: row.id },
+			data: { y1TargetPct: 70, y2TargetPct: 70, y3TargetPct: 70, y4TargetPct: 70 },
+		});
+	}
+	await prisma.formSubmission.update({
+		where: { id: secondTargetDraft.draft.id },
+		data: { status: "approved" },
+	});
+
 	// --- Roll-up submissions (read routes re-derive their payloads) ----------
 	console.log("Creating roll-up submissions...");
 	for (const run of sectionRuns) {
@@ -656,6 +780,29 @@ async function main() {
 			},
 		});
 	}
+
+	// NOTE: approve the matrix and give every course/CLO a target, so the CQI
+	// report reads F04 targets instead of falling back to the 70% floor.
+	await prisma.courseCloTargetRow.createMany({
+		data: Object.values(DEMO_COURSE_BY_YEAR).flatMap((courseCode, courseIndex) =>
+			DEMO_CLO_CODES.map((cloCode, cloIndex) => ({
+				id: `${DEMO_PREFIX}course-target-${courseIndex}-${cloIndex}`,
+				targetSettingMatrixId: targetDraft.draft.id,
+				courseCode,
+				cloCode,
+				// NOTE: unique per matrix row; the report reads targets, not order.
+				sortOrder: courseIndex * DEMO_CLO_CODES.length + cloIndex,
+				y1TargetPct: 72 + (cloIndex % 3),
+				y2TargetPct: 74 + (cloIndex % 3),
+				y3TargetPct: 76 + (cloIndex % 3),
+				y4TargetPct: 78 + (cloIndex % 3),
+			})),
+		),
+	});
+	await prisma.formSubmission.update({
+		where: { id: targetDraft.draft.id },
+		data: { status: "approved" },
+	});
 
 	const budgetDraft = await assessmentBudgetService.init(
 		program.id,
@@ -926,10 +1073,14 @@ async function main() {
 	});
 
 	console.log("\nDemo seed finished.");
-	console.log(`  program: ${program.name} (${program.id})`);
+	console.log(`  programs: ${PROGRAM_CODE} + BSIS`);
+	console.log(`  second program: ${secondProgram.id}`);
 	console.log(`  terms: ${DEMO_TERMS.length}, sections: ${sectionRuns.length}`);
 	console.log(
 		`  students: ${DEMO_STUDENTS.length}, attainment rows: ${sectionRuns.length * 6 * DEMO_CLO_CODES.length}`,
+	);
+	console.log(
+		`  second program students: ${secondStudents.length}, CLOs: ${secondClos.length}`,
 	);
 	console.log(
 		`  gap rows: ${gapRows.length}, CQI entries: ${cqiEntries.length}, CTL rows: ${ctlRows.length}`,

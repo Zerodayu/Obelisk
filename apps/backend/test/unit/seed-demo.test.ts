@@ -11,14 +11,14 @@ import {
 } from "@prisma/seed-demo-fixtures";
 
 describe("seed-demo fixtures", () => {
-	it("builds six students per cohort with unique student numbers", () => {
-		expect(DEMO_STUDENTS).toHaveLength(24);
+	it("builds ten students per cohort with unique student numbers", () => {
+		expect(DEMO_STUDENTS).toHaveLength(40);
 		for (const yearLevel of [1, 2, 3, 4]) {
 			expect(
 				DEMO_STUDENTS.filter((student) => student.yearLevel === yearLevel),
-			).toHaveLength(6);
+			).toHaveLength(10);
 		}
-		expect(new Set(DEMO_STUDENTS.map((s) => s.studentNumber)).size).toBe(24);
+		expect(new Set(DEMO_STUDENTS.map((s) => s.studentNumber)).size).toBe(40);
 	});
 
 	it("emits attainment records that satisfy python's snapshot contract", () => {

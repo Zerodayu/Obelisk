@@ -16,6 +16,9 @@ const rawEnv = {
   FRONTEND_URL: process.env.FRONTEND_URL ?? runtimeEnv.FRONTEND_URL,
   PYTHON_SERVER_URL:
     process.env.PYTHON_SERVER_URL ?? runtimeEnv.PYTHON_SERVER_URL,
+  PYTHON_WEBAPP_SHARED_SECRET:
+    process.env.PYTHON_WEBAPP_SHARED_SECRET ??
+    runtimeEnv.PYTHON_WEBAPP_SHARED_SECRET,
   GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? runtimeEnv.GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET:
     process.env.GOOGLE_CLIENT_SECRET ?? runtimeEnv.GOOGLE_CLIENT_SECRET,
@@ -32,6 +35,8 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().min(1),
   FRONTEND_URL: z.string().min(1),
   PYTHON_SERVER_URL: z.string().min(1),
+  // NOTE: optional — python-server runs with caller auth disabled when unset
+  PYTHON_WEBAPP_SHARED_SECRET: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
   ORG_EMAIL_DOMAIN: z.string().min(1),

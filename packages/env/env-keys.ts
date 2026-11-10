@@ -13,6 +13,8 @@ export const SERVER_ENV_KEYS = [
   "BETTER_AUTH_URL",
   "FRONTEND_URL",
   "PYTHON_SERVER_URL",
+  // NOTE: optional caller secret for python-server /analytics/* routes
+  "PYTHON_WEBAPP_SHARED_SECRET",
   "GOOGLE_CLIENT_ID",
   "GOOGLE_CLIENT_SECRET",
   "ORG_EMAIL_DOMAIN",
@@ -22,7 +24,10 @@ export const SERVER_ENV_KEYS = [
 ] as const;
 
 /** Mirrors the `.optional()` entries in src/server.ts — may be absent from .env.prod. */
-export const OPTIONAL_SERVER_ENV_KEYS = ["REDIS_PASSWORD"] as const;
+export const OPTIONAL_SERVER_ENV_KEYS = [
+  "REDIS_PASSWORD",
+  "PYTHON_WEBAPP_SHARED_SECRET",
+] as const;
 
 export type ServerEnvKey = (typeof SERVER_ENV_KEYS)[number];
 
