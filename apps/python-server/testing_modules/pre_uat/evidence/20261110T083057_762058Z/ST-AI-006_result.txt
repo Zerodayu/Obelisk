@@ -1,0 +1,72 @@
+{
+  "test_id": "ST-AI-006",
+  "objective": "CQI recommendations remain advisory",
+  "scenario": "Mixed synthetic records, normal and malicious mocked advice; read-only Python recommendation function",
+  "expected": "Input header/records unchanged, no approval execution or persistence path; webapp approval and wording quality require external/human review",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-11-10T08:31:02.357081+00:00",
+  "environment": {
+    "python": "3.15.0",
+    "interpreter": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python",
+    "platform": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "cwd": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "86c28630b42fd68ea8c9179ef9f5ee194c7aeb21"
+  },
+  "script_function": "testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai006_advisory",
+  "command": "& '/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.031528,
+  "actual": [
+    {
+      "check": "normal",
+      "expected": "inputs unchanged; no execution fields",
+      "actual": {
+        "inputs_unchanged": true,
+        "returned_fields": [
+          "course_code",
+          "gaps",
+          "prompt_used",
+          "recommendation",
+          "status"
+        ],
+        "advisory_prompt_present": true
+      }
+    },
+    {
+      "check": "malicious provider advice",
+      "expected": "inputs unchanged; no execution fields",
+      "actual": {
+        "inputs_unchanged": true,
+        "returned_fields": [
+          "course_code",
+          "gaps",
+          "prompt_used",
+          "recommendation",
+          "status"
+        ],
+        "advisory_prompt_present": true
+      }
+    },
+    {
+      "check": "external scope",
+      "expected": "EXTERNAL / MANUAL REVIEW",
+      "actual": "Python does not execute advice. Returned malicious text is not filtered: human semantic review required; webapp approval/RBAC/lifecycle are EXTERNAL and unverified."
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261110T083057_762058Z/ST-AI-006_result.txt"
+}

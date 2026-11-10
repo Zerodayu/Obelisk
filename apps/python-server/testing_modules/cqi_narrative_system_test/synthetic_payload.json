@@ -1,0 +1,56 @@
+{
+  "program_term": {
+    "program_code": "BSCS",
+    "program_name": "Bachelor of Science in Computer Science",
+    "term_label": "AY 2025-2026, 2nd Semester",
+    "academic_year": "2025-2026"
+  },
+  "counts": {
+    "enrolled_count": 120,
+    "assessed_count": 115
+  },
+  "outcomes": [
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO1",
+      "target_pct": 75.0,
+      "direct_pct": 64.0,
+      "indirect_pct": 82.0,
+      "composite_pct": 69.4,
+      "is_complete": true,
+      "prior_cycle_composite_pct": 67.0,
+      "status": "NOT MET"
+    },
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO2",
+      "target_pct": 75.0,
+      "direct_pct": 78.5,
+      "indirect_pct": 85.0,
+      "composite_pct": 80.45,
+      "is_complete": true,
+      "prior_cycle_composite_pct": 78.0,
+      "status": "MET"
+    },
+    {
+      "outcome_type": "PLO",
+      "outcome_code": "PLO1",
+      "target_pct": 75.0,
+      "composite_pct": 74.93,
+      "is_complete": true,
+      "status": "NOT MET"
+    }
+  ],
+  "cqi_entries": [
+    {
+      "outcome_code": "CLO1",
+      "status": "NOT MET",
+      "loop_status": "OPEN_REASSESS",
+      "is_escalated": true,
+      "intervention": "Establish supplementary algorithm debugging clinics and revise laboratory rubrics.",
+      "named_owner": "Program Chair",
+      "kpi": "Achieve 75.0% cohort composite attainment in next cycle",
+      "root_cause_category": "3-Assessment Design"
+    }
+  ]
+}

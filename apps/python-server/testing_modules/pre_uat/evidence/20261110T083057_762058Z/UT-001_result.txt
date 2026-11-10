@@ -1,0 +1,56 @@
+{
+  "test_id": "UT-001",
+  "objective": "Parse valid Excel class record",
+  "scenario": "Synthetic 4 students x 3 CLOs and historical dynamic 3/7-CLO cases",
+  "expected": "Exact header, roster, CLO set, raw values and 12 independently checked outputs",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-11-10T08:30:58.542343+00:00",
+  "environment": {
+    "python": "3.15.0",
+    "interpreter": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python",
+    "platform": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "cwd": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "86c28630b42fd68ea8c9179ef9f5ee194c7aeb21"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut001_valid_workbook",
+  "command": "& '/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.111734,
+  "actual": [
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "testing_modules/old_test/test_etl_v2.py::TestETLV2Pipeline.test_dynamic_clo_count_discovery"
+    },
+    {
+      "check": "parsed workbook",
+      "expected": {
+        "students": 4,
+        "clos": 3,
+        "records": 12
+      },
+      "actual": {
+        "students": 4,
+        "clos": 3,
+        "records": 12,
+        "oracle_checked": 12
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261110T083057_762058Z/UT-001_result.txt"
+}

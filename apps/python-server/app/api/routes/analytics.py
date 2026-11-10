@@ -5,8 +5,13 @@ from app.analytics.institutional_summary import (
     generate_institutional_summary,
     compute_summary_only,
 )
+from app.analytics.cqi_narrative import generate_cqi_report_narrative
 from app.schemas.class_record import ClassRecordHeader, StudentCLOAttainment
 from app.schemas.institutional_summary import InstitutionalSummaryPayload
+from app.schemas.cqi_narrative import (
+    CQIReportNarrativePayload,
+    CQINarrativeResponse,
+)
 from app.core.logging import logger
 
 # The prefix is now defined in app/main.py where the router is included.
@@ -114,4 +119,39 @@ async def get_institutional_summary(payload: InstitutionalSummaryPayload):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An unexpected error occurred while generating the institutional summary: {e}",
+        )
+
+
+@router.post(
+    "/cqi-narrative",
+    response_model=CQINarrativeResponse,
+    summary="Generate Validated CQI Report Narrative",
+)
+async def get_cqi_narrative(payload: CQIReportNarrativePayload):
+    """
+    Accepts a consolidated, pre-computed CQI payload and generates a validated
+    conclusion and recommendations narrative using the LLM with strict grounding
+    to the supplied facts.
+    """
+    logger.info(
+        "api_get_cqi_narrative",
+        has_program_term=payload.program_term is not None,
+        has_counts=payload.counts is not None,
+        outcomes_count=len(payload.outcomes) if payload.outcomes else 0,
+        cqi_entries_count=len(payload.cqi_entries) if payload.cqi_entries else 0,
+    )
+    try:
+        response = await generate_cqi_report_narrative(payload)
+        return response
+    except NotImplementedError as e:
+        logger.error("cqi_narrative_not_implemented", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.error("cqi_narrative_unexpected_error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred while generating CQI narrative: {e}",
         )

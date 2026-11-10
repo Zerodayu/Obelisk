@@ -117,7 +117,7 @@ LOCAL_UMAMI_WEBSITE_ID=""                     # website key of the LOCAL umami i
 ### 5. Re-encrypt
 
 ```sh
-just env-encrypt    # re-encrypt all three env files; .env.keys stays gitignored
+just env-encrypt    # re-encrypt all three env files; ..env.keys stays gitignored
 ```
 
 ### 6. Apply the database schema

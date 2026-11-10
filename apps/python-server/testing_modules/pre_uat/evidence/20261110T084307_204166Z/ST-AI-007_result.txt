@@ -1,0 +1,77 @@
+{
+  "test_id": "ST-AI-007",
+  "objective": "Truly zero attainment gaps",
+  "scenario": "Synthetic 12 records with exactly 70% direct and indirect, plus standalone no-gap prompt",
+  "expected": "All 12 composite=70.00, met=True; gaps empty, prompt empty, no provider calls",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-11-10T08:43:12.376391+00:00",
+  "environment": {
+    "python": "3.15.0",
+    "interpreter": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python",
+    "platform": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "cwd": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "86c28630b42fd68ea8c9179ef9f5ee194c7aeb21"
+  },
+  "script_function": "testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai007_zero_gap",
+  "command": "& '/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.07012,
+  "actual": [
+    {
+      "check": "zero_gap",
+      "expected": {
+        "failed_records": 0
+      },
+      "actual": {
+        "failed_records": 0,
+        "composite_values": [
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0,
+          70.0
+        ],
+        "provider_calls": 0,
+        "result": {
+          "course_code": "SYN-101",
+          "status": "no_gaps_found",
+          "recommendation": null
+        }
+      }
+    },
+    {
+      "check": "independently established zero gaps",
+      "expected": {
+        "gaps": [],
+        "prompt": ""
+      },
+      "actual": {
+        "gaps": [],
+        "prompt": ""
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261110T084307_204166Z/ST-AI-007_result.txt"
+}

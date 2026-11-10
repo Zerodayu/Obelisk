@@ -28,6 +28,9 @@ class-record .xlsx ──POST /upload──> app (FastAPI :8000)
 consolidated JSON payload ──POST /analytics/summary|institutional-summary──>
       └─ institutional_summary.py (Formulas 2A/7A/7C, Rule 3, aggregators)
       └─ cqi_recommender.py (gap detection, prompt build, call_llm_api via google-genai multi-key pool)
+
+consolidated CQI report payload ──POST /analytics/cqi-narrative──>
+      └─ cqi_narrative.py (deterministic fact flattening, hard validator, LLM generation with 1 retry)
 ```
 
 - **Queue:** Redis stores pending IDs in a list and job objects in JSON string keys (`SET`), namespaced as `obelisk:<OBELISK_ENV>:job_queue` / `obelisk:<OBELISK_ENV>:job:*`. Pending state can outlive a Python process while Redis is retained. Redis restart durability depends on its deployment; `BRPOP` removes jobs before processing and there is no acknowledgement/requeue recovery for interrupted jobs.
@@ -42,7 +45,8 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 2. Upload path: `POST /upload` → save file → enqueue ETL job in Redis → `202 {job_id, status:"queued"}`; webapp polls `GET /jobs/{job_id}` until `completed`/`failed`.
    The browser polls Bun's `/ingest/upload/{jobId}/status`; Bun calls Python. Successful Python completion produces Bun `ready` with a review preview. Explicit `POST /ingest/upload/{jobId}/save` then persists computed results and returns Bun `completed`. Upload/history metadata can exist earlier; status polling does not persist attainment results.
 3. Analytics path: webapp assembles a consolidated `InstitutionalSummaryPayload` from stored results → `POST /analytics/summary` (pure rollups, no AI) or `POST /analytics/institutional-summary` (AI; **webapp must gate to VPAA**).
-4. This service returns JSON; the webapp owns application persistence. The upload workflow is **Upload → Python processing → Bun ready/preview → explicit Save → database persistence**. Python retains upload files and Redis job state for processing. See [INTEGRATION.md](INTEGRATION.md#webapp-preview-and-explicit-persistence).
+4. CQI Report Narrative path: webapp compiles consolidated, pre-computed program/term metadata, counts, outcome attainments, and CQI action entries → `POST /analytics/cqi-narrative`. Python flattens the payload into deterministic facts, applies a strict hard validator with 1 validation retry, and returns validated JSON with recommendations and hypotheses.
+5. This service returns JSON; the webapp owns application persistence. The upload workflow is **Upload → Python processing → Bun ready/preview → explicit Save → database persistence**. Python retains upload files and Redis job state for processing. See [INTEGRATION.md](INTEGRATION.md#webapp-preview-and-explicit-persistence).
 
 ## 3. API Endpoints (implemented)
 
@@ -54,6 +58,7 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
 | GET | `/analytics/jobs/{job_id}/recommendation` | Per-course AI CQI recommendation (needs completed job; 409 if job pending or failed) |
 | POST | `/analytics/summary` | Pure rollups by department/program/AVP group + worst-performing CLOs (safe for any role; no AI) |
 | POST | `/analytics/institutional-summary` | Summary + AI; webapp must authorize VPAA; optional caller-secret dependency |
+| POST | `/analytics/cqi-narrative` | Validated CQI report narrative from pre-computed facts (strictly no student names/IDs; 100% number grounding; up to 1 retry) |
 | GET | `/health/` | Hardcoded status response with TODO timestamp, not a dependency-readiness probe; `/health` redirects |
 | POST | `/etl/extract`·`/transform`·`/load`·`/pipeline` | Manual debug endpoints with placeholder sources (not used in production flow) |
 
@@ -64,6 +69,13 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
   - `StudentRawCloData` (`extracted.py`) — intermediate raw score data: student_id/name, clo_code, prelim_score/max, midterm_score/max, final_score/max, indirect_rating.
   - `StudentCLOAttainment` — per-CLO output: direct fraction, indirect/composite percentages, threshold/level from rounded composite, literal `formula_version="70_30_v1"`, completeness fields, category pcts (default `None`), and `excluded_reason` (always `None` for v2 ETL).
 - **`institutional_summary.py`** — `Period` (`semester|year|custom`), `CourseSubmission` (dept/program/avp_group/course/section + header + attainments + clo_plo_mapping), `InstitutionalSummaryPayload` (period + submissions, `extra="forbid"`).
+- **`cqi_narrative.py`** (all `extra="forbid"`):
+  - `ProgramTermMetadata` — program_code, program_name, term_label, academic_year.
+  - `EnrollmentAssessedCounts` — enrolled_count, assessed_count (integer counts).
+  - `OutcomeAttainment` — outcome_type (`CLO`|`PLO`), outcome_code, target_pct, direct_pct, indirect_pct, composite_pct, is_complete, prior_cycle_composite_pct, status, fact_id.
+  - `CQIEntry` — outcome_code, status, loop_status (`CLOSED`|`OPEN_REASSESS`|`OPEN_NOT_IMPLEMENTED`), is_escalated, intervention, named_owner, kpi, root_cause_category (one of 6 canonical categories), fact_id.
+  - `CQIReportNarrativePayload` — program_term, counts, outcomes, cqi_entries; rejects any payload containing student names or IDs (422).
+  - `CQINarrativeResponse` — status (`ok`|`error`|`narrative_unavailable`), summary, recommendations, possible_contributing_factors, pattern, data_limitations, missing_sections, facts_used, error, reason, prompt_used.
 
 ## 5. ETL pipeline (v2 AUN-OBE Template)
 
@@ -96,26 +108,40 @@ consolidated JSON payload ──POST /analytics/summary|institutional-summary─
   - Model source default is `gemini-3.5-flash-lite` in `Settings`; `OBELISK_LLM_MODEL` overrides it through root env/runtime values. Pre-set values win during dotenvx loading, so the effective runtime model may differ. `OBELISK_ENV_FILE` can override file selection. Settings are built at import, not automatically hot-reloaded.
   - Missing valid keys raise `NotImplementedError` (HTTP 501 at AI routes); course no-gap results bypass LLM calls. There is no automatic mock fallback.
   - Outer multiline JSON/plain fences are stripped without truncating embedded backticks; course JSON is validated and institutional nonempty prose remains accepted. See [INTEGRATION.md](INTEGRATION.md).
+- **`cqi_narrative.py`** — Core narrative engine for `POST /analytics/cqi-narrative`:
+  - Flattens the consolidated CQI payload into deterministic facts with stable IDs (`fact_meta_*`, `fact_count_*`, `fact_clo_*`, `fact_cqi_*`) or preserves webapp-supplied fact IDs.
+  - Explicitly converts missing/insufficient data into `"missing/insufficient"` facts, never zeroes.
+  - Escapes delimiter tags (`&lt;FACTS&gt;`) to prevent prompt breakout.
+  - Enforces a strict hard validator with 1 retry (up to two provider calls):
+    - Validates that 100% of statistic numbers and attainment targets trace back to supplied facts. Durations/ordinals ("within 4 weeks", "next term") are permitted.
+    - Validates that all cited fact IDs exist in the supplied facts list.
+    - Requires concrete interventions (blocks generic advice and grade alterations).
+    - Ensures responsible roles are strictly within `Faculty`, `Program Chair`, `Dean`, `VPAA`, `AQAU`.
+    - Detects and rejects personal names or honorific titles.
+    - Requires causes to be labelled hypotheses under `possible_contributing_factors` with one of the 6 canonical root cause categories.
+    - Prohibits contradicting webapp-computed attainment statuses.
+  - On final failure after retry, returns `"status": "narrative_unavailable"` with error reason and NO unvalidated text.
 
 Worst-performing CLO selection takes up to three `(group key, CLO)` entries across each aggregation level (department, program, AVP), not per individual group. Candidates sort by ascending mean attainment then descending `record_count`; the combined list is limited to five without cross-level deduplication. See [INTEGRATION.md](INTEGRATION.md#endpoint-2-institutional--program-level-analytics).
 
 ## 7. Ownership boundary (avoid overlap with the webapp)
 
-- **Owned here:** `.xlsx` parsing (AUN-OBE format); Formula 1A direct attainment and Formula 1B indirect attainment; 4-tier levels + completeness; Formulas 2A/7A/7C rollups; AI recommendation text via `google-genai` multi-key pool.
-- **Owned by webapp backend:** persistence (`CloAttainment`, `PloAttainment`, `ComputationRun`), auth/RBAC, curriculum mapping (`curriculum_map` / CLO-PLO correlation), approval workflow, form CRUD/lifecycle, audit trail, report export.
-- **Rule:** the webapp owns application persistence and user auth/RBAC; this service owns spreadsheet computation and optional caller-secret validation. Protected upload/jobs/analytics routes use `X-Webapp-Secret` when configured; health/manual ETL routes do not. The webapp does not duplicate attainment math.
+- **Owned here:** `.xlsx` parsing (AUN-OBE format); Formula 1A direct attainment and Formula 1B indirect attainment; 4-tier levels + completeness; Formulas 2A/7A/7C rollups; AI recommendation text and validated CQI narrative via `google-genai` multi-key pool.
+- **Owned by webapp backend:** persistence (`CloAttainment`, `PloAttainment`, `ComputationRun`, `CqiActionPlan`), auth/RBAC, curriculum mapping (`curriculum_map` / CLO-PLO correlation), approval workflow, form CRUD/lifecycle, audit trail, report export, final display number formatting, and pre-computing CQI loop statuses/targets.
+- **Rule:** the webapp owns application persistence and user auth/RBAC; this service owns spreadsheet computation, fact flattening, and strict narrative validation. Protected upload/jobs/analytics routes use `X-Webapp-Secret` when configured; health/manual ETL routes do not. The webapp does not duplicate attainment math, and Python does not recalculate display values.
 
 ## 8. Integration contract (with the Elysia webapp)
 
 The authoritative contract is `documentations/INTEGRATION.md`. Key points:
 
-- Elysia must run all auth/RBAC **before** calling any endpoint (esp. `POST /analytics/institutional-summary`).
+- Elysia must run all auth/RBAC **before** calling any endpoint (esp. `POST /analytics/institutional-summary` and `POST /analytics/cqi-narrative`).
 - `POST /upload` → poll `GET /jobs/{job_id}`; parse structured `error` object (`error_type`/`message`/`details`) for user-facing messages.
   Worker failures use that job envelope; HTTP `detail` can instead be a string, structured object or validation list. Job timestamps represent UTC but omit `Z`/offset. See [error boundaries](INTEGRATION.md#http-errors-versus-worker-errors).
 - Attainment results now include `indirect_clo_attainment_pct` (`0.0 - 100.0%`), and `excluded_reason` is always `null`.
 - `clo_plo_mapping` returned by `/jobs/{job_id}` is empty (`[]`); the webapp uses its own DB-backed `curriculum_map` to link CLOs to PLOs.
 - `POST /analytics/summary` is safe for any dashboard role; it never triggers AI.
-- AI endpoints (`/recommendation`, `/institutional-summary`) return `"status": "error"` and detailed `error` if the API key pool is exhausted.
+- `POST /analytics/cqi-narrative` generates grounded conclusion and recommendations narrative without student names/IDs; client timeouts should be set to 30–60s for 1-retry handling.
+- AI endpoints (`/recommendation`, `/institutional-summary`, `/cqi-narrative`) return `"status": "error"` and detailed `error` if the API key pool is exhausted.
 
 ## 9. Deployment
 
@@ -132,6 +158,7 @@ From `documentations/KNOWN_LIMITATIONS.md`:
 - Rule 1 may false-negative CLOs intentionally not assessed in all three periods.
 - Unused SQLAlchemy/Alembic scaffolding in `app/database` + `app/models` pending removal decision.
 - Worker processing has no configured timeout or completed-upload cleanup. The queue does not recover already-popped interrupted jobs.
+- CQI narrative generation enforces 100% number traceability to facts but relies on webapp hygiene for free-text personal name stripping. Academic quality evaluation remains a manual rubric.
 
 ## 11. Verification and historical evidence
 

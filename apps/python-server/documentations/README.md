@@ -7,6 +7,7 @@ Start here for current usage. Commands in the guides run from `apps/python-serve
 | Install and start the Python service | [Service README](../README.md) |
 | Run offline regression tests or understand Pre-UAT runners | [Testing guide](TESTING.md) |
 | Run or replay the 150-case AI accuracy evaluation | [AI accuracy guide](AI_ACCURACY_EVALUATION.md) |
+| Run or replay the CQI narrative grounding evaluation | [CQI grounding evaluation](../testing_modules/cqi_grounding_evaluation/README.md) |
 | Understand the implementation and service ownership | [System design](SYSTEM-DESIGN.md) |
 | Follow the request/processing flow step by step | [System process explained](SYSTEM_PROCESS_EXPLAINED.md) |
 | Integrate the webapp backend with Python | [HTTP integration contract](INTEGRATION.md) |

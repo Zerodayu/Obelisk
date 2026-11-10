@@ -1,0 +1,66 @@
+{
+  "test_id": "ST-AI-003",
+  "objective": "Ideal attainment dataset",
+  "scenario": "Independent synthetic fixture: direct=95%, rating=5/5",
+  "expected": "Composite=96.5%, no gaps and no LLM calls; no assumption about existing ideal workbook",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-11-10T08:31:02.261327+00:00",
+  "environment": {
+    "python": "3.15.0",
+    "interpreter": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python",
+    "platform": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "cwd": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "86c28630b42fd68ea8c9179ef9f5ee194c7aeb21"
+  },
+  "script_function": "testing_modules.ai_system_test.test_pre_uat_ai.AIPreUAT.test_st_ai003_ideal",
+  "command": "& '/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [],
+  "duration_seconds": 0.030758,
+  "actual": [
+    {
+      "check": "ideal",
+      "expected": {
+        "failed_records": 0
+      },
+      "actual": {
+        "failed_records": 0,
+        "composite_values": [
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5,
+          96.5
+        ],
+        "provider_calls": 0,
+        "result": {
+          "course_code": "SYN-101",
+          "status": "no_gaps_found",
+          "recommendation": null
+        }
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261110T083057_762058Z/ST-AI-003_result.txt"
+}

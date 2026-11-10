@@ -1,0 +1,112 @@
+{
+  "test_id": "UT-006",
+  "objective": "Exactly 70% attainment boundary",
+  "scenario": "69.99%, 70.00%, 70.01%, 69.996% rounded, custom course threshold 90%",
+  "expected": "70.00 is met and Proficient, below is Basic; fixed institutional threshold",
+  "status": "PASS",
+  "executed": true,
+  "timestamp": "2026-11-10T08:31:01.880998+00:00",
+  "environment": {
+    "python": "3.15.0",
+    "interpreter": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python",
+    "platform": "Linux-7.2.15-300.fc45.x86_64-x86_64-with-glibc2.44",
+    "cwd": "/home/hkfa/PycharmProjects/Obelisk/apps/python-server",
+    "phase": "2A",
+    "network": "denied",
+    "provider": "mocked offline-test-model",
+    "database": "not used",
+    "redis": "not used",
+    "workers": "not started",
+    "synthetic_data": true,
+    "packages": {
+      "openpyxl": "3.1.5",
+      "pydantic": "2.13.4",
+      "google-genai": "2.25.0"
+    },
+    "case_timeout_seconds": 30,
+    "git_head": "86c28630b42fd68ea8c9179ef9f5ee194c7aeb21"
+  },
+  "script_function": "testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold",
+  "command": "& '/home/hkfa/PycharmProjects/Obelisk/apps/python-server/.venv/bin/python' -B testing_modules/pre_uat/run_phase2a.py",
+  "failures": [],
+  "subchecks": [
+    {
+      "scenario": "test_ut006_threshold (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold) (direct_pct=69.99)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "test_ut006_threshold (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold) (direct_pct=70.0)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "test_ut006_threshold (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold) (direct_pct=70.01)",
+      "status": "PASS"
+    },
+    {
+      "scenario": "test_ut006_threshold (testing_modules.unit_test.test_pre_uat_unit.UnitPreUAT.test_ut006_threshold) (direct_pct=69.996)",
+      "status": "PASS"
+    }
+  ],
+  "duration_seconds": 0.024695,
+  "actual": [
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "testing_modules/old_test/test_composite_attainment.py::TestCompositeAttainmentPureMath.test_rounding_boundary"
+    },
+    {
+      "check": "historical assertion reuse",
+      "expected": "unchanged method passes",
+      "actual": "testing_modules/old_test/test_composite_attainment.py::TestCompositeAttainmentPureMath.test_clo_levels_classification"
+    },
+    {
+      "check": "threshold 69.99",
+      "expected": {
+        "composite": 69.99,
+        "met": false
+      },
+      "actual": {
+        "composite": 69.99,
+        "met": false,
+        "level": "Basic"
+      }
+    },
+    {
+      "check": "threshold 70.0",
+      "expected": {
+        "composite": 70.0,
+        "met": true
+      },
+      "actual": {
+        "composite": 70.0,
+        "met": true,
+        "level": "Proficient"
+      }
+    },
+    {
+      "check": "threshold 70.01",
+      "expected": {
+        "composite": 70.01,
+        "met": true
+      },
+      "actual": {
+        "composite": 70.01,
+        "met": true,
+        "level": "Proficient"
+      }
+    },
+    {
+      "check": "threshold 69.996",
+      "expected": {
+        "composite": 70.0,
+        "met": true
+      },
+      "actual": {
+        "composite": 70.0,
+        "met": true,
+        "level": "Proficient"
+      }
+    }
+  ],
+  "evidence_path": "testing_modules/pre_uat/evidence/20261110T083057_762058Z/UT-006_result.txt"
+}

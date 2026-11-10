@@ -50,3 +50,11 @@ This document lists known limitations, design trade-offs, and deferred implement
 
 10. **Cross-submission aggregation and institutional policy review**
     - Group rollups consolidate bare CLO codes across submissions and use the first eligible record's `rule1_met` for a group's CLO completeness flag. The retained PLO field name `plo_attainment_direct_only` can carry composite-based means. Whether those grouping/completeness semantics match intended institutional policy needs manual review; offline success does not certify it. `CourseSubmission`/`Period` also use default extra-field ignoring rather than the new-schema `extra="forbid"` convention. This audit changed neither implementation nor policy.
+
+11. **CQI Report Narrative Grounding and Privacy Boundaries**
+    - **Status**: Implemented (`POST /analytics/cqi-narrative`, strict hard validator, 1 validation retry)
+    - **Details**:
+        - The narrative generator relies strictly on facts flattened from the incoming webapp payload. Python performs zero re-computation or formatting of display values and does not decide outcome attainment or loop statuses.
+        - The request schema uses `extra="forbid"` and rejects student names or IDs. However, free-text fields (`intervention`, `named_owner`, `kpi`) cannot be automatically scanned for arbitrary personal identifying information; the webapp backend must ensure those strings are free of student names before transmission.
+        - Number validation allows standard durations and ordinals ("within 4 weeks", "next term"), but requires all statistics, percentages, and targets to strictly match supplied fact values. If the model introduces invented numbers, the validator rejects the output and triggers one retry. If the retry fails, the endpoint returns `status: "narrative_unavailable"` with no unvalidated text.
+        - Academic quality and pedagogical suitability of recommendations remain subject to manual faculty and committee review; automated evaluation verifies structural adherence, citation integrity, and factual number traceability only.
