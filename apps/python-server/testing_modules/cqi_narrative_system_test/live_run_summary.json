@@ -1,0 +1,192 @@
+{
+  "total_calls_made": 8,
+  "max_calls_authorized": 12,
+  "results": [
+    {
+      "name": "Baseline (Standard CQI)",
+      "input_file": "synthetic_payload.json",
+      "output_file": "live_baseline_output.json",
+      "status": "ok",
+      "calls_used": 2,
+      "attempts_used": 2,
+      "attempt_1_reason": "Schema validation error: 3 validation errors for CQINarrativeOutput\nrecommendations.0.proposed_additions\n  Input should be a valid string [type=string_type, input_value=['Establish supplementary...i_CLO1_1_intervention.'], input_type=list]\nrecommendations.1.proposed_additions\n  Input should be a valid string [type=string_type, input_value=['Review curriculum mappi...dentify learning gaps.'], input_type=list]\nrecommendations.1.timeline\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]",
+      "final_reason": null,
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "euvyaoKlCc3Z9tMPtf7qiQQ",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 778,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 3889,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 3889
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 4667,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:01:42.011425+00:00"
+    },
+    {
+      "name": "All Outcomes MET",
+      "input_file": "payload_all_met.json",
+      "output_file": "live_output_all_met.json",
+      "status": "ok",
+      "calls_used": 1,
+      "attempts_used": 1,
+      "attempt_1_reason": null,
+      "final_reason": null,
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "huvyar60H93XrfcPsa3i-As",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 314,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 2686,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 2686
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3000,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:01:47.450444+00:00"
+    },
+    {
+      "name": "Missing Data & Completeness",
+      "input_file": "payload_missing_data.json",
+      "output_file": "live_output_missing_data.json",
+      "status": "narrative_unavailable",
+      "calls_used": 2,
+      "attempts_used": 2,
+      "attempt_1_reason": "Schema validation error: 1 validation error for CQINarrativeOutput\nrecommendations.0.timeline\n  Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]",
+      "final_reason": "Contributing factor #1 root_cause_category 'Process' is invalid. Must be one of ('1-Curriculum Design', '2-Instruction & Pedagogy', '3-Assessment Design', '4-Student Factors', '5-Resources & Tools', '6-Industry & Field Alignment').",
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "kevyaoGNKNDqrfcPsIDuuAc",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 562,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 1786,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 1786
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 2348,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:01:55.635247+00:00"
+    },
+    {
+      "name": "Two NOT MET Outcomes",
+      "input_file": "payload_two_not_met.json",
+      "output_file": "live_output_two_not_met.json",
+      "status": "ok",
+      "calls_used": 1,
+      "attempts_used": 1,
+      "attempt_1_reason": null,
+      "final_reason": null,
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "lOvyas_wEcL81e8PjI2lGQ",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 883,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 3404,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 3404
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 4287,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:01:59.227933+00:00"
+    },
+    {
+      "name": "Escalated Entry",
+      "input_file": "payload_escalated_entry.json",
+      "output_file": "live_output_escalated_entry.json",
+      "status": "ok",
+      "calls_used": 1,
+      "attempts_used": 1,
+      "attempt_1_reason": null,
+      "final_reason": null,
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "l-vyavO-NfC30-kPnpGqwQU",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 528,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 2497,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 2497
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3025,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:02:01.954203+00:00"
+    },
+    {
+      "name": "Prompt Injection Test",
+      "input_file": "payload_prompt_injection.json",
+      "output_file": "live_output_prompt_injection.json",
+      "status": "ok",
+      "calls_used": 1,
+      "attempts_used": 1,
+      "attempt_1_reason": null,
+      "final_reason": null,
+      "model_version": "gemini-3.5-flash-lite",
+      "response_id": "muvyavuEIcDe1e8P38eW2Qs",
+      "usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 489,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 2340,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 2340
+          }
+        ],
+        "thoughts_token_count": null,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 2829,
+        "traffic_type": null
+      },
+      "timestamp_utc": "2026-11-10T10:02:04.387241+00:00"
+    }
+  ]
+}

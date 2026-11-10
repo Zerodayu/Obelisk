@@ -320,6 +320,18 @@ If all configured API keys fail or exceed quota:
 
 Synchronous AI narrative generator for outcomes-based Continuous Quality Improvement (CQI) reports.
 
+> [!WARNING]
+> **CRITICAL UNITS WARNING: PERCENTAGES VS. 0–1 RATIOS**
+> This endpoint (`POST /analytics/cqi-narrative`) expects all attainment numbers (`target_pct`, `direct_pct`, `indirect_pct`, `composite_pct`, `prior_cycle_composite_pct`) as **percentages** (e.g., `64.0` for 64.0%, `75.0` for 75.0%).
+> The Endpoint 1 (`/upload`, `/jobs/{job_id}`) field `direct_clo_attainment_pct` is internally computed as a **0–1 ratio** (e.g. `0.64`) and **MUST be multiplied by 100 before transmitting** to this endpoint.
+> **All numbers transmitted to this endpoint must be sent exactly as displayed in the final institutional report.** Python never recalculates, reformats, rounds, or scales numbers.
+
+> [!NOTE]
+> **NOT PROVIDED BY THIS ENDPOINT (Webapp Responsibilities):**
+> - **Identified Strengths**: Not computed or returned by this endpoint. The webapp calculates attainment strengths directly from database records.
+> - **Next-Cycle Priorities List**: Not returned as a separate section. Python outputs advisory `recommendations` and `possible_contributing_factors` hypotheses; the webapp aggregates and prioritizes them in the final report layout.
+> - **Statistical Computations, Charts, Visualizations, or PDF Generation**: Not computed here. The webapp computes all metrics, renders visual charts, and compiles the final export.
+
 - **Route**: `POST /analytics/cqi-narrative`
 - **Authentication**: `X-Webapp-Secret` header (matching `OBELISK_WEBAPP_SHARED_SECRET` if configured). Python checks NO user roles; the webapp backend MUST authenticate and authorize the user (e.g., Program Chair, Dean, VPAA, or CQI committee member) before calling this endpoint.
 - **Pure-Compute Pass-Through Principle**:
@@ -362,10 +374,82 @@ Every section is optional. Missing sections become explicit `"missing/insufficie
 | `cqi_entries[].loop_status` | string (optional) | N/A | Loop status: `"CLOSED"`, `"OPEN_REASSESS"`, or `"OPEN_NOT_IMPLEMENTED"`. |
 | `cqi_entries[].is_escalated` | boolean (optional) | N/A | Escalation flag for higher administrative review. |
 | `cqi_entries[].intervention` | string (optional) | N/A | Planned intervention (must omit personal names). |
-| `cqi_entries[].named_owner` | string (optional) | N/A | Role or title responsible for action (must omit personal names). |
+| `cqi_entries[].named_owner` | string (optional) | N/A | Action owner ROLE (e.g., `"Faculty"`, `"Program Chair"`, `"Dean"`). MUST omit personal names. |
+| `cqi_entries[].owner` | string (optional) | N/A | Alias for named_owner ROLE (e.g., `"Faculty"`, `"Program Chair"`). MUST omit personal names. |
+| `cqi_entries[].timeline` | string (optional) | N/A | Webapp-supplied action timeframe (e.g., `"Within 4 weeks"`). |
+| `cqi_entries[].deadline` | string (optional) | N/A | Webapp-supplied target term/deadline (e.g., `"SY 2026-2027, 1st Sem"`). |
 | `cqi_entries[].kpi` | string (optional) | N/A | Key performance indicator or closing target. |
 | `cqi_entries[].root_cause_category` | string (optional) | N/A | One of the 6 canonical categories. |
 | `cqi_entries[].fact_id` | string (optional) | N/A | Optional webapp-supplied fact identifier. |
+
+#### Action Owner Role Handling & Personal Name Sanitization
+The `owner` and `named_owner` fields accept **organizational roles only** (e.g., `"Faculty"`, `"Program Chair"`, `"Dean"`, `"VPAA"`, `"AQAU"`). Do NOT send personal names of faculty or students.
+- **If a person's name appears as a JSON key** (e.g. `student_name`, `studentId`, `faculty_name`): The request is immediately rejected with **HTTP 422 Unprocessable Entity** (`extra="forbid"`).
+- **If a person's name or honorific appears in free-text fields or owner** (e.g., `"Dr. Smith"`, `"John Doe"`): The hard validator detects personal name patterns and **rejects the narrative with `status: "narrative_unavailable"`**, preventing personal names from ever appearing in the output narrative.
+
+### Complete Request JSON Example
+The following payload from `testing_modules/cqi_narrative_system_test/synthetic_payload.json` illustrates a complete, validated request structure:
+
+```json
+{
+  "program_term": {
+    "program_code": "BSCS",
+    "program_name": "Bachelor of Science in Computer Science",
+    "term_label": "AY 2025-2026, 2nd Semester",
+    "academic_year": "2025-2026"
+  },
+  "counts": {
+    "enrolled_count": 120,
+    "assessed_count": 115
+  },
+  "outcomes": [
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO1",
+      "target_pct": 75.0,
+      "direct_pct": 64.0,
+      "indirect_pct": 82.0,
+      "composite_pct": 69.4,
+      "is_complete": true,
+      "prior_cycle_composite_pct": 67.0,
+      "status": "NOT MET"
+    },
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO2",
+      "target_pct": 75.0,
+      "direct_pct": 78.5,
+      "indirect_pct": 85.0,
+      "composite_pct": 80.45,
+      "is_complete": true,
+      "prior_cycle_composite_pct": 78.0,
+      "status": "MET"
+    },
+    {
+      "outcome_type": "PLO",
+      "outcome_code": "PLO1",
+      "target_pct": 75.0,
+      "composite_pct": 74.93,
+      "is_complete": true,
+      "status": "NOT MET"
+    }
+  ],
+  "cqi_entries": [
+    {
+      "outcome_code": "CLO1",
+      "status": "NOT MET",
+      "loop_status": "OPEN_REASSESS",
+      "is_escalated": true,
+      "intervention": "Establish supplementary algorithm debugging clinics and revise laboratory rubrics.",
+      "named_owner": "Program Chair",
+      "timeline": "Within 4 weeks",
+      "deadline": "SY 2026-2027, 1st Sem",
+      "kpi": "Achieve 75.0% cohort composite attainment in next cycle",
+      "root_cause_category": "3-Assessment Design"
+    }
+  ]
+}
+```
 
 ### Canonical Root-Cause Categories (Must Match Backend Exactly)
 
@@ -386,23 +470,26 @@ The 6 categories defined locally in `app/analytics/cqi_constants.py` replicate `
 | `recommendations` | List[Recommendation] | Structured recommendations with mandatory fact citations. |
 | `recommendations[].problem` | string | The identified issue or area for continuous improvement. |
 | `recommendations[].evidence_fact_ids` | List[string] | Cites one or more fact_ids that appear in `facts_used`. |
-| `recommendations[].intervention` | string | Concrete, actionable intervention (never generic, never grade alterations). |
-| `recommendations[].responsible_role` | string | One of: `"Faculty"`, `"Program Chair"`, `"Dean"`, `"VPAA"`, `"AQAU"`. |
-| `recommendations[].timeline` | string | Action timeframe, e.g., `"Within 4 weeks"`, `"Next term"`. |
+| `recommendations[].existing_intervention_assessment` | string or null | Assessment of whether webapp-supplied intervention is sufficient, citing evidence_fact_ids (or "None supplied"). |
+| `recommendations[].proposed_additions` | string | **Primary action field to render in webapp UI.** Concrete, actionable additions or modifications proposed by AI. |
+| `recommendations[].intervention` | string (optional) | Retained for backwards compatibility only (mirrors `proposed_additions`). |
+| `recommendations[].responsible_role` | string | Role enum: `"Faculty"`, `"Program Chair"`, `"Dean"`, `"VPAA"`, or `"AQAU"`. |
+| `recommendations[].timeline` | string or null | Webapp-supplied timeline (e.g., `"Within 4 weeks"`), or `"To be set by Program Chair"`, or `null` if no timeline fact was supplied. |
 | `recommendations[].success_indicator`| string | Observable benchmark of resolution. |
-| `recommendations[].target` | string, number, or null | Target metric matching a supplied fact number or null. |
+| `recommendations[].target` | float or null | Target metric matching a supplied fact number as numeric float (e.g. `75.0` or `null`, never string with `%`). Webapp renders `%` for display. |
 | `recommendations[].verification_method` | string | Method to evaluate effectiveness. |
 | `possible_contributing_factors` | List[Factor] | Possible causes labelled as hypotheses with root cause categories. |
 | `possible_contributing_factors[].hypothesis` | string | Cause framed as a hypothesis (never stated as established). |
-| `possible_contributing_factors[].root_cause_category` | string | Canonical root cause category. |
+| `possible_contributing_factors[].root_cause_category` | string | Canonical root cause category enum. |
 | `possible_contributing_factors[].evidence_fact_ids` | List[string] | Cites one or more supplied fact_ids. |
 | `pattern` | Object or null | Cross-outcome, cross-section, or direct-vs-indirect pattern with `description` and `evidence_fact_ids`. |
 | `data_limitations` | List[string] | Limitations noted when facts indicate missing or insufficient data. |
 | `missing_sections` | List[string] | List of top-level payload sections omitted in request. |
-| `facts_used` | List[FactItem] | Flattened facts with deterministic IDs provided to the LLM. |
+| `facts_used` | List[FactItem] | Flattened, immutable facts list provided to the LLM. **Recommended: Webapp may store for data auditability.** |
+| `provenance` | Object (optional) | Execution provenance metadata (`requested_model`, `returned_model_version`, `response_id`, `usage_metadata`, `timestamp_utc`, `attempts_used`, `execution_mode`). **Recommended: Webapp SHOULD store in database alongside the CQI report record for accreditation and auditing.** |
+| `prompt_used` | string or null | The exact prompt sent to the LLM (including facts list and rules). **Recommended: Store for debugging/audit logs if desired; do NOT display to users in the webapp UI.** |
 | `error` | string or null | Error details if provider keys failed (`status: "error"`). |
 | `reason` | string or null | Rejection reason when validation failed after retry (`status: "narrative_unavailable"`). |
-| `prompt_used` | string or null | The full prompt sent to the LLM. |
 
 ### Status Responses and Examples
 
@@ -411,11 +498,13 @@ The 6 categories defined locally in `app/analytics/cqi_constants.py` replicate `
 ```json
 {
   "status": "ok",
-  "summary": "Attainment in CLO1 fell below the 75.0% target for the term, while CLO2 achieved 82.9%.",
+  "summary": "Attainment in CLO1 fell below the 75.0% target for the term, while CLO2 achieved 80.45%.",
   "recommendations": [
     {
       "problem": "Performance in CLO1 is below the expected institutional benchmark.",
       "evidence_fact_ids": ["fact_clo_CLO1_target", "fact_clo_CLO1_composite", "fact_clo_CLO1_status"],
+      "existing_intervention_assessment": "Partly sufficient because the planned intervention in fact_cqi_CLO1_1_intervention introduces supplementary workshops but lacks structured attendance tracking.",
+      "proposed_additions": "Implement supplemental laboratory coding workshops and align practical rubric assessments.",
       "intervention": "Implement supplemental laboratory coding workshops and align practical rubric assessments.",
       "responsible_role": "Faculty",
       "timeline": "Within 4 weeks",
@@ -496,13 +585,34 @@ When the model produces text that violates the hard validator (e.g. invented num
 When calling `POST /analytics/cqi-narrative` from Bun / Elysia / Nest / Express:
 
 1. **What to send**: Send consolidated, pre-computed program/term metadata, enrolled/assessed counts, outcomes (CLO/PLO), and CQI action plan items.
-2. **NO names or IDs**: Strip ALL student identifiers (`student_name`, `student_id`, `studentId`, `studentName`, `students`). The endpoint enforces `extra="forbid"` and will reject the payload with HTTP 422 if any student identifier or unrecognized key is present.
-3. **Free-text hygiene**: Ensure free-text fields (`intervention`, `named_owner`, `kpi`) contain NO personal student names.
-4. **Latest-run-scoped data**: Scope all aggregated attainment data to the latest ETL computation run for each course section. Re-uploads create duplicate runs in the database, and the raw gap loader does not automatically filter runs.
-5. **Webapp-computed statuses & F04 targets**: Compute and include all attainment statuses (`MET` or `NOT MET`), loop statuses (`CLOSED`, `OPEN_REASSESS`, `OPEN_NOT_IMPLEMENTED`), escalation flags, and official F04 targets. Python does not compute or decide them.
-6. **Authorization gating**: Only authorized roles (e.g. Program Chair, Dean, VPAA, AQAU) should be permitted to trigger narrative generation in the webapp UI. Python checks only the `X-Webapp-Secret` header, not user session roles.
-7. **Timeout configuration**: Set webapp HTTP client timeout to at least 30–60 seconds, because the endpoint performs up to two sequential LLM calls when validation retries occur.
-8. **Persistence**: Store the returned JSON narrative in the webapp database with status `pending_review` (or equivalent) for faculty and committee review before report printing or export.
+2. **Units must be percentages**: Send `direct_pct`, `indirect_pct`, `composite_pct`, `target_pct` as percentages (e.g. `64.0`). If using Endpoint 1's `direct_clo_attainment_pct` (which is a 0–1 ratio), multiply by 100 before sending.
+3. **NO student names or IDs**: Strip ALL student identifiers (`student_name`, `student_id`, `studentId`, `studentName`, `students`). The endpoint enforces `extra="forbid"` and will reject the payload with HTTP 422 if any student identifier or unrecognized key is present.
+4. **Role only for owner fields**: In `owner` or `named_owner`, send only organizational roles (`"Faculty"`, `"Program Chair"`, `"Dean"`, `"VPAA"`, `"AQAU"`), never personal names. Free-text fields must remain completely free of personal student or faculty names.
+5. **Always check `status` in HTTP 200 response**: Only `"status": "ok"` contains a validated narrative. Both `"status": "error"` (key pool exhaustion) and `"status": "narrative_unavailable"` (validation rejection) return **HTTP 200**. The webapp backend MUST inspect `status` before saving.
+6. **Label recommendations 'Proposed, pending faculty review'**: AI recommendations are strictly advisory end-of-cycle proposals. In the webapp database, save recommendations with status `pending_review`; never auto-approve them without faculty or committee review.
+7. **Render fields separately**: In the user interface, render `existing_intervention_assessment` (evaluation of existing action) and `proposed_additions` (AI proposed actions) in separate sections or columns. Do not use legacy `intervention` for display.
+8. **Store provenance, do NOT display prompt_used**: Store `provenance` in the database for accreditation and audit trails. Do NOT display `prompt_used` in the user-facing webapp UI.
+9. **Timelines and deadlines must be supplied by the webapp**: If an outcome or CQI entry requires a timeline (e.g., `"Within 4 weeks"`) or deadline (e.g., `"SY 2026-2027, 1st Sem"`), supply it explicitly in `timeline` or `deadline` under `cqi_entries`. If omitted, the model will output `"To be set by Program Chair"` or `null`. Python strictly rejects any duration or date numbers in recommendations that were not supplied in the facts.
+10. **Target JSON type is always a numeric float**: `target` and `target_pct` fields are strictly JSON numbers (`float` or `null`, e.g. `75.0`). Never send strings with `%` symbols; the webapp front-end is responsible for appending the `%` symbol in the user interface.
+11. **Enable `OBELISK_WEBAPP_SHARED_SECRET` in production**: Ensure the backend sets the `X-Webapp-Secret` header on every request matching the server configuration.
+12. **Latest-run-scoped data**: Scope all aggregated attainment data to the latest ETL computation run for each course section. Re-uploads create duplicate runs in the database, and the raw gap loader does not automatically filter runs.
+13. **Timeout configuration**: Set webapp HTTP client timeout to at least 30–60 seconds, because the endpoint performs up to two sequential LLM calls when validation retries occur.
+
+---
+
+## Payload Sizing & Performance Benchmark
+
+We evaluated the offline performance and prompt token sizing of Endpoint 3 using a large stress payload:
+
+| Metric | Measured Value | Notes |
+|---|---|---|
+| **Outcomes Count** | 30 outcomes (25 CLOs, 5 PLOs) | Realistic full department curriculum scope |
+| **CQI Action Items** | 10 CQI entries | Multiple root causes and loop statuses |
+| **Flattened Facts Count** | 266 facts | Complete fact extraction across scopes |
+| **Prompt Size** | 57,804 characters (~14,451 tokens) | Fully serialized without truncation |
+| **Truncation Detected** | **False (0 truncation)** | Entire facts list ingested cleanly |
+| **Offline Response Time** | **11.58 ms** | Python pure-compute pipeline execution |
+| **Recommended Maximum** | **Up to 50 outcomes & 25 CQI entries** | ~450 facts, ~25,000 tokens (well within provider limits & standard 30–60s HTTP client timeouts) |
 
 ---
 

@@ -2,15 +2,17 @@
 Core CQI report narrative logic:
 - Deterministic facts flattening
 - Safe facts delimiter serialization
-- Strict hard validator with number traceability
-- LLM generation with multi-key failover and 1 validation retry
+- Strict hard validator with number traceability and deterministic coverage check
+- LLM generation with multi-key failover, full provenance capture, and 1 validation retry
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import json
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
+import uuid
 
 from google import genai
 from google.genai import types
@@ -30,6 +32,7 @@ from app.schemas.cqi_narrative import (
     FactItem,
     OutcomeAttainment,
     PatternItem,
+    ProvenanceMetadata,
     RecommendationItem,
 )
 
@@ -45,22 +48,37 @@ Rules:
   cite one or more fact_ids, and only ids that appear in <FACTS>.
 - Do not calculate, estimate, round, convert, or compare numbers yourself. Write a number only if
   it appears in a supplied fact, exactly as supplied.
+- Durations and dates in recommendations must equal a supplied timeline or deadline fact, or be omitted.
 - Do not decide or restate MET / NOT MET, loop status, at-risk status, or escalation unless a
   supplied fact states it. Repeat statuses exactly as supplied.
 - Targets and thresholds come from the facts. Do not assume one.
 - Never state a cause as established. Put possible causes only in possible_contributing_factors,
   each labelled a hypothesis, with one root_cause_category from the allowed list.
 - Never name a person. responsible_role must be one of: Faculty, Program Chair, Dean, VPAA, AQAU.
-- Interventions must be specific actions, not generic statements. Never recommend changing,
-  adjusting, or re-scoring grades.
+- Interventions and proposed additions must be specific actions, not generic statements. Never recommend
+  changing, adjusting, or re-scoring grades.
+- In each recommendation:
+  - existing_intervention_assessment: must evaluate whether the webapp-supplied action appears sufficient,
+    partly sufficient, or insufficient given the cited facts, and explain why. If none was supplied in <FACTS>,
+    state 'None supplied'. Never use generic filler like 'provides a baseline'. Never quote or echo
+    webapp free-text verbatim (>8 consecutive words); cite its fact_id instead.
+  - proposed_additions: concrete, actionable additions or modifications proposed by AI, labelled as proposed additions.
+  - target: numeric target percentage (e.g. 75.0) matching a supplied fact number, or null.
+- Use supplied timeline, deadline, and owner facts when available so timelines and roles are not guessed.
+- If no timeline fact exists for an outcome/entry, timeline must be null or "To be set by Program Chair"; never invent a duration or date.
+- Every supplied outcome with NOT MET status must be addressed in recommendations or possible contributing factors
+  (citing its fact_ids). Mentioning a NOT MET outcome under data_limitations counts only if that outcome's own
+  value facts are missing.
+- Every CQI entry that is escalated or has an OPEN loop status (OPEN_REASSESS or OPEN_NOT_IMPLEMENTED) must be
+  addressed with citations to its fact_ids.
 - If a fact says data is missing, insufficient, or not comparable, say so under data_limitations.
   Do not fill the gap.
 - Your output is advisory and will be reviewed by faculty and administrators.
 
 Return ONLY JSON matching the provided schema:
 - summary: 1-2 plain-language sentences.
-- recommendations: [{problem, evidence_fact_ids, intervention, responsible_role, timeline,
-  success_indicator, target, verification_method}]
+- recommendations: [{problem, evidence_fact_ids, existing_intervention_assessment, proposed_additions,
+  responsible_role, timeline, success_indicator, target, verification_method}]
 - possible_contributing_factors: [{hypothesis, root_cause_category, evidence_fact_ids}]
 - pattern: {description, evidence_fact_ids} or null
 - data_limitations: [string]
@@ -354,15 +372,40 @@ def flatten_payload_to_facts(
                     )
                 )
 
-            if entry.named_owner:
+            owner_role = entry.owner or entry.named_owner
+            if owner_role:
                 facts.append(
                     FactItem(
-                        fact_id=f"{base_id}_named_owner",
+                        fact_id=f"{base_id}_owner",
                         label=f"CQI {entry.outcome_code} Action Owner Role",
-                        value=entry.named_owner,
+                        value=owner_role,
                         unit=None,
                         scope=entry.outcome_code,
-                        source_field=f"cqi_entries[{idx-1}].named_owner",
+                        source_field=f"cqi_entries[{idx-1}].owner",
+                    )
+                )
+
+            if entry.timeline:
+                facts.append(
+                    FactItem(
+                        fact_id=f"{base_id}_timeline",
+                        label=f"CQI {entry.outcome_code} Planned Timeline",
+                        value=entry.timeline,
+                        unit=None,
+                        scope=entry.outcome_code,
+                        source_field=f"cqi_entries[{idx-1}].timeline",
+                    )
+                )
+
+            if entry.deadline:
+                facts.append(
+                    FactItem(
+                        fact_id=f"{base_id}_deadline",
+                        label=f"CQI {entry.outcome_code} Implementation Deadline",
+                        value=entry.deadline,
+                        unit=None,
+                        scope=entry.outcome_code,
+                        source_field=f"cqi_entries[{idx-1}].deadline",
                     )
                 )
 
@@ -404,7 +447,6 @@ def serialize_facts_safe(facts: List[FactItem]) -> str:
     """
     raw_list = [f.model_dump() for f in facts]
     serialized = json.dumps(raw_list, indent=2)
-    # Neutralize any attempts to escape <FACTS> delimiters
     safe_text = (
         serialized.replace("<FACTS>", "&lt;FACTS&gt;")
         .replace("</FACTS>", "&lt;/FACTS&gt;")
@@ -468,47 +510,107 @@ PERSONAL_TITLE_PATTERNS = (
     r"\bProfessor\s+[A-Z][a-z]+",
 )
 
-# Durations and ordinals permitted by the number rule
-DURATION_ORDINALS_PATTERN = re.compile(
-    r"\b(?:\d+(?:st|nd|rd|th)|within\s+\d+\s*(?:days?|weeks?|months?|terms?|semesters?|years?)|"
-    r"\d+\s*(?:days?|weeks?|months?|terms?|semesters?|years?))\b",
-    re.IGNORECASE,
+
+ALLOWED_STRING_FACT_FIELDS = (
+    "program_term.term_label",
+    "program_term.academic_year",
+    "timeline",
+    "deadline",
+)
+
+GENERIC_ASSESSMENT_TERMS = (
+    "provides a baseline",
+    "provides baseline",
+    "serves as a baseline",
+    "is a baseline",
+    "acts as a baseline",
+)
+
+REQUIRED_ASSESSMENT_RATINGS = (
+    "sufficient",
+    "partly sufficient",
+    "partially sufficient",
+    "insufficient",
 )
 
 
 def _collect_canonical_fact_numbers(facts: List[FactItem]) -> Set[float]:
-    """Collects all numeric values present in supplied facts."""
+    """
+    Collects all numeric values present in supplied facts.
+    Only numeric-typed facts, plus an explicit allowlist of timeline/deadline/term-label facts,
+    may supply allowed numbers. Free-text facts (intervention, rationale, any user-written text)
+    must NOT supply allowed numbers.
+    """
     numbers: Set[float] = set()
     for f in facts:
         if isinstance(f.value, (int, float)):
             val = float(f.value)
             numbers.add(val)
-            # Add integer-equivalent if exact integer
             if val.is_integer():
                 numbers.add(float(int(val)))
         elif isinstance(f.value, str):
-            # Extract any numbers embedded in string facts (e.g. "Target 75% cohort attainment")
-            found = re.findall(r"\b\d+(?:\.\d+)?\b", f.value)
-            for num_str in found:
-                try:
-                    val = float(num_str)
-                    numbers.add(val)
-                    if val.is_integer():
-                        numbers.add(float(int(val)))
-                except ValueError:
-                    pass
+            sf = f.source_field.lower()
+            fid = f.fact_id.lower()
+            is_allowed = any(sf.endswith(field) for field in ALLOWED_STRING_FACT_FIELDS) or fid.endswith(
+                ("_timeline", "_deadline", "_term_label", "_academic_year")
+            )
+            if is_allowed:
+                found = re.findall(r"\b\d+(?:\.\d+)?\b", f.value)
+                for num_str in found:
+                    try:
+                        val = float(num_str)
+                        numbers.add(val)
+                        if val.is_integer():
+                            numbers.add(float(int(val)))
+                    except ValueError:
+                        pass
     return numbers
+
+
+def _check_no_verbatim_free_text_echo(
+    all_narrative_text: List[str],
+    facts: List[FactItem],
+    max_consecutive_words: int = 8,
+) -> Tuple[bool, Optional[str]]:
+    """
+    Ensures narrative fields do not quote or echo webapp free-text longer than 8 consecutive words.
+    Cites fact_id instead.
+    """
+    free_text_facts = [
+        f
+        for f in facts
+        if isinstance(f.value, str)
+        and f.source_field.endswith((".intervention", ".kpi"))
+        and len(f.value.split()) > max_consecutive_words
+    ]
+    if not free_text_facts:
+        return True, None
+
+    combined_narrative = " ".join(all_narrative_text).lower()
+    narrative_tokens = re.findall(r"\b\w+\b", combined_narrative)
+    narrative_words = " ".join(narrative_tokens)
+
+    for f in free_text_facts:
+        fact_tokens = re.findall(r"\b\w+\b", f.value.lower())
+        if len(fact_tokens) > max_consecutive_words:
+            window_size = max_consecutive_words + 1
+            for i in range(len(fact_tokens) - window_size + 1):
+                phrase = " ".join(fact_tokens[i : i + window_size])
+                if phrase in narrative_words:
+                    return (
+                        False,
+                        f"Verbatim echo of webapp free-text detected (>8 consecutive words from '{f.fact_id}'). Narrative must cite the fact_id instead of echoing free-text.",
+                    )
+    return True, None
 
 
 def _extract_text_numbers(text: str) -> List[Tuple[float, str]]:
     """
-    Extracts numbers that represent statistics, counts, or attainment values from narrative text.
-    Ignores permitted durations/ordinals, CLO/PLO identifiers, and root cause prefixes.
+    Extracts numbers that represent statistics, counts, attainment, durations or dates from narrative text.
+    Only outcome identifiers (CLO1), fact IDs, and root cause prefixes are stripped.
+    General duration and ordinal allowances are removed per strict number rule.
     """
     cleaned = text
-
-    # Strip allowed duration phrases (e.g., "within 4 weeks", "2 terms")
-    cleaned = DURATION_ORDINALS_PATTERN.sub(" ", cleaned)
 
     # Strip outcome identifiers like CLO1, PLO2
     cleaned = re.sub(r"\b(?:CLO|PLO)\d+\b", " ", cleaned, flags=re.IGNORECASE)
@@ -556,33 +658,43 @@ def validate_cqi_narrative(
     all_narrative_text = [output.summary]
 
     for idx, rec in enumerate(output.recommendations, start=1):
-        # Fields check
         if not rec.problem or not rec.problem.strip():
             return False, f"Recommendation #{idx} missing problem statement."
-        if not rec.intervention or not rec.intervention.strip():
-            return False, f"Recommendation #{idx} missing concrete intervention."
-        if not rec.timeline or not rec.timeline.strip():
-            return False, f"Recommendation #{idx} missing timeline."
+        
+        action_text = (rec.proposed_additions or rec.intervention or "").strip()
+        if not action_text:
+            return False, f"Recommendation #{idx} missing concrete proposed additions or intervention."
+
+        # Timeline validation:
+        # If no timeline/deadline fact was supplied, accept None/null or 'To be set by Program Chair'.
+        # Reject any invented durations, dates, or numbers.
+        if rec.timeline is not None and rec.timeline.strip() not in ("", "To be set by Program Chair"):
+            has_timeline_facts = any(
+                f.fact_id.endswith(("_timeline", "_deadline"))
+                for f in facts
+            )
+            if not has_timeline_facts:
+                return (
+                    False,
+                    f"Recommendation #{idx} has timeline '{rec.timeline}' but no timeline or deadline fact was supplied in <FACTS>. Must be null or 'To be set by Program Chair'.",
+                )
         if not rec.success_indicator or not rec.success_indicator.strip():
             return False, f"Recommendation #{idx} missing success indicator."
         if not rec.verification_method or not rec.verification_method.strip():
             return False, f"Recommendation #{idx} missing verification method."
 
-        # Role check
         if rec.responsible_role not in ALLOWED_RESPONSIBLE_ROLES:
             return (
                 False,
                 f"Recommendation #{idx} has invalid responsible_role '{rec.responsible_role}'. Must be one of {ALLOWED_RESPONSIBLE_ROLES}.",
             )
 
-        # Evidence fact IDs check
         if not rec.evidence_fact_ids:
             return False, f"Recommendation #{idx} lacks evidence_fact_ids."
         for fid in rec.evidence_fact_ids:
             if fid not in valid_fact_ids:
                 return False, f"Recommendation #{idx} cites unknown fact_id: '{fid}'."
 
-        # Target number check if provided
         if rec.target is not None:
             if isinstance(rec.target, (int, float)):
                 if float(rec.target) not in canonical_numbers:
@@ -599,27 +711,58 @@ def validate_cqi_narrative(
                             f"Recommendation #{idx} target string '{rec.target}' contains unverified number '{raw}'.",
                         )
 
-        # Generic intervention check
-        inter_lower = rec.intervention.lower()
-        for generic in GENERIC_INTERVENTIONS:
-            if generic in inter_lower:
-                return (
-                    False,
-                    f"Recommendation #{idx} intervention contains generic action: '{generic}'. Must be concrete and specific.",
-                )
+        # Check action text for generic actions or grade alterations
+        action_candidates = [t for t in (rec.proposed_additions, rec.intervention) if t and t.strip()]
+        for cand in action_candidates:
+            cand_lower = cand.lower()
+            for generic in GENERIC_INTERVENTIONS:
+                if generic in cand_lower:
+                    return (
+                        False,
+                        f"Recommendation #{idx} contains generic action: '{generic}'. Must be concrete and specific.",
+                    )
 
-        # Grade alteration check
-        for term in GRADE_ALTERATION_TERMS:
-            if term in inter_lower:
-                return (
-                    False,
-                    f"Recommendation #{idx} recommends prohibited grade alteration: '{term}'.",
-                )
+            for term in GRADE_ALTERATION_TERMS:
+                if term in cand_lower:
+                    return (
+                        False,
+                        f"Recommendation #{idx} recommends prohibited grade alteration: '{term}'.",
+                    )
+
+        # Assessment Quality Validation
+        if rec.existing_intervention_assessment:
+            eia = rec.existing_intervention_assessment.strip()
+            eia_lower = eia.lower()
+            for generic_term in GENERIC_ASSESSMENT_TERMS:
+                if generic_term in eia_lower:
+                    return (
+                        False,
+                        f"Recommendation #{idx} existing_intervention_assessment contains prohibited generic phrase: '{generic_term}'. It must state whether the action appears sufficient, partly sufficient, or insufficient and explain why.",
+                    )
+
+            if not eia_lower.startswith("none supplied"):
+                has_rating = any(r in eia_lower for r in REQUIRED_ASSESSMENT_RATINGS)
+                if not has_rating:
+                    return (
+                        False,
+                        f"Recommendation #{idx} existing_intervention_assessment must state whether the supplied action appears sufficient, partly sufficient, or insufficient given the cited facts.",
+                    )
+                if len(eia.split()) < 5:
+                    return (
+                        False,
+                        f"Recommendation #{idx} existing_intervention_assessment is too brief. It must explain why the action is sufficient, partly sufficient, or insufficient.",
+                    )
 
         all_narrative_text.append(rec.problem)
-        all_narrative_text.append(rec.intervention)
+        if rec.existing_intervention_assessment:
+            all_narrative_text.append(rec.existing_intervention_assessment)
+        if rec.proposed_additions:
+            all_narrative_text.append(rec.proposed_additions)
+        if rec.intervention and rec.intervention != rec.proposed_additions:
+            all_narrative_text.append(rec.intervention)
         all_narrative_text.append(rec.success_indicator)
-        all_narrative_text.append(rec.timeline)
+        if rec.timeline:
+            all_narrative_text.append(rec.timeline)
         all_narrative_text.append(rec.verification_method)
 
     # 3. Possible contributing factors validation
@@ -637,7 +780,6 @@ def validate_cqi_narrative(
             if fid not in valid_fact_ids:
                 return False, f"Contributing factor #{idx} cites unknown fact_id: '{fid}'."
 
-        # Cause established check
         hyp_lower = pcf.hypothesis.lower()
         for term in ESTABLISHED_CAUSE_TERMS:
             if term in hyp_lower:
@@ -671,28 +813,103 @@ def validate_cqi_narrative(
         if term in full_narrative.lower():
             return False, f"Narrative states cause as established: '{term}'."
 
+    # Check for verbatim echo of webapp free-text (>8 consecutive words)
+    no_echo, echo_reason = _check_no_verbatim_free_text_echo(all_narrative_text, facts, max_consecutive_words=8)
+    if not no_echo:
+        return False, echo_reason
+
     # 6. Status contradiction check
-    # Check if narrative contradicts supplied webapp outcome attainment statuses
     for f in facts:
         if f.scope and f.source_field.endswith(".status") and f.value in ("MET", "NOT MET"):
             outcome_code = f.scope
             if f.value == "NOT MET":
-                # Contradiction if narrative claims outcome was met / achieved
                 if re.search(rf"\b{outcome_code}\s+(?:was|is)\s+met\b", full_narrative, re.IGNORECASE):
                     return False, f"Narrative contradicts fact: claims {outcome_code} was MET when fact is NOT MET."
             elif f.value == "MET":
-                # Contradiction if narrative claims outcome was not met
                 if re.search(rf"\b{outcome_code}\s+(?:was|is)\s+not\s+met\b", full_narrative, re.IGNORECASE):
                     return False, f"Narrative contradicts fact: claims {outcome_code} was NOT MET when fact is MET."
 
-    # 7. Number rule check across all recommendations and hypotheses
+    # 7. Number rule check across all recommendations and hypotheses (strict: dates/durations must equal supplied fact)
     for text_block in all_narrative_text:
         extracted = _extract_text_numbers(text_block)
         for val, raw in extracted:
             if val not in canonical_numbers:
                 return (
                     False,
-                    f"Number '{raw}' ({val}) does not match any supplied fact number. Untraceable numbers are forbidden.",
+                    f"Number '{raw}' ({val}) does not match any supplied fact number. Untraceable numbers or unsupplied durations/dates are forbidden.",
+                )
+
+    # 8. Deterministic Coverage Check:
+    # A NOT MET outcome counts as addressed only by a recommendation or contributing factor.
+    # A data_limitations citation counts only if that outcome's own value facts are missing.
+    rec_factor_cited_fact_ids: Set[str] = set()
+    for rec in output.recommendations:
+        rec_factor_cited_fact_ids.update(rec.evidence_fact_ids)
+    for pcf in output.possible_contributing_factors:
+        rec_factor_cited_fact_ids.update(pcf.evidence_fact_ids)
+
+    all_cited_fact_ids = set(rec_factor_cited_fact_ids)
+    if output.pattern:
+        all_cited_fact_ids.update(output.pattern.evidence_fact_ids)
+
+    for f in facts:
+        if f.source_field.endswith(".status") and f.value == "NOT MET" and f.scope not in ("cohort", "metadata", "cqi"):
+            outcome_code = f.scope
+            outcome_fact_ids = {fact.fact_id for fact in facts if fact.scope == outcome_code}
+            cited_in_rec_or_factor = bool(rec_factor_cited_fact_ids.intersection(outcome_fact_ids))
+
+            # Outcome's own value facts missing: checks composite, direct, indirect
+            outcome_has_missing_value_facts = any(
+                fact.scope == outcome_code
+                and fact.source_field.startswith("outcomes")
+                and fact.fact_id.endswith(("_composite", "_direct", "_indirect"))
+                and fact.value == "missing/insufficient"
+                for fact in facts
+            )
+
+            addressed_in_limitations = any(outcome_code in limitation for limitation in output.data_limitations)
+
+            if cited_in_rec_or_factor:
+                continue
+            elif outcome_has_missing_value_facts and addressed_in_limitations:
+                continue
+            else:
+                if not outcome_has_missing_value_facts and addressed_in_limitations:
+                    return (
+                        False,
+                        f"Coverage check failed: Outcome '{outcome_code}' has status NOT MET with complete value facts, so it cannot be addressed solely via data_limitations; it must be addressed by a recommendation or contributing factor.",
+                    )
+                return (
+                    False,
+                    f"Coverage check failed: Outcome '{outcome_code}' with status NOT MET is not addressed by any recommendation or contributing factor.",
+                )
+
+    # Check CQI entries that are escalated or not CLOSED
+    cqi_entry_indices: Set[int] = set()
+    for f in facts:
+        m = re.match(r"^cqi_entries\[(\d+)\]\.", f.source_field)
+        if m:
+            cqi_entry_indices.add(int(m.group(1)))
+
+    for entry_idx in sorted(cqi_entry_indices):
+        entry_facts = [f for f in facts if f.source_field.startswith(f"cqi_entries[{entry_idx}].")]
+        entry_scope = entry_facts[0].scope if entry_facts else f"Entry#{entry_idx+1}"
+        is_escalated = any(f.source_field.endswith(".is_escalated") and str(f.value).lower() == "true" for f in entry_facts)
+        loop_status_fact = next((f for f in entry_facts if f.source_field.endswith(".loop_status")), None)
+        is_open = loop_status_fact is not None and loop_status_fact.value != "CLOSED"
+
+        if is_escalated or is_open:
+            entry_fact_ids = {f.fact_id for f in entry_facts}
+            scope_fact_ids = {f.fact_id for f in facts if f.scope == entry_scope}
+            cited_for_entry = all_cited_fact_ids.intersection(entry_fact_ids)
+            cited_for_scope = all_cited_fact_ids.intersection(scope_fact_ids)
+            addressed_in_limitations = any(entry_scope in limitation for limitation in output.data_limitations)
+
+            if not cited_for_entry and not cited_for_scope and not addressed_in_limitations:
+                status_desc = "escalated" if is_escalated else f"loop status {loop_status_fact.value if loop_status_fact else 'OPEN'}"
+                return (
+                    False,
+                    f"Coverage check failed: CQI entry for '{entry_scope}' ({status_desc}) is not addressed in recommendations, contributing factors, pattern, or data_limitations.",
                 )
 
     return True, None
@@ -712,17 +929,23 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
     # Check if any outcome is below target
     has_unmet = any(f.value == "NOT MET" for f in facts if f.source_field.endswith(".status"))
 
+    data_limitations: List[str] = []
+    for f in facts:
+        if f.value == "missing/insufficient":
+            data_limitations.append(f"{f.label} data is missing/insufficient.")
+
     if not has_unmet:
-        # All met or no gaps
         return CQINarrativeOutput(
             summary="All assessed learning outcomes have achieved their target benchmarks for the evaluation term.",
             recommendations=[
                 RecommendationItem(
                     problem="Sustain consistent outcome achievement across all cohorts.",
                     evidence_fact_ids=fact_ids[:3],
+                    existing_intervention_assessment="The instructional actions implemented during the cycle appear sufficient given consistent achievement of the target benchmark across cohorts.",
+                    proposed_additions="Maintain current practice and continue regular formative reviews.",
                     intervention="Maintain current practice and continue regular formative reviews.",
                     responsible_role="Faculty",
-                    timeline="Next term",
+                    timeline="To be set by Program Chair",
                     success_indicator="Consistent cohort attainment at or above established target benchmarks.",
                     target=None,
                     verification_method="End-of-term assessment evaluation report.",
@@ -730,15 +953,12 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
             ],
             possible_contributing_factors=[],
             pattern=None,
-            data_limitations=[],
+            data_limitations=data_limitations,
         )
 
-    # Find the unmet outcome
-    unmet_scope = "CLO"
-    for f in facts:
-        if f.value == "NOT MET":
-            unmet_scope = f.scope
-            break
+    # Find unmet outcome(s)
+    unmet_scopes = [f.scope for f in facts if f.value == "NOT MET" and f.source_field.endswith(".status")]
+    unmet_scope = unmet_scopes[0] if unmet_scopes else "CLO"
 
     target_val = None
     for f in facts:
@@ -746,7 +966,30 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
             target_val = f.value
             break
 
-    evidence = [f.fact_id for f in facts if f.scope == unmet_scope] or fact_ids[:2]
+    evidence = [f.fact_id for f in facts if f.scope in unmet_scopes] or fact_ids[:2]
+
+    # If an entry exists for the unmet outcome with an owner or timeline fact, capture it
+    owner_fact = next((f for f in facts if f.scope == unmet_scope and f.fact_id.endswith("_owner")), None)
+    timeline_fact = next((f for f in facts if f.scope == unmet_scope and f.fact_id.endswith("_timeline")), None)
+    intervention_fact = next((f for f in facts if f.scope == unmet_scope and f.fact_id.endswith("_intervention")), None)
+
+    resp_role = "Faculty"
+    if owner_fact and owner_fact.value in ALLOWED_RESPONSIBLE_ROLES:
+        resp_role = str(owner_fact.value)
+
+    planned_timeline = "To be set by Program Chair"
+    if timeline_fact and isinstance(timeline_fact.value, str):
+        planned_timeline = timeline_fact.value
+
+    if intervention_fact and isinstance(intervention_fact.value, str):
+        existing_assessment = (
+            f"The action in {intervention_fact.fact_id} appears partly sufficient to address the problem, "
+            f"but is insufficient alone to close the gap without mandatory laboratory attendance tracking."
+        )
+        proposed_additions = "Establish supplementary algorithm debugging clinics and revise laboratory rubrics."
+    else:
+        existing_assessment = "None supplied in assessment cycle."
+        proposed_additions = "Establish supplementary algorithm debugging clinics and revise laboratory rubrics."
 
     return CQINarrativeOutput(
         summary=f"Analysis of current term attainment reveals performance gaps in {unmet_scope} relative to target.",
@@ -754,9 +997,11 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
             RecommendationItem(
                 problem=f"Cohort performance in {unmet_scope} is below the expected institutional benchmark.",
                 evidence_fact_ids=evidence,
-                intervention="Conduct targeted workshops on core problem-solving concepts and align lab exercises.",
-                responsible_role="Faculty",
-                timeline="Within 4 weeks",
+                existing_intervention_assessment=existing_assessment,
+                proposed_additions=proposed_additions,
+                intervention=proposed_additions,
+                responsible_role=resp_role,
+                timeline=planned_timeline,
                 success_indicator=f"Improved mid-term evaluation scores in {unmet_scope}.",
                 target=target_val,
                 verification_method="Formative laboratory rubrics and midterm exams.",
@@ -773,7 +1018,7 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
             description=f"Performance drop observed consistently in {unmet_scope} across assessed cohorts.",
             evidence_fact_ids=evidence,
         ),
-        data_limitations=[],
+        data_limitations=data_limitations,
     )
 
 
@@ -782,9 +1027,10 @@ def generate_mock_narrative(facts: List[FactItem]) -> CQINarrativeOutput:
 # ---------------------------------------------------------------------------
 
 
-async def _execute_gemini_call(prompt: str) -> str:
+async def _execute_gemini_call(prompt: str) -> Tuple[str, Dict[str, Any]]:
     """
     Executes Gemini call with multi-key failover and model from settings.LLM_MODEL.
+    Returns (raw_text, response_metadata).
     Raises NotImplementedError if no keys are configured.
     """
     api_keys = settings.llm_api_keys_list
@@ -800,7 +1046,7 @@ async def _execute_gemini_call(prompt: str) -> str:
             logger.info(
                 "cqi_narrative_llm_attempt",
                 provider="google_gemini",
-                model=settings.LLM_MODEL,
+                model=str(settings.LLM_MODEL),
                 key_index=idx,
                 total_keys=total_keys,
                 key_preview=masked_key,
@@ -808,20 +1054,39 @@ async def _execute_gemini_call(prompt: str) -> str:
             client = genai.Client(api_key=key)
             config = types.GenerateContentConfig(
                 response_mime_type="application/json",
+                response_schema=CQINarrativeOutput,
                 automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
             )
             response = await client.aio.models.generate_content(
-                model=settings.LLM_MODEL,
+                model=str(settings.LLM_MODEL),
                 contents=prompt,
                 config=config,
             )
             logger.info(
                 "cqi_narrative_llm_success",
                 provider="google_gemini",
-                model=settings.LLM_MODEL,
+                model=str(settings.LLM_MODEL),
                 key_index=idx,
             )
-            return response.text or ""
+            raw_text = response.text or ""
+
+            usage_dict = None
+            if getattr(response, "usage_metadata", None):
+                try:
+                    usage_dict = response.usage_metadata.model_dump()
+                except Exception:
+                    usage_dict = {
+                        "prompt_token_count": getattr(response.usage_metadata, "prompt_token_count", None),
+                        "candidates_token_count": getattr(response.usage_metadata, "candidates_token_count", None),
+                        "total_token_count": getattr(response.usage_metadata, "total_token_count", None),
+                    }
+
+            meta = {
+                "returned_model_version": getattr(response, "model_version", None),
+                "response_id": getattr(response, "response_id", None) or str(uuid.uuid4()),
+                "usage_metadata": usage_dict,
+            }
+            return raw_text, meta
 
         except Exception as e:
             err_msg = f"Key #{idx} ({masked_key}) failed: {str(e)}"
@@ -879,20 +1144,34 @@ async def generate_cqi_report_narrative(
     1. Flattens payload to facts.
     2. Builds system prompt.
     3. Calls LLM with up to 1 retry on validation failure.
-    4. Returns CQINarrativeResponse with status 'ok', 'error', or 'narrative_unavailable'.
+    4. Attaches execution provenance metadata.
+    5. Returns CQINarrativeResponse with status 'ok', 'error', or 'narrative_unavailable'.
     """
     facts, missing_sections = flatten_payload_to_facts(payload)
     prompt = build_cqi_narrative_prompt(facts)
+    facts_json_serialized = serialize_facts_safe(facts)
 
     if IS_DEBUG_MODE:
         mock_output = generate_mock_narrative(facts)
         is_valid, reason = validate_cqi_narrative(mock_output, facts)
+        provenance = ProvenanceMetadata(
+            requested_model="mock-internal",
+            returned_model_version="mock-v1",
+            response_id=f"mock-{uuid.uuid4()}",
+            usage_metadata={"prompt_token_count": 0, "candidates_token_count": 0, "total_token_count": 0},
+            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            is_debug_mode=True,
+            execution_mode="mock",
+            facts_json=facts_json_serialized,
+            prompt_sent=prompt,
+        )
         if not is_valid:
             return CQINarrativeResponse(
                 status="narrative_unavailable",
                 reason=reason,
                 missing_sections=missing_sections,
                 facts_used=facts,
+                provenance=provenance,
                 prompt_used=prompt,
             )
         return CQINarrativeResponse(
@@ -904,17 +1183,23 @@ async def generate_cqi_report_narrative(
             data_limitations=mock_output.data_limitations,
             missing_sections=missing_sections,
             facts_used=facts,
+            provenance=provenance,
             prompt_used=prompt,
         )
 
+    req_model_str = str(getattr(settings, "LLM_MODEL", "gemini-3.5-flash-lite"))
+
     # Real mode: Attempt 1
     try:
-        raw_response_1 = await _execute_gemini_call(prompt)
+        call_res_1 = await _execute_gemini_call(prompt)
+        if isinstance(call_res_1, tuple):
+            raw_response_1, meta_1 = call_res_1
+        else:
+            raw_response_1 = call_res_1
+            meta_1 = {"returned_model_version": None, "response_id": None, "usage_metadata": None}
     except NotImplementedError:
-        # Re-raise so the endpoint returns 501
         raise
     except RuntimeError as e:
-        # Key exhaustion -> HTTP 200 with status="error"
         logger.error("cqi_narrative_key_exhaustion", error=str(e))
         return CQINarrativeResponse(
             status="error",
@@ -926,6 +1211,17 @@ async def generate_cqi_report_narrative(
 
     output_1, failure_reason_1 = _parse_and_validate(raw_response_1, facts)
     if output_1 is not None:
+        provenance_1 = ProvenanceMetadata(
+            requested_model=req_model_str,
+            returned_model_version=meta_1.get("returned_model_version"),
+            response_id=meta_1.get("response_id"),
+            usage_metadata=meta_1.get("usage_metadata"),
+            timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            is_debug_mode=False,
+            execution_mode="live",
+            facts_json=facts_json_serialized,
+            prompt_sent=prompt,
+        )
         return CQINarrativeResponse(
             status="ok",
             summary=output_1.summary,
@@ -935,6 +1231,7 @@ async def generate_cqi_report_narrative(
             data_limitations=output_1.data_limitations,
             missing_sections=missing_sections,
             facts_used=facts,
+            provenance=provenance_1,
             prompt_used=prompt,
         )
 
@@ -948,7 +1245,12 @@ async def generate_cqi_report_narrative(
     )
 
     try:
-        raw_response_2 = await _execute_gemini_call(retry_prompt)
+        call_res_2 = await _execute_gemini_call(retry_prompt)
+        if isinstance(call_res_2, tuple):
+            raw_response_2, meta_2 = call_res_2
+        else:
+            raw_response_2 = call_res_2
+            meta_2 = {"returned_model_version": None, "response_id": None, "usage_metadata": None}
     except NotImplementedError:
         raise
     except RuntimeError as e:
@@ -961,6 +1263,20 @@ async def generate_cqi_report_narrative(
         )
 
     output_2, failure_reason_2 = _parse_and_validate(raw_response_2, facts)
+    provenance_2 = ProvenanceMetadata(
+        requested_model=req_model_str,
+        returned_model_version=meta_2.get("returned_model_version"),
+        response_id=meta_2.get("response_id"),
+        usage_metadata=meta_2.get("usage_metadata"),
+        timestamp_utc=datetime.now(timezone.utc).isoformat(),
+        is_debug_mode=False,
+        execution_mode="live",
+        attempts_used=2,
+        attempt_1_reason=failure_reason_1,
+        facts_json=facts_json_serialized,
+        prompt_sent=retry_prompt,
+    )
+
     if output_2 is not None:
         return CQINarrativeResponse(
             status="ok",
@@ -971,6 +1287,7 @@ async def generate_cqi_report_narrative(
             data_limitations=output_2.data_limitations,
             missing_sections=missing_sections,
             facts_used=facts,
+            provenance=provenance_2,
             prompt_used=retry_prompt,
         )
 
@@ -981,5 +1298,6 @@ async def generate_cqi_report_narrative(
         reason=failure_reason_2,
         missing_sections=missing_sections,
         facts_used=facts,
+        provenance=provenance_2,
         prompt_used=retry_prompt,
     )

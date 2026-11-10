@@ -1,0 +1,27 @@
+{
+  "mode": "offline saved-response replay; no production imports or network",
+  "services_started": 0,
+  "containers_created": 0,
+  "database_or_redis_used": false,
+  "actual_sdk_request_attempts": 0,
+  "source_historical_sdk_attempts": 0,
+  "source_workflow_evidence": "testing_modules/pre_uat/ai_accuracy_evaluation/evidence/20261110T094654_539299Z/workflow_and_isolation.json",
+  "historical_etl_cross_check": null,
+  "historical_provider_preflight": null,
+  "historical_cleanup": null,
+  "owned_asyncio_loop": {
+    "type": "_UnixSelectorEventLoop",
+    "private_wakeup_socket_count": 2,
+    "socket_handles": [
+      6,
+      8
+    ],
+    "pairing_verified": true,
+    "loop_closed": true,
+    "retained_socket_handles_closed": true
+  },
+  "denied_operations": [],
+  "fatal_error": null,
+  "existing_services_contacted": false,
+  "new_services_or_containers": 0
+}

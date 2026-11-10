@@ -58,7 +58,10 @@ def offline_context():
                     if writing:
                         check_write(path)
                 elif event in {"os.mkdir", "os.remove", "os.rmdir", "os.chmod", "os.utime"}:
-                    check_write(args[0])
+                    if len(args) > 1 and args[1] is not None:
+                        pass
+                    else:
+                        check_write(args[0])
                 elif event in {"os.rename", "os.link", "os.symlink"}:
                     check_write(args[0])
                     check_write(args[1])

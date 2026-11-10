@@ -1,0 +1,56 @@
+{
+  "program_term": {
+    "program_code": "BSCS",
+    "program_name": "Bachelor of Science in Computer Science",
+    "term_label": "AY 2025-2026, 2nd Semester",
+    "academic_year": "2025-2026"
+  },
+  "counts": {
+    "enrolled_count": 85,
+    "assessed_count": 80
+  },
+  "outcomes": [
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO1",
+      "target_pct": 75.0,
+      "direct_pct": 60.0,
+      "indirect_pct": 70.0,
+      "composite_pct": 63.0,
+      "is_complete": true,
+      "status": "NOT MET"
+    },
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO2",
+      "target_pct": 75.0,
+      "direct_pct": 62.0,
+      "indirect_pct": 72.0,
+      "composite_pct": 65.0,
+      "is_complete": true,
+      "status": "NOT MET"
+    }
+  ],
+  "cqi_entries": [
+    {
+      "outcome_code": "CLO1",
+      "status": "NOT MET",
+      "loop_status": "OPEN_REASSESS",
+      "is_escalated": false,
+      "intervention": "Provide additional tutoring for programming fundamentals.",
+      "owner": "Faculty",
+      "timeline": "Within 4 weeks",
+      "root_cause_category": "2-Instruction & Pedagogy"
+    },
+    {
+      "outcome_code": "CLO2",
+      "status": "NOT MET",
+      "loop_status": "OPEN_NOT_IMPLEMENTED",
+      "is_escalated": false,
+      "intervention": "Restructure database laboratory assignments.",
+      "owner": "Program Chair",
+      "timeline": "Next term",
+      "root_cause_category": "3-Assessment Design"
+    }
+  ]
+}

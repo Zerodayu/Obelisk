@@ -1,0 +1,125 @@
+{
+  "status": "HUMAN REVIEW PENDING",
+  "human_academic_review": "PENDING",
+  "qualitative_quality_percentage": null,
+  "source": "This workbook execution only; existing ST-AI outcomes remain separate.",
+  "limitations": [
+    "No human recommendation-quality judgments recorded."
+  ],
+  "schema_valid": true,
+  "factual_consistency": {
+    "checks": [
+      {
+        "path": "summary",
+        "claim": "70%",
+        "metric": "unresolved percentage",
+        "expected": null,
+        "actual": 70.0,
+        "outcome": "MANUAL REVIEW"
+      },
+      {
+        "path": "summary",
+        "claim": "101",
+        "metric": "course identifier",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "summary",
+        "claim": "1",
+        "metric": "section identifier",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "pattern",
+        "claim": "70%",
+        "metric": "institutional threshold",
+        "expected": 70,
+        "actual": 70.0,
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[0].title",
+        "claim": "CLO1",
+        "metric": "CLO reference",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[0].title",
+        "claim": "CLO5",
+        "metric": "CLO reference",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[0].explanation",
+        "claim": "70%",
+        "metric": "institutional threshold",
+        "expected": 70,
+        "actual": 70.0,
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[0].explanation",
+        "claim": "60.2%",
+        "metric": "unresolved percentage",
+        "expected": null,
+        "actual": 60.2,
+        "outcome": "MANUAL REVIEW"
+      },
+      {
+        "path": "recommendations[0].explanation",
+        "claim": "64.0%",
+        "metric": "unresolved percentage",
+        "expected": null,
+        "actual": 64.0,
+        "outcome": "MANUAL REVIEW"
+      },
+      {
+        "path": "recommendations[1].explanation",
+        "claim": "CLO5",
+        "metric": "CLO reference",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[1].explanation",
+        "claim": "CLO3",
+        "metric": "CLO reference",
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[1].explanation",
+        "claim": "70%",
+        "metric": "institutional threshold",
+        "expected": 70,
+        "actual": 70.0,
+        "outcome": "VERIFIED"
+      },
+      {
+        "path": "recommendations[1].explanation",
+        "claim": "6",
+        "metric": "unresolved numeric claim",
+        "outcome": "MANUAL REVIEW"
+      },
+      {
+        "path": "recommendations[1].explanation",
+        "claim": "12",
+        "metric": "unresolved numeric claim",
+        "outcome": "MANUAL REVIEW"
+      }
+    ],
+    "counts": {
+      "MANUAL REVIEW": 5,
+      "VERIFIED": 9
+    },
+    "limitations": [
+      "Bounded explicit grammars do not certify arbitrary prose or all factual claims.",
+      "Unresolved claims, inferred causes, relevance and pedagogical usefulness require human review."
+    ]
+  },
+  "relevance_assessment": "PENDING qualified academic reviewer",
+  "unsupported_claims": "Unresolved numbers and causal/pedagogical claims require review; not assumed correct.",
+  "recommendation_clo_references": [
+    "CLO1",
+    "CLO3",
+    "CLO5"
+  ]
+}

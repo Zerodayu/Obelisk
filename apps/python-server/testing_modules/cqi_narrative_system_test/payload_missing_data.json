@@ -1,0 +1,22 @@
+{
+  "program_term": {
+    "program_code": "BSIT",
+    "program_name": "Bachelor of Science in Information Technology",
+    "term_label": "AY 2025-2026, 1st Semester",
+    "academic_year": "2025-2026"
+  },
+  "counts": null,
+  "outcomes": [
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO1",
+      "target_pct": 75.0,
+      "direct_pct": null,
+      "indirect_pct": null,
+      "composite_pct": null,
+      "is_complete": false,
+      "status": "NOT MET"
+    }
+  ],
+  "cqi_entries": null
+}

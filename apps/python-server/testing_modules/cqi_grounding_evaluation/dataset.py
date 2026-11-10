@@ -52,6 +52,7 @@ BENCHMARK_CASES: List[Dict[str, Any]] = [
                     "is_escalated": False,
                     "intervention": "Implement supplemental laboratory coding workshops.",
                     "named_owner": "Course Coordinator",
+                    "timeline": "Within 4 weeks",
                     "kpi": "Achieve 75.0% cohort attainment next cycle",
                     "root_cause_category": "3-Assessment Design",
                 }
@@ -146,7 +147,7 @@ BENCHMARK_CASES: List[Dict[str, Any]] = [
                     ],
                     "intervention": "Maintain current practice and continue regular peer teaching reviews.",
                     "responsible_role": "Faculty",
-                    "timeline": "Next term",
+                    "timeline": "To be set by Program Chair",
                     "success_indicator": "Attainment remains at or above the 70.0% benchmark.",
                     "target": 70.0,
                     "verification_method": "Semester-end departmental outcomes report.",

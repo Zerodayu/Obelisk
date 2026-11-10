@@ -1,0 +1,45 @@
+{
+  "program_term": {
+    "program_code": "BSCS",
+    "program_name": "Bachelor of Science in Computer Science",
+    "term_label": "AY 2025-2026, 2nd Semester",
+    "academic_year": "2025-2026"
+  },
+  "counts": {
+    "enrolled_count": 100,
+    "assessed_count": 100
+  },
+  "outcomes": [
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO1",
+      "target_pct": 75.0,
+      "direct_pct": 85.0,
+      "indirect_pct": 88.0,
+      "composite_pct": 85.9,
+      "is_complete": true,
+      "status": "MET"
+    },
+    {
+      "outcome_type": "CLO",
+      "outcome_code": "CLO2",
+      "target_pct": 75.0,
+      "direct_pct": 82.0,
+      "indirect_pct": 86.0,
+      "composite_pct": 83.2,
+      "is_complete": true,
+      "status": "MET"
+    }
+  ],
+  "cqi_entries": [
+    {
+      "outcome_code": "CLO1",
+      "status": "MET",
+      "loop_status": "CLOSED",
+      "is_escalated": false,
+      "intervention": "Continue current instructional strategies and lab assignments.",
+      "owner": "Faculty",
+      "timeline": "Next term"
+    }
+  ]
+}

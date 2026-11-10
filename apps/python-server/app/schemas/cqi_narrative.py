@@ -4,7 +4,7 @@ All models use extra="forbid". The schema rejects any payloads containing studen
 All numbers represent final display values computed by the webapp.
 """
 
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.analytics.cqi_constants import (
@@ -30,6 +30,12 @@ class StrictBaseModel(BaseModel):
     """Base model forbidding all extra attributes and checking forbidden fields."""
 
     model_config = ConfigDict(extra="forbid")
+
+
+class OutputBaseModel(BaseModel):
+    """Base model for LLM output schemas compatible with Gemini response_schema (omits additional_properties)."""
+
+    model_config = ConfigDict(extra="ignore")
 
 
 class ProgramTermMetadata(StrictBaseModel):
@@ -132,6 +138,16 @@ class CQIEntry(StrictBaseModel):
         None,
         description="Role or organizational title responsible for action (free-text; webapp must omit personal names).",
     )
+    owner: Optional[str] = Field(
+        None,
+        description="Optional alias for named_owner role/title (webapp must omit personal names).",
+    )
+    timeline: Optional[str] = Field(
+        None, description="Implementation timeline/schedule (e.g., 'Within 4 weeks', 'SY 2026-2027')."
+    )
+    deadline: Optional[str] = Field(
+        None, description="Optional deadline date or term label."
+    )
     kpi: Optional[str] = Field(
         None, description="Key performance indicator or target metric for closing the loop."
     )
@@ -218,35 +234,104 @@ class FactItem(StrictBaseModel):
     source_field: str
 
 
-class RecommendationItem(StrictBaseModel):
-    """A structured recommendation with required citations."""
+ResponsibleRoleType = Literal["Faculty", "Program Chair", "Dean", "VPAA", "AQAU"]
+RootCauseCategoryType = Literal[
+    "1-Curriculum Design",
+    "2-Instruction & Pedagogy",
+    "3-Assessment Design",
+    "4-Student Factors",
+    "5-Resources & Tools",
+    "6-Industry & Field Alignment",
+]
+
+
+class RecommendationItem(OutputBaseModel):
+    """A structured recommendation with required citations, existing intervention assessment, and proposed additions."""
 
     problem: str
     evidence_fact_ids: List[str]
-    intervention: str
-    responsible_role: str
-    timeline: str
+    existing_intervention_assessment: Optional[str] = Field(
+        None,
+        description="Assessment of the webapp-supplied intervention citing evidence_fact_ids, or 'None supplied'.",
+    )
+    proposed_additions: str = Field(
+        ...,
+        description="Concrete, actionable additions or modifications proposed by AI.",
+    )
+    intervention: Optional[str] = Field(
+        None,
+        description="Optional combined or legacy summary of the intervention.",
+    )
+    responsible_role: ResponsibleRoleType = Field(
+        ...,
+        description="Action owner role enum.",
+    )
+    timeline: Optional[str] = Field(
+        None,
+        description="Action timeframe, or null / 'To be set by Program Chair' if not supplied in facts.",
+    )
     success_indicator: str
-    target: Optional[Union[str, float, int]] = None
+    target: Optional[float] = Field(
+        None,
+        description="Target attainment percentage benchmark (unit: float % 0.0 - 100.0, e.g., 75.0). Webapp appends % for display.",
+    )
     verification_method: str
 
+    @field_validator("target", mode="before")
+    @classmethod
+    def normalize_target_to_float(cls, v: Any) -> Optional[float]:
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        if isinstance(v, str):
+            cleaned = v.replace("%", "").strip()
+            try:
+                return float(cleaned)
+            except ValueError:
+                return None
+        return None
 
-class ContributingFactorItem(StrictBaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def populate_intervention_fields_before(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("proposed_additions") and data.get("intervention"):
+                data["proposed_additions"] = data["intervention"]
+            elif not data.get("intervention") and data.get("proposed_additions"):
+                data["intervention"] = data["proposed_additions"]
+        return data
+
+    @model_validator(mode="after")
+    def validate_intervention_fields(self) -> RecommendationItem:
+        if not self.proposed_additions and self.intervention:
+            self.proposed_additions = self.intervention
+        if not self.intervention and self.proposed_additions:
+            self.intervention = self.proposed_additions
+        if not self.proposed_additions and not self.intervention:
+            raise ValueError("Either proposed_additions or intervention must be provided.")
+        return self
+
+
+class ContributingFactorItem(OutputBaseModel):
     """A possible contributing factor hypothesis with canonical root cause."""
 
     hypothesis: str
-    root_cause_category: str
+    root_cause_category: RootCauseCategoryType = Field(
+        ...,
+        description="Canonical root cause category enum.",
+    )
     evidence_fact_ids: List[str]
 
 
-class PatternItem(StrictBaseModel):
+class PatternItem(OutputBaseModel):
     """Cross-outcome pattern description with citations."""
 
     description: str
     evidence_fact_ids: List[str]
 
 
-class CQINarrativeOutput(StrictBaseModel):
+class CQINarrativeOutput(OutputBaseModel):
     """Inner validated LLM output."""
 
     summary: str
@@ -254,6 +339,28 @@ class CQINarrativeOutput(StrictBaseModel):
     possible_contributing_factors: List[ContributingFactorItem] = Field(default_factory=list)
     pattern: Optional[PatternItem] = None
     data_limitations: List[str] = Field(default_factory=list)
+
+
+class ProvenanceMetadata(StrictBaseModel):
+    """Execution provenance metadata."""
+
+    requested_model: str
+    returned_model_version: Optional[str] = None
+    response_id: Optional[str] = None
+    usage_metadata: Optional[Dict[str, Any]] = None
+    timestamp_utc: str
+    is_debug_mode: bool
+    execution_mode: Literal["live", "mock", "replay"]
+    attempts_used: int = 1
+    attempt_1_reason: Optional[str] = None
+    facts_json: str
+    prompt_sent: str
+
+    @model_validator(mode="after")
+    def check_live_mode_authenticity(self) -> ProvenanceMetadata:
+        if self.execution_mode == "live" and self.is_debug_mode:
+            raise ValueError("Output cannot be labelled 'live' when is_debug_mode is True.")
+        return self
 
 
 class CQINarrativeResponse(StrictBaseModel):
@@ -267,6 +374,7 @@ class CQINarrativeResponse(StrictBaseModel):
     data_limitations: List[str] = Field(default_factory=list)
     missing_sections: List[str] = Field(default_factory=list)
     facts_used: List[FactItem] = Field(default_factory=list)
+    provenance: Optional[ProvenanceMetadata] = None
     error: Optional[str] = None
     reason: Optional[str] = None
     prompt_used: Optional[str] = None
