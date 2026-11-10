@@ -47,6 +47,7 @@ import {
 	ARCHIVE_ROLES,
 	ARCHIVE_VIEW_ROLES,
 	PLO_MANAGEMENT_ROLES,
+	featureRoles,
 	preparerRoles,
 	screenRoles,
 	type UserRole,
@@ -457,6 +458,13 @@ export function workspaceNav(role: UserRole): NavItem[] {
 		});
 	if (hasAccess(role, ARCHIVE_VIEW_ROLES))
 		items.push({ title: "Archives", url: "/archives", icon: ArchiveIcon });
+	// NOTE: institution-wide CQI report — same readers as the AI insights drawer.
+	if (hasAccess(role, featureRoles("viewAiInsights")))
+		items.push({
+			title: "CQI Institutional Report",
+			url: "/reports/cqi-institutional",
+			icon: FileChartColumnIcon,
+		});
 	// NOTE: visible to every role — the backend serves self-scoped rows only,
 	// vpaa/system_admin get the full waterfall (viewAllAuditLogs).
 	items.push({ title: "Audit Logs", url: "/audit-logs", icon: ScrollTextIcon });
@@ -490,6 +498,7 @@ function workspaceRootLinks() {
 		{ title: "Submissions", url: "/all-submissions" },
 		{ title: "Pending Approvals", url: "/approvals" },
 		{ title: "Archives", url: "/archives" },
+		{ title: "CQI Institutional Report", url: "/reports/cqi-institutional" },
 		{ title: "Audit Logs", url: "/audit-logs" },
 	];
 }
