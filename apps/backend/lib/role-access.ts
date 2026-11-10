@@ -178,6 +178,19 @@ export function assertCanGenerateAiInsights(role: string | undefined): void {
 	}
 }
 
+/** Roles that may read institution-wide AI insights and CQI reports. */
+export const AI_INSIGHT_VIEW_ROLES: readonly string[] =
+	FEATURE_ACCESS.viewAiInsights;
+
+/** May `role` read institution-wide AI insights / CQI reports? */
+export function assertCanViewAiInsights(role: string | undefined): void {
+	if (!hasRole(role, AI_INSIGHT_VIEW_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not view institutional CQI reports — expected one of: ${AI_INSIGHT_VIEW_ROLES.join(", ")}`,
+		);
+	}
+}
+
 /**
  * May `role` read `GET /atrisk/flags` — class-record capture roles (the
  * action-taken watchlist picker) ∪ the AI-drawer roles (its by-program table).

@@ -153,6 +153,81 @@ export interface InstitutionalSummaryResponse {
 	recommendation: string;
 }
 
+// --- CQI report narrative (/analytics/cqi-narrative) -----------------
+// Contract mirrors python-server app/schemas/cqi_narrative.py +
+// documentations/INTEGRATION.md Endpoint 3. All numbers are percentages.
+
+export interface CqiNarrativeOutcome {
+	outcome_type: "CLO" | "PLO";
+	outcome_code: string;
+	target_pct?: number;
+	direct_pct?: number;
+	indirect_pct?: number;
+	composite_pct?: number;
+	is_complete?: boolean;
+	prior_cycle_composite_pct?: number;
+	status?: "MET" | "NOT MET";
+}
+
+export interface CqiNarrativeEntry {
+	outcome_code: string;
+	status: "MET" | "NOT MET";
+	loop_status?: "CLOSED" | "OPEN_REASSESS" | "OPEN_NOT_IMPLEMENTED";
+	is_escalated?: boolean;
+	intervention?: string;
+	named_owner?: string;
+	timeline?: string;
+	deadline?: string;
+	kpi?: string;
+	root_cause_category?: string;
+}
+
+export interface CqiNarrativePayload {
+	program_term?: {
+		program_code?: string;
+		program_name?: string;
+		term_label?: string;
+		academic_year?: string;
+	};
+	counts?: { enrolled_count?: number; assessed_count?: number };
+	outcomes?: CqiNarrativeOutcome[];
+	cqi_entries?: CqiNarrativeEntry[];
+}
+
+export interface CqiNarrativeRecommendation {
+	problem: string;
+	evidence_fact_ids: string[];
+	existing_intervention_assessment: string | null;
+	proposed_additions: string;
+	intervention?: string;
+	responsible_role: string;
+	timeline: string | null;
+	success_indicator: string;
+	target: number | null;
+	verification_method: string;
+}
+
+export interface CqiNarrativeFactor {
+	hypothesis: string;
+	root_cause_category: string;
+	evidence_fact_ids: string[];
+}
+
+export interface CqiNarrativeResponse {
+	status: "ok" | "error" | "narrative_unavailable";
+	summary: string | null;
+	recommendations: CqiNarrativeRecommendation[];
+	possible_contributing_factors: CqiNarrativeFactor[];
+	pattern: { description: string; evidence_fact_ids: string[] } | null;
+	data_limitations: string[];
+	missing_sections: string[];
+	facts_used: unknown[];
+	provenance?: Record<string, unknown> | null;
+	error: string | null;
+	reason: string | null;
+	prompt_used?: string | null;
+}
+
 /**
  * Shape stored on `ComputationRun.etlSnapshotJson` at persist time — the raw
  * ETL output (header + per-student rows + CLO→PLO map) replayed back to
@@ -287,11 +362,20 @@ class IngestClient {
 		payload: unknown,
 		path: string,
 		label: string,
+		timeoutMs?: number,
 	): Promise<T> {
 		const response = await fetch(`${this.baseUrl}${path}`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
+			headers: {
+				"Content-Type": "application/json",
+				// NOTE: optional caller secret — python-server ignores it when
+				// OBELISK_WEBAPP_SHARED_SECRET is unset.
+				...(env.PYTHON_WEBAPP_SHARED_SECRET
+					? { "X-Webapp-Secret": env.PYTHON_WEBAPP_SHARED_SECRET }
+					: {}),
+			},
 			body: JSON.stringify(payload),
+			...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
 		});
 
 		if (!response.ok) {
@@ -362,6 +446,21 @@ class IngestClient {
 			payload,
 			"/analytics/institutional-summary",
 			"Institutional summary",
+		);
+	}
+
+	/**
+	 * Requests a grounded CQI report narrative from
+	 * `/analytics/cqi-narrative`. Payload numbers must already be the display
+	 * percentages; the endpoint never recalculates them. Allows up to two LLM
+	 * calls (one validation retry), hence the generous timeout.
+	 */
+	async cqiNarrative(payload: CqiNarrativePayload): Promise<CqiNarrativeResponse> {
+		return this.postJson<CqiNarrativeResponse>(
+			payload,
+			"/analytics/cqi-narrative",
+			"CQI narrative",
+			45_000,
 		);
 	}
 }
