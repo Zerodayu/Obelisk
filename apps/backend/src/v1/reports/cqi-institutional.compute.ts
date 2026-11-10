@@ -107,7 +107,7 @@ function finite(value: number | null | undefined): value is number {
 	return typeof value === "number" && Number.isFinite(value);
 }
 
-function mean(values: number[]): number | null {
+export function mean(values: number[]): number | null {
 	if (values.length === 0) return null;
 	return round2(values.reduce((sum, value) => sum + value, 0) / values.length);
 }

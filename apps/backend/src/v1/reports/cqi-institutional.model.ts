@@ -54,6 +54,13 @@ export type CqiInstitutionalReport = {
 		missingTargets: string[];
 		missingSections: string[];
 	};
+	programSummaries: {
+		programCode: string;
+		programName: string;
+		atRiskCount: number;
+		assessedCount: number;
+		totalStudents: number;
+	}[];
 	statistics: import("./cqi-institutional.compute").PerformanceStats;
 	outcomes: import("./cqi-institutional.compute").OutcomeRow[];
 	priorComparisons: import("./cqi-institutional.compute").PriorComparison[];

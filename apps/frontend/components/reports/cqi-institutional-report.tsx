@@ -455,6 +455,19 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									value={pct(report.statistics.medianPct)}
 								/>
 							</div>
+							{report.programSummaries.length > 0 ? (
+								<div className="rounded-md border p-3 text-sm">
+									<p className="font-medium">Program-level at-risk</p>
+									<ul className="text-muted-foreground mt-1 list-disc pl-5 text-sm">
+										{report.programSummaries.map((program) => (
+											<li key={program.programCode}>
+												{program.programCode}: {program.atRiskCount}/
+												{program.totalStudents} at-risk
+											</li>
+										))}
+									</ul>
+								</div>
+							) : null}
 							{narrative?.summary ? (
 								<div className="rounded-md border p-3 text-sm">
 									<p>{narrative.summary}</p>

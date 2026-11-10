@@ -61,6 +61,13 @@ export type CqiReport = {
 		missingTargets: string[];
 		missingSections: string[];
 	};
+	programSummaries: {
+		programCode: string;
+		programName: string;
+		atRiskCount: number;
+		assessedCount: number;
+		totalStudents: number;
+	}[];
 	statistics: {
 		enrolledCount: number;
 		assessedCount: number;

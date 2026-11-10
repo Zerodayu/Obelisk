@@ -380,7 +380,7 @@ export class CqiInstitutionalReportService {
 
 		const enrollments = await prisma.enrollment.findMany({
 			where: { classSection: { termId: term.id } },
-			select: { studentId: true },
+			select: { classSectionId: true, studentId: true },
 		});
 		const enrolledCount =
 			new Set(enrollments.map((row) => row.studentId)).size ||
@@ -625,6 +625,50 @@ export class CqiInstitutionalReportService {
 			enrolledCount,
 		);
 
+		const programSummaries = [
+			...new Map(
+				sections.map((s) => [s.course.program.id, s.course.program]),
+			).values(),
+		].map(
+			(program) => {
+				const programSectionIds = new Set(
+					sections
+						.filter((s) => s.course.program.id === program.id)
+						.map((s) => s.id),
+				);
+				const programStudentIds = new Set<string>();
+				for (const enrollment of enrollments) {
+					if (programSectionIds.has(enrollment.classSectionId)) {
+						programStudentIds.add(enrollment.studentId);
+					}
+				}
+				const meansByStudent = new Map<string, number[]>();
+				for (const row of attainments) {
+					if (!programSectionIds.has(row.classSectionId)) continue;
+					const composite = finite(Number(row.compositeScorePct))
+						? Number(row.compositeScorePct)
+						: null;
+					if (composite === null) continue;
+					const bucket = meansByStudent.get(row.studentId) ?? [];
+					bucket.push(composite);
+					meansByStudent.set(row.studentId, bucket);
+				}
+				const atRiskCount = [...meansByStudent.entries()]
+					.filter(([, bucket]) => {
+						const studentMean = mean(bucket);
+						return studentMean !== null && studentMean < MIN_ATTAINMENT_PCT;
+					})
+					.length;
+				return {
+					programCode: program.code,
+					programName: program.name,
+					atRiskCount,
+					assessedCount: meansByStudent.size,
+					totalStudents: programStudentIds.size,
+				};
+			},
+		);
+
 		const missingSections = [
 			peoOutcomes.length === 0
 				? "PEO attainment (no captured evidence)"
@@ -679,6 +723,7 @@ export class CqiInstitutionalReportService {
 				missingTargets: [...missingTargets],
 				missingSections,
 			},
+			programSummaries,
 			statistics,
 			outcomes,
 			priorComparisons,
