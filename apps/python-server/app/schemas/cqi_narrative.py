@@ -76,8 +76,17 @@ class OutcomeAttainment(StrictBaseModel):
     outcome_type: Literal["CLO", "PLO"] = Field(
         ..., description="Outcome level: 'CLO' or 'PLO'."
     )
+    course_code: Optional[str] = Field(
+        None, description="Course identifier for course-level outcomes, e.g., 'IT 101'."
+    )
     outcome_code: str = Field(
         ..., min_length=1, description="Outcome identifier, e.g., 'CLO1' or 'PLO3'."
+    )
+    priority: Optional[Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]] = Field(
+        None, description="Webapp-computed priority level."
+    )
+    gap_pp: Optional[float] = Field(
+        None, ge=0.0, description="Webapp-computed attainment gap in percentage points (target - composite)."
     )
     target_pct: Optional[float] = Field(
         None, ge=0.0, le=100.0, description="Institutional target attainment percentage (unit: % 0-100)."
@@ -118,6 +127,9 @@ class CQIEntry(StrictBaseModel):
     Python only passes through these statuses as verified facts.
     """
 
+    course_code: Optional[str] = Field(
+        None, description="Course identifier, e.g., 'IT 101'."
+    )
     outcome_code: str = Field(
         ..., min_length=1, description="Associated outcome identifier, e.g., 'CLO1' or 'PLO2'."
     )
@@ -209,6 +221,19 @@ class CQIReportNarrativePayload(StrictBaseModel):
     cqi_entries: Optional[List[CQIEntry]] = Field(
         None, description="CQI action plan entries with webapp-computed statuses."
     )
+
+    @field_validator("outcomes")
+    @classmethod
+    def validate_unique_outcome_identifiers(cls, outcomes: Optional[List[OutcomeAttainment]]) -> Optional[List[OutcomeAttainment]]:
+        if not outcomes:
+            return outcomes
+        seen = set()
+        for o in outcomes:
+            ident = f"{o.course_code}/{o.outcome_code}" if o.course_code else o.outcome_code
+            if ident in seen:
+                raise ValueError(f"Duplicate outcome identifier found: '{ident}'.")
+            seen.add(ident)
+        return outcomes
 
     @model_validator(mode="before")
     @classmethod
@@ -341,6 +366,19 @@ class CQINarrativeOutput(OutputBaseModel):
     data_limitations: List[str] = Field(default_factory=list)
 
 
+class AttemptProvenance(StrictBaseModel):
+    """Execution provenance for a single LLM attempt."""
+
+    attempt_number: int
+    requested_model: str
+    returned_model_version: Optional[str] = None
+    response_id: Optional[str] = None
+    usage_metadata: Optional[Dict[str, Any]] = None
+    latency_ms: Optional[float] = None
+    failure_reason: Optional[str] = None
+    cost_usd: Optional[float] = None
+
+
 class ProvenanceMetadata(StrictBaseModel):
     """Execution provenance metadata."""
 
@@ -355,12 +393,25 @@ class ProvenanceMetadata(StrictBaseModel):
     attempt_1_reason: Optional[str] = None
     facts_json: str
     prompt_sent: str
+    attempts: List[AttemptProvenance] = Field(default_factory=list)
+    total_latency_ms: Optional[float] = None
+    total_cost_usd: Optional[float] = None
 
     @model_validator(mode="after")
     def check_live_mode_authenticity(self) -> ProvenanceMetadata:
         if self.execution_mode == "live" and self.is_debug_mode:
             raise ValueError("Output cannot be labelled 'live' when is_debug_mode is True.")
         return self
+
+
+class UncoveredOutcome(StrictBaseModel):
+    """An outcome not addressed by the AI narrative, computed deterministically from facts."""
+
+    scope: str = Field(..., description="Outcome scope, e.g. 'PLO1' or 'IT 101/CLO1'.")
+    status: str = Field(..., description="Attainment status, e.g. 'NOT MET'.")
+    composite: Optional[float] = Field(None, description="Composite attainment percentage.")
+    target: Optional[float] = Field(None, description="Target attainment percentage.")
+    fact_ids: List[str] = Field(default_factory=list, description="Fact IDs associated with this outcome.")
 
 
 class CQINarrativeResponse(StrictBaseModel):
@@ -374,6 +425,7 @@ class CQINarrativeResponse(StrictBaseModel):
     data_limitations: List[str] = Field(default_factory=list)
     missing_sections: List[str] = Field(default_factory=list)
     facts_used: List[FactItem] = Field(default_factory=list)
+    uncovered_outcomes: List[UncoveredOutcome] = Field(default_factory=list)
     provenance: Optional[ProvenanceMetadata] = None
     error: Optional[str] = None
     reason: Optional[str] = None

@@ -21,19 +21,25 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from app.analytics.cqi_narrative import (
     _collect_canonical_fact_numbers,
     _extract_text_numbers,
+    compute_uncovered_outcomes,
     flatten_payload_to_facts,
     generate_cqi_report_narrative,
     validate_cqi_narrative,
 )
+from app.core.config import settings
 from app.schemas.cqi_narrative import (
     CQINarrativeOutput,
     CQINarrativeResponse,
     CQIReportNarrativePayload,
+    ContributingFactorItem,
+    PatternItem,
     ProvenanceMetadata,
+    RecommendationItem,
+    UncoveredOutcome,
 )
 
 
-def run_system_audit(payload_dict: dict, output_dict: dict, claimed_model: Optional[str] = "gemini-3.5-flash-lite") -> Tuple[bool, List[str]]:
+def run_system_audit(payload_dict: dict, output_dict: dict, claimed_model: Optional[str] = None) -> Tuple[bool, List[str]]:
     """
     Performs full system audit:
     - Provenance verification (non-circular, checks against claimed model)
@@ -262,6 +268,373 @@ def run_negative_tests(payload_dict: dict, valid_output_dict: dict) -> bool:
     assert not is_valid, "Negative Test 6 FAILED: NOT MET outcome with complete facts passed solely in data_limitations!"
     print(f"  [PASS] Negative Test 6: Complete NOT MET outcome in data_limitations rejected with reason: {reason}")
 
+    # Test 7: Multi-course bundling in single recommendation
+    payload_courses = copy.deepcopy(payload_dict)
+    payload_courses["outcomes"] = [
+        {"outcome_type": "CLO", "course_code": "IT 101", "outcome_code": "CLO1", "target_pct": 75.0, "composite_pct": 60.0, "status": "NOT MET", "is_complete": True},
+        {"outcome_type": "CLO", "course_code": "IT 201", "outcome_code": "CLO1", "target_pct": 75.0, "composite_pct": 62.0, "status": "NOT MET", "is_complete": True},
+    ]
+    p_course_obj = CQIReportNarrativePayload.model_validate(payload_courses)
+    facts_courses, _ = flatten_payload_to_facts(p_course_obj)
+    bundled_rec = RecommendationItem(
+        problem="Attainment deficits across courses.",
+        evidence_fact_ids=["fact_clo_IT_101_CLO1_status", "fact_clo_IT_201_CLO1_status"],
+        existing_intervention_assessment="None supplied in assessment cycle.",
+        proposed_additions="Revise rubrics and problem sets across courses.",
+        intervention="Revise rubrics and problem sets across courses.",
+        responsible_role="Faculty",
+        timeline="To be set by Program Chair",
+        success_indicator="Improved attainment across courses.",
+        verification_method="Departmental exam review.",
+    )
+    output_7 = CQINarrativeOutput(
+        summary="Summary of cross-course performance.",
+        recommendations=[bundled_rec],
+        possible_contributing_factors=[],
+        data_limitations=[],
+    )
+    is_valid, reason = validate_cqi_narrative(output_7, facts_courses)
+    assert not is_valid and "covers CLOs from multiple courses" in reason, f"Negative Test 7 FAILED: {reason}"
+    print(f"  [PASS] Negative Test 7: Multi-course bundling rejected with reason: {reason}")
+
+    # Test 8: Status mixing (MET and NOT MET in same recommendation)
+    payload_mix = copy.deepcopy(payload_dict)
+    p_mix_obj = CQIReportNarrativePayload.model_validate(payload_mix)
+    facts_mix, _ = flatten_payload_to_facts(p_mix_obj)
+    # CLO1 is NOT MET, CLO2 is MET in synthetic_payload
+    mixed_rec = RecommendationItem(
+        problem="Mixed performance in CLO1 and CLO2.",
+        evidence_fact_ids=["fact_clo_CLO1_status", "fact_clo_CLO2_status"],
+        existing_intervention_assessment="None supplied in assessment cycle.",
+        proposed_additions="Revise assignments for CLO1 and CLO2.",
+        intervention="Revise assignments for CLO1 and CLO2.",
+        responsible_role="Faculty",
+        timeline="To be set by Program Chair",
+        success_indicator="Improved attainment.",
+        verification_method="Departmental assessment review.",
+    )
+    output_8 = CQINarrativeOutput(
+        summary="Summary of mixed outcomes.",
+        recommendations=[mixed_rec],
+        possible_contributing_factors=[],
+        data_limitations=[],
+    )
+    is_valid, reason = validate_cqi_narrative(output_8, facts_mix)
+    assert not is_valid and "mixes MET and NOT MET outcomes" in reason, f"Negative Test 8 FAILED: {reason}"
+    print(f"  [PASS] Negative Test 8: Status mixing rejected with reason: {reason}")
+
+    # Test 9: Missing individual recommendation for CRITICAL / HIGH outcome
+    payload_prio = copy.deepcopy(payload_dict)
+    payload_prio["outcomes"] = [
+        {"outcome_type": "CLO", "course_code": "IT 101", "outcome_code": "CLO1", "priority": "CRITICAL", "gap_pp": 15.0, "target_pct": 75.0, "composite_pct": 60.0, "status": "NOT MET", "is_complete": True},
+        {"outcome_type": "CLO", "course_code": "IT 101", "outcome_code": "CLO2", "target_pct": 75.0, "composite_pct": 65.0, "status": "NOT MET", "is_complete": True},
+    ]
+    p_prio_obj = CQIReportNarrativePayload.model_validate(payload_prio)
+    facts_prio, _ = flatten_payload_to_facts(p_prio_obj)
+    bundled_prio_rec = RecommendationItem(
+        problem="Bundled IT 101/CLO1 and IT 101/CLO2.",
+        evidence_fact_ids=["fact_clo_IT_101_CLO1_status", "fact_clo_IT_101_CLO2_status"],
+        existing_intervention_assessment="None supplied in assessment cycle.",
+        proposed_additions="Revise coding clinics for IT 101/CLO1 and IT 101/CLO2.",
+        intervention="Revise coding clinics for IT 101/CLO1 and IT 101/CLO2.",
+        responsible_role="Faculty",
+        timeline="To be set by Program Chair",
+        success_indicator="Improved attainment.",
+        verification_method="Laboratory rubric review.",
+    )
+    output_9 = CQINarrativeOutput(
+        summary="Summary of IT 101 performance.",
+        recommendations=[bundled_prio_rec],
+        possible_contributing_factors=[],
+        data_limitations=[],
+    )
+    is_valid, reason = validate_cqi_narrative(output_9, facts_prio)
+    assert not is_valid and "lacks a dedicated individual recommendation" in reason, f"Negative Test 9 FAILED: {reason}"
+    print(f"  [PASS] Negative Test 9: Missing individual recommendation rejected with reason: {reason}")
+
+    # Test 10: Generic boilerplate intervention rejection
+    tampered_10 = copy.deepcopy(valid_output_dict)
+    if tampered_10.get("recommendations"):
+        tampered_10["recommendations"][0]["proposed_additions"] = "Strengthen active learning across all lectures."
+        tampered_10["recommendations"][0]["intervention"] = "Strengthen active learning across all lectures."
+        output_10 = CQINarrativeOutput(
+            summary=tampered_10.get("summary", ""),
+            recommendations=tampered_10.get("recommendations", []),
+            possible_contributing_factors=tampered_10.get("possible_contributing_factors", []),
+            pattern=tampered_10.get("pattern"),
+            data_limitations=tampered_10.get("data_limitations", []),
+        )
+        is_valid, reason = validate_cqi_narrative(output_10, facts)
+        assert not is_valid and "generic action" in reason, f"Negative Test 10 FAILED: {reason}"
+        print(f"  [PASS] Negative Test 10: Generic boilerplate intervention rejected with reason: {reason}")
+
+    # Test 11: Contributing factor hypothesis not matching root cause category
+    tampered_11 = copy.deepcopy(valid_output_dict)
+    if tampered_11.get("possible_contributing_factors"):
+        tampered_11["possible_contributing_factors"][0]["root_cause_category"] = "1-Curriculum Design"
+        tampered_11["possible_contributing_factors"][0]["hypothesis"] = "The weather was unusually warm during final testing."
+        output_11 = CQINarrativeOutput(
+            summary=tampered_11.get("summary", ""),
+            recommendations=tampered_11.get("recommendations", []),
+            possible_contributing_factors=tampered_11.get("possible_contributing_factors", []),
+            pattern=tampered_11.get("pattern"),
+            data_limitations=tampered_11.get("data_limitations", []),
+        )
+        is_valid, reason = validate_cqi_narrative(output_11, facts)
+        assert not is_valid and "does not match root_cause_category" in reason, f"Negative Test 11 FAILED: {reason}"
+        print(f"  [PASS] Negative Test 11: Mismatched root-cause category rejected with reason: {reason}")
+
+    # Test 12: Two-way status contradiction (claiming NOT MET outcome was MET)
+    tampered_12 = copy.deepcopy(valid_output_dict)
+    tampered_12["summary"] = "Overall performance was positive because CLO1 was met this semester."
+    output_12 = CQINarrativeOutput(
+        summary=tampered_12["summary"],
+        recommendations=tampered_12.get("recommendations", []),
+        possible_contributing_factors=tampered_12.get("possible_contributing_factors", []),
+        pattern=tampered_12.get("pattern"),
+        data_limitations=tampered_12.get("data_limitations", []),
+    )
+    is_valid, reason = validate_cqi_narrative(output_12, facts)
+    assert not is_valid and "contradicts fact" in reason, f"Negative Test 12 FAILED: {reason}"
+    print(f"  [PASS] Negative Test 12: Status contradiction rejected with reason: {reason}")
+
+    # Test 13: Mentioning unknown outcome not in facts
+    tampered_13 = copy.deepcopy(valid_output_dict)
+    tampered_13["summary"] = "Performance in CS 999/CLO9 was particularly notable across cohorts."
+    output_13 = CQINarrativeOutput(
+        summary=tampered_13["summary"],
+        recommendations=tampered_13.get("recommendations", []),
+        possible_contributing_factors=tampered_13.get("possible_contributing_factors", []),
+        pattern=tampered_13.get("pattern"),
+        data_limitations=tampered_13.get("data_limitations", []),
+    )
+    is_valid, reason = validate_cqi_narrative(output_13, facts)
+    assert not is_valid and "which does not exist in supplied facts" in reason, f"Negative Test 13 FAILED: {reason}"
+    print(f"  [PASS] Negative Test 13: Unknown outcome mention rejected with reason: {reason}")
+
+    # Test 14: Duplicate outcome identifier rejection (schema validation error / HTTP 422)
+    payload_dup = copy.deepcopy(payload_dict)
+    payload_dup["outcomes"] = [
+        {"outcome_type": "CLO", "course_code": "IT 101", "outcome_code": "CLO1", "target_pct": 75.0, "status": "NOT MET"},
+        {"outcome_type": "CLO", "course_code": "IT 101", "outcome_code": "CLO1", "target_pct": 75.0, "status": "NOT MET"},
+    ]
+    try:
+        CQIReportNarrativePayload.model_validate(payload_dup)
+        assert False, "Negative Test 14 FAILED: Duplicate outcome identifier was not rejected!"
+    except ValueError as e:
+        assert "Duplicate outcome identifier found" in str(e)
+        print(f"  [PASS] Negative Test 14: Duplicate outcome identifier rejected with: {e}")
+
+    # Test 15: Coverage policy test - Attempt 2 simulation where PLO1 is omitted
+    bsit_p = json.loads((HERE / "payload_bsit_25_not_met.json").read_text(encoding="utf-8"))
+    bsit_payload = CQIReportNarrativePayload.model_validate(bsit_p)
+    bsit_facts, _ = flatten_payload_to_facts(bsit_payload)
+
+    # Build recommendations addressing all NOT MET outcomes except PLO1
+    # Priority outcomes (CRITICAL / HIGH): IT 101/CLO3, IT 101/CLO1, IT 101/CLO5, IT 201/CLO3, BSIS 101/CLO3
+    test_recs = [
+        RecommendationItem(
+            problem="IT 101/CLO3 fell below target at 59.7% composite.",
+            evidence_fact_ids=["fact_clo_IT_101_CLO3_status", "fact_clo_IT_101_CLO3_composite", "fact_clo_IT_101_CLO3_target"],
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Introduce targeted laboratory clinics for IT 101/CLO3.",
+            responsible_role="Faculty",
+            timeline="To be set by Program Chair",
+            success_indicator="Attainment reaches 74.0% target.",
+            target=74.0,
+            verification_method="Review rubric scores.",
+        ),
+        RecommendationItem(
+            problem="IT 101/CLO1 fell below target at 61.7% composite.",
+            evidence_fact_ids=["fact_clo_IT_101_CLO1_status", "fact_clo_IT_101_CLO1_composite", "fact_clo_IT_101_CLO1_target"],
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Implement modular programming workshops for IT 101/CLO1.",
+            responsible_role="Faculty",
+            timeline="To be set by Program Chair",
+            success_indicator="Attainment reaches 72.0% target.",
+            target=72.0,
+            verification_method="Review practical exam results.",
+        ),
+        RecommendationItem(
+            problem="IT 101/CLO5 fell below target at 63.7% composite.",
+            evidence_fact_ids=["fact_clo_IT_101_CLO5_status", "fact_clo_IT_101_CLO5_composite", "fact_clo_IT_101_CLO5_target"],
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Revise instructional scaffolding for IT 101/CLO5.",
+            responsible_role="Faculty",
+            timeline="To be set by Program Chair",
+            success_indicator="Attainment reaches 73.0% target.",
+            target=73.0,
+            verification_method="Review assignment outcomes.",
+        ),
+        RecommendationItem(
+            problem="IT 201/CLO3 fell below target at 65.7% composite.",
+            evidence_fact_ids=["fact_clo_IT_201_CLO3_status", "fact_clo_IT_201_CLO3_composite", "fact_clo_IT_201_CLO3_target"],
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Provide supplementary database schema exercises for IT 201/CLO3.",
+            responsible_role="Faculty",
+            timeline="To be set by Program Chair",
+            success_indicator="Attainment reaches 76.0% target.",
+            target=76.0,
+            verification_method="Inspect database project rubrics.",
+        ),
+        RecommendationItem(
+            problem="BSIS 101/CLO3 fell below target at 67.0% composite.",
+            evidence_fact_ids=["fact_clo_BSIS_101_CLO3_status", "fact_clo_BSIS_101_CLO3_composite", "fact_clo_BSIS_101_CLO3_target"],
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Align enterprise system case studies for BSIS 101/CLO3.",
+            responsible_role="Faculty",
+            timeline="To be set by Program Chair",
+            success_indicator="Attainment reaches 70.0% target.",
+            target=70.0,
+            verification_method="Evaluate case study submissions.",
+        ),
+    ]
+
+    other_not_met_clos = [
+        ("BSIS 101", ["CLO1"]),
+        ("CAP 102", ["CLO1", "CLO3", "CLO5"]),
+        ("IT 101", ["CLO2", "CLO4"]),
+        ("IT 201", ["CLO1", "CLO5"]),
+        ("IT 301", ["CLO1", "CLO3", "CLO5"]),
+    ]
+    for course, clos in other_not_met_clos:
+        fids = [f"fact_clo_{course.replace(' ', '_')}_{c}_status" for c in clos]
+        test_recs.append(
+            RecommendationItem(
+                problem=f"Remaining NOT MET outcomes in {course} ({', '.join(clos)}) fell below institutional targets.",
+                evidence_fact_ids=fids,
+                existing_intervention_assessment="None supplied",
+                proposed_additions=f"Conduct mid-term review and targeted remediation sessions for {course}.",
+                responsible_role="Faculty",
+                timeline="To be set by Program Chair",
+                success_indicator=f"Outcomes in {course} demonstrate attainment progress.",
+                target=None,
+                verification_method="Review departmental grade reports.",
+            )
+        )
+
+    plo_fids = [f"fact_plo_PLO{i}_status" for i in [2, 3, 4, 5, 7, 8, 11, 13]]
+    test_recs.append(
+        RecommendationItem(
+            problem="Program learning outcomes PLO2, PLO3, PLO4, PLO5, PLO7, PLO8, PLO11, and PLO13 fell below targets.",
+            evidence_fact_ids=plo_fids,
+            existing_intervention_assessment="None supplied",
+            proposed_additions="Coordinate program curriculum mapping adjustments across faculty teaching BSIT cohorts.",
+            responsible_role="Program Chair",
+            timeline="To be set by Program Chair",
+            success_indicator="Program attainment targets reached across assessed domains.",
+            target=None,
+            verification_method="Review curriculum audit report.",
+        )
+    )
+
+    test_output_omitting_plo1 = CQINarrativeOutput(
+        summary="Assessment findings indicate outcomes below institutional targets across BSIT and BSIS cohorts.",
+        recommendations=test_recs,
+        possible_contributing_factors=[
+            ContributingFactorItem(
+                hypothesis="Curriculum pacing in preliminary laboratory exercises may affect practical skill retention.",
+                root_cause_category="1-Curriculum Design",
+                evidence_fact_ids=["fact_clo_IT_101_CLO3_composite", "fact_clo_IT_101_CLO3_status"],
+            )
+        ],
+        pattern=PatternItem(
+            description="Technical outcomes in foundational courses demonstrated lower attainment than advanced cohorts.",
+            evidence_fact_ids=["fact_clo_IT_101_CLO3_status", "fact_clo_IT_201_CLO3_status"],
+        ),
+        data_limitations=[],
+    )
+
+    is_valid, reason = validate_cqi_narrative(test_output_omitting_plo1, bsit_facts)
+    assert is_valid, f"Negative Test 15 FAILED: Expected output omitting regular NOT MET outcome PLO1 to pass validation, got: {reason}"
+    uncovered = compute_uncovered_outcomes(test_output_omitting_plo1, bsit_facts)
+    assert len(uncovered) == 1, f"Expected exactly 1 uncovered outcome, got {len(uncovered)}: {[u.scope for u in uncovered]}"
+    assert uncovered[0].scope == "PLO1", f"Expected uncovered outcome to be PLO1, got {uncovered[0].scope}"
+    assert uncovered[0].status == "NOT MET"
+    assert uncovered[0].composite == 69.2
+    assert uncovered[0].target == 72.0
+
+    resp = CQINarrativeResponse(
+        status="ok",
+        summary=test_output_omitting_plo1.summary,
+        recommendations=test_output_omitting_plo1.recommendations,
+        possible_contributing_factors=test_output_omitting_plo1.possible_contributing_factors,
+        pattern=test_output_omitting_plo1.pattern,
+        data_limitations=test_output_omitting_plo1.data_limitations,
+        missing_sections=["cqi_entries"],
+        facts_used=bsit_facts,
+        uncovered_outcomes=uncovered,
+    )
+    assert resp.status == "ok"
+    assert len(resp.uncovered_outcomes) == 1
+    assert resp.uncovered_outcomes[0].scope == "PLO1"
+    print(f"  [PASS] Negative Test 15: Coverage policy verified: output omitting regular outcome PLO1 passes validation with PLO1 in uncovered_outcomes (composite={uncovered[0].composite}%, target={uncovered[0].target}%).")
+
+    # Verify that CRITICAL outcome missing dedicated recommendation STILL fails as a hard failure
+    tampered_prio = copy.deepcopy(test_recs)
+    # Remove dedicated recommendation for IT 101/CLO3 (CRITICAL)
+    tampered_prio = [r for r in tampered_prio if "IT 101/CLO3" not in r.problem]
+    tampered_prio_output = CQINarrativeOutput(
+        summary=test_output_omitting_plo1.summary,
+        recommendations=tampered_prio,
+        possible_contributing_factors=test_output_omitting_plo1.possible_contributing_factors,
+        pattern=test_output_omitting_plo1.pattern,
+        data_limitations=[],
+    )
+    is_valid_prio, reason_prio = validate_cqi_narrative(tampered_prio_output, bsit_facts)
+    assert not is_valid_prio, "CRITICAL outcome without dedicated recommendation should have failed!"
+    assert "CRITICAL priority, but lacks a dedicated individual recommendation" in reason_prio
+    print(f"  [PASS] Negative Test 15b: CRITICAL outcome without dedicated recommendation fails validation with: {reason_prio}")
+
+    # 15c: Simulate partial first attempt followed by successful targeted recommendation merge
+    targeted_rec_plo1 = RecommendationItem(
+        problem="Program learning outcome PLO1 fell below institutional target benchmark.",
+        evidence_fact_ids=["fact_plo_PLO1_composite", "fact_plo_PLO1_target", "fact_plo_PLO1_status"],
+        existing_intervention_assessment="None supplied",
+        proposed_additions="Coordinate curriculum committee review of introductory programming courses contributing to PLO1.",
+        responsible_role="Program Chair",
+        timeline="To be set by Program Chair",
+        success_indicator="PLO1 cohort composite attainment reaches the 72.0% target.",
+        target=72.0,
+        verification_method="Review program curriculum audit report.",
+    )
+    targeted_output = CQINarrativeOutput(
+        summary="Targeted recommendation for uncovered outcome PLO1.",
+        recommendations=[targeted_rec_plo1],
+        possible_contributing_factors=[],
+        pattern=None,
+        data_limitations=[],
+    )
+    merged_recs = list(test_output_omitting_plo1.recommendations) + list(targeted_output.recommendations)
+    merged_output = CQINarrativeOutput(
+        summary=test_output_omitting_plo1.summary,
+        recommendations=merged_recs,
+        possible_contributing_factors=test_output_omitting_plo1.possible_contributing_factors,
+        pattern=test_output_omitting_plo1.pattern,
+        data_limitations=test_output_omitting_plo1.data_limitations,
+    )
+    merged_valid, merged_reason = validate_cqi_narrative(merged_output, bsit_facts)
+    assert merged_valid, f"Merged output should pass validation: {merged_reason}"
+    final_uncovered = compute_uncovered_outcomes(merged_output, bsit_facts)
+    assert len(final_uncovered) == 0, f"Expected 0 uncovered outcomes after merge, got: {[u.scope for u in final_uncovered]}"
+
+    # Fallback simulation: If targeted retry fails or times out, return first attempt with uncovered_outcomes
+    fallback_resp = CQINarrativeResponse(
+        status="ok",
+        summary=test_output_omitting_plo1.summary,
+        recommendations=test_output_omitting_plo1.recommendations,
+        possible_contributing_factors=test_output_omitting_plo1.possible_contributing_factors,
+        pattern=test_output_omitting_plo1.pattern,
+        data_limitations=test_output_omitting_plo1.data_limitations,
+        missing_sections=["cqi_entries"],
+        facts_used=bsit_facts,
+        uncovered_outcomes=uncovered,
+    )
+    assert fallback_resp.status == "ok"
+    assert len(fallback_resp.uncovered_outcomes) == 1
+    assert fallback_resp.uncovered_outcomes[0].scope == "PLO1"
+    print("  [PASS] Negative Test 15c: Targeted retry merge verified (merged output covers all 25 NOT MET outcomes; fallback preserves uncovered_outcomes).")
+
     return True
 
 
@@ -308,7 +681,8 @@ def run_suite_replays() -> bool:
             continue
         p_dict = json.loads(p_path.read_text(encoding="utf-8"))
         o_dict = json.loads(o_path.read_text(encoding="utf-8"))
-        passed, lines = run_system_audit(p_dict, o_dict, claimed_model="gemini-3.5-flash-lite")
+        expected_live_model = o_dict.get("provenance", {}).get("requested_model", str(settings.LLM_MODEL))
+        passed, lines = run_system_audit(p_dict, o_dict, claimed_model=expected_live_model)
         if passed:
             print(f"  [PASS] {desc} ({p_name} -> {o_name})")
         else:
@@ -347,7 +721,7 @@ async def main():
             sys.exit(1)
         output_dict = json.loads(output_path.read_text(encoding="utf-8"))
 
-    passed, report_lines = run_system_audit(payload_dict, output_dict, claimed_model="gemini-3.5-flash-lite")
+    passed, report_lines = run_system_audit(payload_dict, output_dict, claimed_model=str(settings.LLM_MODEL))
     for line in report_lines:
         print(line)
 

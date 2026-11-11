@@ -1,0 +1,335 @@
+[
+  {
+    "payload": "payload_bsit_25_not_met",
+    "model": "gemini-3.8-flash",
+    "output_file": "live_gemini-3.8-flash_payload_bsit_25_not_met.json",
+    "duration_ms": 101183.51,
+    "status": "ok",
+    "returned_model_version": "gemini-3.8-flash",
+    "response_id": "LjL0aqTZE8XnrfcPr9KE-Q8",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "25/25",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 1650,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 17542,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 17542
+        }
+      ],
+      "thoughts_token_count": 4006,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 23198,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:16:54.775031+00:00",
+    "would_be_cost": "$0.03437",
+    "thinking_tokens": 4006
+  },
+  {
+    "payload": "payload_bsit_25_not_met",
+    "model": "gemini-3.6-flash",
+    "output_file": "live_gemini-3.6-flash_payload_bsit_25_not_met.json",
+    "duration_ms": 83927.97,
+    "status": "ok",
+    "returned_model_version": "gemini-3.6-flash",
+    "response_id": "tDL0aozvAujdvr0P09mxuAs",
+    "attempts_used": 2,
+    "failure_reason": null,
+    "coverage_ratio": "25/25",
+    "usage_metadata": {
+      "cache_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 15606
+        }
+      ],
+      "cached_content_token_count": 15606,
+      "candidates_token_count": 1322,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 17599,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 17599
+        }
+      ],
+      "thoughts_token_count": 7043,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 25964,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:18:18.706210+00:00",
+    "would_be_cost": "price not confirmed",
+    "thinking_tokens": 7043
+  },
+  {
+    "payload": "payload_bsit_25_not_met",
+    "model": "gemini-3.5-flash-lite",
+    "output_file": "live_gemini-3.5-flash-lite_payload_bsit_25_not_met.json",
+    "duration_ms": 32949.55,
+    "status": "ok",
+    "returned_model_version": "gemini-3.5-flash-lite",
+    "response_id": "9zL0arvzLNu4694P7rywwAk",
+    "attempts_used": 2,
+    "failure_reason": null,
+    "coverage_ratio": "25/25",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 768,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 17593,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 17593
+        }
+      ],
+      "thoughts_token_count": null,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 18361,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:18:51.658884+00:00",
+    "would_be_cost": "$0.00720",
+    "thinking_tokens": 0
+  },
+  {
+    "payload": "payload_bsit_25_not_met",
+    "model": "gemini-3.5-flash",
+    "output_file": "live_gemini-3.5-flash_payload_bsit_25_not_met.json",
+    "duration_ms": 5100.0,
+    "status": "error",
+    "returned_model_version": null,
+    "response_id": null,
+    "attempts_used": 1,
+    "failure_reason": "[LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]",
+    "coverage_ratio": null,
+    "usage_metadata": null,
+    "timestamp_utc": "2026-11-11T09:22:38.116197+00:00",
+    "would_be_cost": "N/A",
+    "thinking_tokens": null
+  },
+  {
+    "payload": "payload_two_not_met",
+    "model": "gemini-3.8-flash",
+    "output_file": "live_gemini-3.8-flash_payload_two_not_met.json",
+    "duration_ms": 39651.38,
+    "status": "ok",
+    "returned_model_version": "gemini-3.8-flash",
+    "response_id": "GDP0ar-cMPaw0-kPzeO4uA0",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "2/2",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 916,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 3437,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 3437
+        }
+      ],
+      "thoughts_token_count": 2324,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 6677,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:19:48.009626+00:00",
+    "would_be_cost": "$0.01473",
+    "thinking_tokens": 2324
+  },
+  {
+    "payload": "payload_two_not_met",
+    "model": "gemini-3.6-flash",
+    "output_file": "live_gemini-3.6-flash_payload_two_not_met.json",
+    "duration_ms": 2200.0,
+    "status": "error",
+    "returned_model_version": null,
+    "response_id": null,
+    "attempts_used": 1,
+    "failure_reason": "[LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]",
+    "coverage_ratio": null,
+    "usage_metadata": null,
+    "timestamp_utc": "2026-11-11T09:22:38.117497+00:00",
+    "would_be_cost": "N/A",
+    "thinking_tokens": null
+  },
+  {
+    "payload": "payload_two_not_met",
+    "model": "gemini-3.5-flash-lite",
+    "output_file": "live_gemini-3.5-flash-lite_payload_two_not_met.json",
+    "duration_ms": 20138.08,
+    "status": "ok",
+    "returned_model_version": "gemini-3.5-flash-lite",
+    "response_id": "TzP0apWRLoez694PseOniAM",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "2/2",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 942,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 3437,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 3437
+        }
+      ],
+      "thoughts_token_count": null,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 4379,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:20:23.011046+00:00",
+    "would_be_cost": "$0.00339",
+    "thinking_tokens": 0
+  },
+  {
+    "payload": "payload_two_not_met",
+    "model": "gemini-3.5-flash",
+    "output_file": "live_gemini-3.5-flash_payload_two_not_met.json",
+    "duration_ms": 30935.44,
+    "status": "ok",
+    "returned_model_version": "gemini-3.6-flash",
+    "response_id": "6jP0aq3_MabM694Pmf3CiAs",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "2/2",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 1052,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 3437,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 3437
+        }
+      ],
+      "thoughts_token_count": 2872,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 7361,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:23:09.053289+00:00",
+    "would_be_cost": "price not confirmed",
+    "thinking_tokens": 2872
+  },
+  {
+    "payload": "synthetic_payload",
+    "model": "gemini-3.8-flash",
+    "output_file": "live_gemini-3.8-flash_synthetic_payload.json",
+    "duration_ms": 46936.52,
+    "status": "ok",
+    "returned_model_version": "gemini-3.8-flash",
+    "response_id": "CTT0aqXpJN3orfcPtpyIoAw",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "2/2",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 907,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 3673,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 3673
+        }
+      ],
+      "thoughts_token_count": 3792,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 8372,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:23:55.992231+00:00",
+    "would_be_cost": "$0.02038",
+    "thinking_tokens": 3792
+  },
+  {
+    "payload": "synthetic_payload",
+    "model": "gemini-3.6-flash",
+    "output_file": "live_gemini-3.6-flash_synthetic_payload.json",
+    "duration_ms": 17971.77,
+    "status": "error",
+    "returned_model_version": null,
+    "response_id": null,
+    "attempts_used": 1,
+    "failure_reason": "[LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]",
+    "coverage_ratio": null,
+    "usage_metadata": null,
+    "timestamp_utc": "2026-11-11T09:24:13.965543+00:00",
+    "would_be_cost": "N/A",
+    "thinking_tokens": null
+  },
+  {
+    "payload": "synthetic_payload",
+    "model": "gemini-3.5-flash-lite",
+    "output_file": "live_gemini-3.5-flash-lite_synthetic_payload.json",
+    "duration_ms": 17042.2,
+    "status": "ok",
+    "returned_model_version": "gemini-3.5-flash-lite",
+    "response_id": "SjT0aqjgI5us9tMP5tPzuA4",
+    "attempts_used": 1,
+    "failure_reason": null,
+    "coverage_ratio": "2/2",
+    "usage_metadata": {
+      "cache_tokens_details": null,
+      "cached_content_token_count": null,
+      "candidates_token_count": 577,
+      "candidates_tokens_details": null,
+      "prompt_token_count": 3673,
+      "prompt_tokens_details": [
+        {
+          "modality": "TEXT",
+          "token_count": 3673
+        }
+      ],
+      "thoughts_token_count": null,
+      "tool_use_prompt_token_count": null,
+      "tool_use_prompt_tokens_details": null,
+      "total_token_count": 4250,
+      "traffic_type": null
+    },
+    "timestamp_utc": "2026-11-11T09:24:31.008314+00:00",
+    "would_be_cost": "$0.00254",
+    "thinking_tokens": 0
+  },
+  {
+    "payload": "synthetic_payload",
+    "model": "gemini-3.5-flash",
+    "output_file": "live_gemini-3.5-flash_synthetic_payload.json",
+    "duration_ms": 14711.49,
+    "status": "error",
+    "returned_model_version": null,
+    "response_id": null,
+    "attempts_used": 1,
+    "failure_reason": "[LLM API ERROR: All 1 configured API key(s) were exhausted without success. Details: Key #1 failed: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}]",
+    "coverage_ratio": null,
+    "usage_metadata": null,
+    "timestamp_utc": "2026-11-11T09:24:45.721049+00:00",
+    "would_be_cost": "N/A",
+    "thinking_tokens": null
+  }
+]

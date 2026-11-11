@@ -1,0 +1,9 @@
+{
+  "mapping": {
+    "Model A": "gemini-3.6-flash",
+    "Model B": "gemini-3.8-flash",
+    "Model C": "gemini-3.5-flash-lite"
+  },
+  "shuffled_at_utc": "2026-11-11T09:25:00Z",
+  "description": "De-anonymization answer key for blind human review of payload_bsit_25_not_met recommendations."
+}

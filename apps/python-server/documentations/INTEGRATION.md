@@ -339,9 +339,13 @@ Synchronous AI narrative generator for outcomes-based Continuous Quality Improve
   - Python **never decides MET / NOT MET, at-risk status, escalation, or loop closing status**. The webapp computes all statuses and targets; the AI repeats them verbatim.
   - Existing endpoints (Endpoint 1: `/upload`, `/jobs/{job_id}`) receive individual student names and IDs in Excel workbooks and loaded JSON; **this endpoint accepts NO student names or student IDs**. Payloads containing student names, student IDs, or unknown fields are rejected with HTTP 422.
   - Free-text fields (`intervention`, `named_owner`, `kpi`) cannot be automatically scanned for personal information: the webapp MUST keep them completely free of personal student names before transmitting.
-- **One Validation Retry (Up to Two Provider Calls)**:
+- **One Validation Retry (Up to Two Provider Calls) & Measured Latencies**:
   - The endpoint enforces a strict hard validator. If the first provider generation fails validation (e.g. invented number, missing citations, invalid role), the engine automatically executes **one retry** with explicit error feedback to the model.
-  - Because up to two LLM calls can occur on a single request, the webapp backend MUST set its HTTP client timeout accordingly (recommended: minimum 30–60 seconds).
+  - **Empirical Measured Latencies (Retries Included)**:
+    - `gemini-3.5-flash-lite`: 17.0s – 20.1s for small/baseline payloads (2–3 outcomes, 1 attempt); **32.9s** for large institutional payloads (33 outcomes, 25 NOT MET, 2 attempts).
+    - `gemini-3.8-flash`: 39.7s – 46.9s for small/baseline payloads (1 attempt); **101.2s** for large institutional payloads (33 outcomes, 25 NOT MET, 1 attempt).
+    - `gemini-3.6-flash`: **83.9s** for large institutional payloads (33 outcomes, 25 NOT MET, 2 attempts).
+  - **Timeout Recommendation**: Latency varies substantially by model family, prompt/payload size, retry attempts, and free-tier infrastructure load. The webapp backend MUST set its HTTP client timeout to **120–180 seconds**, or implement asynchronous background polling / task queuing instead of blocking synchronously.
 
 ### Request Schema (`CQIReportNarrativePayload`, `extra="forbid"`)
 
@@ -359,7 +363,10 @@ Every section is optional. Missing sections become explicit `"missing/insufficie
 | `counts.assessed_count` | integer (optional) | students (count >= 0) | Total assessed student count. |
 | `outcomes` | List[OutcomeAttainment] (optional) | N/A | Per-outcome attainment measurements for CLOs or PLOs. |
 | `outcomes[].outcome_type` | string (`"CLO"` or `"PLO"`) | N/A | Outcome level hierarchy. |
-| `outcomes[].outcome_code` | string | N/A | Outcome code, e.g., `"CLO1"`, `"PLO2"`. |
+| `outcomes[].course_code` | string (optional) | N/A | Course identifier, e.g., `"IT 101"`, `"CAP 102"`, `"BSIS 101"`. For course-level outcomes, sets the fact scope as `"COURSE/OUTCOME"` (e.g. `"IT 101/CLO3"`). |
+| `outcomes[].outcome_code` | string | N/A | Outcome code, e.g., `"CLO1"`, `"PLO2"`. Must be unique within the course (or unique overall for PLOs). Duplicates raise HTTP 422. |
+| `outcomes[].priority` | string (optional) | N/A | Webapp-computed priority level: `"CRITICAL"`, `"HIGH"`, `"MEDIUM"`, or `"LOW"`. For `"CRITICAL"` and `"HIGH"` outcomes, the validator enforces dedicated individual recommendations. |
+| `outcomes[].gap_pp` | float (optional) | pp (>= 0.0) | Webapp-computed attainment gap in percentage points (`target_pct - composite_pct`). Passed through as an immutable fact; Python never computes gaps. |
 | `outcomes[].target_pct` | float (optional) | % (0.0 to 100.0) | Target attainment benchmark (e.g. F04 threshold). |
 | `outcomes[].direct_pct` | float (optional) | % (0.0 to 100.0+) | Direct assessment attainment percentage. |
 | `outcomes[].indirect_pct` | float (optional) | % (0.0 to 100.0) | Indirect Likert survey attainment percentage. |
@@ -369,6 +376,7 @@ Every section is optional. Missing sections become explicit `"missing/insufficie
 | `outcomes[].status` | string (optional) | N/A | Webapp-computed status: `"MET"` or `"NOT MET"`. |
 | `outcomes[].fact_id` | string (optional) | N/A | Optional webapp-supplied fact identifier (if omitted, Python generates a deterministic ID). |
 | `cqi_entries` | List[CQIEntry] (optional) | N/A | Pre-computed CQI action plan items. |
+| `cqi_entries[].course_code` | string (optional) | N/A | Course identifier, e.g., `"IT 101"`. |
 | `cqi_entries[].outcome_code` | string | N/A | Associated outcome identifier. |
 | `cqi_entries[].status` | string | N/A | Attainment status: `"MET"` or `"NOT MET"`. |
 | `cqi_entries[].loop_status` | string (optional) | N/A | Loop status: `"CLOSED"`, `"OPEN_REASSESS"`, or `"OPEN_NOT_IMPLEMENTED"`. |
@@ -486,10 +494,35 @@ The 6 categories defined locally in `app/analytics/cqi_constants.py` replicate `
 | `data_limitations` | List[string] | Limitations noted when facts indicate missing or insufficient data. |
 | `missing_sections` | List[string] | List of top-level payload sections omitted in request. |
 | `facts_used` | List[FactItem] | Flattened, immutable facts list provided to the LLM. **Recommended: Webapp may store for data auditability.** |
-| `provenance` | Object (optional) | Execution provenance metadata (`requested_model`, `returned_model_version`, `response_id`, `usage_metadata`, `timestamp_utc`, `attempts_used`, `execution_mode`). **Recommended: Webapp SHOULD store in database alongside the CQI report record for accreditation and auditing.** |
+| `uncovered_outcomes` | List[UncoveredOutcome] | List of NOT MET outcomes not addressed by the AI narrative, computed deterministically in Python from the facts (`scope`, `status`, `composite`, `target`, `fact_ids`). Empty `[]` if all outcomes are addressed. **Webapp rendering: Display these separately as "not addressed by the AI narrative".** |
+| `provenance` | Object (optional) | Execution provenance metadata (`requested_model`, `returned_model_version`, `response_id`, `usage_metadata`, `timestamp_utc`, `attempts_used`, `execution_mode`, `attempts`, `total_latency_ms`, `total_cost_usd`). The `attempts` array records attempt-level diagnostics (`attempt_number`, `requested_model`, `returned_model_version`, `response_id`, `usage_metadata`, `latency_ms`, `failure_reason`, `cost_usd`). **Recommended: Webapp SHOULD store in database alongside the CQI report record for accreditation and auditing.** |
 | `prompt_used` | string or null | The exact prompt sent to the LLM (including facts list and rules). **Recommended: Store for debugging/audit logs if desired; do NOT display to users in the webapp UI.** |
 | `error` | string or null | Error details if provider keys failed (`status: "error"`). |
 | `reason` | string or null | Rejection reason when validation failed after retry (`status: "narrative_unavailable"`). |
+
+### Coverage Policy and Targeted Retry Architecture
+
+1. **Completeness Rule vs. Safety Rule**:
+   - Outcome coverage is classified as a **completeness rule, not a safety rule**.
+   - If an AI narrative satisfies all safety constraints (no invented numbers, valid citations, authorized roles, no personal names, course isolation, status homogeneity) and provides dedicated individual recommendations for all `CRITICAL` and `HIGH` priority outcomes, but leaves some regular `NOT MET` outcomes unaddressed, the endpoint returns **`status: "ok"`**.
+   - Any unaddressed outcomes are populated in the response under **`uncovered_outcomes`** (computed deterministically in Python from the facts, never written by the model).
+2. **Hard Safety Constraints (Zero Loosening)**:
+   - If an outcome marked `CRITICAL` or `HIGH` priority lacks a dedicated individual recommendation, it remains a **hard failure** (`status: "narrative_unavailable"`).
+   - Any violation of safety rules (untraceable numbers, unsupplied dates/durations, invalid roles, personal names, multi-course bundling, mixing MET and NOT MET, generic boilerplate actions) remains a hard failure.
+3. **Targeted Retry**:
+   - On Attempt 1, if all safety rules pass but a coverage gap exists (one or more regular NOT MET outcomes omitted), the pipeline makes **ONE targeted retry call** asking specifically for recommendations addressing the missing outcomes (avoiding costly full-narrative re-generation).
+   - The returned recommendations are parsed, appended to Attempt 1, and the merged set is re-validated through the full hard validator.
+   - If the merged set passes validation, it is returned with `status: "ok"`. Both Attempt 1 and Attempt 2 are recorded in `provenance.attempts`.
+   - **Fallback on Retry Failure**: If the targeted retry fails, times out, or produces invalid recommendations, the endpoint falls back to returning the valid first-attempt output with `uncovered_outcomes` populated; it **does NOT return `status: "error"`** solely because a targeted retry failed.
+
+### Webapp Rendering Guidance for `uncovered_outcomes`
+
+When integrating the narrative response in the webapp UI:
+1. **Display Narrative First**: Render the AI-generated narrative sections first (`summary`, `recommendations`, `possible_contributing_factors`, `pattern`).
+2. **Render a Warning Banner or Distinct Sub-Table**: Directly below the recommendations table, render an amber warning banner or dedicated sub-table titled **"Outcomes Not Addressed by AI Narrative"** for any items present in `uncovered_outcomes`.
+3. **Display Key Attainment Metrics**: Display each uncovered outcome with its `scope`, `status`, `composite`, and `target` (e.g. `PLO1: Composite 69.20% vs Target 72.00%`).
+4. **Actionable Manual Input**: Provide an interactive form / button enabling faculty chairs or CQI committee reviewers to draft manual action plans for these uncovered outcomes before final institutional report sign-off.
+5. **Priority Guarantee**: Priority outcomes (`CRITICAL` and `HIGH`) are strictly guaranteed to possess dedicated AI recommendations; they are never relegated to `uncovered_outcomes`.
 
 ### Status Responses and Examples
 
@@ -498,18 +531,18 @@ The 6 categories defined locally in `app/analytics/cqi_constants.py` replicate `
 ```json
 {
   "status": "ok",
-  "summary": "Attainment in CLO1 fell below the 75.0% target for the term, while CLO2 achieved 80.45%.",
+  "summary": "Attainment in IT 101/CLO3 fell below the 74.0% target for the term, while IT 101/CLO2 achieved 69.7%.",
   "recommendations": [
     {
-      "problem": "Performance in CLO1 is below the expected institutional benchmark.",
-      "evidence_fact_ids": ["fact_clo_CLO1_target", "fact_clo_CLO1_composite", "fact_clo_CLO1_status"],
-      "existing_intervention_assessment": "Partly sufficient because the planned intervention in fact_cqi_CLO1_1_intervention introduces supplementary workshops but lacks structured attendance tracking.",
-      "proposed_additions": "Implement supplemental laboratory coding workshops and align practical rubric assessments.",
-      "intervention": "Implement supplemental laboratory coding workshops and align practical rubric assessments.",
+      "problem": "Performance in IT 101/CLO3 fell below the institutional benchmark.",
+      "evidence_fact_ids": ["fact_clo_IT_101_CLO3_target", "fact_clo_IT_101_CLO3_composite", "fact_clo_IT_101_CLO3_status"],
+      "existing_intervention_assessment": "None supplied",
+      "proposed_additions": "Establish supplementary algorithm debugging clinics and revise laboratory rubrics.",
+      "intervention": "Establish supplementary algorithm debugging clinics and revise laboratory rubrics.",
       "responsible_role": "Faculty",
-      "timeline": "Within 4 weeks",
-      "success_indicator": "Achievement of the 75.0% composite target in the subsequent evaluation cycle.",
-      "target": 75.0,
+      "timeline": "To be set by Program Chair",
+      "success_indicator": "Achievement of the 74.0% composite target in the subsequent evaluation cycle.",
+      "target": 74.0,
       "verification_method": "Midterm laboratory rubrics and final departmental exam results."
     }
   ],
@@ -517,16 +550,29 @@ The 6 categories defined locally in `app/analytics/cqi_constants.py` replicate `
     {
       "hypothesis": "Practical assessment rubrics in introductory laboratory modules may not fully evaluate formative programming fundamentals.",
       "root_cause_category": "3-Assessment Design",
-      "evidence_fact_ids": ["fact_clo_CLO1_direct", "fact_cqi_CLO1_1_root_cause_category"]
+      "evidence_fact_ids": ["fact_clo_IT_101_CLO3_composite", "fact_clo_IT_101_CLO3_status"]
     }
   ],
   "pattern": {
-    "description": "Direct assessment attainment (65.0%) is notably lower than student indirect survey satisfaction (80.0%).",
-    "evidence_fact_ids": ["fact_clo_CLO1_direct", "fact_clo_CLO1_indirect"]
+    "description": "Technical outcomes in foundational courses demonstrated lower attainment than advanced cohorts.",
+    "evidence_fact_ids": ["fact_clo_IT_101_CLO3_status", "fact_clo_IT_201_CLO3_status"]
   },
   "data_limitations": [],
-  "missing_sections": [],
+  "missing_sections": ["cqi_entries"],
   "facts_used": [ ... ],
+  "uncovered_outcomes": [
+    {
+      "scope": "PLO1",
+      "status": "NOT MET",
+      "composite": 69.2,
+      "target": 72.0,
+      "fact_ids": [
+        "fact_plo_PLO1_composite",
+        "fact_plo_PLO1_status",
+        "fact_plo_PLO1_target"
+      ]
+    }
+  ],
   "error": null,
   "reason": null
 }
@@ -596,7 +642,7 @@ When calling `POST /analytics/cqi-narrative` from Bun / Elysia / Nest / Express:
 10. **Target JSON type is always a numeric float**: `target` and `target_pct` fields are strictly JSON numbers (`float` or `null`, e.g. `75.0`). Never send strings with `%` symbols; the webapp front-end is responsible for appending the `%` symbol in the user interface.
 11. **Enable `OBELISK_WEBAPP_SHARED_SECRET` in production**: Ensure the backend sets the `X-Webapp-Secret` header on every request matching the server configuration.
 12. **Latest-run-scoped data**: Scope all aggregated attainment data to the latest ETL computation run for each course section. Re-uploads create duplicate runs in the database, and the raw gap loader does not automatically filter runs.
-13. **Timeout configuration**: Set webapp HTTP client timeout to at least 30–60 seconds, because the endpoint performs up to two sequential LLM calls when validation retries occur.
+13. **Timeout configuration & Background Polling**: Set webapp HTTP client timeout to **120–180 seconds** (or adopt asynchronous background polling). Empirical measurements show real-world provider latencies ranging from 17.0s on lightweight models up to 101.2s on heavy 25-outcome institutional payloads (and 83.9s when automatic validation retries trigger). Latency varies dynamically by model family and provider infrastructure load.
 
 ---
 
@@ -612,7 +658,7 @@ We evaluated the offline performance and prompt token sizing of Endpoint 3 using
 | **Prompt Size** | 57,804 characters (~14,451 tokens) | Fully serialized without truncation |
 | **Truncation Detected** | **False (0 truncation)** | Entire facts list ingested cleanly |
 | **Offline Response Time** | **11.58 ms** | Python pure-compute pipeline execution |
-| **Recommended Maximum** | **Up to 50 outcomes & 25 CQI entries** | ~450 facts, ~25,000 tokens (well within provider limits & standard 30–60s HTTP client timeouts) |
+| **Recommended Maximum** | **Up to 50 outcomes & 25 CQI entries** | ~450 facts, ~25,000 tokens (well within provider limits & recommended 120–180s HTTP client timeouts or background polling) |
 
 ---
 
@@ -627,7 +673,7 @@ reload and generally requires a process restart.
    - If using `OBELISK_LLM_API_KEY`, it is automatically treated as a single-key pool.
 2. **Sequential Try / Failover**:
    - The engine attempts keys in priority order (index 1 to $N$).
-   - If an error occurs (such as HTTP 429 quota exhaustion, invalid credential, or network timeout), the failure is logged (`llm_key_failed`) with a masked preview of the failed key.
+   - If an error occurs (such as HTTP 429 quota exhaustion, invalid credential, or network timeout), the failure is logged (`llm_key_failed`) without logging key characters.
    - The engine immediately switches to key index 2 without interrupting the request.
 3. **Exhaustion Handling**:
    - Only when **all** keys in the pool fail does the engine stop and log `llm_all_keys_exhausted`.

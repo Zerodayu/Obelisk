@@ -1,0 +1,34 @@
+[
+  {
+    "model": "gemini-3.8-flash",
+    "success": true,
+    "http_code": 200,
+    "error_message": null,
+    "latency_ms": 71622.83,
+    "response_text": "PONG"
+  },
+  {
+    "model": "gemini-3.6-flash",
+    "success": true,
+    "http_code": 200,
+    "error_message": null,
+    "latency_ms": 2292.71,
+    "response_text": "PONG"
+  },
+  {
+    "model": "gemini-3.5-flash-lite",
+    "success": true,
+    "http_code": 200,
+    "error_message": null,
+    "latency_ms": 1187.39,
+    "response_text": "PONG."
+  },
+  {
+    "model": "gemini-3.5-flash",
+    "success": true,
+    "http_code": 200,
+    "error_message": null,
+    "latency_ms": 2168.37,
+    "response_text": "PONG."
+  }
+]
