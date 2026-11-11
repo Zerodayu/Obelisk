@@ -12,15 +12,3 @@ export const AiRecommendationParamsSchema = t.Object({
 });
 
 export type AiRecommendationParams = typeof AiRecommendationParamsSchema.static;
-
-// --- Review -----------------------------------------------------------------
-
-export const ReviewRecommendationSchema = t.Object({
-	status: t.Enum({
-		acknowledged: "acknowledged",
-		actioned: "actioned",
-		dismissed: "dismissed",
-	}),
-});
-
-export type ReviewRecommendation = typeof ReviewRecommendationSchema.static;

@@ -88,6 +88,8 @@ export type CqiLoopStatus = {
 	notRecorded: number;
 	total: number;
 	isClosed: boolean;
+	/** The AiRecommendation this program+term's plan last adopted from. */
+	adoptedRecommendationId: string | null;
 	prior: {
 		termId: string;
 		term: { schoolYear: string; semester: string };

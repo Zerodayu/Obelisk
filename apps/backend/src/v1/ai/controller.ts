@@ -2,20 +2,15 @@ import { cached } from "@lib/cache";
 import { PythonServerError } from "@lib/ingest/ingest-client";
 import {
 	assertCanGenerateAiInsights,
-	assertCanViewAiInsights,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
 import { unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 
-import {
-	AiRecommendationParamsSchema,
-	ReviewRecommendationSchema,
-} from "./model";
+import { AiRecommendationParamsSchema } from "./model";
 import {
 	AiNoDataError,
-	AiRecommendationNotFoundError,
 	AiTermNotFoundError,
 	aiRecommendationService,
 } from "./service";
@@ -133,46 +128,6 @@ export const aiPlugin = new Elysia({
 					404: { description: "Requested term not found" },
 					409: { description: "No persisted class records to analyse" },
 					502: { description: "python-server analytics failure" },
-				},
-			},
-		},
-	)
-	.post(
-		"/recommendation/:id/review",
-		async ({ params, body, user, set }) => {
-			if (!user) {
-				set.status = 401;
-				return { error: "Unauthorized" };
-			}
-			assertCanViewAiInsights(callerRole(user));
-			try {
-				const recommendation = await aiRecommendationService.review(
-					params.id,
-					body.status,
-					user.id,
-				);
-				return { recommendation };
-			} catch (error) {
-				if (error instanceof AiRecommendationNotFoundError) {
-					set.status = 404;
-					return { error: error.message };
-				}
-				throw error;
-			}
-		},
-		{
-			auth: true,
-			body: ReviewRecommendationSchema,
-			detail: {
-				summary: "Review an AI CQI recommendation",
-				description:
-					"Marks a recommendation acknowledged, actioned, or dismissed and records the reviewer.",
-				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
-				responses: {
-					200: { description: "Updated recommendation" },
-					401: { description: "Unauthorized" },
-					403: { description: "Caller's role may not review AI insights" },
-					404: { description: "Recommendation not found" },
 				},
 			},
 		},

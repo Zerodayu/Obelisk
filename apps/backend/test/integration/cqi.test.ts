@@ -2,11 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
-import { aiRecommendationService } from "@v1/ai/service";
 import {
 	annualProgramReportService,
 	closingTheLoopService,
-	CqiRecommendationNotAdoptableError,
 	cqiActionPlanService,
 	ploGapAnalysisService,
 } from "@v1/cqi/service";
@@ -266,7 +264,7 @@ async function cleanup(draftIds: string[]) {
 }
 
 describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
-	it("reviews and adopts an AI recommendation into the action plan", async () => {
+	it("adopts an AI recommendation into the action plan", async () => {
 		await resetCqiData();
 		await seedAcademicChain();
 		const recId = "it-cqi-rec";
@@ -282,28 +280,6 @@ describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
 					status: "pending_review",
 				},
 			});
-
-			// Adopting before it's marked actioned is rejected.
-			await expect(
-				cqiActionPlanService.adoptRecommendation(
-					recId,
-					IDS.program,
-					IDS.term,
-					IDS.user,
-				),
-			).rejects.toThrow(CqiRecommendationNotAdoptableError);
-
-			const reviewed = await aiRecommendationService.review(
-				recId,
-				"actioned",
-				IDS.user,
-			);
-			expect(reviewed.status).toBe("actioned");
-			const row = await prisma.aiRecommendation.findUniqueOrThrow({
-				where: { id: recId },
-			});
-			expect(row.reviewedByUserId).toBe(IDS.user);
-			expect(row.reviewedAt).toBeInstanceOf(Date);
 
 			const { draft, payload } = await cqiActionPlanService.adoptRecommendation(
 				recId,

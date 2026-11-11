@@ -24,7 +24,6 @@ import {
 import {
 	annualProgramReportService,
 	CqiInvalidEditError,
-	CqiRecommendationNotAdoptableError,
 	CqiSourceNotFoundError,
 	CqiSubmissionNotFoundError,
 	closingTheLoopService,
@@ -213,10 +212,6 @@ export const cqiPlugin = new Elysia({
 			} catch (error) {
 				if (error instanceof CqiSourceNotFoundError) {
 					set.status = 404;
-					return { error: error.message };
-				}
-				if (error instanceof CqiRecommendationNotAdoptableError) {
-					set.status = 409;
 					return { error: error.message };
 				}
 				throw error;

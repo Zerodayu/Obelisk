@@ -65,16 +65,6 @@ export class CqiInvalidEditError extends Error {
 	}
 }
 
-/** 409 — the recommendation's review status does not permit adoption. */
-export class CqiRecommendationNotAdoptableError extends Error {
-	constructor(status: string) {
-		super(
-			`This recommendation is '${status}' — only 'actioned' recommendations can be adopted.`,
-		);
-		this.name = "CqiRecommendationNotAdoptableError";
-	}
-}
-
 type GapRowRow = Prisma.GapRowGetPayload<{
 	include: { plo: { select: { code: true; description: true } } };
 }>;
@@ -478,15 +468,12 @@ export class CqiActionPlanService {
 	): Promise<{ draft: { id: string }; payload: CqiPlanPayload }> {
 		const recommendation = await prisma.aiRecommendation.findUnique({
 			where: { id: recommendationId },
-			select: { id: true, status: true },
+			select: { id: true },
 		});
 		if (!recommendation) {
 			throw new CqiSourceNotFoundError(
 				`AI recommendation '${recommendationId}' not found`,
 			);
-		}
-		if (recommendation.status !== "actioned") {
-			throw new CqiRecommendationNotAdoptableError(recommendation.status);
 		}
 
 		const draft = await this.ensureDraft(programId, termId, userId);
@@ -565,6 +552,18 @@ export class CqiActionPlanService {
 			};
 		}
 
+		const plan = await prisma.formSubmission.findFirst({
+			where: { formType: { code: CQI_PLAN_CODE }, programId, termId },
+			select: { formData: true },
+			orderBy: { createdAt: "desc" },
+		});
+		const adoptedRecommendationId =
+			(
+				plan?.formData as {
+					adoptedFromRecommendation?: { recommendationId?: string };
+				} | null
+			)?.adoptedFromRecommendation?.recommendationId ?? null;
+
 		return {
 			termId,
 			term: term
@@ -573,6 +572,7 @@ export class CqiActionPlanService {
 			...current,
 			total,
 			isClosed: total > 0 && current.closed === total,
+			adoptedRecommendationId,
 			prior,
 		};
 	}

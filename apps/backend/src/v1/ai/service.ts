@@ -40,14 +40,6 @@ export class AiTermNotFoundError extends Error {
 	}
 }
 
-/** 404 — the requested recommendation does not exist. */
-export class AiRecommendationNotFoundError extends Error {
-	constructor(id: string) {
-		super(`AI recommendation '${id}' not found`);
-		this.name = "AiRecommendationNotFoundError";
-	}
-}
-
 // --- Fetcher (injectable for tests) ----------------------------------------
 
 export type InstitutionalSummaryFetcher = (
@@ -353,29 +345,6 @@ export class AiRecommendationService {
 			_count: { _all: true },
 		});
 		return rows.map((row) => ({ status: row.status, count: row._count._all }));
-	}
-
-	/** Transition a recommendation's review status and record the reviewer. */
-	async review(
-		id: string,
-		status: "acknowledged" | "actioned" | "dismissed",
-		userId: string,
-	): Promise<AiRecommendationPayload> {
-		const existing = await prisma.aiRecommendation.findUnique({
-			where: { id },
-			select: { id: true },
-		});
-		if (!existing) throw new AiRecommendationNotFoundError(id);
-		const row = await prisma.aiRecommendation.update({
-			where: { id },
-			data: {
-				status,
-				reviewedByUserId: userId,
-				reviewedAt: new Date(),
-			},
-			include: { term: { select: { schoolYear: true, semester: true } } },
-		});
-		return toRecommendationPayload(row);
 	}
 }
 
