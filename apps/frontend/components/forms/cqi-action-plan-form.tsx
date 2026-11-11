@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
 import { GeneratingState } from "@/components/forms/generating";
+import { LoopStatusBanner } from "@/components/forms/loop-status-banner";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -171,7 +172,8 @@ export function CqiActionPlanForm() {
 						owners, and KPIs.
 					</FrameDescription>
 				</FrameHeader>
-				<FramePanel>
+				<FramePanel className="space-y-3">
+					<LoopStatusBanner />
 					{!programId || !termId ? (
 						<ContextRequired scope="program-term" />
 					) : (
@@ -184,6 +186,7 @@ export function CqiActionPlanForm() {
 
 	return (
 		<div className="space-y-4">
+			<LoopStatusBanner />
 			<SubmissionStatusCard submissionId={payload.formSubmissionId} />
 			<Frame>
 				<FrameHeader>

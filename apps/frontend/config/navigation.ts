@@ -150,6 +150,18 @@ const FORM_SECTIONS: NavSection[] = [
 				code: "cqi_action_plan",
 			},
 			{
+				title: "AI Recommendations",
+				url: "/forms/cqi/ai-recommendations",
+				icon: StarIcon,
+				roles: [
+					"program_chair",
+					"dean",
+					"aqau",
+					"vpaa",
+					"system_admin",
+				] as const,
+			},
+			{
 				title: "Closing the Loop",
 				url: "/forms/cqi/closing-the-loop",
 				icon: RefreshCwIcon,

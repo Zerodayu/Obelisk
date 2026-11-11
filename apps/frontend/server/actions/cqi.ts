@@ -99,6 +99,70 @@ export async function generateCqiActionPlan(params: {
 	}
 }
 
+/**
+ * Adopt an AI recommendation into the CQI action plan: opens (or reuses) the
+ * program's draft and seeds entries from its open F22 gaps, recording the
+ * recommendation as the source.
+ */
+export async function adoptRecommendationAction(params: {
+	recommendationId: string;
+	programId: string;
+	termId: string;
+}): Promise<
+	ActionResult<{ draft: { id: string }; payload: Record<string, unknown> }>
+> {
+	try {
+		const data = await actionApi.post<{
+			draft: { id: string };
+			payload: Record<string, unknown>;
+		}>("/cqi/cqi-action-plan/adopt-recommendation", params);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(
+				err,
+				"Failed to adopt the AI recommendation. Please try again.",
+			),
+		};
+	}
+}
+
+export interface CqiLoopStatus {
+	termId: string;
+	term: { schoolYear: string; semester: string } | null;
+	closed: number;
+	openReassess: number;
+	openNotImplemented: number;
+	notRecorded: number;
+	total: number;
+	isClosed: boolean;
+	prior: {
+		termId: string;
+		term: { schoolYear: string; semester: string };
+		openLoops: number;
+		isClosed: boolean;
+	} | null;
+}
+
+/** Read a program's derived CQI loop status for a term (plus prior term). */
+export async function getLoopStatusAction(
+	programId: string,
+	termId: string,
+): Promise<ActionResult<CqiLoopStatus>> {
+	try {
+		const data = await actionApi.get<CqiLoopStatus>(
+			`/cqi/loop-status?programId=${encodeURIComponent(programId)}&termId=${encodeURIComponent(termId)}`,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to load loop status. Please try again."),
+		};
+	}
+}
+
 export async function saveCqiActionPlan(
 	id: string,
 	entries: {

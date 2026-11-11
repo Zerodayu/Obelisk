@@ -125,7 +125,7 @@ function renderInline(text: string, keyBase: string): React.ReactNode {
 	});
 }
 
-function renderMarkdown(markdown: string): React.ReactNode[] {
+export function renderMarkdown(markdown: string): React.ReactNode[] {
 	const nodes: React.ReactNode[] = [];
 	const lines = markdown.split(/\r?\n/);
 	let paragraph: string[] = [];
