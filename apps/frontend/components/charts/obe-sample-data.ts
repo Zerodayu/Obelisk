@@ -141,10 +141,10 @@ export interface ScheduleDatum {
 /** Mirrors the 4-tier attainment band of the rubric (Exceptional→Below Basic). */
 export interface ScoreBandDatum {
 	band:
-		| "Exceptional (9-10)"
-		| "Proficient (7-8)"
-		| "Basic (6)"
-		| "Below Basic (≤5)";
+		| "Exceptional (85% and above)"
+		| "Proficient (70–84%)"
+		| "Basic (60–69%)"
+		| "Below Basic (below 60%)";
 	studentCount: number;
 }
 

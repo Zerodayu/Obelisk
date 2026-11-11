@@ -2,12 +2,20 @@
  * Print layout for the institution-wide CQI report.
  *
  * NOTE: react-pdf primitives only — the web charts cannot be embedded, so the
- * visualization section prints as comparison bars drawn with plain views.
+ * visualization section prints from the SVG chart helpers in `cqi-pdf-charts`.
  */
 
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 import type { CqiReport, ReportFinding } from "@/server/actions/reports";
+
+import {
+	AlignmentGrid,
+	AttainmentChart,
+	DeltaChart,
+	DistributionChart,
+	StatusStackedChart,
+} from "./cqi-pdf-charts";
 
 const styles = StyleSheet.create({
 	page: {
@@ -34,7 +42,7 @@ const styles = StyleSheet.create({
 		marginTop: 8,
 		marginBottom: 8,
 	},
-	section: { marginTop: 12 },
+	section: { marginBottom: 12 },
 	sectionTitle: {
 		fontFamily: "Helvetica-Bold",
 		fontSize: 10,
@@ -51,7 +59,7 @@ const styles = StyleSheet.create({
 	},
 	kvLabel: { width: "34%", color: "#4b5563", paddingRight: 8 },
 	kvValue: { width: "66%" },
-	table: { borderWidth: 0.5, borderColor: "#d1d5db", marginTop: 2 },
+	table: { borderWidth: 0.5, borderColor: "#d1d5db", marginTop: 6 },
 	tableHeaderRow: { flexDirection: "row", backgroundColor: "#f3f4f6" },
 	tableRow: {
 		flexDirection: "row",
@@ -82,14 +90,6 @@ const styles = StyleSheet.create({
 		marginBottom: 4,
 	},
 	cardTitle: { fontFamily: "Helvetica-Bold", fontSize: 8.5 },
-	barTrack: {
-		height: 6,
-		backgroundColor: "#e5e7eb",
-		marginVertical: 2,
-		flexDirection: "row",
-	},
-	barFill: { height: 6, backgroundColor: "#4b5563" },
-	barTarget: { height: 6, backgroundColor: "#9ca3af" },
 	footer: {
 		marginTop: 18,
 		paddingTop: 6,
@@ -114,6 +114,33 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 		fontSize: 7,
 		color: "#9ca3af",
+	},
+	draftBanner: {
+		fontSize: 8,
+		color: "#b45309",
+		marginTop: 3,
+		textTransform: "uppercase",
+		letterSpacing: 0.6,
+	},
+	draftNotice: {
+		position: "absolute",
+		bottom: 26,
+		left: 0,
+		right: 0,
+		textAlign: "center",
+		fontSize: 6.5,
+		color: "#b45309",
+		letterSpacing: 0.4,
+		textTransform: "uppercase",
+	},
+	prototypeNotice: {
+		position: "absolute",
+		bottom: 40,
+		left: 0,
+		right: 0,
+		textAlign: "center",
+		fontSize: 6,
+		color: "#6b7280",
 	},
 });
 
@@ -187,42 +214,6 @@ function OutcomeTable({ rows }: { rows: CqiReport["outcomes"] }) {
 	);
 }
 
-/** Simple 0-100 bars: composite (dark) against the effective target (light). */
-function AttainmentBars({ rows }: { rows: CqiReport["outcomes"] }) {
-	const scored = rows.filter((row) => row.compositePct !== null).slice(0, 12);
-	if (scored.length === 0) return <Text style={styles.note}>No data.</Text>;
-	return (
-		<View>
-			{scored.map((row) => (
-				<View key={row.key} style={{ marginBottom: 3 }}>
-					<Text>
-						{row.code} · {pct(row.compositePct)} / target{" "}
-						{pct(row.effectiveTargetPct)}
-					</Text>
-					<View style={styles.barTrack}>
-						<View
-							style={[
-								styles.barFill,
-								{ width: `${Math.max(0, Math.min(100, row.compositePct ?? 0))}%` },
-							]}
-						/>
-					</View>
-					<View style={styles.barTrack}>
-						<View
-							style={[
-								styles.barTarget,
-								{
-									width: `${Math.max(0, Math.min(100, row.effectiveTargetPct))}%`,
-								},
-							]}
-						/>
-					</View>
-				</View>
-			))}
-		</View>
-	);
-}
-
 /** Coverage per outcome level — how much of the OBE chain has evidence. */
 function OutcomeCoverage({ report }: { report: CqiReport }) {
 	return (
@@ -235,9 +226,7 @@ function OutcomeCoverage({ report }: { report: CqiReport }) {
 				<Text style={styles.headerCellRight}>Not available</Text>
 			</View>
 			{(["PEO", "PLO", "CLO"] as const).map((type) => {
-				const rows = report.outcomes.filter(
-					(row) => row.outcomeType === type,
-				);
+				const rows = report.outcomes.filter((row) => row.outcomeType === type);
 				return (
 					<View key={type} style={styles.tableRow} wrap={false}>
 						<Text style={styles.cell}>{type}</Text>
@@ -294,67 +283,85 @@ function StatusHeatmap({ report }: { report: CqiReport }) {
 	);
 }
 
-/** Count bars per score band, scaled to the largest bucket. */
-function DistributionBars({
-	buckets,
-}: {
-	buckets: CqiReport["statistics"]["distribution"];
-}) {
-	const max = Math.max(1, ...buckets.map((bucket) => bucket.count));
+/** CLO→PLO mapping table — the OBE alignment evidence. */
+function AlignmentTable({ report }: { report: CqiReport }) {
+	if (report.alignment.mappings.length === 0) {
+		return <Text style={styles.note}>No CLO→PLO mappings recorded.</Text>;
+	}
 	return (
-		<View>
-			{buckets.map((bucket) => (
-				<View key={bucket.band} style={{ marginBottom: 3 }}>
-					<Text>
-						{bucket.band} · {bucket.count}
+		<View style={styles.table}>
+			<View style={styles.tableHeaderRow}>
+				<Text style={styles.headerCell}>Course / CLO</Text>
+				<Text style={styles.headerCell}>PLO</Text>
+				<Text style={styles.headerCellRight}>Weight</Text>
+				<Text style={styles.headerCell}>Stage</Text>
+			</View>
+			{report.alignment.mappings.map((mapping) => (
+				<View
+					key={`${mapping.programCode}-${mapping.courseCode}-${mapping.cloCode}-${mapping.ploCode}`}
+					style={styles.tableRow}
+					wrap={false}
+				>
+					<Text style={styles.cell}>
+						{mapping.courseCode} / {mapping.cloCode}
 					</Text>
-					<View style={styles.barTrack}>
-						<View
-							style={[
-								styles.barFill,
-								{ width: `${(bucket.count / max) * 100}%` },
-							]}
-						/>
-					</View>
+					<Text style={styles.cell}>{mapping.ploCode}</Text>
+					<Text style={styles.cellRight}>
+						{mapping.weight === null ? "—" : mapping.weight.toFixed(1)}
+					</Text>
+					<Text style={styles.cell}>{mapping.stage ?? "—"}</Text>
 				</View>
 			))}
 		</View>
 	);
 }
 
-/** Prior vs current, only rows with comparable data. */
+/** CLO × PLO heatmap: a filled cell means the pair is mapped. */
+/** Prior vs current; non-comparable rows carry their reason instead of a delta. */
 function TrendTable({
 	comparisons,
+	priorTermLabel,
 }: {
 	comparisons: CqiReport["priorComparisons"];
+	priorTermLabel: string | null;
 }) {
-	const rows = comparisons.filter(
-		(row) => row.direction !== "insufficient",
-	);
-	if (rows.length === 0) {
+	if (comparisons.length === 0) {
 		return (
 			<Text style={styles.note}>
-				Insufficient comparable data — at least two comparable cycles are
-				required for a trend.
+				No current outcomes to compare — a trend needs at least two cycles.
 			</Text>
 		);
 	}
 	return (
-		<View style={styles.table}>
-			<View style={styles.tableHeaderRow}>
-				<Text style={styles.headerCell}>Outcome</Text>
-				<Text style={styles.headerCellRight}>Prior</Text>
-				<Text style={styles.headerCellRight}>Current</Text>
-				<Text style={styles.headerCellRight}>Delta</Text>
-			</View>
-			{rows.map((row) => (
-				<View key={row.outcomeKey} style={styles.tableRow} wrap={false}>
-					<Text style={styles.cell}>{row.outcomeCode}</Text>
-					<Text style={styles.cellRight}>{pct(row.priorPct)}</Text>
-					<Text style={styles.cellRight}>{pct(row.currentPct)}</Text>
-					<Text style={styles.cellRight}>{delta(row.deltaPct)}</Text>
+		<View>
+			<Text style={styles.note}>
+				Prior cycle:{" "}
+				{priorTermLabel ?? "no earlier term with stored attainment"}.
+			</Text>
+			<View style={styles.table}>
+				<View style={styles.tableHeaderRow}>
+					<Text style={styles.headerCell}>Outcome</Text>
+					<Text style={styles.headerCellRight}>Prior</Text>
+					<Text style={styles.headerCellRight}>Current</Text>
+					<Text style={styles.headerCellRight}>Delta</Text>
+					<Text style={styles.headerCell}>Comparability</Text>
 				</View>
-			))}
+				{comparisons.map((row) => (
+					<View key={row.outcomeKey} style={styles.tableRow} wrap={false}>
+						<Text style={styles.cell}>{row.outcomeCode}</Text>
+						<Text style={styles.cellRight}>
+							{row.comparable ? pct(row.priorPct) : "—"}
+						</Text>
+						<Text style={styles.cellRight}>{pct(row.currentPct)}</Text>
+						<Text style={styles.cellRight}>
+							{row.comparable ? delta(row.deltaPct) : "not comparable"}
+						</Text>
+						<Text style={styles.cell}>
+							{row.comparable ? "same outcome, both cycles" : row.reason}
+						</Text>
+					</View>
+				))}
+			</View>
 		</View>
 	);
 }
@@ -363,7 +370,11 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 	const cloRows = report.outcomes.filter((row) => row.outcomeType === "CLO");
 	const ploRows = report.outcomes.filter((row) => row.outcomeType === "PLO");
 	const peoRows = report.outcomes.filter((row) => row.outcomeType === "PEO");
+	const notMetRows = report.outcomes.filter((row) => row.status === "NOT MET");
 	const narrative = report.narrative;
+	const priorTermLabel = report.priorTerm
+		? `${report.priorTerm.schoolYear} ${report.priorTerm.semester}`
+		: null;
 
 	return (
 		<Document
@@ -381,6 +392,9 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					{report.term.schoolYear} {report.term.semester} · generated{" "}
 					{new Date(report.generatedAt).toLocaleString()}
 				</Text>
+				<Text style={styles.draftBanner}>
+					DRAFT — subject to faculty review
+				</Text>
 				<Text style={styles.meta}>
 					Programs:{" "}
 					{report.scope.programs.map((program) => program.code).join(", ") ||
@@ -392,9 +406,12 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 				{/* 1. Executive summary */}
 				<View style={styles.section}>
 					<Text style={styles.sectionTitle}>1. Executive Summary</Text>
-					<KV label="Enrolled" value={String(report.statistics.enrolledCount)} />
 					<KV
-						label="Assessed"
+						label="Enrolled students"
+						value={String(report.statistics.enrolledCount)}
+					/>
+					<KV
+						label="Assessed students"
 						value={String(report.statistics.assessedCount)}
 					/>
 					<KV label="Mean composite" value={pct(report.statistics.meanPct)} />
@@ -421,17 +438,18 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 							.map((bucket) => `${bucket.band}: ${bucket.count}`)
 							.join(" · ")}
 					/>
-					<Text style={styles.sectionTitle}>Major strengths</Text>
-					<FindingBlock findings={report.findings.strengths} />
-					<Text style={styles.sectionTitle}>Priority weaknesses</Text>
-					<FindingBlock findings={report.findings.weaknesses} />
-					<Text style={styles.sectionTitle}>Priority improvement areas</Text>
-					<FindingBlock
-						findings={
-							report.nextCycle.priorities.length > 0
-								? report.nextCycle.priorities
-								: report.findings.weaknesses
-						}
+					<Text style={styles.sectionTitle}>Findings at a glance</Text>
+					<KV
+						label="Major strengths"
+						value={`${report.findings.strengths.length} reportable — see Section 6`}
+					/>
+					<KV
+						label="Priority weaknesses"
+						value={`${report.findings.weaknesses.length} shown of ${notMetRows.length} NOT MET — see Section 6 and Appendix 10`}
+					/>
+					<KV
+						label="Next-cycle priorities"
+						value={`${report.nextCycle.priorities.length} priority outcome(s) — see Section 9`}
 					/>
 				</View>
 
@@ -452,10 +470,29 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						value={`${report.scope.sections} section(s), ${report.scope.courses} course(s)`}
 					/>
 					<KV
-						label="Enrolled vs assessed"
+						label="Enrolled vs assessed students"
 						value={`${report.scope.enrolledCount} enrolled / ${report.scope.assessedCount} assessed`}
 					/>
 					<KV label="Thresholds" value={report.scope.thresholds.targetSource} />
+					<KV
+						label="F04 target source"
+						value={
+							report.scope.thresholds.targetForm
+								? `${report.scope.thresholds.targetForm.id} · recorded ${new Date(report.scope.thresholds.targetForm.createdAt).toLocaleDateString()}`
+								: "No approved F04 matrix"
+						}
+					/>
+					<KV
+						label="Latest computation runs"
+						value={
+							report.scope.computationRuns
+								.map(
+									(run) =>
+										`${run.scope} · ${new Date(run.runAt).toLocaleString()}`,
+								)
+								.join("; ") || "—"
+						}
+					/>
 					<KV
 						label="Assessment instruments"
 						value="Direct course-level CLO assessment and indirect perception-survey ratings, combined 70/30 where both exist."
@@ -482,15 +519,31 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 							<Text style={{ flex: 1 }}>{item}</Text>
 						</View>
 					))}
+					{narrative?.dataLimitations.length ? (
+						<>
+							<Text style={styles.sectionTitle}>Data limitations</Text>
+							{narrative.dataLimitations.map((item) => (
+								<View key={item} style={styles.bullet}>
+									<Text style={styles.bulletDot}>•</Text>
+									<Text style={{ flex: 1 }}>{item}</Text>
+								</View>
+							))}
+						</>
+					) : null}
 				</View>
 
 				{/* 3. OBE alignment */}
-				<View style={styles.section}>
+				<View style={styles.section} break>
 					<Text style={styles.sectionTitle}>3. OBE Alignment Analysis</Text>
 					<Text style={styles.cardTitle}>PEO attainment</Text>
 					{peoRows.length === 0 ? (
 						<Text style={styles.note}>
 							Not available — PEO attainment is not captured for this term.
+						</Text>
+					) : peoRows.every((row) => row.status === "NOT AVAILABLE") ? (
+						<Text style={styles.note}>
+							No evidence captured — PEO assessment is out of scope for this
+							term.
 						</Text>
 					) : (
 						<OutcomeTable rows={peoRows} />
@@ -501,26 +554,79 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					<OutcomeTable rows={cloRows} />
 					<Text style={styles.cardTitle}>Outcome coverage</Text>
 					<OutcomeCoverage report={report} />
+					<Text style={styles.note}>
+						N = student-CLO records for CLOs; mapped CLO means for PLOs.
+					</Text>
 					<Text style={styles.cardTitle}>Outcome status by program</Text>
 					<StatusHeatmap report={report} />
+					<StatusStackedChart report={report} />
+					<Text style={styles.note}>
+						Green: MET · red: NOT MET · grey: not available; counts shown as MET
+						/ NOT MET / not available.
+					</Text>
+					<Text style={styles.cardTitle}>CLO→PLO mapping</Text>
+					<AlignmentTable report={report} />
+					<Text style={styles.cardTitle}>Alignment heatmap</Text>
+					<AlignmentGrid report={report} />
+					<Text style={styles.note}>
+						Filled cell: mapped pair · grey cell: gap.
+					</Text>
+					<Text style={styles.cardTitle}>Unmapped / uncovered outcomes</Text>
+					{report.alignment.unmappedClos.length === 0 &&
+					report.alignment.unmappedPlos.length === 0 ? (
+						<Text style={styles.note}>
+							Every CLO in this term maps to a PLO, and every program PLO has at
+							least one mapped CLO.
+						</Text>
+					) : (
+						<View>
+							{report.alignment.unmappedClos.map((item) => (
+								<View
+									key={`${item.programCode}-${item.courseCode}-${item.cloCode}`}
+									style={styles.bullet}
+								>
+									<Text style={styles.bulletDot}>•</Text>
+									<Text style={{ flex: 1 }}>
+										Unmapped CLO: {item.programCode} {item.courseCode}{" "}
+										{item.cloCode}
+									</Text>
+								</View>
+							))}
+							{report.alignment.unmappedPlos.map((item) => (
+								<View
+									key={`${item.programCode}-${item.ploCode}`}
+									style={styles.bullet}
+								>
+									<Text style={styles.bulletDot}>•</Text>
+									<Text style={{ flex: 1 }}>
+										Uncovered PLO: {item.programCode} {item.ploCode}
+									</Text>
+								</View>
+							))}
+						</View>
+					)}
 				</View>
 
 				{/* 4. Statistics */}
-				<View style={styles.section}>
+				<View style={styles.section} break>
 					<Text style={styles.sectionTitle}>
 						4. Statistical and Student Performance
 					</Text>
 					<KV
-						label="Meeting expectations (≥70%)"
-						value={`${report.statistics.meetingCount} of ${report.statistics.assessedCount}`}
+						label="Meeting expectations (at least 70%)"
+						value={`${report.statistics.meetingCount} of ${report.statistics.assessedCount} assessed student(s)`}
 					/>
 					<KV
-						label="Below expectations"
-						value={`${report.statistics.belowCount} of ${report.statistics.assessedCount}`}
+						label="Below expectations (student mean below 70%)"
+						value={`${report.statistics.belowCount} of ${report.statistics.assessedCount} assessed student(s)`}
+					/>
+					<KV
+						label="At-risk population (any mapped CLO below 70%)"
+						value={`${report.statistics.atRiskCount} of ${report.statistics.enrolledCount} enrolled student(s) (${pct(report.statistics.atRiskRatePct)})`}
 					/>
 					<KV
 						label="Assessment records"
-						value={String(report.statistics.recordCount)}
+						value={`${report.statistics.recordCount} student-CLO record(s)`}
 					/>
 					<KV
 						label="Score distribution"
@@ -534,14 +640,22 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 				<View style={styles.section}>
 					<Text style={styles.sectionTitle}>5. Visualizations</Text>
 					<Text style={styles.note}>
-						Composite attainment against target; bars are drawn from the same
-						persisted values as the tables.
+						Composite attainment (bar) against target (line); green = MET, red =
+						NOT MET. Labels read attained [target].
 					</Text>
-					<AttainmentBars rows={[...cloRows, ...ploRows]} />
+					<AttainmentChart rows={[...cloRows, ...ploRows]} />
 					<Text style={styles.cardTitle}>Performance distribution</Text>
-					<DistributionBars buckets={report.statistics.distribution} />
+					<DistributionChart buckets={report.statistics.distribution} />
 					<Text style={styles.cardTitle}>Historical performance trend</Text>
-					<TrendTable comparisons={report.priorComparisons} />
+					<DeltaChart comparisons={report.priorComparisons} />
+					<Text style={styles.note}>
+						Delta in percentage points against the prior cycle; only outcomes
+						assessed in both cycles are charted.
+					</Text>
+					<TrendTable
+						comparisons={report.priorComparisons}
+						priorTermLabel={priorTermLabel}
+					/>
 				</View>
 
 				{/* 6. Institutional findings */}
@@ -550,6 +664,11 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					<Text style={styles.cardTitle}>Established strengths</Text>
 					<FindingBlock findings={report.findings.strengths} />
 					<Text style={styles.cardTitle}>Established weaknesses</Text>
+					<Text style={styles.note}>
+						Showing top {report.findings.weaknesses.length} of{" "}
+						{notMetRows.length} NOT MET outcome(s). The full list is in Appendix
+						10.
+					</Text>
 					<FindingBlock findings={report.findings.weaknesses} />
 					<Text style={styles.cardTitle}>
 						Possible contributing factors (pending Program Chair confirmation)
@@ -558,7 +677,11 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						<Text style={styles.note}>No hypotheses recorded.</Text>
 					) : (
 						report.findings.hypotheses.map((hypothesis) => (
-							<View key={hypothesis.hypothesis} style={styles.card} wrap={false}>
+							<View
+								key={hypothesis.hypothesis}
+								style={styles.card}
+								wrap={false}
+							>
 								<Text style={styles.note}>{hypothesis.rootCauseCategory}</Text>
 								<Text>{hypothesis.hypothesis}</Text>
 							</View>
@@ -584,6 +707,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 							>
 								<Text style={styles.cardTitle}>{recommendation.problem}</Text>
 								<Text style={styles.note}>
+									Proposed, pending faculty review ·{" "}
 									{recommendation.responsible_role}
 									{recommendation.timeline
 										? ` · ${recommendation.timeline}`
@@ -620,7 +744,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 				</View>
 
 				{/* 8. Previous CQI effectiveness */}
-				<View style={styles.section}>
+				<View style={styles.section} break>
 					<Text style={styles.sectionTitle}>
 						8. Previous CQI Effectiveness Evaluation
 					</Text>
@@ -658,6 +782,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 									</Text>
 									<Text style={styles.cell}>
 										{entry.loopStatus?.replaceAll("_", " ") ?? "—"}
+										{entry.outcomeStillNotMet ? " · still NOT MET" : ""}
 									</Text>
 									<Text style={styles.cell}>{entry.ownerRole || "—"}</Text>
 								</View>
@@ -670,9 +795,16 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 								Implementation evidence and KPI (free text)
 							</Text>
 							{report.previousCqi.map((entry) => (
-								<View key={`${entry.entryId}-evidence`} style={styles.card}>
-									<Text style={styles.cardTitle}>{entry.outcomeCode}</Text>
-									<Text>{entry.intervention.slice(0, 200) || "—"}</Text>
+								<View
+									key={`${entry.entryId}-evidence`}
+									style={[styles.card, { marginBottom: 2, padding: 3 }]}
+								>
+									<Text style={[styles.cardTitle, { fontSize: 8 }]}>
+										{entry.outcomeCode}
+									</Text>
+									<Text style={{ fontSize: 8 }}>
+										{entry.intervention.slice(0, 200) || "—"}
+									</Text>
 									<Text style={styles.note}>
 										KPI / timeline: {entry.timelineAndKpi.slice(0, 120) || "—"}
 									</Text>
@@ -689,7 +821,11 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					</Text>
 					<KV
 						label="Intervention completion"
-						value={pct(report.nextCycle.interventionCompletion.ratePct)}
+						value={
+							report.nextCycle.interventionCompletion.ratePct === null
+								? "—"
+								: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions`
+						}
 					/>
 					<KV
 						label="Open loops"
@@ -701,23 +837,32 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					/>
 					<KV
 						label="Previously MET, now below"
-						value={
-							report.nextCycle.previouslyMetDeclining.join(", ") || "None"
-						}
+						value={report.nextCycle.previouslyMetDeclining.join(", ") || "None"}
 					/>
-					<FindingBlock findings={report.nextCycle.priorities} />
+					<Text style={styles.sectionTitle}>Priority outcome codes</Text>
+					<Text>
+						{report.nextCycle.priorities.length === 0
+							? "No computed priority exceeds the reporting threshold."
+							: report.nextCycle.priorities
+									.map((finding) => finding.outcomeCode)
+									.join(", ")}
+					</Text>
+					<Text style={styles.note}>
+						Full statements are in Section 6; this section adds only next-cycle
+						actions and loop status.
+					</Text>
 				</View>
 
 				{/* 10. Appendices */}
-				<View style={styles.section}>
+				<View style={styles.section} break>
 					<Text style={styles.sectionTitle}>
 						10. Appendices and Supporting Evidence
 					</Text>
 					<Text style={styles.paragraph}>
 						Attainment values are read from the latest persisted computation run
-						per section. No 70/30 composite is recalculated in the webapp; status
-						uses the stricter of the {report.scope.thresholds.floorPct}% floor and
-						the F04 target.
+						per section. No 70/30 composite is recalculated in the webapp;
+						status uses the stricter of the {report.scope.thresholds.floorPct}%
+						floor and the F04 target.
 					</Text>
 					<KV
 						label="Computation runs"
@@ -731,6 +876,21 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 								: `${report.completeness.missingTargets.length} (${report.completeness.missingTargets.slice(0, 8).join(", ")}${report.completeness.missingTargets.length > 8 ? ", …" : ""})`
 						}
 					/>
+					<Text style={styles.cardTitle}>
+						All NOT MET outcomes ({notMetRows.length})
+					</Text>
+					<OutcomeTable rows={notMetRows} />
+					<Text style={styles.cardTitle}>Data limitations</Text>
+					{narrative?.dataLimitations.length ? (
+						narrative.dataLimitations.map((item) => (
+							<View key={item} style={styles.bullet}>
+								<Text style={styles.bulletDot}>•</Text>
+								<Text style={{ flex: 1 }}>{item}</Text>
+							</View>
+						))
+					) : (
+						<Text style={styles.note}>No AI-reported data limitations.</Text>
+					)}
 					<Text style={styles.cardTitle}>CQI intervention records</Text>
 					{report.previousCqi.length === 0 ? (
 						<Text style={styles.note}>No CQI entries recorded.</Text>
@@ -744,7 +904,11 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 								<Text style={styles.headerCell}>KPI / timeline</Text>
 							</View>
 							{report.previousCqi.map((entry, index) => (
-								<View key={`${entry.entryId}-row`} style={styles.tableRow} wrap={false}>
+								<View
+									key={`${entry.entryId}-row`}
+									style={styles.tableRow}
+									wrap={false}
+								>
 									<Text style={styles.cell}>
 										{String(index + 1).padStart(2, "0")}
 									</Text>
@@ -762,30 +926,69 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					)}
 					<Text style={styles.cardTitle}>Computation runs</Text>
 					<Text style={styles.note}>
-						{report.scope.computationRunIds.join(", ")}
+						{report.scope.computationRuns
+							.map(
+								(run) =>
+									`${run.id} (${run.scope}) · ${new Date(run.runAt).toLocaleString()}`,
+							)
+							.join("; ") || "—"}
 					</Text>
 				</View>
 
-				<View style={styles.footer} wrap={false}>
-					<Text style={styles.note}>
-						Prepared from stored attainment records. AI narrative is advisory and
-						requires human approval before adoption.
+				{/* Closing page — AI summary before signatures */}
+				<View break>
+					<Text style={styles.sectionTitle}>
+						Closing Summary and Signatures
 					</Text>
-					<View style={styles.signatureGrid}>
-						{[
-							{ role: "Prepared by", name: "Quality Assurance (AQAU)" },
-							{ role: "Reviewed by", name: "Vice President, Academic Affairs" },
-							{ role: "Noted by", name: "Institutional Assessment Committee" },
-						].map((signature) => (
-							<View key={signature.role} style={styles.signatureCol}>
-								<View style={styles.signatureLine} />
-								<Text style={styles.signatureRole}>{signature.name}</Text>
-								<Text style={styles.signatureNote}>{signature.role}</Text>
-							</View>
-						))}
+					{narrative?.summary ? (
+						<View style={styles.card}>
+							<Text>{narrative.summary}</Text>
+							<Text style={styles.note}>
+								AI narrative · {narrative.status.replaceAll("_", " ")}
+							</Text>
+						</View>
+					) : (
+						<Text style={styles.note}>
+							No AI narrative generated. This report is still valid; it prints
+							from computed data only.
+						</Text>
+					)}
+					<View style={styles.footer} wrap={false}>
+						<Text style={styles.note}>
+							Prepared from stored attainment records. AI narrative is advisory
+							and requires human approval before adoption.
+						</Text>
+						<View style={styles.signatureGrid}>
+							{[
+								{ role: "Prepared by", name: "Quality Assurance (AQAU)" },
+								{
+									role: "Reviewed by",
+									name: "Vice President, Academic Affairs",
+								},
+								{
+									role: "Noted by",
+									name: "Institutional Assessment Committee",
+								},
+							].map((signature) => (
+								<View key={signature.role} style={styles.signatureCol}>
+									<View style={styles.signatureLine} />
+									<Text style={styles.signatureRole}>{signature.name}</Text>
+									<Text style={styles.signatureNote}>{signature.role}</Text>
+								</View>
+							))}
+						</View>
 					</View>
 				</View>
 
+				<Text fixed style={styles.draftNotice}>
+					DRAFT — subject to faculty review · Generated{" "}
+					{new Date(report.generatedAt).toLocaleString()} ·{" "}
+					{report.term.schoolYear} {report.term.semester}
+				</Text>
+				<Text fixed style={styles.prototypeNotice}>
+					Research prototype. Synthetic data. Not actual institutional
+					attainment.
+				</Text>
 				<Text fixed style={styles.pageNumber}>
 					CQI Institutional Report · {report.term.schoolYear}{" "}
 					{report.term.semester}

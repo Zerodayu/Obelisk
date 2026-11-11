@@ -237,20 +237,23 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 	const [exporting, setExporting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const load = useCallback(async (nextTermId?: string, nextProgramId?: string) => {
-		setLoading(true);
-		setError(null);
-		const result = await getCqiInstitutionalReport(
-			nextTermId || undefined,
-			nextProgramId || undefined,
-		);
-		if (result.ok) setReport(result.data);
-		else {
-			setReport(null);
-			setError(result.error);
-		}
-		setLoading(false);
-	}, []);
+	const load = useCallback(
+		async (nextTermId?: string, nextProgramId?: string) => {
+			setLoading(true);
+			setError(null);
+			const result = await getCqiInstitutionalReport(
+				nextTermId || undefined,
+				nextProgramId || undefined,
+			);
+			if (result.ok) setReport(result.data);
+			else {
+				setReport(null);
+				setError(result.error);
+			}
+			setLoading(false);
+		},
+		[],
+	);
 
 	useEffect(() => {
 		void load(termId, programId);
@@ -259,7 +262,10 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 	const generate = useCallback(async () => {
 		setGenerating(true);
 		try {
-			const result = await generateCqiNarrative(termId || undefined, programId || undefined);
+			const result = await generateCqiNarrative(
+				termId || undefined,
+				programId || undefined,
+			);
 			if (!result.ok) {
 				toastError({
 					title: "Narrative generation failed",
@@ -343,6 +349,8 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 		report?.outcomes.filter((row) => row.outcomeType === "PLO") ?? [];
 	const peoRows =
 		report?.outcomes.filter((row) => row.outcomeType === "PEO") ?? [];
+	const notMetRows =
+		report?.outcomes.filter((row) => row.status === "NOT MET") ?? [];
 	const narrative = report?.narrative ?? null;
 
 	return (
@@ -422,6 +430,9 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 							</span>
 						</div>
 					)}
+					<p className="mt-2 text-xs font-medium tracking-wide text-amber-700 uppercase">
+						Draft — subject to faculty review
+					</p>
 				</FramePanel>
 			</Frame>
 
@@ -439,11 +450,11 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 						<FramePanel className="space-y-4">
 							<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 								<Metric
-									label="Enrolled"
+									label="Enrolled students"
 									value={String(report.statistics.enrolledCount)}
 								/>
 								<Metric
-									label="Assessed"
+									label="Assessed students"
 									value={String(report.statistics.assessedCount)}
 								/>
 								<Metric
@@ -453,6 +464,20 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 								<Metric
 									label="Median composite"
 									value={pct(report.statistics.medianPct)}
+								/>
+							</div>
+							<div className="grid gap-3 sm:grid-cols-3">
+								<Metric
+									label="Major strengths"
+									value={`${report.findings.strengths.length} — see Section 6`}
+								/>
+								<Metric
+									label="Priority weaknesses"
+									value={`${report.findings.weaknesses.length} of ${report.outcomes.filter((o) => o.status === "NOT MET").length} — see Section 6`}
+								/>
+								<Metric
+									label="Next-cycle priorities"
+									value={`${report.nextCycle.priorities.length} — see Section 9`}
 								/>
 							</div>
 							{report.programSummaries.length > 0 ? (
@@ -481,18 +506,10 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									still prints from computed data.
 								</p>
 							)}
-							<div className="grid gap-4 lg:grid-cols-2">
-								<FindingList
-									title="Major strengths"
-									findings={report.findings.strengths}
-									empty="No outcome clears its target with a reportable group size."
-								/>
-								<FindingList
-									title="Priority weaknesses"
-									findings={report.findings.weaknesses}
-									empty="No outcome is below its target with a reportable group size."
-								/>
-							</div>
+							<p className="text-muted-foreground text-sm">
+								Full strengths, weaknesses and hypotheses are in Section 6.
+								Next-cycle priorities are in Section 9.
+							</p>
 						</FramePanel>
 					</Frame>
 
@@ -525,12 +542,31 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 											value={`${report.scope.sections} section(s), ${report.scope.courses} course(s)`}
 										/>
 										<Row
-											label="Enrolled vs assessed"
+											label="Enrolled vs assessed students"
 											value={`${report.scope.enrolledCount} enrolled / ${report.scope.assessedCount} assessed`}
 										/>
 										<Row
 											label="Thresholds"
 											value={report.scope.thresholds.targetSource}
+										/>
+										<Row
+											label="F04 target source"
+											value={
+												report.scope.thresholds.targetForm
+													? `${report.scope.thresholds.targetForm.id} · recorded ${new Date(report.scope.thresholds.targetForm.createdAt).toLocaleDateString()}`
+													: "No approved F04 matrix"
+											}
+										/>
+										<Row
+											label="Latest computation runs"
+											value={
+												report.scope.computationRuns
+													.map(
+														(run) =>
+															`${run.scope} · ${new Date(run.runAt).toLocaleString()}`,
+													)
+													.join("; ") || "—"
+											}
 										/>
 										<Row
 											label="Data completeness"
@@ -557,6 +593,16 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									</ul>
 								</div>
 							) : null}
+							{narrative?.dataLimitations.length ? (
+								<div className="rounded-md border border-dashed p-3 text-sm">
+									<p className="font-medium">Data limitations</p>
+									<ul className="text-muted-foreground mt-1 list-disc pl-5 text-xs">
+										{narrative.dataLimitations.map((item) => (
+											<li key={item}>{item}</li>
+										))}
+									</ul>
+								</div>
+							) : null}
 						</FramePanel>
 					</Frame>
 
@@ -576,6 +622,10 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									<p className="text-muted-foreground text-sm">
 										Not available — PEO attainment is not captured yet.
 									</p>
+								) : peoRows.every((row) => row.status === "NOT AVAILABLE") ? (
+									<p className="text-muted-foreground text-sm">
+										No evidence captured — PEO assessment is out of scope.
+									</p>
 								) : (
 									<OutcomeTable rows={peoRows} />
 								)}
@@ -593,6 +643,76 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									Outcome status heatmap (program × status)
 								</h3>
 								<StatusHeatmap report={report} />
+							</div>
+							<div>
+								<h3 className="mb-2 text-sm font-semibold">CLO→PLO mapping</h3>
+								{report.alignment.mappings.length === 0 ? (
+									<p className="text-muted-foreground text-sm">
+										No CLO→PLO mappings recorded.
+									</p>
+								) : (
+									<div className="overflow-x-auto">
+										<table className="w-full text-sm">
+											<thead>
+												<tr className="text-muted-foreground border-b text-left">
+													<th className="py-2 pr-4">Course / CLO</th>
+													<th className="py-2 pr-4">PLO</th>
+													<th className="py-2 pr-4 text-right">Weight</th>
+													<th className="py-2 pr-4">Stage</th>
+												</tr>
+											</thead>
+											<tbody>
+												{report.alignment.mappings.map((mapping) => (
+													<tr
+														key={`${mapping.programCode}-${mapping.courseCode}-${mapping.cloCode}-${mapping.ploCode}`}
+														className="border-b last:border-0"
+													>
+														<td className="py-2 pr-4">
+															{mapping.courseCode} / {mapping.cloCode}
+														</td>
+														<td className="py-2 pr-4">{mapping.ploCode}</td>
+														<td className="py-2 pr-4 text-right">
+															{mapping.weight === null
+																? "—"
+																: mapping.weight.toFixed(1)}
+														</td>
+														<td className="py-2 pr-4">
+															{mapping.stage ?? "—"}
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								)}
+							</div>
+							<div>
+								<h3 className="mb-2 text-sm font-semibold">
+									Unmapped / uncovered outcomes
+								</h3>
+								{report.alignment.unmappedClos.length === 0 &&
+								report.alignment.unmappedPlos.length === 0 ? (
+									<p className="text-muted-foreground text-sm">
+										Every CLO this term maps to a PLO, and every program PLO has
+										at least one mapped CLO.
+									</p>
+								) : (
+									<ul className="space-y-1 text-sm">
+										{report.alignment.unmappedClos.map((item) => (
+											<li
+												key={`${item.programCode}-${item.courseCode}-${item.cloCode}`}
+											>
+												Unmapped CLO: {item.programCode} {item.courseCode}{" "}
+												{item.cloCode}
+											</li>
+										))}
+										{report.alignment.unmappedPlos.map((item) => (
+											<li key={`${item.programCode}-${item.ploCode}`}>
+												Uncovered PLO: {item.programCode} {item.ploCode}
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 						</FramePanel>
 					</Frame>
@@ -613,16 +733,16 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									value={String(report.statistics.assessedCount)}
 								/>
 								<Metric
-									label="Meeting expectations (≥70%)"
+									label="Meeting expectations (at least 70%)"
 									value={`${report.statistics.meetingCount} of ${report.statistics.assessedCount}`}
 								/>
 								<Metric
-									label="Below expectations"
+									label="Below expectations (student mean below 70%)"
 									value={`${report.statistics.belowCount} of ${report.statistics.assessedCount}`}
 								/>
 								<Metric
-									label="At-risk population"
-									value={String(report.statistics.atRiskCount)}
+									label="At-risk (any mapped CLO below 70%)"
+									value={`${report.statistics.atRiskCount} of ${report.statistics.enrolledCount} (${pct(report.statistics.atRiskRatePct)})`}
 								/>
 								<Metric
 									label="Mean composite"
@@ -646,10 +766,10 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									<ScoreBandBars
 										data={report.statistics.distribution.map((bucket) => ({
 											band: bucket.band as
-												| "Exceptional (9-10)"
-												| "Proficient (7-8)"
-												| "Basic (6)"
-												| "Below Basic (≤5)",
+												| "Exceptional (85% and above)"
+												| "Proficient (70–84%)"
+												| "Basic (60–69%)"
+												| "Below Basic (below 60%)",
 											studentCount: bucket.count,
 										}))}
 									/>
@@ -712,12 +832,17 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 								<h3 className="mb-2 text-sm font-semibold">
 									Historical performance trend
 								</h3>
-								{report.priorComparisons.filter(
-									(row) => row.direction !== "insufficient",
-								).length === 0 ? (
+								<p className="text-muted-foreground mb-2 text-xs">
+									Prior cycle:{" "}
+									{report.priorTerm
+										? `${report.priorTerm.schoolYear} ${report.priorTerm.semester}`
+										: "no earlier term with stored attainment"}
+									. Only outcomes assessed in both cycles get a delta.
+								</p>
+								{report.priorComparisons.length === 0 ? (
 									<p className="text-muted-foreground text-sm">
-										Insufficient comparable data — at least two comparable
-										cycles are required for a trend.
+										No current outcomes to compare — a trend needs at least two
+										cycles.
 									</p>
 								) : (
 									<div className="overflow-x-auto">
@@ -728,30 +853,36 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 													<th className="py-2 pr-4 text-right">Prior</th>
 													<th className="py-2 pr-4 text-right">Current</th>
 													<th className="py-2 pr-4 text-right">Delta</th>
+													<th className="py-2 pr-4">Comparability</th>
 												</tr>
 											</thead>
 											<tbody>
-												{report.priorComparisons
-													.filter((row) => row.direction !== "insufficient")
-													.map((row) => (
-														<tr
-															key={row.outcomeKey}
-															className="border-b last:border-0"
-														>
-															<td className="py-2 pr-4">{row.outcomeCode}</td>
-															<td className="py-2 pr-4 text-right">
-																{pct(row.priorPct)}
-															</td>
-															<td className="py-2 pr-4 text-right">
-																{pct(row.currentPct)}
-															</td>
-															<td className="py-2 pr-4 text-right">
-																{row.deltaPct === null
+												{report.priorComparisons.map((row) => (
+													<tr
+														key={row.outcomeKey}
+														className="border-b last:border-0"
+													>
+														<td className="py-2 pr-4">{row.outcomeCode}</td>
+														<td className="py-2 pr-4 text-right">
+															{row.comparable ? pct(row.priorPct) : "—"}
+														</td>
+														<td className="py-2 pr-4 text-right">
+															{pct(row.currentPct)}
+														</td>
+														<td className="py-2 pr-4 text-right">
+															{row.comparable
+																? row.deltaPct === null
 																	? "—"
-																	: `${row.deltaPct > 0 ? "+" : ""}${row.deltaPct.toFixed(2)} pp`}
-															</td>
-														</tr>
-													))}
+																	: `${row.deltaPct > 0 ? "+" : ""}${row.deltaPct.toFixed(2)} pp`
+																: "not comparable"}
+														</td>
+														<td className="text-muted-foreground py-2 pr-4 text-xs">
+															{row.comparable
+																? "same outcome, both cycles"
+																: row.reason}
+														</td>
+													</tr>
+												))}
 											</tbody>
 										</table>
 									</div>
@@ -776,11 +907,21 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									findings={report.findings.strengths}
 									empty="None reportable."
 								/>
-								<FindingList
-									title="Established weaknesses"
-									findings={report.findings.weaknesses}
-									empty="None reportable."
-								/>
+								<div>
+									<FindingList
+										title="Established weaknesses"
+										findings={report.findings.weaknesses}
+										empty="None reportable."
+									/>
+									<p className="text-muted-foreground mt-2 text-xs">
+										Showing top {report.findings.weaknesses.length} of{" "}
+										{
+											report.outcomes.filter((row) => row.status === "NOT MET")
+												.length
+										}{" "}
+										NOT MET outcome(s). The full list is in Appendix 10.
+									</p>
+								</div>
 							</div>
 							<div>
 								<h3 className="text-sm font-semibold">
@@ -968,6 +1109,7 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 													</td>
 													<td className="py-2 pr-4">
 														{entry.loopStatus?.replaceAll("_", " ") ?? "—"}
+														{entry.outcomeStillNotMet ? " · still NOT MET" : ""}
 													</td>
 													<td className="py-2 pr-4">
 														{entry.ownerRole || "—"}
@@ -997,7 +1139,7 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									value={
 										report.nextCycle.interventionCompletion.ratePct === null
 											? "—"
-											: pct(report.nextCycle.interventionCompletion.ratePct)
+											: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions`
 									}
 								/>
 								<Metric
@@ -1022,11 +1164,20 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									{report.nextCycle.previouslyMetDeclining.join(", ")}
 								</p>
 							) : null}
-							<FindingList
-								title="Recommended next-cycle priorities"
-								findings={report.nextCycle.priorities}
-								empty="No computed priority exceeds the reporting threshold."
-							/>
+							<div>
+								<h3 className="mb-1 font-semibold">Priority outcome codes</h3>
+								<p className="text-muted-foreground text-xs">
+									{report.nextCycle.priorities.length === 0
+										? "No computed priority exceeds the reporting threshold."
+										: report.nextCycle.priorities
+												.map((finding) => finding.outcomeCode)
+												.join(", ")}
+								</p>
+								<p className="text-muted-foreground mt-1 text-xs">
+									Full statements are in Section 6; this section adds only
+									next-cycle actions and loop status.
+								</p>
+							</div>
 						</FramePanel>
 					</Frame>
 
@@ -1072,9 +1223,20 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 								</ul>
 							</div>
 							<div>
+								<h3 className="mb-1 font-semibold">
+									All NOT MET outcomes ({notMetRows.length})
+								</h3>
+								<OutcomeTable rows={notMetRows} />
+							</div>
+							<div>
 								<h3 className="mb-1 font-semibold">Computation run ids</h3>
 								<p className="text-muted-foreground text-xs break-all">
-									{report.scope.computationRunIds.join(", ")}
+									{report.scope.computationRuns
+										.map(
+											(run) =>
+												`${run.id} (${run.scope}) · ${new Date(run.runAt).toLocaleString()}`,
+										)
+										.join("; ") || "—"}
 								</p>
 							</div>
 						</FramePanel>

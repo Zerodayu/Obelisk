@@ -43,6 +43,7 @@ export type CqiReportNarrative = {
 export type CqiReport = {
 	termId: string;
 	term: { schoolYear: string; semester: string };
+	priorTerm: { id: string; schoolYear: string; semester: string } | null;
 	generatedAt: string;
 	scope: {
 		programs: { code: string; name: string }[];
@@ -51,7 +52,12 @@ export type CqiReport = {
 		enrolledCount: number;
 		assessedCount: number;
 		computationRunIds: string[];
-		thresholds: { floorPct: number; targetSource: string };
+		computationRuns: { id: string; scope: string; runAt: string }[];
+		thresholds: {
+			floorPct: number;
+			targetSource: string;
+			targetForm: { id: string; createdAt: string } | null;
+		};
 	};
 	completeness: {
 		snapshotRecords: number;
@@ -75,6 +81,7 @@ export type CqiReport = {
 		meetingCount: number;
 		belowCount: number;
 		atRiskCount: number;
+		atRiskRatePct: number | null;
 		meanPct: number | null;
 		medianPct: number | null;
 		attainmentPct: number | null;
@@ -94,10 +101,12 @@ export type CqiReport = {
 		compositePct: number | null;
 		medianPct: number | null;
 		assessedCount: number;
+		recordCount: number;
 		studentCount: number;
 		meetingCount: number;
 		belowCount: number;
 		targetMetCount: number;
+		countBasis: "record" | "mapped_clo" | "none";
 		attainmentPct: number | null;
 		status: "MET" | "NOT MET" | "NOT AVAILABLE";
 		priorCycleCompositePct: number | null;
@@ -106,6 +115,22 @@ export type CqiReport = {
 		derived: boolean;
 		distribution: { band: string; count: number }[];
 	}[];
+	alignment: {
+		mappings: {
+			programCode: string;
+			courseCode: string;
+			cloCode: string;
+			ploCode: string;
+			weight: number | null;
+			stage: string | null;
+		}[];
+		unmappedClos: {
+			programCode: string;
+			courseCode: string;
+			cloCode: string;
+		}[];
+		unmappedPlos: { programCode: string; ploCode: string }[];
+	};
 	priorComparisons: {
 		outcomeKey: string;
 		outcomeCode: string;
@@ -114,6 +139,8 @@ export type CqiReport = {
 		currentPct: number | null;
 		deltaPct: number | null;
 		direction: "up" | "down" | "flat" | "insufficient";
+		comparable: boolean;
+		reason: string | null;
 	}[];
 	findings: {
 		strengths: ReportFinding[];
@@ -140,6 +167,7 @@ export type CqiReport = {
 		timelineAndKpi: string;
 		isEscalated: boolean;
 		kpiStatus: "not_machine_verifiable";
+		outcomeStillNotMet: boolean;
 	}[];
 	nextCycle: {
 		previouslyMetDeclining: string[];
@@ -154,6 +182,8 @@ export type CqiReport = {
 			partial: number;
 			notImplemented: number;
 			ratePct: number | null;
+			tracked: number;
+			completedEquivalent: number;
 		};
 		priorities: ReportFinding[];
 	};
@@ -176,10 +206,10 @@ export async function getCqiInstitutionalReport(
 	programId?: string,
 ): Promise<ActionResult<CqiReport>> {
 	try {
-		const data = await actionApi.get<CqiReport>(
-			"/reports/cqi-institutional",
-			{ termId, programId },
-		);
+		const data = await actionApi.get<CqiReport>("/reports/cqi-institutional", {
+			termId,
+			programId,
+		});
 		return { ok: true, data };
 	} catch (err) {
 		return {
