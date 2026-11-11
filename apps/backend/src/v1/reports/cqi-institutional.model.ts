@@ -33,6 +33,7 @@ export type CqiNarrativeReview = typeof CqiNarrativeReviewSchema.static;
 export type CqiInstitutionalReport = {
 	termId: string;
 	term: { schoolYear: string; semester: string };
+	priorTerm: { id: string; schoolYear: string; semester: string } | null;
 	generatedAt: string;
 	scope: {
 		programs: { code: string; name: string }[];
@@ -41,9 +42,11 @@ export type CqiInstitutionalReport = {
 		enrolledCount: number;
 		assessedCount: number;
 		computationRunIds: string[];
+		computationRuns: { id: string; scope: string; runAt: string }[];
 		thresholds: {
 			floorPct: number;
 			targetSource: string;
+			targetForm: { id: string; createdAt: string } | null;
 		};
 	};
 	completeness: {
@@ -63,6 +66,18 @@ export type CqiInstitutionalReport = {
 	}[];
 	statistics: import("./cqi-institutional.compute").PerformanceStats;
 	outcomes: import("./cqi-institutional.compute").OutcomeRow[];
+	alignment: {
+		mappings: {
+			programCode: string;
+			courseCode: string;
+			cloCode: string;
+			ploCode: string;
+			weight: number | null;
+			stage: string | null;
+		}[];
+		unmappedClos: { programCode: string; courseCode: string; cloCode: string }[];
+		unmappedPlos: { programCode: string; ploCode: string }[];
+	};
 	priorComparisons: import("./cqi-institutional.compute").PriorComparison[];
 	findings: {
 		strengths: import("./cqi-institutional.compute").Finding[];

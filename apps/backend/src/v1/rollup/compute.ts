@@ -99,15 +99,15 @@ export function attainmentStatus(attainmentPct: number): "MET" | "NOT MET" {
 }
 
 /**
- * The 4-tier rubric (`ScoreBandDatum.band`) with its percentage floor. The
- * manual's 10-point rubric read on the 0–100 composite scale: 9–10 → ≥90,
- * 7–8 → ≥70, 6 → ≥60, ≤5 → below. Ordered highest-first so the first match wins.
+ * The 4-tier rubric (`ScoreBandDatum.band`) with its percentage floor.
+ * NOTE: labels show the actual percent ranges; 9–10 rubric points map to ≥85.
+ * Ordered highest-first so the first match wins.
  */
 export const SCORE_BANDS = [
-	"Exceptional (9-10)",
-	"Proficient (7-8)",
-	"Basic (6)",
-	"Below Basic (≤5)",
+	"Exceptional (85% and above)",
+	"Proficient (70–84%)",
+	"Basic (60–69%)",
+	"Below Basic (below 60%)",
 ] as const;
 
 /** Which rubric band a composite score falls in. */
@@ -115,7 +115,7 @@ export function scoreBandOf(
 	compositePct: number,
 ): (typeof SCORE_BANDS)[number] {
 	const index =
-		compositePct >= 90
+		compositePct >= 85
 			? 0
 			: compositePct >= 70
 				? 1

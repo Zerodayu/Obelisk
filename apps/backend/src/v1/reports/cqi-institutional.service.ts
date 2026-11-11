@@ -21,6 +21,7 @@ import {
 	computeNextCyclePriorities,
 	computeOutcome,
 	computePerformanceStats,
+	naturalCompare,
 } from "./cqi-institutional.compute";
 import type { CqiInstitutionalReport } from "./cqi-institutional.model";
 
@@ -393,7 +394,7 @@ export class CqiInstitutionalReportService {
 				status: "approved",
 			},
 			orderBy: { createdAt: "desc" },
-			select: { id: true },
+			select: { id: true, createdAt: true },
 		});
 		const [ploTargetRows, courseTargetRows] = targetForm
 			? await Promise.all([
@@ -526,30 +527,41 @@ export class CqiInstitutionalReportService {
 			? await this.priorPloMeans(priorTerm.id)
 			: new Map<string, number>();
 		const cloOutcomeByCloId = new Map<string, OutcomeRow>();
+		const cloStudentKeysByCloId = new Map<string, Set<string>>();
 		for (const group of groups.values()) {
 			const outcome = cloOutcomes.find((row) => row.key === group.key);
 			if (outcome) cloOutcomeByCloId.set(group.cloId, outcome);
+			cloStudentKeysByCloId.set(
+				group.cloId,
+				new Set(group.records.map((record) => record.studentKey)),
+			);
 		}
+
+		const cloToPloMaps = await prisma.cloToPloMap.findMany({
+			where: { plo: { programId: { in: programIds } } },
+			select: {
+				cloId: true,
+				ploId: true,
+				weight: true,
+				stage: true,
+				clo: { select: { code: true, course: { select: { code: true } } } },
+				plo: {
+					select: {
+						code: true,
+						description: true,
+						programId: true,
+						program: { select: { code: true } },
+					},
+				},
+			},
+		});
 
 		const ploOutcomes = await this.buildPloOutcomes({
 			programIds,
 			termId: term.id,
 			cloOutcomeByCloId,
-			cloToPloMaps: await prisma.cloToPloMap.findMany({
-				where: { plo: { programId: { in: programIds } } },
-				select: {
-					cloId: true,
-					ploId: true,
-					plo: {
-						select: {
-							code: true,
-							description: true,
-							programId: true,
-							program: { select: { code: true } },
-						},
-					},
-				},
-			}),
+			cloStudentKeysByCloId,
+			cloToPloMaps,
 			ploTargetById,
 			ploTargetByCode,
 			priorPloMap,
@@ -586,28 +598,84 @@ export class CqiInstitutionalReportService {
 				values: [],
 				studentCount: 0,
 				assessedCount: 0,
+				recordCount: 0,
+				countBasis: "none",
 			}),
 		);
 
+		cloOutcomes.sort((a, b) => naturalCompare(a.code, b.code));
 		const outcomes = [...cloOutcomes, ...ploOutcomes, ...peoOutcomes];
 		const scoredOutcomes = [...cloOutcomes, ...ploOutcomes];
+
+		// --- OBE alignment: CLO→PLO map, unmapped CLOs and uncovered PLOs -----
+		const programPlos = await prisma.plo.findMany({
+			where: { programId: { in: programIds } },
+			select: {
+				code: true,
+				program: { select: { code: true } },
+			},
+		});
+		const mappedCloIds = new Set(
+			[...groups.values()].map((group) => group.cloId),
+		);
+		const scopedMappings = cloToPloMaps.filter((map) =>
+			mappedCloIds.has(map.cloId),
+		);
+		const mappedPloCodes = new Set(
+			scopedMappings.map((map) => map.plo.code),
+		);
+		const alignment = {
+			mappings: scopedMappings
+				.map((map) => ({
+					programCode: map.plo.program.code,
+					courseCode: map.clo.course.code,
+					cloCode: map.clo.code,
+					ploCode: map.plo.code,
+					weight: map.weight === null ? null : Number(map.weight),
+					stage: map.stage,
+				}))
+				.sort(
+					(a, b) =>
+						naturalCompare(a.cloCode, b.cloCode) ||
+						naturalCompare(a.ploCode, b.ploCode),
+				),
+			unmappedClos: [...groups.values()]
+				.filter((group) => !mappedCloIds.has(group.cloId))
+				.map((group) => ({
+					programCode: group.programCode,
+					courseCode: group.courseCode,
+					cloCode: group.code.split("/").pop() ?? group.code,
+				}))
+				.sort(
+					(a, b) =>
+						naturalCompare(a.courseCode, b.courseCode) ||
+						naturalCompare(a.cloCode, b.cloCode),
+				),
+			unmappedPlos: programPlos
+				.filter((plo) => !mappedPloCodes.has(plo.code))
+				.map((plo) => ({ programCode: plo.program.code, ploCode: plo.code }))
+				.sort((a, b) => naturalCompare(a.ploCode, b.ploCode)),
+		};
 
 		// --- previous CQI + escalation ---------------------------------------
 		const escalation = await this.computeEscalations(programIds);
 		const entries = await this.buildCqiEntries({
 			termId: term.id,
-			priorTermId: priorTerm?.id ?? null,
 			escalatedOutcomes: escalation,
 			outcomeByKey: new Map(scoredOutcomes.map((row) => [row.key, row])),
 		});
 
 		const findings = computeFindings(scoredOutcomes);
+		const priorTermLabel = priorTerm
+			? `${priorTerm.schoolYear} ${priorTerm.semester}`
+			: null;
 		const priorComparisons = comparePrior(
 			scoredOutcomes,
 			new Map([
 				...priorCloLkm.entries(),
 				...priorPloMap.entries(),
 			]),
+			priorTermLabel,
 		);
 		const nextCycle = computeNextCyclePriorities(
 			priorComparisons,
@@ -653,12 +721,9 @@ export class CqiInstitutionalReportService {
 					bucket.push(composite);
 					meansByStudent.set(row.studentId, bucket);
 				}
-				const atRiskCount = [...meansByStudent.entries()]
-					.filter(([, bucket]) => {
-						const studentMean = mean(bucket);
-						return studentMean !== null && studentMean < MIN_ATTAINMENT_PCT;
-					})
-					.length;
+				const atRiskCount = [...meansByStudent.values()].filter((bucket) =>
+					bucket.some((value) => value < MIN_ATTAINMENT_PCT),
+				).length;
 				return {
 					programCode: program.code,
 					programName: program.name,
@@ -693,6 +758,13 @@ export class CqiInstitutionalReportService {
 		const report: CqiInstitutionalReport = {
 			termId: term.id,
 			term: { schoolYear: term.schoolYear, semester: term.semester },
+			priorTerm: priorTerm
+				? {
+						id: priorTerm.id,
+						schoolYear: priorTerm.schoolYear,
+						semester: priorTerm.semester,
+					}
+				: null,
 			generatedAt: new Date().toISOString(),
 			scope: {
 				programs: [...new Map(sections.map((s) => [s.course.program.id, s.course.program])).values()].map(
@@ -703,11 +775,19 @@ export class CqiInstitutionalReportService {
 				enrolledCount,
 				assessedCount: statistics.assessedCount,
 				computationRunIds,
+				computationRuns: [...latestRun.values()].map((run) => ({
+					id: run.id,
+					scope: run.scope,
+					runAt: run.runAt.toISOString(),
+				})),
 				thresholds: {
 					floorPct: MIN_ATTAINMENT_PCT,
 					targetSource: targetForm
 						? "Latest approved F04 Target-Setting Matrix; missing rows fall back to the 70% floor."
 						: "No approved F04 matrix found; the 70% floor is used.",
+					targetForm: targetForm
+						? { id: targetForm.id, createdAt: targetForm.createdAt.toISOString() }
+						: null,
 				},
 			},
 			completeness: {
@@ -726,6 +806,7 @@ export class CqiInstitutionalReportService {
 			programSummaries,
 			statistics,
 			outcomes,
+			alignment,
 			priorComparisons,
 			findings: {
 				strengths: findings.strengths,
@@ -812,9 +893,11 @@ export class CqiInstitutionalReportService {
 		programIds: string[];
 		termId: string;
 		cloOutcomeByCloId: Map<string, OutcomeRow>;
+		cloStudentKeysByCloId: Map<string, Set<string>>;
 		cloToPloMaps: {
 			cloId: string;
 			ploId: string;
+			clo: { code: string; course: { code: string } };
 			plo: {
 				code: string;
 				description: string;
@@ -828,6 +911,20 @@ export class CqiInstitutionalReportService {
 		missingTargets: Set<string>;
 	}): Promise<OutcomeRow[]> {
 		const mappedClos = new Map<string, OutcomeRow[]>();
+		const studentKeysByOutcomeKey = new Map<string, Set<string>>();
+		for (const [cloId, outcome] of input.cloOutcomeByCloId) {
+			const keys = input.cloStudentKeysByCloId.get(cloId);
+			if (keys) studentKeysByOutcomeKey.set(outcome.key, keys);
+		}
+		const unionStudentCount = (mapped: OutcomeRow[]): number => {
+			const union = new Set<string>();
+			for (const outcome of mapped) {
+				for (const key of studentKeysByOutcomeKey.get(outcome.key) ?? []) {
+					union.add(key);
+				}
+			}
+			return union.size;
+		};
 		for (const map of input.cloToPloMaps) {
 			const outcome = input.cloOutcomeByCloId.get(map.cloId);
 			if (!outcome) continue;
@@ -864,6 +961,9 @@ export class CqiInstitutionalReportService {
 				null,
 			);
 			if (targetPct === null) input.missingTargets.add(key);
+			const values = mapped
+				.map((outcome) => outcome.compositePct)
+				.filter(finite);
 			rows.set(
 				key,
 				computeDerivedOutcome({
@@ -886,24 +986,15 @@ export class CqiInstitutionalReportService {
 							.filter(finite),
 					),
 					priorCycleCompositePct: input.priorPloMap.get(key) ?? null,
-					// NOTE: PLO per-student scores are not persisted; the mapped
-					// CLO record distribution is shown and the row is marked derived.
-					values: mapped.flatMap((outcome) =>
-						outcome.compositePct === null
-							? []
-							: Array.from(
-									{ length: outcome.assessedCount },
-									() => outcome.compositePct as number,
-								),
-					),
-					studentCount: Math.max(
-						...mapped.map((outcome) => outcome.studentCount),
-						0,
-					),
-					assessedCount: mapped.reduce(
+					// NOTE: Formula 7A counts use mapped CLO means, not student records.
+					values,
+					assessedCount: values.length,
+					recordCount: mapped.reduce(
 						(sum, outcome) => sum + outcome.assessedCount,
 						0,
 					),
+					studentCount: unionStudentCount(mapped),
+					countBasis: "mapped_clo",
 				}),
 			);
 		}
@@ -923,6 +1014,9 @@ export class CqiInstitutionalReportService {
 			const composite = mean(
 				mapped.map((outcome) => outcome.compositePct).filter(finite),
 			);
+			const values = mapped
+				.map((outcome) => outcome.compositePct)
+				.filter(finite);
 			rows.set(
 				key,
 				computeDerivedOutcome({
@@ -941,21 +1035,18 @@ export class CqiInstitutionalReportService {
 						mapped.map((outcome) => outcome.indirectPct).filter(finite),
 					),
 					priorCycleCompositePct: input.priorPloMap.get(key) ?? null,
-					values: mapped
-						.map((outcome) => outcome.compositePct)
-						.filter(finite),
-					studentCount: Math.max(
-						...mapped.map((outcome) => outcome.studentCount),
-						0,
-					),
-					assessedCount: mapped.reduce(
+					values,
+					assessedCount: values.length,
+					recordCount: mapped.reduce(
 						(sum, outcome) => sum + outcome.assessedCount,
 						0,
 					),
+					studentCount: unionStudentCount(mapped),
+					countBasis: "mapped_clo",
 				}),
 			);
 		}
-		return [...rows.values()].sort((a, b) => a.key.localeCompare(b.key));
+		return [...rows.values()].sort((a, b) => naturalCompare(a.key, b.key));
 	}
 
 	/**
@@ -1004,15 +1095,13 @@ export class CqiInstitutionalReportService {
 
 	private async buildCqiEntries(input: {
 		termId: string;
-		priorTermId: string | null;
 		escalatedOutcomes: Set<string>;
 		outcomeByKey: Map<string, OutcomeRow>;
 	}): Promise<CqiEffectivenessRow[]> {
-		const termIds = [input.termId, input.priorTermId].filter(
-			(value): value is string => value !== null,
-		);
+		// NOTE: this term's action entries only — prior-cycle rows are compared
+		// through the outcome chain, never restated as this cycle's entries.
 		const rows = await prisma.cqiEntry.findMany({
-			where: { cqiActionPlan: { termId: { in: termIds } } },
+			where: { cqiActionPlan: { termId: input.termId } },
 			select: {
 				id: true,
 				priorAttainmentPct: true,
@@ -1033,18 +1122,14 @@ export class CqiInstitutionalReportService {
 		});
 		const entries: CqiEffectivenessInput[] = rows.map((row) => {
 			const outcomeCode = `${row.plo.program.code}/${row.plo.code}`;
+			const outcome = input.outcomeByKey.get(outcomeCode);
 			return {
 				entryId: row.id,
 				outcomeCode,
 				programCode: row.plo.program.code,
-				priorAttainmentPct:
-					row.priorAttainmentPct === null
-						? null
-						: Number(row.priorAttainmentPct),
-				currentAttainmentPct:
-					row.currentAttainmentPct === null
-						? null
-						: Number(row.currentAttainmentPct),
+				priorAttainmentPct: outcome?.priorCycleCompositePct ?? null,
+				currentAttainmentPct: outcome?.compositePct ?? null,
+				outcomeStatus: outcome?.status,
 				implementationStatus: row.interventionImplemented,
 				loopStatus: loopStatusOf(row.ctlRow?.loopStatus),
 				intervention: row.intervention,
@@ -1096,9 +1181,13 @@ export class CqiInstitutionalReportService {
 				const outcome = outcomes.find(
 					(row) => row.key === entry.outcomeCode,
 				);
+				const status =
+					outcome?.status === "MET" || outcome?.status === "NOT MET"
+						? outcome.status
+						: undefined;
 				return {
 					outcome_code: entry.outcomeCode,
-					status: outcome?.status === "MET" ? "MET" : "NOT MET",
+					status,
 					loop_status: entry.loopStatus ?? undefined,
 					is_escalated: entry.isEscalated,
 					// NOTE: role only — the personal `owner` field never leaves the DB.

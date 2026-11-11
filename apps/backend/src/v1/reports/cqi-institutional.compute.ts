@@ -40,6 +40,9 @@ export type OutcomeInput = {
 
 export type DistributionBucket = { band: string; count: number };
 
+/** Unit behind an outcome's counts. Percentages must never mix units. */
+export type CountBasis = "record" | "mapped_clo" | "none";
+
 export type OutcomeRow = {
 	key: string;
 	outcomeType: OutcomeType;
@@ -53,11 +56,15 @@ export type OutcomeRow = {
 	indirectPct: number | null;
 	compositePct: number | null;
 	medianPct: number | null;
+	/** Count of the unit named by `countBasis` (records or mapped CLOs). */
 	assessedCount: number;
+	/** Student-CLO records behind the outcome, even when counts use CLO means. */
+	recordCount: number;
 	studentCount: number;
 	meetingCount: number;
 	belowCount: number;
 	targetMetCount: number;
+	countBasis: CountBasis;
 	attainmentPct: number | null;
 	status: OutcomeStatus;
 	priorCycleCompositePct: number | null;
@@ -74,6 +81,7 @@ export type PerformanceStats = {
 	meetingCount: number;
 	belowCount: number;
 	atRiskCount: number;
+	atRiskRatePct: number | null;
 	meanPct: number | null;
 	medianPct: number | null;
 	attainmentPct: number | null;
@@ -101,7 +109,13 @@ export type PriorComparison = {
 	currentPct: number | null;
 	deltaPct: number | null;
 	direction: "up" | "down" | "flat" | "insufficient";
+	comparable: boolean;
+	reason: string | null;
 };
+
+export function naturalCompare(a: string, b: string): number {
+	return a.localeCompare(b, undefined, { numeric: true });
+}
 
 function finite(value: number | null | undefined): value is number {
 	return typeof value === "number" && Number.isFinite(value);
@@ -173,12 +187,14 @@ export function computeOutcome(input: OutcomeInput): OutcomeRow {
 		compositePct,
 		medianPct: median(composites),
 		assessedCount: input.records.length,
+		recordCount: input.records.length,
 		studentCount: students.size,
 		meetingCount: composites.filter((value) => value >= FLOOR_PCT).length,
 		belowCount: composites.filter((value) => value < FLOOR_PCT).length,
 		targetMetCount: composites.filter(
 			(value) => value >= effectiveTargetPct,
 		).length,
+		countBasis: "record",
 		attainmentPct: compositePct,
 		status,
 		priorCycleCompositePct: input.priorCycleCompositePct,
@@ -214,13 +230,16 @@ export function computeDerivedOutcome(input: {
 	values?: number[];
 	studentCount?: number;
 	assessedCount?: number;
+	recordCount?: number;
+	countBasis?: CountBasis;
 }): OutcomeRow {
 	const effectiveTargetPct = Math.max(FLOOR_PCT, input.targetPct ?? FLOOR_PCT);
 	const values = input.values ?? [];
 	const assessedCount = input.assessedCount ?? values.length;
+	const recordCount = input.recordCount ?? assessedCount;
 	const compositePct = input.compositePct;
 	const status: OutcomeStatus =
-		compositePct === null
+		compositePct === null || input.countBasis === "none"
 			? "NOT AVAILABLE"
 			: compositePct >= effectiveTargetPct
 				? "MET"
@@ -240,12 +259,14 @@ export function computeDerivedOutcome(input: {
 		compositePct,
 		medianPct: median(values),
 		assessedCount,
+		recordCount,
 		studentCount: input.studentCount ?? assessedCount,
 		meetingCount: values.filter((value) => value >= FLOOR_PCT).length,
 		belowCount: values.filter((value) => value < FLOOR_PCT).length,
 		targetMetCount: values.filter(
 			(value) => value >= effectiveTargetPct,
 		).length,
+		countBasis: input.countBasis ?? "mapped_clo",
 		attainmentPct: compositePct,
 		status,
 		priorCycleCompositePct: input.priorCycleCompositePct,
@@ -278,6 +299,14 @@ export function computePerformanceStats(
 	const studentMeans = [...byStudent.values()]
 		.map(mean)
 		.filter(finite);
+	// NOTE: at-risk is any CLO below the floor, not the student's mean.
+	const atRiskCount = [...byStudent.values()].filter((bucket) =>
+		bucket.some((value) => value < FLOOR_PCT),
+	).length;
+	const atRiskRatePct =
+		enrolledCount === 0
+			? null
+			: round2((atRiskCount / enrolledCount) * 100);
 
 	return {
 		enrolledCount,
@@ -285,7 +314,8 @@ export function computePerformanceStats(
 		recordCount: values.length,
 		meetingCount: studentMeans.filter((value) => value >= FLOOR_PCT).length,
 		belowCount: studentMeans.filter((value) => value < FLOOR_PCT).length,
-		atRiskCount: studentMeans.filter((value) => value < FLOOR_PCT).length,
+		atRiskCount,
+		atRiskRatePct,
 		meanPct: mean(values),
 		medianPct: median(values),
 		attainmentPct: mean(values),
@@ -297,6 +327,20 @@ export function computePerformanceStats(
 export function evidenceFor(row: OutcomeRow): string {
 	const format = (value: number | null) =>
 		value === null ? "not available" : `${value.toFixed(2)}%`;
+	if (row.countBasis === "mapped_clo") {
+		return [
+			`mean ${format(row.compositePct)} of ${row.assessedCount} mapped CLO mean(s), based on ${row.recordCount} student-CLO record(s) across ${row.studentCount} student(s)`,
+			`${row.meetingCount} of ${row.assessedCount} mapped CLO mean(s) at or above the ${FLOOR_PCT}% floor`,
+			`${row.targetMetCount} of ${row.assessedCount} mapped CLO mean(s) at or above the ${row.effectiveTargetPct.toFixed(2)}% target`,
+			`direct ${format(row.directPct)}, indirect ${format(row.indirectPct)} (mapped CLO means)`,
+		].join("; ");
+	}
+	if (row.countBasis === "none") {
+		return [
+			`attainment ${format(row.compositePct)} with no student-level records`,
+			`direct ${format(row.directPct)}, indirect ${format(row.indirectPct)}`,
+		].join("; ");
+	}
 	return [
 		`mean composite ${format(row.compositePct)} across ${row.assessedCount} assessed record(s) / ${row.studentCount} student(s)`,
 		`${row.meetingCount} of ${row.assessedCount} record(s) at or above the ${FLOOR_PCT}% floor`,
@@ -358,6 +402,7 @@ export function computeFindings(rows: OutcomeRow[]): {
 export function comparePrior(
 	current: OutcomeRow[],
 	priorByKey: Map<string, number | null>,
+	priorTermLabel: string | null = null,
 ): PriorComparison[] {
 	return current.map((row) => {
 		const priorPct = priorByKey.get(row.key) ?? null;
@@ -366,6 +411,14 @@ export function comparePrior(
 			currentPct !== null && priorPct !== null
 				? round2(currentPct - priorPct)
 				: null;
+		const reason =
+			priorTermLabel === null
+				? "No earlier term with stored attainment."
+				: priorPct === null
+					? `Outcome was not assessed in ${priorTermLabel}.`
+					: currentPct === null
+						? "Current outcome has no measurable attainment."
+						: null;
 		return {
 			outcomeKey: row.key,
 			outcomeCode: row.code,
@@ -383,6 +436,8 @@ export function comparePrior(
 						: deltaPct < 0
 							? "down"
 							: "flat",
+			comparable: reason === null,
+			reason,
 		};
 	});
 }
@@ -393,6 +448,8 @@ export type CqiEffectivenessInput = {
 	programCode: string;
 	priorAttainmentPct: number | null;
 	currentAttainmentPct: number | null;
+	/** Status of the tracked outcome; only set when attainment data exists. */
+	outcomeStatus?: OutcomeStatus;
 	implementationStatus: "yes" | "partial" | "no" | null;
 	loopStatus: "CLOSED" | "OPEN_REASSESS" | "OPEN_NOT_IMPLEMENTED" | null;
 	intervention: string;
@@ -405,6 +462,8 @@ export type CqiEffectivenessInput = {
 export type CqiEffectivenessRow = CqiEffectivenessInput & {
 	deltaPct: number | null;
 	kpiStatus: "not_machine_verifiable";
+	/** True when the loop was closed even though the outcome is still NOT MET. */
+	outcomeStillNotMet: boolean;
 };
 
 export type NextCyclePriorities = {
@@ -420,6 +479,10 @@ export type NextCyclePriorities = {
 		partial: number;
 		notImplemented: number;
 		ratePct: number | null;
+		/** Entries the completion rate is computed over. */
+		tracked: number;
+		/** Implemented + half-weighted partials — the rate's numerator. */
+		completedEquivalent: number;
 	};
 	priorities: Finding[];
 };
@@ -438,6 +501,7 @@ export function computeCqiEffectiveness(
 				? round2(entry.currentAttainmentPct - entry.priorAttainmentPct)
 				: null,
 		kpiStatus: "not_machine_verifiable",
+		outcomeStillNotMet: entry.outcomeStatus === "NOT MET",
 	}));
 }
 
@@ -450,22 +514,20 @@ export function computeNextCyclePriorities(
 	const completion = { implemented: 0, partial: 0, notImplemented: 0 };
 	for (const entry of entries) {
 		if (entry.loopStatus === "CLOSED") openLoops.closed += 1;
+		else if (entry.loopStatus === "OPEN_REASSESS") openLoops.openReassess += 1;
 		else if (entry.loopStatus === "OPEN_NOT_IMPLEMENTED")
 			openLoops.openNotImplemented += 1;
-		else openLoops.openReassess += 1;
-
+		// NOTE: loop status is computed, not free-form — unrecorded loops stay unopen.
 		if (entry.implementationStatus === "yes") completion.implemented += 1;
 		else if (entry.implementationStatus === "partial") completion.partial += 1;
 		else completion.notImplemented += 1;
 	}
 	const tracked = entries.length;
+	const completedEquivalent = completion.implemented + completion.partial * 0.5;
 	const ratePct =
 		tracked === 0
 			? null
-			: round2(
-					((completion.implemented + completion.partial * 0.5) / tracked) *
-						100,
-				);
+			: round2((completedEquivalent / tracked) * 100);
 
 	return {
 		previouslyMetDeclining: comparisons
@@ -484,6 +546,8 @@ export function computeNextCyclePriorities(
 		interventionCompletion: {
 			...completion,
 			ratePct,
+			tracked,
+			completedEquivalent,
 		},
 		priorities: findings.weaknesses
 			.filter((finding) => finding.priority !== "low")

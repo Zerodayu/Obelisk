@@ -171,7 +171,7 @@ export interface CqiNarrativeOutcome {
 
 export interface CqiNarrativeEntry {
 	outcome_code: string;
-	status: "MET" | "NOT MET";
+	status?: "MET" | "NOT MET";
 	loop_status?: "CLOSED" | "OPEN_REASSESS" | "OPEN_NOT_IMPLEMENTED";
 	is_escalated?: boolean;
 	intervention?: string;

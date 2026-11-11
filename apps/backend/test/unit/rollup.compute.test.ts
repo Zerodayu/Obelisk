@@ -73,23 +73,23 @@ describe("cohortCqiTriggered", () => {
 });
 
 describe("scoreBandOf", () => {
-	it("bands a composite score on the 10-point rubric floors", () => {
-		expect(scoreBandOf(100)).toBe("Exceptional (9-10)");
-		expect(scoreBandOf(90)).toBe("Exceptional (9-10)");
-		expect(scoreBandOf(89.99)).toBe("Proficient (7-8)");
-		expect(scoreBandOf(70)).toBe("Proficient (7-8)");
-		expect(scoreBandOf(69.99)).toBe("Basic (6)");
-		expect(scoreBandOf(60)).toBe("Basic (6)");
-		expect(scoreBandOf(59.99)).toBe("Below Basic (≤5)");
-		expect(scoreBandOf(0)).toBe("Below Basic (≤5)");
+	it("bands a composite score on the rubric percent floors", () => {
+		expect(scoreBandOf(100)).toBe("Exceptional (85% and above)");
+		expect(scoreBandOf(85)).toBe("Exceptional (85% and above)");
+		expect(scoreBandOf(84.99)).toBe("Proficient (70–84%)");
+		expect(scoreBandOf(70)).toBe("Proficient (70–84%)");
+		expect(scoreBandOf(69.99)).toBe("Basic (60–69%)");
+		expect(scoreBandOf(60)).toBe("Basic (60–69%)");
+		expect(scoreBandOf(59.99)).toBe("Below Basic (below 60%)");
+		expect(scoreBandOf(0)).toBe("Below Basic (below 60%)");
 	});
 
 	it("exposes exactly the four bands, highest first", () => {
 		expect(SCORE_BANDS).toEqual([
-			"Exceptional (9-10)",
-			"Proficient (7-8)",
-			"Basic (6)",
-			"Below Basic (≤5)",
+			"Exceptional (85% and above)",
+			"Proficient (70–84%)",
+			"Basic (60–69%)",
+			"Below Basic (below 60%)",
 		]);
 	});
 });
