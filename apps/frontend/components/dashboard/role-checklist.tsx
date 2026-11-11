@@ -73,17 +73,19 @@ function DutyRow({ step, state }: { step: DutyStep; state: DutyState }) {
 				<step.icon className="size-3.5" aria-hidden />
 			</span>
 			<div className="min-w-0 flex-1">
-				<Link
-					href={step.url}
-					className="hover:text-foreground text-sm font-medium hover:underline"
-				>
-					{step.title}
-				</Link>
+				<div className="flex items-center gap-2">
+					<Link
+						href={step.url}
+						className="hover:text-foreground text-sm font-medium hover:underline"
+					>
+						{step.title}
+					</Link>
+					<Badge variant={badge.variant} size="sm" radius="full">
+						{badge.label}
+					</Badge>
+				</div>
 				<p className="text-muted-foreground text-xs">{step.detail}</p>
 			</div>
-			<Badge variant={badge.variant} size="sm" radius="full">
-				{badge.label}
-			</Badge>
 		</li>
 	);
 }
