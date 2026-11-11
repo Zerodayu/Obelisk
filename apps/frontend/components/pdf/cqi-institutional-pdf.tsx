@@ -433,7 +433,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						</Text>
 					)}
 					<KV
-						label="Performance distribution"
+						label="Performance distribution (student-CLO records)"
 						value={report.statistics.distribution
 							.map((bucket) => `${bucket.band}: ${bucket.count}`)
 							.join(" · ")}
@@ -543,7 +543,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 					) : peoRows.every((row) => row.status === "NOT AVAILABLE") ? (
 						<Text style={styles.note}>
 							No evidence captured — PEO assessment is out of scope for this
-							term.
+							prototype.
 						</Text>
 					) : (
 						<OutcomeTable rows={peoRows} />
@@ -629,7 +629,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						value={`${report.statistics.recordCount} student-CLO record(s)`}
 					/>
 					<KV
-						label="Score distribution"
+						label="Score distribution (student-CLO records)"
 						value={report.statistics.distribution
 							.map((bucket) => `${bucket.band}: ${bucket.count}`)
 							.join(" · ")}
@@ -644,7 +644,9 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						NOT MET. Labels read attained [target].
 					</Text>
 					<AttainmentChart rows={[...cloRows, ...ploRows]} />
-					<Text style={styles.cardTitle}>Performance distribution</Text>
+					<Text style={styles.cardTitle}>
+						Performance distribution (student-CLO records)
+					</Text>
 					<DistributionChart buckets={report.statistics.distribution} />
 					<Text style={styles.cardTitle}>Historical performance trend</Text>
 					<DeltaChart comparisons={report.priorComparisons} />
@@ -824,7 +826,7 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 						value={
 							report.nextCycle.interventionCompletion.ratePct === null
 								? "—"
-								: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions`
+								: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions (${report.nextCycle.interventionCompletion.implemented} implemented, ${report.nextCycle.interventionCompletion.partial} partial at half credit, ${report.nextCycle.interventionCompletion.notImplemented} not implemented, ${report.nextCycle.interventionCompletion.notRecorded} not recorded)`
 						}
 					/>
 					<KV

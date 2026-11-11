@@ -1,13 +1,14 @@
+import { findSystemicTriggers } from "@lib/forms/systemic-trigger";
 import {
 	type CqiNarrativeEntry,
 	type CqiNarrativePayload,
 	type CqiNarrativeResponse,
 	ingestClient,
 } from "@lib/ingest/ingest-client";
-import { findSystemicTriggers } from "@lib/forms/systemic-trigger";
 import { prisma } from "@lib/prisma";
 import { MIN_ATTAINMENT_PCT, round2 } from "@lib/validators/attainment";
 import type { Prisma } from "@prisma/generated/prisma/client";
+
 import {
 	type CqiEffectivenessInput,
 	type CqiEffectivenessRow,
@@ -17,6 +18,7 @@ import {
 	comparePrior,
 	computeCqiEffectiveness,
 	computeDerivedOutcome,
+	dedupeCqiEntries,
 	computeFindings,
 	computeNextCyclePriorities,
 	computeOutcome,
@@ -130,9 +132,10 @@ function parseAttainmentRows(snapshot: unknown): Record<string, unknown>[] {
 	if (!snapshot || typeof snapshot !== "object") return [];
 	const attainments = (snapshot as { attainments?: unknown }).attainments;
 	return Array.isArray(attainments)
-		? (attainments.filter(
-				(row) => row && typeof row === "object",
-			) as Record<string, unknown>[])
+		? (attainments.filter((row) => row && typeof row === "object") as Record<
+				string,
+				unknown
+			>[])
 		: [];
 }
 
@@ -156,7 +159,10 @@ export class CqiInstitutionalReportService {
 	) {}
 
 	/** `GET /reports/cqi-institutional` — assembled report + latest narrative. */
-	async getReport(termId?: string, programId?: string): Promise<CqiInstitutionalReport> {
+	async getReport(
+		termId?: string,
+		programId?: string,
+	): Promise<CqiInstitutionalReport> {
 		const { report } = await this.build(termId, programId);
 		const narrative = await this.latestNarrative(report.termId);
 		return {
@@ -293,7 +299,10 @@ export class CqiInstitutionalReportService {
 		return [found, ...terms.slice(index + 1)];
 	}
 
-	private async build(termId?: string, programId?: string): Promise<BuildResult> {
+	private async build(
+		termId?: string,
+		programId?: string,
+	): Promise<BuildResult> {
 		const [term, ...laterTerms] = await this.resolveTerm(termId);
 		const priorTerm = laterTerms[0] ?? null;
 
@@ -485,9 +494,8 @@ export class CqiInstitutionalReportService {
 				compositePct: composite,
 				yearLevel: row.student?.yearLevel ?? null,
 				isComplete:
-					sectionCloComplete.get(
-						`${row.classSectionId}|${row.clo.code}`,
-					) ?? true,
+					sectionCloComplete.get(`${row.classSectionId}|${row.clo.code}`) ??
+					true,
 			});
 		}
 		if (groups.size === 0) {
@@ -621,9 +629,7 @@ export class CqiInstitutionalReportService {
 		const scopedMappings = cloToPloMaps.filter((map) =>
 			mappedCloIds.has(map.cloId),
 		);
-		const mappedPloCodes = new Set(
-			scopedMappings.map((map) => map.plo.code),
-		);
+		const mappedPloCodes = new Set(scopedMappings.map((map) => map.plo.code));
 		const alignment = {
 			mappings: scopedMappings
 				.map((map) => ({
@@ -671,10 +677,7 @@ export class CqiInstitutionalReportService {
 			: null;
 		const priorComparisons = comparePrior(
 			scoredOutcomes,
-			new Map([
-				...priorCloLkm.entries(),
-				...priorPloMap.entries(),
-			]),
+			new Map([...priorCloLkm.entries(), ...priorPloMap.entries()]),
 			priorTermLabel,
 		);
 		const nextCycle = computeNextCyclePriorities(
@@ -697,50 +700,44 @@ export class CqiInstitutionalReportService {
 			...new Map(
 				sections.map((s) => [s.course.program.id, s.course.program]),
 			).values(),
-		].map(
-			(program) => {
-				const programSectionIds = new Set(
-					sections
-						.filter((s) => s.course.program.id === program.id)
-						.map((s) => s.id),
-				);
-				const programStudentIds = new Set<string>();
-				for (const enrollment of enrollments) {
-					if (programSectionIds.has(enrollment.classSectionId)) {
-						programStudentIds.add(enrollment.studentId);
-					}
+		].map((program) => {
+			const programSectionIds = new Set(
+				sections
+					.filter((s) => s.course.program.id === program.id)
+					.map((s) => s.id),
+			);
+			const programStudentIds = new Set<string>();
+			for (const enrollment of enrollments) {
+				if (programSectionIds.has(enrollment.classSectionId)) {
+					programStudentIds.add(enrollment.studentId);
 				}
-				const meansByStudent = new Map<string, number[]>();
-				for (const row of attainments) {
-					if (!programSectionIds.has(row.classSectionId)) continue;
-					const composite = finite(Number(row.compositeScorePct))
-						? Number(row.compositeScorePct)
-						: null;
-					if (composite === null) continue;
-					const bucket = meansByStudent.get(row.studentId) ?? [];
-					bucket.push(composite);
-					meansByStudent.set(row.studentId, bucket);
-				}
-				const atRiskCount = [...meansByStudent.values()].filter((bucket) =>
-					bucket.some((value) => value < MIN_ATTAINMENT_PCT),
-				).length;
-				return {
-					programCode: program.code,
-					programName: program.name,
-					atRiskCount,
-					assessedCount: meansByStudent.size,
-					totalStudents: programStudentIds.size,
-				};
-			},
-		);
+			}
+			const meansByStudent = new Map<string, number[]>();
+			for (const row of attainments) {
+				if (!programSectionIds.has(row.classSectionId)) continue;
+				const composite = finite(Number(row.compositeScorePct))
+					? Number(row.compositeScorePct)
+					: null;
+				if (composite === null) continue;
+				const bucket = meansByStudent.get(row.studentId) ?? [];
+				bucket.push(composite);
+				meansByStudent.set(row.studentId, bucket);
+			}
+			const atRiskCount = [...meansByStudent.values()].filter((bucket) =>
+				bucket.some((value) => value < MIN_ATTAINMENT_PCT),
+			).length;
+			return {
+				programCode: program.code,
+				programName: program.name,
+				atRiskCount,
+				assessedCount: meansByStudent.size,
+				totalStudents: programStudentIds.size,
+			};
+		});
 
 		const missingSections = [
-			peoOutcomes.length === 0
-				? "PEO attainment (no captured evidence)"
-				: null,
-			priorTerm === null
-				? "Prior-cycle comparison (no earlier term)"
-				: null,
+			peoOutcomes.length === 0 ? "PEO attainment (no captured evidence)" : null,
+			priorTerm === null ? "Prior-cycle comparison (no earlier term)" : null,
 			entries.length === 0
 				? "CQI action entries (none recorded for this cycle)"
 				: null,
@@ -767,9 +764,11 @@ export class CqiInstitutionalReportService {
 				: null,
 			generatedAt: new Date().toISOString(),
 			scope: {
-				programs: [...new Map(sections.map((s) => [s.course.program.id, s.course.program])).values()].map(
-					(program) => ({ code: program.code, name: program.name }),
-				),
+				programs: [
+					...new Map(
+						sections.map((s) => [s.course.program.id, s.course.program]),
+					).values(),
+				].map((program) => ({ code: program.code, name: program.name })),
 				sections: sections.length,
 				courses: new Set(sections.map((s) => s.course.id)).size,
 				enrolledCount,
@@ -786,7 +785,10 @@ export class CqiInstitutionalReportService {
 						? "Latest approved F04 Target-Setting Matrix; missing rows fall back to the 70% floor."
 						: "No approved F04 matrix found; the 70% floor is used.",
 					targetForm: targetForm
-						? { id: targetForm.id, createdAt: targetForm.createdAt.toISOString() }
+						? {
+								id: targetForm.id,
+								createdAt: targetForm.createdAt.toISOString(),
+							}
 						: null,
 				},
 			},
@@ -813,14 +815,19 @@ export class CqiInstitutionalReportService {
 				weaknesses: findings.weaknesses,
 				hypotheses: [],
 			},
-			previousCqi: entries,
+			previousCqi: dedupeCqiEntries(entries),
 			nextCycle,
 			narrative: null,
 		};
 
 		return {
 			report,
-			payload: this.buildNarrativePayload(term, statistics, scoredOutcomes, entries),
+			payload: this.buildNarrativePayload(
+				term,
+				statistics,
+				scoredOutcomes,
+				entries,
+			),
 			entries,
 		};
 	}
@@ -842,8 +849,11 @@ export class CqiInstitutionalReportService {
 			select: { id: true, scope: true },
 		});
 		const latest = new Map<string, string>();
-		for (const run of runs) if (!latest.has(run.scope)) latest.set(run.scope, run.id);
-		const sectionById = new Map(sections.map((section) => [section.id, section]));
+		for (const run of runs)
+			if (!latest.has(run.scope)) latest.set(run.scope, run.id);
+		const sectionById = new Map(
+			sections.map((section) => [section.id, section]),
+		);
 		const rows = await prisma.cloAttainment.findMany({
 			where: { computationRunId: { in: [...latest.values()] } },
 			select: {
@@ -976,14 +986,10 @@ export class CqiInstitutionalReportService {
 					targetPct,
 					compositePct: Number(row.attainedPct),
 					directPct: mean(
-						mapped
-							.map((outcome) => outcome.directPct)
-							.filter(finite),
+						mapped.map((outcome) => outcome.directPct).filter(finite),
 					),
 					indirectPct: mean(
-						mapped
-							.map((outcome) => outcome.indirectPct)
-							.filter(finite),
+						mapped.map((outcome) => outcome.indirectPct).filter(finite),
 					),
 					priorCycleCompositePct: input.priorPloMap.get(key) ?? null,
 					// NOTE: Formula 7A counts use mapped CLO means, not student records.
@@ -1053,9 +1059,7 @@ export class CqiInstitutionalReportService {
 	 * Escalation = the same PLO misses the 70% floor for 3 consecutive terms.
 	 * Reuses the systemic-gap rule rather than duplicating the run logic.
 	 */
-	private async computeEscalations(
-		programIds: string[],
-	): Promise<Set<string>> {
+	private async computeEscalations(programIds: string[]): Promise<Set<string>> {
 		const terms = await prisma.academicTerm.findMany({
 			orderBy: [
 				{ startDate: { sort: "desc", nulls: "last" } },
@@ -1164,7 +1168,8 @@ export class CqiInstitutionalReportService {
 			outcomes: outcomes
 				.filter((row) => row.outcomeType !== "PEO")
 				.map((row) => ({
-					outcome_type: row.outcomeType === "CLO" ? ("CLO" as const) : ("PLO" as const),
+					outcome_type:
+						row.outcomeType === "CLO" ? ("CLO" as const) : ("PLO" as const),
 					outcome_code: row.key,
 					target_pct: row.effectiveTargetPct,
 					direct_pct: row.directPct ?? undefined,
@@ -1178,9 +1183,7 @@ export class CqiInstitutionalReportService {
 							: undefined,
 				})),
 			cqi_entries: entries.map((entry): CqiNarrativeEntry => {
-				const outcome = outcomes.find(
-					(row) => row.key === entry.outcomeCode,
-				);
+				const outcome = outcomes.find((row) => row.key === entry.outcomeCode);
 				const status =
 					outcome?.status === "MET" || outcome?.status === "NOT MET"
 						? outcome.status
@@ -1201,15 +1204,13 @@ export class CqiInstitutionalReportService {
 		return payload;
 	}
 
-	private toNarrative(
-		row: {
-			id: string;
-			status: string;
-			generatedAt: Date;
-			summary: string;
-			recommendationText: string;
-		},
-	): NonNullable<CqiInstitutionalReport["narrative"]> {
+	private toNarrative(row: {
+		id: string;
+		status: string;
+		generatedAt: Date;
+		summary: string;
+		recommendationText: string;
+	}): NonNullable<CqiInstitutionalReport["narrative"]> {
 		let parsed: Partial<CqiNarrativeResponse> = {};
 		try {
 			parsed = JSON.parse(row.recommendationText) as CqiNarrativeResponse;
@@ -1228,14 +1229,12 @@ export class CqiInstitutionalReportService {
 						evidenceFactIds: parsed.pattern.evidence_fact_ids ?? [],
 					}
 				: null,
-			factors: (parsed.possible_contributing_factors ?? []).map(
-				(factor) => ({
-					hypothesis: factor.hypothesis,
-					rootCauseCategory: factor.root_cause_category,
-					evidenceFactIds: factor.evidence_fact_ids ?? [],
-					status: "pending_program_chair_confirmation" as const,
-				}),
-			),
+			factors: (parsed.possible_contributing_factors ?? []).map((factor) => ({
+				hypothesis: factor.hypothesis,
+				rootCauseCategory: factor.root_cause_category,
+				evidenceFactIds: factor.evidence_fact_ids ?? [],
+				status: "pending_program_chair_confirmation" as const,
+			})),
 			dataLimitations: parsed.data_limitations ?? [],
 			missingSections: parsed.missing_sections ?? [],
 			provenance: parsed.provenance ?? null,

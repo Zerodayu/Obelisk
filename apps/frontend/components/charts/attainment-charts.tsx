@@ -277,7 +277,7 @@ export function CohortTrendLines({
 	);
 }
 
-/** Distribution of students across the 4-tier rubric bands. */
+/** Distribution of student-CLO records across the 4-tier rubric bands. */
 export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
 	const atomData = useAtomValue(scoreBandsDataAtom);
 	const data = override ?? atomData;
@@ -295,7 +295,7 @@ export function ScoreBandBars({ data: override }: { data?: ScoreBandDatum[] }) {
 				dataKey="band"
 				tickFormatter={(v) => v.split(" ")[0]}
 			/>
-			<EChartsBarChart.YAxis label="Students" />
+			<EChartsBarChart.YAxis label="Student-CLO records" />
 			<EChartsBarChart.Tooltip />
 			<EChartsBarChart.Bar dataKey="count" variant="expandable" />
 		</EChartsBarChart>

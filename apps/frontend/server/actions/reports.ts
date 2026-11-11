@@ -181,6 +181,7 @@ export type CqiReport = {
 			implemented: number;
 			partial: number;
 			notImplemented: number;
+			notRecorded: number;
 			ratePct: number | null;
 			tracked: number;
 			completedEquivalent: number;

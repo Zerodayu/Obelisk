@@ -624,7 +624,8 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									</p>
 								) : peoRows.every((row) => row.status === "NOT AVAILABLE") ? (
 									<p className="text-muted-foreground text-sm">
-										No evidence captured — PEO assessment is out of scope.
+										No evidence captured — PEO assessment is out of scope for
+										this prototype.
 									</p>
 								) : (
 									<OutcomeTable rows={peoRows} />
@@ -1139,7 +1140,7 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 									value={
 										report.nextCycle.interventionCompletion.ratePct === null
 											? "—"
-											: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions`
+											: `${pct(report.nextCycle.interventionCompletion.ratePct)} · ${report.nextCycle.interventionCompletion.completedEquivalent} of ${report.nextCycle.interventionCompletion.tracked} tracked interventions (${report.nextCycle.interventionCompletion.implemented} implemented, ${report.nextCycle.interventionCompletion.partial} partial at half credit, ${report.nextCycle.interventionCompletion.notImplemented} not implemented, ${report.nextCycle.interventionCompletion.notRecorded} not recorded)`
 									}
 								/>
 								<Metric

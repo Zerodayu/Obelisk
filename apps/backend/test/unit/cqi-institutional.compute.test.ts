@@ -7,6 +7,7 @@ import {
 	computeOutcome,
 	computePerformanceStats,
 	comparePrior,
+	dedupeCqiEntries,
 } from "@v1/reports/cqi-institutional.compute";
 
 function record(
@@ -41,11 +42,7 @@ describe("computeOutcome", () => {
 			courseCode: "IT101",
 			targetPct: 75,
 			priorCycleCompositePct: 68,
-			records: [
-				record("s1", 80),
-				record("s2", 72),
-				record("s3", 64),
-			],
+			records: [record("s1", 80), record("s2", 72), record("s3", 64)],
 		});
 
 		expect(outcome.compositePct).toBe(72);
@@ -103,9 +100,7 @@ describe("computeFindings", () => {
 			courseCode: "IT101",
 			targetPct: 70,
 			priorCycleCompositePct: null,
-			records: Array.from({ length: 5 }, (_, index) =>
-				record(`s${index}`, 90),
-			),
+			records: Array.from({ length: 5 }, (_, index) => record(`s${index}`, 90)),
 		});
 		const findings = computeFindings([small]);
 		expect(findings.strengths).toHaveLength(0);
@@ -156,5 +151,51 @@ describe("previous CQI effectiveness", () => {
 		});
 		expect(priorities.openLoops.closed).toBe(1);
 		expect(priorities.interventionCompletion.ratePct).toBe(100);
+	});
+});
+
+describe("dedupeCqiEntries", () => {
+	const input = (
+		outcomeCode: string,
+		implementationStatus: "yes" | "partial" | "no" | null,
+		loopStatus: "CLOSED" | "OPEN_REASSESS" | "OPEN_NOT_IMPLEMENTED" | null,
+		entryId: string,
+	) => ({
+		entryId,
+		outcomeCode,
+		programCode: "BSIT",
+		priorAttainmentPct: 65,
+		currentAttainmentPct: 72,
+		outcomeStatus: "MET" as const,
+		implementationStatus,
+		loopStatus,
+		intervention: "Clinic",
+		ownerRole: "Program Chair",
+		rootCauseCategory: "2-Instruction & Pedagogy",
+		timelineAndKpi: "Within 4 weeks; reach 70%",
+		isEscalated: false,
+	});
+
+	it("collapses cohort rows into one row per outcome, keeping the worst status", () => {
+		const rows = computeCqiEffectiveness([
+			input("BSIT/PLO3", "yes", "CLOSED", "a"),
+			input("BSIT/PLO3", "no", "OPEN_NOT_IMPLEMENTED", "b"),
+			input("BSIT/PLO3", null, null, "c"),
+		]);
+		const result = dedupeCqiEntries(rows);
+		expect(result).toHaveLength(1);
+		expect(result[0].implementationStatus).toBe("no");
+		expect(result[0].loopStatus).toBe("OPEN_NOT_IMPLEMENTED");
+	});
+
+	it("keeps a filled row over a blank one for the same outcome", () => {
+		const rows = computeCqiEffectiveness([
+			input("BSIT/PLO1", null, null, "a"),
+			input("BSIT/PLO1", "partial", "OPEN_REASSESS", "b"),
+		]);
+		const result = dedupeCqiEntries(rows);
+		expect(result).toHaveLength(1);
+		expect(result[0].implementationStatus).toBe("partial");
+		expect(result[0].loopStatus).toBe("OPEN_REASSESS");
 	});
 });
