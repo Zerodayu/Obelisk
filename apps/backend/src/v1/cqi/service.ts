@@ -22,6 +22,7 @@ import {
 } from "./compute";
 import type {
 	AparPayload,
+	CqiLoopStatus,
 	CqiPlanPayload,
 	CqiSubmissionListItem,
 	CtlPayload,
@@ -61,6 +62,16 @@ export class CqiInvalidEditError extends Error {
 			`${form} content may only be edited while the submission is draft or returned.`,
 		);
 		this.name = "CqiInvalidEditError";
+	}
+}
+
+/** 409 — the recommendation's review status does not permit adoption. */
+export class CqiRecommendationNotAdoptableError extends Error {
+	constructor(status: string) {
+		super(
+			`This recommendation is '${status}' — only 'actioned' recommendations can be adopted.`,
+		);
+		this.name = "CqiRecommendationNotAdoptableError";
 	}
 }
 
@@ -453,6 +464,117 @@ export class CqiActionPlanService {
 			userId,
 		);
 		return { id: created.id };
+	}
+
+	/** Adopt an AI recommendation: open (or reuse) this program's action plan
+	 * draft, record the recommendation as its source, and seed entries from the
+	 * program's open F22 gaps. The AI proposal never auto-creates a plan — this
+	 * explicit adopt action is the only trigger into the CQI loop. */
+	async adoptRecommendation(
+		recommendationId: string,
+		programId: string,
+		termId: string,
+		userId: string,
+	): Promise<{ draft: { id: string }; payload: CqiPlanPayload }> {
+		const recommendation = await prisma.aiRecommendation.findUnique({
+			where: { id: recommendationId },
+			select: { id: true, status: true },
+		});
+		if (!recommendation) {
+			throw new CqiSourceNotFoundError(
+				`AI recommendation '${recommendationId}' not found`,
+			);
+		}
+		if (recommendation.status !== "actioned") {
+			throw new CqiRecommendationNotAdoptableError(recommendation.status);
+		}
+
+		const draft = await this.ensureDraft(programId, termId, userId);
+		await snapshotFormData(draft.id, "adoptedFromRecommendation", {
+			recommendationId,
+			adoptedAt: new Date().toISOString(),
+		});
+		const payload = await this.generate(programId, termId, userId);
+		await cqiAudit(userId, "cqi_action_plan.adopted_recommendation", {
+			targetRecordId: draft.id,
+			programId,
+			termId,
+			recommendationId,
+		});
+		return { draft, payload };
+	}
+
+	/** Derived loop status for a program+term: CLOSED when every tracked entry
+	 * has a CLOSED loop. The prior term is resolved by startDate for the
+	 * "prior loop incomplete" warning. */
+	async loopStatus(programId: string, termId: string): Promise<CqiLoopStatus> {
+		const count = async (tid: string) => {
+			const entries = await prisma.cqiEntry.findMany({
+				where: { cqiActionPlan: { programId, termId: tid } },
+				select: { ctlRow: { select: { loopStatus: true } } },
+			});
+			const counts = {
+				closed: 0,
+				openReassess: 0,
+				openNotImplemented: 0,
+				notRecorded: 0,
+			};
+			for (const entry of entries) {
+				const loop = entry.ctlRow?.loopStatus;
+				if (loop === "closed") counts.closed += 1;
+				else if (loop === "open_reassess") counts.openReassess += 1;
+				else if (loop === "open_not_implemented")
+					counts.openNotImplemented += 1;
+				else counts.notRecorded += 1;
+			}
+			return counts;
+		};
+
+		const current = await count(termId);
+		const total =
+			current.closed +
+			current.openReassess +
+			current.openNotImplemented +
+			current.notRecorded;
+
+		const term = await prisma.academicTerm.findUnique({
+			where: { id: termId },
+			select: { id: true, schoolYear: true, semester: true, startDate: true },
+		});
+		const priorTerm = term?.startDate
+			? await prisma.academicTerm.findFirst({
+					where: { startDate: { lt: term.startDate } },
+					orderBy: { startDate: "desc" },
+					select: { id: true, schoolYear: true, semester: true },
+				})
+			: null;
+
+		let prior: CqiLoopStatus["prior"] = null;
+		if (priorTerm) {
+			const p = await count(priorTerm.id);
+			const priorTotal =
+				p.closed + p.openReassess + p.openNotImplemented + p.notRecorded;
+			prior = {
+				termId: priorTerm.id,
+				term: {
+					schoolYear: priorTerm.schoolYear,
+					semester: priorTerm.semester,
+				},
+				openLoops: p.openReassess + p.openNotImplemented,
+				isClosed: priorTotal > 0 && p.closed === priorTotal,
+			};
+		}
+
+		return {
+			termId,
+			term: term
+				? { schoolYear: term.schoolYear, semester: term.semester }
+				: null,
+			...current,
+			total,
+			isClosed: total > 0 && current.closed === total,
+			prior,
+		};
 	}
 
 	async generate(

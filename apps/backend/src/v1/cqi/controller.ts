@@ -1,13 +1,19 @@
 import { cached } from "@lib/cache";
-import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
+import {
+	assertProgramInScope,
+	assertSubmissionInScope,
+	unitScopeOf,
+} from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 
 import {
+	AdoptRecommendationSchema,
 	AparParamsSchema,
 	CqiListQuerySchema,
 	CqiPlanParamsSchema,
 	CtlParamsSchema,
+	LoopStatusQuerySchema,
 	PloGapParamsSchema,
 	SaveAparSchema,
 	SaveCqiPlanSchema,
@@ -18,6 +24,7 @@ import {
 import {
 	annualProgramReportService,
 	CqiInvalidEditError,
+	CqiRecommendationNotAdoptableError,
 	CqiSourceNotFoundError,
 	CqiSubmissionNotFoundError,
 	closingTheLoopService,
@@ -189,6 +196,66 @@ export const cqiPlugin = new Elysia({
 					200: { description: "CQI action plan draft id + assembled payload" },
 					401: { description: "Unauthorized" },
 					404: { description: "Program or term not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/cqi-action-plan/adopt-recommendation",
+		async ({ body, user, set }) => {
+			try {
+				return await cqiActionPlanService.adoptRecommendation(
+					body.recommendationId,
+					body.programId,
+					body.termId,
+					user.id,
+				);
+			} catch (error) {
+				if (error instanceof CqiSourceNotFoundError) {
+					set.status = 404;
+					return { error: error.message };
+				}
+				if (error instanceof CqiRecommendationNotAdoptableError) {
+					set.status = 409;
+					return { error: error.message };
+				}
+				throw error;
+			}
+		},
+		{
+			auth: true,
+			body: AdoptRecommendationSchema,
+			detail: {
+				summary: "Adopt an AI recommendation into the CQI action plan",
+				description:
+					"Opens (or reuses) the program's action plan draft for the term, records the AI recommendation as its source, and seeds entries from the program's open F22 gaps.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Action plan draft id + assembled payload" },
+					401: { description: "Unauthorized" },
+					404: { description: "Recommendation, program, or term not found" },
+				},
+			},
+		},
+	)
+	.get(
+		"/loop-status",
+		async ({ query, user }) => {
+			await assertProgramInScope(unitScopeOf(user), query.programId);
+			return cqiActionPlanService.loopStatus(query.programId, query.termId);
+		},
+		{
+			auth: true,
+			query: LoopStatusQuerySchema,
+			detail: {
+				summary: "Read a program's CQI loop status for a term",
+				description:
+					"Derived CLOSED/OPEN loop counts for the program+term plus the prior term's open-loop count, for the 'prior loop incomplete' warning.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Loop status" },
+					401: { description: "Unauthorized" },
+					403: { description: "Program outside the caller's unit" },
 				},
 			},
 		},

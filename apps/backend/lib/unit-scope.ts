@@ -385,9 +385,16 @@ export function aiRecommendationUnitWhere(
 		case "institution":
 			return {};
 		case "program":
-			return { programId: unit.programId };
+			// Scoped roles also read institution-wide rows (programId null) so a
+			// Program Chair can pull a VPAA-generated proposal to adopt.
+			return { OR: [{ programId: unit.programId }, { programId: null }] };
 		case "department":
-			return { program: { departmentId: unit.departmentId } };
+			return {
+				OR: [
+					{ program: { departmentId: unit.departmentId } },
+					{ programId: null },
+				],
+			};
 		default:
 			return nothing<Prisma.AiRecommendationWhereInput>();
 	}

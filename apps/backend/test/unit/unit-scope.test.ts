@@ -321,10 +321,13 @@ describe("reference / entity where-builders", () => {
 		});
 	});
 
-	it("AI recommendations: institution-wide rows stay institution-only", () => {
+	it("AI recommendations: scoped roles also read institution-wide rows", () => {
 		expect(aiRecommendationUnitWhere(SCOPES.institution)).toEqual({});
 		expect(aiRecommendationUnitWhere(SCOPES.program)).toEqual({
-			programId: PROGRAM,
+			OR: [{ programId: PROGRAM }, { programId: null }],
+		});
+		expect(aiRecommendationUnitWhere(SCOPES.department)).toEqual({
+			OR: [{ program: { departmentId: DEPARTMENT } }, { programId: null }],
 		});
 		expect(aiRecommendationUnitWhere(SCOPES.own)).toEqual({ id: { in: [] } });
 	});

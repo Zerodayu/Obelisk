@@ -2,9 +2,11 @@ import { describe, expect, it } from "bun:test";
 
 import { prisma } from "@lib/prisma";
 import { isDbReachable } from "@test/helpers/db-gate";
+import { aiRecommendationService } from "@v1/ai/service";
 import {
 	annualProgramReportService,
 	closingTheLoopService,
+	CqiRecommendationNotAdoptableError,
 	cqiActionPlanService,
 	ploGapAnalysisService,
 } from "@v1/cqi/service";
@@ -264,6 +266,69 @@ async function cleanup(draftIds: string[]) {
 }
 
 describe.skipIf(!db)("CQI / ACT loop chain (integration)", () => {
+	it("reviews and adopts an AI recommendation into the action plan", async () => {
+		await resetCqiData();
+		await seedAcademicChain();
+		const recId = "it-cqi-rec";
+		const draftIds: string[] = [];
+		try {
+			await prisma.aiRecommendation.create({
+				data: {
+					id: recId,
+					termId: IDS.term,
+					summary: JSON.stringify({ worstPerformingClos: [] }),
+					recommendationText: "## Summary\nEscalate PLO1.",
+					sourceDataSnapshot: {},
+					status: "pending_review",
+				},
+			});
+
+			// Adopting before it's marked actioned is rejected.
+			await expect(
+				cqiActionPlanService.adoptRecommendation(
+					recId,
+					IDS.program,
+					IDS.term,
+					IDS.user,
+				),
+			).rejects.toThrow(CqiRecommendationNotAdoptableError);
+
+			const reviewed = await aiRecommendationService.review(
+				recId,
+				"actioned",
+				IDS.user,
+			);
+			expect(reviewed.status).toBe("actioned");
+			const row = await prisma.aiRecommendation.findUniqueOrThrow({
+				where: { id: recId },
+			});
+			expect(row.reviewedByUserId).toBe(IDS.user);
+			expect(row.reviewedAt).toBeInstanceOf(Date);
+
+			const { draft, payload } = await cqiActionPlanService.adoptRecommendation(
+				recId,
+				IDS.program,
+				IDS.term,
+				IDS.user,
+			);
+			draftIds.push(draft.id);
+			expect(payload.formSubmissionId).toBe(draft.id);
+
+			const submission = await prisma.formSubmission.findUniqueOrThrow({
+				where: { id: draft.id },
+			});
+			const formData = submission.formData as Record<string, unknown>;
+			expect(formData.adoptedFromRecommendation).toMatchObject({
+				recommendationId: recId,
+			});
+		} finally {
+			await prisma.aiRecommendation
+				.deleteMany({ where: { id: recId } })
+				.catch(() => {});
+			await cleanup(draftIds);
+		}
+	}, 60000);
+
 	it("exit check: a gap is traced from analysis → CQI plan → loop closure with computed CLOSED", async () => {
 		await resetCqiData();
 		await seedAcademicChain();

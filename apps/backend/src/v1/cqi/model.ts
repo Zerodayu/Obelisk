@@ -58,6 +58,44 @@ export const CqiPlanParamsSchema = t.Object({
 
 export type CqiPlanParams = typeof CqiPlanParamsSchema.static;
 
+export const AdoptRecommendationSchema = t.Object({
+	recommendationId: t.String({
+		description: "AiRecommendation to adopt into this action plan",
+	}),
+	programId: t.String({
+		description: "Program adopting the recommendation",
+	}),
+	termId: t.String({
+		description: "AcademicTerm (cycle) the action plan targets",
+	}),
+});
+
+export type AdoptRecommendation = typeof AdoptRecommendationSchema.static;
+
+export const LoopStatusQuerySchema = t.Object({
+	programId: t.String({ description: "Program whose loop status to read" }),
+	termId: t.String({ description: "AcademicTerm (cycle) to read" }),
+});
+
+export type LoopStatusQuery = typeof LoopStatusQuerySchema.static;
+
+export type CqiLoopStatus = {
+	termId: string;
+	term: { schoolYear: string; semester: string } | null;
+	closed: number;
+	openReassess: number;
+	openNotImplemented: number;
+	notRecorded: number;
+	total: number;
+	isClosed: boolean;
+	prior: {
+		termId: string;
+		term: { schoolYear: string; semester: string };
+		openLoops: number;
+		isClosed: boolean;
+	} | null;
+};
+
 export const CqiEntryEditSchema = t.Object({
 	id: t.String({ description: "CqiEntry id on this action plan submission" }),
 	evidenceSource: t.Optional(t.String()),
