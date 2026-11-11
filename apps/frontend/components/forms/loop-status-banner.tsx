@@ -13,8 +13,8 @@ function termLabel(term: { schoolYear: string; semester: string }): string {
 	return `${term.schoolYear} ${term.semester}`;
 }
 
-/** Derived loop status for the selected program+term, with a prior-loop warning. */
-export function LoopStatusBanner() {
+/** Fetch the derived loop status for the selected program+term. */
+export function useLoopStatus(): CqiLoopStatus | null {
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
 	const [status, setStatus] = useState<CqiLoopStatus | null>(null);
@@ -33,6 +33,11 @@ export function LoopStatusBanner() {
 		};
 	}, [programId, termId]);
 
+	return status;
+}
+
+/** Derived loop status banner, with a prior-loop warning. */
+export function LoopStatusBanner({ status }: { status: CqiLoopStatus | null }) {
 	if (!status || status.total === 0) return null;
 
 	const open = status.openReassess + status.openNotImplemented;

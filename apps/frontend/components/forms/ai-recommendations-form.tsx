@@ -4,7 +4,10 @@ import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useState } from "react";
 
 import { renderMarkdown } from "@/components/dashboard/ai-suggestions-drawer";
-import { LoopStatusBanner } from "@/components/forms/loop-status-banner";
+import {
+	LoopStatusBanner,
+	useLoopStatus,
+} from "@/components/forms/loop-status-banner";
 import {
 	Frame,
 	FrameDescription,
@@ -14,7 +17,6 @@ import {
 } from "@/components/reui/frame";
 import { Button } from "@/components/ui/button";
 import { toast, toastError } from "@/components/ui/toast";
-import { canAccess } from "@/lib/role-access";
 import {
 	selectedProgramIdAtom,
 	selectedTermIdAtom,
@@ -23,7 +25,6 @@ import { userAtom } from "@/lib/store/atoms/user";
 import {
 	type AiRecommendation,
 	getLatestAiRecommendationAction,
-	reviewAiRecommendationAction,
 } from "@/server/actions/ai";
 import { adoptRecommendationAction } from "@/server/actions/cqi";
 
@@ -40,12 +41,8 @@ const LOOP_STEPS = [
 		body: "VPAA generates an institution-wide AI proposal from stored attainment data. Generation is passive — it triggers nothing on its own.",
 	},
 	{
-		title: "Review",
-		body: "AQAU/VPAA review the proposal and mark it acknowledged, actioned, or dismissed.",
-	},
-	{
 		title: "Adopt",
-		body: "The Program Chair adopts the actioned proposal into the program's F23 CQI Action Plan, confirming or editing the root cause and intervention.",
+		body: "The Program Chair adopts the proposal into the program's F23 CQI Action Plan, confirming or editing the root cause and intervention.",
 	},
 	{
 		title: "Implement",
@@ -59,13 +56,14 @@ const LOOP_STEPS = [
 
 /**
  * CQI-area view of the VPAA-generated AI proposal. Explains where the proposal
- * sits in the CQI & Loop, then offers the two human triggers: review
- * (AQAU/VPAA) and adopt (Program Chair). The AI generation stays passive.
+ * sits in the CQI & Loop, then offers the single human trigger: adopt
+ * (Program Chair). The AI generation stays passive.
  */
 export function AiRecommendationsForm() {
 	const user = useAtomValue(userAtom);
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
+	const loopStatus = useLoopStatus();
 
 	const [recommendation, setRecommendation] = useState<AiRecommendation | null>(
 		null,
@@ -74,7 +72,6 @@ export function AiRecommendationsForm() {
 	const [message, setMessage] = useState<string | null>(null);
 	const [busy, setBusy] = useState(false);
 
-	const canReview = canAccess(user?.role, "viewAiInsights");
 	const canAdopt =
 		user?.role === "program_chair" || user?.role === "system_admin";
 
@@ -93,32 +90,6 @@ export function AiRecommendationsForm() {
 	useEffect(() => {
 		void load();
 	}, [load]);
-
-	const review = useCallback(
-		async (status: "acknowledged" | "actioned" | "dismissed") => {
-			if (!recommendation) return;
-			setBusy(true);
-			const result = await reviewAiRecommendationAction(
-				recommendation.id,
-				status,
-			);
-			setBusy(false);
-			if (result.ok) {
-				setRecommendation(result.data);
-				toast.create({
-					title: `Recommendation ${STATUS_LABELS[status].toLowerCase()}`,
-					type: "success",
-				});
-			} else {
-				toastError({
-					title: "Review failed",
-					description: result.error,
-					scope: "ai-recommendations:review",
-				});
-			}
-		},
-		[recommendation],
-	);
 
 	const adopt = useCallback(async () => {
 		if (!recommendation || !programId?.trim() || !termId?.trim()) return;
@@ -143,18 +114,20 @@ export function AiRecommendationsForm() {
 		}
 	}, [recommendation, programId, termId]);
 
+	const adopted = loopStatus?.adoptedRecommendationId === recommendation?.id;
+
 	return (
 		<Frame className="m-6">
 			<FrameHeader>
-				<FrameTitle>AI Recommendations</FrameTitle>
+				<FrameTitle>AI Proposal &amp; Adopt</FrameTitle>
 				<FrameDescription>
-					The VPAA-generated institutional proposal and the two human actions
-					that move it into the CQI &amp; Loop.
+					The VPAA-generated institutional proposal and the human action that
+					moves it into the CQI &amp; Loop.
 				</FrameDescription>
 			</FrameHeader>
 
 			<FramePanel className="space-y-5">
-				<LoopStatusBanner />
+				<LoopStatusBanner status={loopStatus} />
 
 				{/* Where the proposal sits in the loop */}
 				<div>
@@ -209,45 +182,6 @@ export function AiRecommendationsForm() {
 							</div>
 						) : null}
 
-						{canReview ? (
-							<div>
-								<h3 className="mb-1 text-sm font-semibold">
-									Review (AQAU / VPAA)
-								</h3>
-								<p className="text-muted-foreground mb-2 text-sm">
-									The review does not act on anything — it only marks the
-									proposal&apos;s status. Adopting is a separate, program-level
-									step.
-								</p>
-								<div className="flex flex-wrap items-center gap-2">
-									<Button
-										variant="outline"
-										disabled={busy}
-										onClick={() => void review("acknowledged")}
-									>
-										Acknowledge
-									</Button>
-									<Button
-										disabled={busy}
-										onClick={() => void review("actioned")}
-									>
-										Action
-									</Button>
-									<Button
-										variant="ghost"
-										disabled={busy}
-										onClick={() => void review("dismissed")}
-									>
-										Dismiss
-									</Button>
-								</div>
-								<p className="text-muted-foreground mt-2 text-xs">
-									Acknowledge = noted, no action yet · Action = adoptable by
-									Program Chairs · Dismiss = rejected.
-								</p>
-							</div>
-						) : null}
-
 						{canAdopt ? (
 							<div>
 								<h3 className="mb-1 text-sm font-semibold">
@@ -261,12 +195,18 @@ export function AiRecommendationsForm() {
 								</p>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button
-										disabled={busy || !programId?.trim() || !termId?.trim()}
+										disabled={
+											busy || adopted || !programId?.trim() || !termId?.trim()
+										}
 										onClick={() => void adopt()}
 									>
-										Adopt into action plan
+										{adopted ? "Adopted" : "Adopt into action plan"}
 									</Button>
-									{!programId?.trim() || !termId?.trim() ? (
+									{adopted ? (
+										<span className="text-muted-foreground text-xs">
+											Already adopted for this term.
+										</span>
+									) : !programId?.trim() || !termId?.trim() ? (
 										<span className="text-muted-foreground text-xs">
 											Select a program and term first.
 										</span>

@@ -5,7 +5,10 @@ import { useCallback, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
 import { GeneratingState } from "@/components/forms/generating";
-import { LoopStatusBanner } from "@/components/forms/loop-status-banner";
+import {
+	LoopStatusBanner,
+	useLoopStatus,
+} from "@/components/forms/loop-status-banner";
 import { SubmissionStatusCard } from "@/components/forms/submission-status-card";
 import { Badge } from "@/components/reui/badge";
 import {
@@ -62,6 +65,7 @@ export function CqiActionPlanForm() {
 	// NOTE: academic context comes from the dashboard picker, not local state.
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
+	const loopStatus = useLoopStatus();
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [tracking, setTracking] = useState(false);
@@ -173,7 +177,7 @@ export function CqiActionPlanForm() {
 					</FrameDescription>
 				</FrameHeader>
 				<FramePanel className="space-y-3">
-					<LoopStatusBanner />
+					<LoopStatusBanner status={loopStatus} />
 					{!programId || !termId ? (
 						<ContextRequired scope="program-term" />
 					) : (
@@ -186,7 +190,7 @@ export function CqiActionPlanForm() {
 
 	return (
 		<div className="space-y-4">
-			<LoopStatusBanner />
+			<LoopStatusBanner status={loopStatus} />
 			<SubmissionStatusCard submissionId={payload.formSubmissionId} />
 			<Frame>
 				<FrameHeader>

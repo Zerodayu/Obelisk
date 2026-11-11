@@ -145,7 +145,7 @@ function NavSectionGroup({
  */
 export function SidebarNav({ role }: { role: ApiUser["role"] }) {
 	const workspace = workspaceNav(role);
-	const { duties, catalog } = sidebarNavFor(role);
+	const catalog = sidebarNavFor(role);
 	const pathname = usePathname();
 
 	return (
@@ -162,14 +162,6 @@ export function SidebarNav({ role }: { role: ApiUser["role"] }) {
 					</SidebarMenu>
 				</SidebarGroupContent>
 			</SidebarGroup>
-
-			{duties.map((section) => (
-				<NavSectionGroup
-					key={`duty-${section.label}`}
-					section={section}
-					pathname={pathname}
-				/>
-			))}
 
 			{catalog.map((section) => (
 				<NavSectionGroup

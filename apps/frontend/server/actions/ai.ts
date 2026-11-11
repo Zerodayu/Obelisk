@@ -101,28 +101,3 @@ export async function generateAiRecommendationAction(): Promise<
 		};
 	}
 }
-
-/**
- * Review a recommendation: mark it acknowledged, actioned, or dismissed
- * (aqau/vpaa/system_admin only; the backend returns 403 otherwise).
- */
-export async function reviewAiRecommendationAction(
-	id: string,
-	status: "acknowledged" | "actioned" | "dismissed",
-): Promise<ActionResult<AiRecommendation>> {
-	try {
-		const data = await actionApi.post<{ recommendation: AiRecommendation }>(
-			`/ai/recommendation/${id}/review`,
-			{ status },
-		);
-		return { ok: true, data: data.recommendation };
-	} catch (err) {
-		return {
-			ok: false,
-			error: errorMessage(
-				err,
-				"Failed to review the AI recommendation. Please try again.",
-			),
-		};
-	}
-}

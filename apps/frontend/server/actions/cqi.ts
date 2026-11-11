@@ -137,6 +137,7 @@ export interface CqiLoopStatus {
 	notRecorded: number;
 	total: number;
 	isClosed: boolean;
+	adoptedRecommendationId: string | null;
 	prior: {
 		termId: string;
 		term: { schoolYear: string; semester: string };

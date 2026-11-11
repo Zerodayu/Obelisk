@@ -41,7 +41,6 @@ import {
 	WalletIcon,
 } from "lucide-react";
 
-import { type DutyStep, dutiesFor } from "@/config/role-duties";
 import {
 	APPROVER_ROLES,
 	ARCHIVE_ROLES,
@@ -150,7 +149,7 @@ const FORM_SECTIONS: NavSection[] = [
 				code: "cqi_action_plan",
 			},
 			{
-				title: "AI Recommendations",
+				title: "AI Proposal & Adopt",
 				url: "/forms/cqi/ai-recommendations",
 				icon: StarIcon,
 				roles: [
@@ -363,73 +362,15 @@ export function navSectionsFor(role: UserRole): NavSection[] {
 	return result;
 }
 
-// --- Per-role duty steps (the sidebar's "what you do" sections) ------------
-
-/** Nav visibility for a duty step — never wider than the backend allows. */
-function dutyVisible(step: DutyStep, role: UserRole): boolean {
-	if (step.status.kind === "prepare") {
-		// Same rule as a plain form item: the form's preparers.
-		return hasAccess(role, preparerRoles(step.status.code));
-	}
-	if (step.status.kind === "approve") {
-		return hasAccess(role, step.roles ?? APPROVER_ROLES);
-	}
-	// `link` steps carry an explicit feature list (absent = any authenticated).
-	return hasAccess(role, step.roles);
-}
-
-/** Map one duty step to a nav item (prepare steps keep their stable `code`). */
-function dutyNavItem(step: DutyStep): NavItem {
-	const { title, url, icon } = step;
-	if (step.status.kind === "prepare") {
-		return { title, url, icon, code: step.status.code };
-	}
-	if (step.status.kind === "approve") {
-		return { title, url, icon, roles: step.roles ?? APPROVER_ROLES };
-	}
-	return { title, url, icon, roles: step.roles };
-}
+// --- Sidebar payload --------------------------------------------------------
 
 /**
- * The role's duty sections as nav sections, numbered so the sidebar reads as
- * ordered responsibilities (`1 · Class Records`, `2 · Indirect Survey`, …).
- * Roles without a duty list get an empty array.
+ * Sidebar payload: the flat PDCA catalog. The numbered duty steps are no
+ * longer rendered in the sidebar — they live on the dashboard "What you need
+ * to do" card (`role-checklist.tsx`).
  */
-function dutyNavSections(role: UserRole): NavSection[] {
-	return dutiesFor(role)
-		.map((section, index) => ({
-			label: `${index + 1} · ${section.label}`,
-			items: section.steps
-				.filter((step) => dutyVisible(step, role))
-				.map(dutyNavItem),
-		}))
-		.filter((section) => section.items.length > 0);
-}
-
-export interface SidebarNav {
-	/** Ordered responsibility steps for the role (numbered group labels). */
-	duties: NavSection[];
-	/** PDCA catalog — everything else the role prepares, minus duty links. */
-	catalog: NavSection[];
-}
-
-/**
- * Sidebar payload: duty steps first, then the preparer catalog with any URL a
- * duty already links to removed (no duplicates). `/forms` keeps calling
- * `navSectionsFor` directly, so the full preparer catalog stays reachable.
- */
-export function sidebarNavFor(role: UserRole): SidebarNav {
-	const duties = dutyNavSections(role);
-	const surfaced = new Set(
-		duties.flatMap((section) => section.items.map((item) => item.url)),
-	);
-	const catalog = navSectionsFor(role)
-		.map((group) => ({
-			label: group.label,
-			items: group.items.filter((item) => !surfaced.has(item.url)),
-		}))
-		.filter((group) => group.items.length > 0);
-	return { duties, catalog };
+export function sidebarNavFor(role: UserRole): NavSection[] {
+	return navSectionsFor(role);
 }
 
 /** Top-level destinations for the Workspace group of the sidebar. */
