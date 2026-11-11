@@ -221,7 +221,6 @@ export function AiRecommendationsForm() {
 								</p>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button
-										size="sm"
 										variant="outline"
 										disabled={busy}
 										onClick={() => void review("acknowledged")}
@@ -229,14 +228,12 @@ export function AiRecommendationsForm() {
 										Acknowledge
 									</Button>
 									<Button
-										size="sm"
 										disabled={busy}
 										onClick={() => void review("actioned")}
 									>
 										Action
 									</Button>
 									<Button
-										size="sm"
 										variant="ghost"
 										disabled={busy}
 										onClick={() => void review("dismissed")}
@@ -264,7 +261,6 @@ export function AiRecommendationsForm() {
 								</p>
 								<div className="flex flex-wrap items-center gap-2">
 									<Button
-										size="sm"
 										disabled={busy || !programId?.trim() || !termId?.trim()}
 										onClick={() => void adopt()}
 									>
