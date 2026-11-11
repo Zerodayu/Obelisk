@@ -412,7 +412,7 @@ export function FormWorkflow({
 								<DialogContent className="">
 									<DialogHeader
 										description="Send the submission back to its owner with a comment. The owner can edit and resubmit."
-										title="Return to preparer"
+										title="Return to faculty"
 									/>
 									<DialogBody className="my-2">
 										<Textarea
@@ -430,7 +430,7 @@ export function FormWorkflow({
 												void run(
 													"return",
 													"form-workflow:return",
-													"Returned to preparer",
+													"Returned to faculty",
 													() =>
 														returnFormAction(
 															submission.id,
