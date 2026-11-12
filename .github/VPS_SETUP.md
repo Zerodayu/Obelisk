@@ -16,7 +16,7 @@ Every install step uses **Fedora** (`dnf`). Commands run as your sudo user, not 
 | **git** | cloning the repo (also `just docker-update` → `git pull`) |
 | **curl**, **ca-certificates**, **unzip** | the installers below (the Bun installer refuses to run without `unzip`) |
 | **openssl** | generating the secrets for `.env.prod` / `.env.docker` (`DEPLOYMENT.md` [§3](DEPLOYMENT.md#3-fill-envprod)–[§4](DEPLOYMENT.md#4-fill-envdocker)) |
-| **firewalld** | host firewall (preinstalled and enabled on Fedora) — Docker publishes 80/443 around it, everything else stays closed |
+| **firewalld** | host firewall — Docker publishes 80/443 around it, everything else stays closed |
 
 **Not needed on the server:** Node.js, Python, `uv`, Postgres, Redis — the three services and the datastores build and run inside Docker images. No host-level Tailscale is needed for the services: the admin surfaces join the tailnet through sidecar containers ([`DEPLOYMENT.md` → Tailscale admin access](DEPLOYMENT.md#tailscale-admin-access)).
 
@@ -83,6 +83,8 @@ ssh deploy@<hostname>     # MagicDNS name, or: ssh deploy@<tailscale-ip>
 Once that works, let the tailnet reach the host but close port 22 to the public internet:
 
 ```sh
+sudo dnf install -y firewalld
+sudo systemctl enable --now firewalld
 sudo firewall-cmd --permanent --zone=trusted --change-interface=tailscale0
 sudo firewall-cmd --permanent --remove-service=ssh   # drop ssh from the default (public) zone
 sudo firewall-cmd --reload
@@ -99,7 +101,8 @@ Run §1 onward as this user — `sudo` only where the commands show it.
 ## 1. Base packages
 
 ```sh
-sudo dnf install -y git curl ca-certificates unzip openssl
+sudo dnf install -y git curl ca-certificates unzip openssl firewalld
+sudo systemctl enable --now firewalld
 ```
 
 ## 2. Docker Engine + compose + buildx
