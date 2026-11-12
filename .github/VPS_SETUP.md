@@ -101,8 +101,7 @@ Run §1 onward as this user — `sudo` only where the commands show it.
 ## 1. Base packages
 
 ```sh
-sudo dnf install -y git curl ca-certificates unzip openssl firewalld
-sudo systemctl enable --now firewalld
+sudo dnf install -y git curl ca-certificates unzip openssl
 ```
 
 ## 2. Docker Engine + compose + buildx
