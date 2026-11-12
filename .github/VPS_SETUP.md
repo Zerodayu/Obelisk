@@ -195,13 +195,15 @@ sudo firewall-cmd --list-all
 The backend and frontend images run `prisma generate` + `next build`, which can OOM a small VPS:
 
 ```sh
-sudo fallocate -l 2G /swapfile
+sudo dd if=/dev/zero of=/swapfile bs=1M count=2048 status=progress
 sudo chmod 600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
 echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
 free -h
 ```
+
+> ⚠️ `fallocate` can make `swapon` fail with `Invalid argument` (sparse extents) — `dd` is more reliable. On a **Btrfs** root, disable copy-on-write first: `sudo touch /swapfile && sudo chattr +C /swapfile` before the `dd`.
 
 ## 7. Clone + dependencies
 
