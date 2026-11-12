@@ -18,8 +18,8 @@
 		reverse_proxy backend:8080
 	}
 
-	# NOTE: first-party tracker proxy — same origin as the app, past hostname-based blockers; handle_path strips /umami
-	handle_path /umami/* {
+	# NOTE: first-party tracker proxy — same origin as the app, past hostname- and path-based blockers; handle_path strips /u
+	handle_path /u/* {
 		reverse_proxy umami:3000
 	}
 
@@ -68,7 +68,7 @@
 	encode zstd gzip
 
 	# NOTE: public tracker paths — a matching handle is terminal and bypasses the guard
-	@umami_tracker path /script.js /api/send
+	@umami_tracker path /x.js /x
 	handle @umami_tracker {
 		reverse_proxy umami:3000
 	}

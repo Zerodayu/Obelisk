@@ -198,6 +198,9 @@ services:
       # NOTE: injected by the dotenvx wrap — the postgres password rides inside the URL
       DATABASE_URL: postgresql://umami:${UMAMI_DB_PASSWORD:-}@umami-db:5432/umami
       APP_SECRET: ${UMAMI_APP_SECRET:-}
+      # NOTE: renamed tracker script + collect endpoint — bypass ad-blocker URL patterns
+      TRACKER_SCRIPT_NAME: x.js
+      COLLECT_API_ENDPOINT: /x
       # TODO: TWO_FACTOR_ENCRYPTION_KEY (`openssl rand -hex 32`) — without it 2FA setup answers 503
     depends_on:
       umami-db:

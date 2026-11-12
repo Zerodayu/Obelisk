@@ -208,7 +208,7 @@ just db-status      # migration status of the fresh db volume
 - `https://<APP_DOMAIN>` — frontend
 - `https://<APP_DOMAIN>/api/v1` — backend
 - `https://<DOZZLE_DOMAIN>` — log-viewer hostname (`403` by design — the viewer itself is served on the tailnet, see [`DEPLOYMENT.md` → Tailscale admin access](DEPLOYMENT.md#tailscale-admin-access))
-- `https://<UMAMI_DOMAIN>/script.js` — tracker (`200` from anywhere; dashboard paths `403` and live on the tailnet)
+- `https://<UMAMI_DOMAIN>/x.js` — tracker (`200` from anywhere; dashboard paths `403` and live on the tailnet)
 
 Then apply the schema with `just docker-migrate` ([`DEPLOYMENT.md` §6](DEPLOYMENT.md#6-apply-the-database-schema)). **Never run `db:seed` against production.**
 

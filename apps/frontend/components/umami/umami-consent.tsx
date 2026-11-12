@@ -29,8 +29,8 @@ export function UmamiConsentDrawer() {
 
 		const load = () => {
 			const script = document.createElement("script");
-			// NOTE: first-party path — umami derives its /umami/api/send endpoint from the script's own directory
-			script.src = "/umami/script.js";
+			// NOTE: first-party path — umami derives its /u/x collect endpoint from the script's own directory
+			script.src = "/u/x.js";
 			script.dataset.websiteId = websiteId;
 			script.dataset.umamiLoaded = "true";
 			script.async = true;
