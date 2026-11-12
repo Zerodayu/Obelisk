@@ -349,6 +349,12 @@ docker-db-shell db="obelisk":
 docker-down:
     docker compose down --remove-orphans
 
+# full reset: remove containers, networks, and volumes (WIPES the DB + uploads), then drop all unused images + build cache — `just docker-deploy` rebuilds from scratch. DESTRUCTIVE: deletes all data.
+[group('deploy')]
+docker-reset:
+    docker compose down -v --remove-orphans
+    docker system prune -a -f
+
 # follow logs of all services (Ctrl+C detaches, containers keep running)
 [group('deploy')]
 docker-logs:
