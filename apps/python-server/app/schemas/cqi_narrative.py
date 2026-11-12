@@ -4,6 +4,8 @@ All models use extra="forbid". The schema rejects any payloads containing studen
 All numbers represent final display values computed by the webapp.
 """
 
+from __future__ import annotations
+
 from typing import Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -86,25 +88,40 @@ class OutcomeAttainment(StrictBaseModel):
         None, description="Webapp-computed priority level."
     )
     gap_pp: Optional[float] = Field(
-        None, ge=0.0, description="Webapp-computed attainment gap in percentage points (target - composite)."
+        None,
+        ge=0.0,
+        description="Webapp-computed attainment gap in percentage points (target - composite).",
     )
     target_pct: Optional[float] = Field(
-        None, ge=0.0, le=100.0, description="Institutional target attainment percentage (unit: % 0-100)."
+        None,
+        ge=0.0,
+        le=100.0,
+        description="Institutional target attainment percentage (unit: % 0-100).",
     )
     direct_pct: Optional[float] = Field(
-        None, ge=0.0, description="Direct attainment percentage (unit: % 0-100+; extra credit can exceed 100)."
+        None,
+        ge=0.0,
+        description="Direct attainment percentage (unit: % 0-100+; extra credit can exceed 100).",
     )
     indirect_pct: Optional[float] = Field(
-        None, ge=0.0, le=100.0, description="Indirect survey attainment percentage (unit: % 0-100)."
+        None,
+        ge=0.0,
+        le=100.0,
+        description="Indirect survey attainment percentage (unit: % 0-100).",
     )
     composite_pct: Optional[float] = Field(
-        None, ge=0.0, description="Composite attainment percentage (unit: % 0-100+; 70 direct / 30 indirect)."
+        None,
+        ge=0.0,
+        description="Composite attainment percentage (unit: % 0-100+; 70 direct / 30 indirect).",
     )
     is_complete: Optional[bool] = Field(
-        None, description="Completeness flag indicating all assessment evidence is present."
+        None,
+        description="Completeness flag indicating all assessment evidence is present.",
     )
     prior_cycle_composite_pct: Optional[float] = Field(
-        None, ge=0.0, description="Prior cycle composite attainment percentage for longitudinal comparison (unit: % 0-100+)."
+        None,
+        ge=0.0,
+        description="Prior cycle composite attainment percentage for longitudinal comparison (unit: % 0-100+).",
     )
     status: Optional[str] = Field(
         None, description="Webapp-computed attainment status, e.g., 'MET' or 'NOT MET'."
@@ -117,7 +134,9 @@ class OutcomeAttainment(StrictBaseModel):
     @classmethod
     def validate_status(cls, v: Optional[str]) -> Optional[str]:
         if v is not None and v.strip().upper() not in ALLOWED_ATTAINMENT_STATUSES:
-            raise ValueError(f"Status must be one of {ALLOWED_ATTAINMENT_STATUSES}, got: {v}")
+            raise ValueError(
+                f"Status must be one of {ALLOWED_ATTAINMENT_STATUSES}, got: {v}"
+            )
         return v.strip().upper() if v else None
 
 
@@ -131,20 +150,25 @@ class CQIEntry(StrictBaseModel):
         None, description="Course identifier, e.g., 'IT 101'."
     )
     outcome_code: str = Field(
-        ..., min_length=1, description="Associated outcome identifier, e.g., 'CLO1' or 'PLO2'."
+        ...,
+        min_length=1,
+        description="Associated outcome identifier, e.g., 'CLO1' or 'PLO2'.",
     )
     status: str = Field(
-        ..., description="Attainment status computed by the webapp ('MET' or 'NOT MET')."
+        ...,
+        description="Attainment status computed by the webapp ('MET' or 'NOT MET').",
     )
     loop_status: Optional[str] = Field(
         None,
         description="Loop closing status: 'CLOSED', 'OPEN_REASSESS', or 'OPEN_NOT_IMPLEMENTED'.",
     )
     is_escalated: Optional[bool] = Field(
-        None, description="Whether this finding was escalated for higher administrative review."
+        None,
+        description="Whether this finding was escalated for higher administrative review.",
     )
     intervention: Optional[str] = Field(
-        None, description="Action or intervention planned (free-text; webapp must omit personal names)."
+        None,
+        description="Action or intervention planned (free-text; webapp must omit personal names).",
     )
     named_owner: Optional[str] = Field(
         None,
@@ -155,13 +179,15 @@ class CQIEntry(StrictBaseModel):
         description="Optional alias for named_owner role/title (webapp must omit personal names).",
     )
     timeline: Optional[str] = Field(
-        None, description="Implementation timeline/schedule (e.g., 'Within 4 weeks', 'SY 2026-2027')."
+        None,
+        description="Implementation timeline/schedule (e.g., 'Within 4 weeks', 'SY 2026-2027').",
     )
     deadline: Optional[str] = Field(
         None, description="Optional deadline date or term label."
     )
     kpi: Optional[str] = Field(
-        None, description="Key performance indicator or target metric for closing the loop."
+        None,
+        description="Key performance indicator or target metric for closing the loop.",
     )
     root_cause_category: Optional[str] = Field(
         None,
@@ -176,7 +202,9 @@ class CQIEntry(StrictBaseModel):
     def validate_status(cls, v: str) -> str:
         cleaned = v.strip().upper()
         if cleaned not in ALLOWED_ATTAINMENT_STATUSES:
-            raise ValueError(f"Status must be one of {ALLOWED_ATTAINMENT_STATUSES}, got: {v}")
+            raise ValueError(
+                f"Status must be one of {ALLOWED_ATTAINMENT_STATUSES}, got: {v}"
+            )
         return cleaned
 
     @field_validator("loop_status")
@@ -185,7 +213,9 @@ class CQIEntry(StrictBaseModel):
         if v is not None:
             cleaned = v.strip().upper()
             if cleaned not in ALLOWED_LOOP_STATUSES:
-                raise ValueError(f"loop_status must be one of {ALLOWED_LOOP_STATUSES}, got: {v}")
+                raise ValueError(
+                    f"loop_status must be one of {ALLOWED_LOOP_STATUSES}, got: {v}"
+                )
             return cleaned
         return None
 
@@ -224,12 +254,16 @@ class CQIReportNarrativePayload(StrictBaseModel):
 
     @field_validator("outcomes")
     @classmethod
-    def validate_unique_outcome_identifiers(cls, outcomes: Optional[List[OutcomeAttainment]]) -> Optional[List[OutcomeAttainment]]:
+    def validate_unique_outcome_identifiers(
+        cls, outcomes: Optional[List[OutcomeAttainment]]
+    ) -> Optional[List[OutcomeAttainment]]:
         if not outcomes:
             return outcomes
         seen = set()
         for o in outcomes:
-            ident = f"{o.course_code}/{o.outcome_code}" if o.course_code else o.outcome_code
+            ident = (
+                f"{o.course_code}/{o.outcome_code}" if o.course_code else o.outcome_code
+            )
             if ident in seen:
                 raise ValueError(f"Duplicate outcome identifier found: '{ident}'.")
             seen.add(ident)
@@ -241,7 +275,9 @@ class CQIReportNarrativePayload(StrictBaseModel):
         if isinstance(data, dict):
             for key in data:
                 if key.lower().replace("-", "_") in FORBIDDEN_STUDENT_KEYS:
-                    raise ValueError(f"Payload contains forbidden student identifier field: '{key}'.")
+                    raise ValueError(
+                        f"Payload contains forbidden student identifier field: '{key}'."
+                    )
         return data
 
 
@@ -334,7 +370,9 @@ class RecommendationItem(OutputBaseModel):
         if not self.intervention and self.proposed_additions:
             self.intervention = self.proposed_additions
         if not self.proposed_additions and not self.intervention:
-            raise ValueError("Either proposed_additions or intervention must be provided.")
+            raise ValueError(
+                "Either proposed_additions or intervention must be provided."
+            )
         return self
 
 
@@ -361,7 +399,9 @@ class CQINarrativeOutput(OutputBaseModel):
 
     summary: str
     recommendations: List[RecommendationItem]
-    possible_contributing_factors: List[ContributingFactorItem] = Field(default_factory=list)
+    possible_contributing_factors: List[ContributingFactorItem] = Field(
+        default_factory=list
+    )
     pattern: Optional[PatternItem] = None
     data_limitations: List[str] = Field(default_factory=list)
 
@@ -400,7 +440,9 @@ class ProvenanceMetadata(StrictBaseModel):
     @model_validator(mode="after")
     def check_live_mode_authenticity(self) -> ProvenanceMetadata:
         if self.execution_mode == "live" and self.is_debug_mode:
-            raise ValueError("Output cannot be labelled 'live' when is_debug_mode is True.")
+            raise ValueError(
+                "Output cannot be labelled 'live' when is_debug_mode is True."
+            )
         return self
 
 
@@ -409,9 +451,13 @@ class UncoveredOutcome(StrictBaseModel):
 
     scope: str = Field(..., description="Outcome scope, e.g. 'PLO1' or 'IT 101/CLO1'.")
     status: str = Field(..., description="Attainment status, e.g. 'NOT MET'.")
-    composite: Optional[float] = Field(None, description="Composite attainment percentage.")
+    composite: Optional[float] = Field(
+        None, description="Composite attainment percentage."
+    )
     target: Optional[float] = Field(None, description="Target attainment percentage.")
-    fact_ids: List[str] = Field(default_factory=list, description="Fact IDs associated with this outcome.")
+    fact_ids: List[str] = Field(
+        default_factory=list, description="Fact IDs associated with this outcome."
+    )
 
 
 class CQINarrativeResponse(StrictBaseModel):
@@ -420,7 +466,9 @@ class CQINarrativeResponse(StrictBaseModel):
     status: Literal["ok", "error", "narrative_unavailable"]
     summary: Optional[str] = None
     recommendations: List[RecommendationItem] = Field(default_factory=list)
-    possible_contributing_factors: List[ContributingFactorItem] = Field(default_factory=list)
+    possible_contributing_factors: List[ContributingFactorItem] = Field(
+        default_factory=list
+    )
     pattern: Optional[PatternItem] = None
     data_limitations: List[str] = Field(default_factory=list)
     missing_sections: List[str] = Field(default_factory=list)
