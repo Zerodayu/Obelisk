@@ -190,6 +190,19 @@ sudo firewall-cmd --list-all
 - **Ports 80/443 must be free**: a stock image sometimes ships Apache/nginx — check with `sudo systemctl status httpd nginx`, then `sudo systemctl disable --now <service>` (or `sudo dnf remove` it).
 - **DNS**: one A record per hostname → server IP. Caddy retries until they resolve, but deploying before DNS is set up leaves caddy looping (`just docker-logs`).
 
+### Hostinger hPanel firewall
+
+Apply this in hPanel **after** setting up Tailscale SSH (§0) — SSH is already tailnet-only, so port 22 is denied here:
+
+| Action | Protocol | Port/range | Source |
+| :--- | :--- | :--- | :--- |
+| Allow | TCP | 80 | All |
+| Allow | TCP | 443 | All |
+| Deny | TCP | 22 | All — SSH is Tailscale-only |
+| Deny | All | All | All — catch-all |
+
+Postgres (5432), Redis (6379), the python-server (8000), Dozzle, and Umami fall under the catch-all deny — never expose them publicly.
+
 ## 6. Swap (recommended on ≤ 2 GB RAM)
 
 The backend and frontend images run `prisma generate` + `next build`, which can OOM a small VPS:
