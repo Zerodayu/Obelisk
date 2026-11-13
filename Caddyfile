@@ -6,12 +6,12 @@
 
 	# NOTE: access log → docker json-file → Dozzle — the one hop that sees every request
 	# NOTE: `log` names a logger, not a matcher — the exclusion lives in log_skip
-	@loggable not path /_next/* /images/* /favicon.ico
+	@static path /_next/* /images/* /favicon.ico
 	log {
 		output stdout
 		format json
 	}
-	log_skip @loggable
+	log_skip @static
 
 	# NOTE: API → in-network backend (no published port); the path passes through as-is
 	handle /api/* {
