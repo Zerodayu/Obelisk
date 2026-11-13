@@ -40,8 +40,12 @@ export const GoogleSignInButton = ({
 		});
 		if (error) {
 			setSubmitting(false);
+			// NOTE: a non-JSON body (Caddy 502 page, dropped connection) leaves message empty — keep the status visible.
+			console.error("[auth:google]", error);
+			const status = error.status ? ` (HTTP ${error.status})` : "";
 			const message =
-				error.message ?? "Could not start Google sign-in. Please try again.";
+				error.message ||
+				`Could not start Google sign-in${status}. Please try again.`;
 			setError(message);
 			toastError({
 				scope: "auth:google",
