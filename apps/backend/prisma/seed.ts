@@ -247,6 +247,8 @@ async function main() {
 	await prisma.atRiskFlag.deleteMany({});
 	await prisma.cloAttainment.deleteMany({});
 	await prisma.computationRun.deleteMany({});
+	// NOTE: archive entries use onDelete: Restrict on student — clusters must go first.
+	await prisma.graduationCluster.deleteMany({});
 	await prisma.student.deleteMany({});
 	await prisma.user.deleteMany({
 		where: { email: { endsWith: "@jmcfi.edu.ph" } },
