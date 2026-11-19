@@ -3,6 +3,7 @@ import {
 	RoleAccessForbiddenError,
 	assertCanGenerateAiInsights,
 	assertCanViewAiInsights,
+	assertCanViewCqiInstitutionalReport,
 	assertCanViewPlatformStats,
 } from "@lib/role-access";
 import { authPlugin } from "@v1/auth/controller";
@@ -60,8 +61,11 @@ export const reportsPlugin = new Elysia({
 				set.status = 401;
 				return { error: "Unauthorized" };
 			}
-			assertCanViewAiInsights(callerRole(user));
-			return cqiInstitutionalReportService.getReport(query.termId, query.programId);
+			assertCanViewCqiInstitutionalReport(callerRole(user));
+			return cqiInstitutionalReportService.getReport(
+				query.termId,
+				query.programId,
+			);
 		},
 		{
 			auth: true,
@@ -102,7 +106,7 @@ export const reportsPlugin = new Elysia({
 			detail: {
 				summary: "Generate and persist the CQI AI narrative",
 				description:
-					"Sends aggregate, pre-computed facts to python-server `/analytics/cqi-narrative`. Only a validated `status: \"ok\"` is saved, as a `pending_review` AiRecommendation (never auto-approved). `error` and `narrative_unavailable` are returned without a saved row.",
+					'Sends aggregate, pre-computed facts to python-server `/analytics/cqi-narrative`. Only a validated `status: "ok"` is saved, as a `pending_review` AiRecommendation (never auto-approved). `error` and `narrative_unavailable` are returned without a saved row.',
 				...SECURITY,
 				responses: {
 					200: { description: "Narrative status + stored row (or null)" },

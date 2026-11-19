@@ -190,6 +190,31 @@ function narrativeResponse(
 }
 
 describe.skipIf(!db)("CQI institutional report (integration)", () => {
+	it("skips an empty newest term when no term is given", async () => {
+		await resetData();
+		await seed();
+		const emptyTermId = "it-cqi-rpt-term-empty";
+		try {
+			await prisma.academicTerm.create({
+				data: {
+					id: emptyTermId,
+					schoolYear: "2099-2100",
+					semester: "1st",
+					startDate: new Date("2099-06-01"),
+				},
+			});
+			const service = new CqiInstitutionalReportService(async () =>
+				narrativeResponse("error"),
+			);
+			// NOTE: a newer term with no runs must not 409 the default-term read.
+			const report = await service.getReport();
+			expect(report.termId).not.toBe(emptyTermId);
+		} finally {
+			await prisma.academicTerm.deleteMany({ where: { id: emptyTermId } });
+			await resetData();
+		}
+	});
+
 	it("persists only a validated narrative as pending_review", async () => {
 		await resetData();
 		await seed();
@@ -285,7 +310,8 @@ describe.skipIf(!db)("CQI institutional report (integration)", () => {
 			);
 			await expect(
 				service.reviewNarrative(row.id, "dismissed", IDS.user),
-			).rejects.toBeInstanceOf(CqiNarrativeNotFoundError);		} finally {
+			).rejects.toBeInstanceOf(CqiNarrativeNotFoundError);
+		} finally {
 			await resetData();
 		}
 	});

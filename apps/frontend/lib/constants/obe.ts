@@ -41,3 +41,25 @@ export const ASSESSMENT_TYPES = [
 	"Perf.Task",
 	"Portfolio",
 ] as const;
+
+/** APAR (F29) attachments checklist — label per `attachments` key. */
+export const APAR_ATTACHMENT_LABELS: Record<string, string> = {
+	cohort_tracking: "Cohort Tracking Sheet",
+	clo_attainment_summary_s1: "CLO Attainment Summary (Sem 1)",
+	clo_attainment_summary_s2: "CLO Attainment Summary (Sem 2)",
+	plo_attainment_summary: "PLO Attainment Summary",
+	cqi_action_plan_current: "CQI Action Plan (Current)",
+	cqi_action_plan_prior: "CQI Action Plan (Prior)",
+	course_assessment_report_s1: "CAR (Sem 1)",
+	course_assessment_report_s2: "CAR (Sem 2)",
+	closing_the_loop: "Closing the Loop",
+};
+
+/** APAR (F29) narrative sections — label per `narratives` key. */
+export const APAR_NARRATIVE_LABELS: Record<string, string> = {
+	c1FullYearPloSummary: "C1 — Full-Year PLO Summary",
+	c2CohortIpdProgression: "C2 — Cohort IPD Progression",
+	c3IndirectEvidence: "C3 — Indirect Evidence",
+	c4CqiInterventions: "C4 — CQI Interventions",
+	c5Recommendations: "C5 — Recommendations",
+};

@@ -28,8 +28,6 @@ import {
 	reviewCqiNarrative,
 } from "@/server/actions/reports";
 
-type TermOption = { id: string; label: string };
-
 function pct(value: number | null | undefined): string {
 	return value === null || value === undefined ? "—" : `${value.toFixed(2)}%`;
 }
@@ -228,8 +226,10 @@ function StatusHeatmap({ report }: { report: CqiReport }) {
 	);
 }
 
-export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
-	const [termId, setTermId] = useState(terms[0]?.id ?? "");
+export function CqiInstitutionalReportView() {
+	// NOTE: empty = let the backend pick the latest term that has persisted runs,
+	// so an empty current term does not 409 on first load.
+	const [termId, setTermId] = useState("");
 	const [programId, setProgramId] = useState("");
 	const [report, setReport] = useState<CqiReport | null>(null);
 	const [loading, setLoading] = useState(false);
@@ -245,8 +245,11 @@ export function CqiInstitutionalReportView({ terms }: { terms: TermOption[] }) {
 				nextTermId || undefined,
 				nextProgramId || undefined,
 			);
-			if (result.ok) setReport(result.data);
-			else {
+			if (result.ok) {
+				setReport(result.data);
+				// NOTE: reflect the backend-resolved term in the select on first load.
+				setTermId(result.data.termId);
+			} else {
 				setReport(null);
 				setError(result.error);
 			}

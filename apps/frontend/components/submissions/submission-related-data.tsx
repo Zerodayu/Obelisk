@@ -13,7 +13,7 @@ import { api } from "@/lib/api-client";
  * the endpoint returns as structured data.
  */
 
-const ENDPOINT_BY_CODE: Record<string, string> = {
+export const ENDPOINT_BY_CODE: Record<string, string> = {
 	course_assessment_report: "/car",
 	// rollup
 	clo_attainment_summary: "/rollup/clo-attainment-summary",
@@ -49,7 +49,9 @@ const ENDPOINT_BY_CODE: Record<string, string> = {
 	action_taken: "/atrisk/action",
 };
 
-function isPrimitive(value: unknown): value is string | number | boolean | null {
+function isPrimitive(
+	value: unknown,
+): value is string | number | boolean | null {
 	return (
 		value === null ||
 		typeof value === "string" ||
@@ -90,10 +92,7 @@ function ValueNode({ value }: { value: unknown }) {
 		return (
 			<div className="space-y-2">
 				{value.map((item, index) => (
-					<div
-						className="bg-muted/30 rounded-lg border p-3"
-						key={index}
-					>
+					<div className="bg-muted/30 rounded-lg border p-3" key={index}>
 						<p className="text-muted-foreground mb-1 text-xs font-medium">
 							Item {index + 1}
 						</p>

@@ -16,31 +16,22 @@ import {
 	DistributionChart,
 	StatusStackedChart,
 } from "./cqi-pdf-charts";
+import {
+	ManualFooter,
+	ManualHeader,
+	ManualPrototypeNotice,
+	SignatureBlock,
+} from "./manual-chrome";
 
 const styles = StyleSheet.create({
 	page: {
 		paddingTop: 36,
 		paddingHorizontal: 32,
-		paddingBottom: 36,
+		paddingBottom: 48,
 		fontFamily: "Helvetica",
 		fontSize: 8.5,
 		lineHeight: 1.35,
 		color: "#1f2937",
-	},
-	brand: {
-		fontSize: 7,
-		letterSpacing: 1,
-		color: "#6b7280",
-		textTransform: "uppercase",
-	},
-	institution: { fontFamily: "Helvetica-Bold", fontSize: 13, marginTop: 2 },
-	title: { fontFamily: "Helvetica-Bold", fontSize: 12, marginTop: 10 },
-	meta: { fontSize: 8, color: "#6b7280", marginTop: 2 },
-	divider: {
-		borderBottomWidth: 1,
-		borderBottomColor: "#d1d5db",
-		marginTop: 8,
-		marginBottom: 8,
 	},
 	section: { marginBottom: 12 },
 	sectionTitle: {
@@ -90,58 +81,6 @@ const styles = StyleSheet.create({
 		marginBottom: 4,
 	},
 	cardTitle: { fontFamily: "Helvetica-Bold", fontSize: 8.5 },
-	footer: {
-		marginTop: 18,
-		paddingTop: 6,
-		borderTopWidth: 1,
-		borderTopColor: "#d1d5db",
-	},
-	signatureGrid: { flexDirection: "row", marginTop: 10 },
-	signatureCol: { flex: 1, paddingRight: 12 },
-	signatureLine: {
-		borderTopWidth: 0.5,
-		borderTopColor: "#9ca3af",
-		marginTop: 26,
-		paddingTop: 3,
-	},
-	signatureRole: { fontFamily: "Helvetica-Bold", fontSize: 8 },
-	signatureNote: { fontSize: 7.5, color: "#6b7280" },
-	pageNumber: {
-		position: "absolute",
-		bottom: 16,
-		left: 0,
-		right: 0,
-		textAlign: "center",
-		fontSize: 7,
-		color: "#9ca3af",
-	},
-	draftBanner: {
-		fontSize: 8,
-		color: "#b45309",
-		marginTop: 3,
-		textTransform: "uppercase",
-		letterSpacing: 0.6,
-	},
-	draftNotice: {
-		position: "absolute",
-		bottom: 26,
-		left: 0,
-		right: 0,
-		textAlign: "center",
-		fontSize: 6.5,
-		color: "#b45309",
-		letterSpacing: 0.4,
-		textTransform: "uppercase",
-	},
-	prototypeNotice: {
-		position: "absolute",
-		bottom: 40,
-		left: 0,
-		right: 0,
-		textAlign: "center",
-		fontSize: 6,
-		color: "#6b7280",
-	},
 });
 
 function pct(value: number | null | undefined): string {
@@ -383,25 +322,21 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 			title={`CQI Institutional Report - ${report.term.schoolYear} ${report.term.semester}`}
 		>
 			<Page size="A4" style={styles.page} wrap>
-				<Text style={styles.brand}>Obelisk · Outcome-Based Education</Text>
-				<Text style={styles.institution}>
-					Jose Maria College Foundation, Inc.
-				</Text>
-				<Text style={styles.title}>CQI Institutional Report</Text>
-				<Text style={styles.meta}>
-					{report.term.schoolYear} {report.term.semester} · generated{" "}
-					{new Date(report.generatedAt).toLocaleString()}
-				</Text>
-				<Text style={styles.draftBanner}>
-					DRAFT — subject to faculty review
-				</Text>
-				<Text style={styles.meta}>
-					Programs:{" "}
-					{report.scope.programs.map((program) => program.code).join(", ") ||
-						"—"}
-				</Text>
-
-				<View style={styles.divider} />
+				<ManualHeader
+					code="cqi_institutional_report"
+					title="CQI Institutional Report"
+					pdcaPhase="CHECK → ACT"
+					evidenceType="Direct + Indirect"
+					deadline="End of cycle"
+					retention="Permanent"
+					responsibleParty="AQAU prepares → VPAA reviews → Institutional Assessment Committee notes"
+					purpose="Consolidates the cycle's attainment, findings, CQI effectiveness and next-cycle priorities into one institutional record. Feeds the Annual Program Assessment Report, the Closing-the-Loop report and the Institutional Management Review."
+					printedRules="Institutional floor ≥ 70%. Composite = Direct × 70% + Indirect × 30%. Indirect response ≥ 60%. Divergence ≥ 20 pp is investigated. Three consecutive NOT MET cycles escalate to a Systemic Gap Report. Data completeness ≥ 60%. Aggregates only — no student names."
+					subtitle={`${report.term.schoolYear} ${report.term.semester} · generated ${new Date(report.generatedAt).toLocaleString()} · Programs: ${
+						report.scope.programs.map((program) => program.code).join(", ") ||
+						"—"
+					}`}
+				/>
 
 				{/* 1. Executive summary */}
 				<View style={styles.section}>
@@ -955,46 +890,27 @@ export function CqiInstitutionalPdf({ report }: { report: CqiReport }) {
 							from computed data only.
 						</Text>
 					)}
-					<View style={styles.footer} wrap={false}>
-						<Text style={styles.note}>
-							Prepared from stored attainment records. AI narrative is advisory
-							and requires human approval before adoption.
-						</Text>
-						<View style={styles.signatureGrid}>
-							{[
-								{ role: "Prepared by", name: "Quality Assurance (AQAU)" },
-								{
-									role: "Reviewed by",
-									name: "Vice President, Academic Affairs",
-								},
-								{
-									role: "Noted by",
-									name: "Institutional Assessment Committee",
-								},
-							].map((signature) => (
-								<View key={signature.role} style={styles.signatureCol}>
-									<View style={styles.signatureLine} />
-									<Text style={styles.signatureRole}>{signature.name}</Text>
-									<Text style={styles.signatureNote}>{signature.role}</Text>
-								</View>
-							))}
-						</View>
-					</View>
+					<SignatureBlock
+						roles={[
+							{
+								role: "Prepared by (AQAU)",
+								name: "Quality Assurance (AQAU)",
+							},
+							{
+								role: "Reviewed by (VPAA)",
+								name: "Vice President, Academic Affairs",
+							},
+							{
+								role: "Noted by (IAC)",
+								name: "Institutional Assessment Committee",
+							},
+						]}
+						note="Prepared from stored attainment records. AI narrative is advisory and requires human approval before adoption."
+					/>
 				</View>
 
-				<Text fixed style={styles.draftNotice}>
-					DRAFT — subject to faculty review · Generated{" "}
-					{new Date(report.generatedAt).toLocaleString()} ·{" "}
-					{report.term.schoolYear} {report.term.semester}
-				</Text>
-				<Text fixed style={styles.prototypeNotice}>
-					Research prototype. Synthetic data. Not actual institutional
-					attainment.
-				</Text>
-				<Text fixed style={styles.pageNumber}>
-					CQI Institutional Report · {report.term.schoolYear}{" "}
-					{report.term.semester}
-				</Text>
+				<ManualFooter />
+				<ManualPrototypeNotice />
 			</Page>
 		</Document>
 	);

@@ -18,6 +18,10 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
+import {
+	APAR_ATTACHMENT_LABELS,
+	APAR_NARRATIVE_LABELS,
+} from "@/lib/constants/obe";
 import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
 import { generateApar, saveApar } from "@/server/actions/cqi";
@@ -44,25 +48,9 @@ interface AparPayload {
 	dueDate: string;
 }
 
-const ATTACHMENT_LABELS: Record<string, string> = {
-	cohort_tracking: "Cohort Tracking Sheet",
-	clo_attainment_summary_s1: "CLO Attainment Summary (Sem 1)",
-	clo_attainment_summary_s2: "CLO Attainment Summary (Sem 2)",
-	plo_attainment_summary: "PLO Attainment Summary",
-	cqi_action_plan_current: "CQI Action Plan (Current)",
-	cqi_action_plan_prior: "CQI Action Plan (Prior)",
-	course_assessment_report_s1: "CAR (Sem 1)",
-	course_assessment_report_s2: "CAR (Sem 2)",
-	closing_the_loop: "Closing the Loop",
-};
+const ATTACHMENT_LABELS: Record<string, string> = APAR_ATTACHMENT_LABELS;
 
-const NARRATIVE_LABELS: Record<string, string> = {
-	c1FullYearPloSummary: "C1 — Full-Year PLO Summary",
-	c2CohortIpdProgression: "C2 — Cohort IPD Progression",
-	c3IndirectEvidence: "C3 — Indirect Evidence",
-	c4CqiInterventions: "C4 — CQI Interventions",
-	c5Recommendations: "C5 — Recommendations",
-};
+const NARRATIVE_LABELS: Record<string, string> = APAR_NARRATIVE_LABELS;
 
 export function AparForm() {
 	const [payload, setPayload] = useState<AparPayload | null>(null);

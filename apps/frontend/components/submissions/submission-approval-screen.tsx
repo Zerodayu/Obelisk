@@ -18,10 +18,11 @@ import {
 } from "@/lib/store/atoms/forms";
 import { userAtom } from "@/lib/store/atoms/user";
 
+import { CqiExportButton } from "./cqi-export-button";
 import { SubmissionDetails } from "./submission-details";
-import { SubmissionRelatedData } from "./submission-related-data";
 import { SubmissionEvidence } from "./submission-evidence";
 import { SubmissionJustification } from "./submission-justification";
+import { SubmissionRelatedData } from "./submission-related-data";
 
 /**
  * `/submissions/[id]` — the dedicated approval screen, shared by every form
@@ -102,13 +103,16 @@ export function SubmissionApprovalScreen({
 						</div>
 					</div>
 
-					{formPath ? (
-						<Button asChild size="sm" variant="ghost">
-							<Link href={formPath}>
-								Open form screen <ArrowUpRightIcon />
-							</Link>
-						</Button>
-					) : null}
+					<div className="flex flex-wrap items-center gap-2">
+						<CqiExportButton submission={submission} />
+						{formPath ? (
+							<Button asChild size="sm" variant="ghost">
+								<Link href={formPath}>
+									Open form screen <ArrowUpRightIcon />
+								</Link>
+							</Button>
+						) : null}
+					</div>
 				</div>
 
 				<p className="text-muted-foreground text-sm">

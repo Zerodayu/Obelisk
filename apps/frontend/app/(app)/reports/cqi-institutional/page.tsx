@@ -1,22 +1,10 @@
 import { CqiInstitutionalReportView } from "@/components/reports/cqi-institutional-report";
-import { listTerms } from "@/server/actions/academic";
+import { featureRoles } from "@/lib/role-access";
 import { requireRole } from "@/server/auth";
 
-/** Institution-wide CQI report — VPAA/AQAU read, VPAA/admin generate. */
+/** Institution-wide CQI report — AQAU/VPAA/program chairs read, VPAA/admin generate. */
 export default async function CqiInstitutionalReportPage() {
-	await requireRole(["aqau", "vpaa", "system_admin"]);
-	const terms = await listTerms();
+	await requireRole(featureRoles("viewCqiInstitutionalReport"));
 
-	return (
-		<CqiInstitutionalReportView
-			terms={
-				terms.ok
-					? terms.data.map((term) => ({
-							id: term.id,
-							label: `${term.schoolYear} — ${term.semester}`,
-						}))
-					: []
-			}
-		/>
-	);
+	return <CqiInstitutionalReportView />;
 }

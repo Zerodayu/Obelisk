@@ -291,7 +291,26 @@ export class CqiInstitutionalReportService {
 		if (terms.length === 0) {
 			throw new CqiReportNoDataError("No academic terms exist yet.");
 		}
-		if (!termId) return terms;
+		if (!termId) {
+			// NOTE: the newest term is often empty (no uploads yet), which would 409
+			// every caller that omits `termId`. Default to the newest term that has
+			// persisted runs, falling back to the newest term for the accurate error.
+			const runScopes = await prisma.computationRun.findMany({
+				select: { scope: true },
+				distinct: ["scope"],
+			});
+			const termsWithRuns = new Set(
+				(
+					await prisma.classSection.findMany({
+						where: { id: { in: runScopes.map((run) => run.scope) } },
+						select: { termId: true },
+						distinct: ["termId"],
+					})
+				).map((section) => section.termId),
+			);
+			const index = terms.findIndex((term) => termsWithRuns.has(term.id));
+			return index > 0 ? terms.slice(index) : terms;
+		}
 		const found = terms.find((term) => term.id === termId);
 		if (!found) throw new CqiTermNotFoundError(termId);
 		// Prior-cycle lookups need the full ordered list, current first.

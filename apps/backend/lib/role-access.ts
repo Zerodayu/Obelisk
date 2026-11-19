@@ -54,6 +54,13 @@ export const FEATURE_ACCESS = {
 	 */
 	viewAiInsights: ["aqau", "vpaa", "system_admin"],
 	/**
+	 * Read the assembled CQI institutional report (`GET /reports/cqi-institutional`).
+	 * Aggregate attainment only — no student names — so program chairs are
+	 * admitted alongside AQAU/VPAA. Kept separate from `viewAiInsights`, which
+	 * also unlocks the at-risk table that names students.
+	 */
+	viewCqiInstitutionalReport: ["aqau", "vpaa", "system_admin", "program_chair"],
+	/**
 	 * Read every user's audit trail (`GET /audit/logs` full waterfall).
 	 * Self-scoped reads (own entries only) stay open to every role.
 	 */
@@ -187,6 +194,21 @@ export function assertCanViewAiInsights(role: string | undefined): void {
 	if (!hasRole(role, AI_INSIGHT_VIEW_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not view institutional CQI reports — expected one of: ${AI_INSIGHT_VIEW_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** Roles that may read the assembled CQI institutional report. */
+export const CQI_INSTITUTIONAL_REPORT_VIEW_ROLES: readonly string[] =
+	FEATURE_ACCESS.viewCqiInstitutionalReport;
+
+/** May `role` read the assembled CQI institutional report? */
+export function assertCanViewCqiInstitutionalReport(
+	role: string | undefined,
+): void {
+	if (!hasRole(role, CQI_INSTITUTIONAL_REPORT_VIEW_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not view the CQI institutional report — expected one of: ${CQI_INSTITUTIONAL_REPORT_VIEW_ROLES.join(", ")}`,
 		);
 	}
 }
