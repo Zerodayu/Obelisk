@@ -55,11 +55,10 @@ export const FEATURE_ACCESS = {
 	viewAiInsights: ["aqau", "vpaa", "system_admin"],
 	/**
 	 * Read the assembled CQI institutional report (`GET /reports/cqi-institutional`).
-	 * Aggregate attainment only — no student names — so program chairs are
-	 * admitted alongside AQAU/VPAA. Kept separate from `viewAiInsights`, which
-	 * also unlocks the at-risk table that names students.
+	 * Aggregate attainment only — no student names. Kept separate from
+	 * `viewAiInsights`, which also unlocks the at-risk table that names students.
 	 */
-	viewCqiInstitutionalReport: ["aqau", "vpaa", "system_admin", "program_chair"],
+	viewCqiInstitutionalReport: ["aqau", "vpaa", "system_admin"],
 	/**
 	 * Read every user's audit trail (`GET /audit/logs` full waterfall).
 	 * Self-scoped reads (own entries only) stay open to every role.
