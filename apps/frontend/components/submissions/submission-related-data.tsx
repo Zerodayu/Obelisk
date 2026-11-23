@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Spinner } from "@/components/ui/spinner";
 import { api } from "@/lib/api-client";
 
+import { SubmissionValue } from "./submission-value";
+
 /**
  * Fetches the form's own GET-by-id endpoint (the same data the form screen
  * renders) and shows it inline, so an approver can review the submitted
@@ -48,87 +50,6 @@ export const ENDPOINT_BY_CODE: Record<string, string> = {
 	// atrisk
 	action_taken: "/atrisk/action",
 };
-
-function isPrimitive(
-	value: unknown,
-): value is string | number | boolean | null {
-	return (
-		value === null ||
-		typeof value === "string" ||
-		typeof value === "number" ||
-		typeof value === "boolean"
-	);
-}
-
-function ValueNode({ value }: { value: unknown }) {
-	if (isPrimitive(value)) {
-		if (value === null || value === undefined)
-			return <span className="text-muted-foreground">—</span>;
-		if (typeof value === "boolean") return <span>{value ? "Yes" : "No"}</span>;
-		if (typeof value === "number")
-			return <span className="tabular-nums">{value}</span>;
-		const text = String(value);
-		return text.trim() === "" ? (
-			<span className="text-muted-foreground">—</span>
-		) : (
-			<span className="break-words">{text}</span>
-		);
-	}
-	if (Array.isArray(value)) {
-		if (value.length === 0)
-			return <span className="text-muted-foreground">—</span>;
-		if (value.every(isPrimitive)) {
-			return (
-				<span className="break-words">
-					{value.map((v, i) => (
-						<span key={i}>
-							{i > 0 ? ", " : ""}
-							{v === null ? "—" : String(v)}
-						</span>
-					))}
-				</span>
-			);
-		}
-		return (
-			<div className="space-y-2">
-				{value.map((item, index) => (
-					<div className="bg-muted/30 rounded-lg border p-3" key={index}>
-						<p className="text-muted-foreground mb-1 text-xs font-medium">
-							Item {index + 1}
-						</p>
-						<ValueNode value={item} />
-					</div>
-				))}
-			</div>
-		);
-	}
-	if (typeof value === "object") {
-		const entries = Object.entries(value as Record<string, unknown>).filter(
-			([, v]) => v !== undefined,
-		);
-		if (entries.length === 0)
-			return <span className="text-muted-foreground">—</span>;
-		return (
-			<dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
-				{entries.map(([key, val]) => (
-					<div className="flex flex-col gap-0.5" key={key}>
-						<dt className="text-muted-foreground text-xs font-medium">
-							{key
-								.replace(/([a-z])([A-Z])/g, "$1 $2")
-								.replace(/[_-]+/g, " ")
-								.trim()
-								.replace(/^./, (c) => c.toUpperCase())}
-						</dt>
-						<dd className="text-sm">
-							<ValueNode value={val} />
-						</dd>
-					</div>
-				))}
-			</dl>
-		);
-	}
-	return <span>{String(value)}</span>;
-}
 
 export function SubmissionRelatedData({
 	submissionId,
@@ -196,7 +117,7 @@ export function SubmissionRelatedData({
 				</p>
 			) : open ? (
 				<div className="text-sm">
-					<ValueNode value={data} />
+					<SubmissionValue value={data} />
 				</div>
 			) : null}
 		</section>
