@@ -255,6 +255,139 @@ export const userService = {
 	},
 
 	/**
+	 * `PUT /auth/users/:id` — an admin edits an account's name/email/role/scope
+	 * (and active flag). Scope follows the role exactly as `createUser`.
+	 */
+	async updateUser(
+		id: string,
+		input: {
+			name: string;
+			email: string;
+			role: string;
+			isActive: boolean;
+			programId?: string | null;
+			departmentId?: string | null;
+		},
+	) {
+		const name = input.name.trim();
+		const email = input.email.trim();
+		if (!name || !email) {
+			throw new RoleRequestError("Name and email are required.", 400);
+		}
+
+		const target = await prisma.user.findUnique({
+			where: { id },
+			select: { id: true, role: true },
+		});
+		if (!target) throw new RoleRequestError("User not found.", 404);
+
+		if (!(PLATFORM_STAT_ROLES as readonly string[]).includes(input.role)) {
+			throw new RoleRequestError("Invalid role.", 400);
+		}
+
+		// Scope follows the role; null-scope roles clear both ids.
+		const scopeKind = requestedScopeForRole(input.role);
+		let programId: string | null = null;
+		let departmentId: string | null = null;
+		if (scopeKind === "program") {
+			if (!input.programId) {
+				throw new RoleRequestError(
+					"Select the program this account belongs to.",
+					400,
+				);
+			}
+			const program = await prisma.program.findUnique({
+				where: { id: input.programId },
+				select: { id: true, departmentId: true },
+			});
+			if (!program) throw new RoleRequestError("Program not found.", 400);
+			programId = program.id;
+			departmentId = program.departmentId;
+		} else if (scopeKind === "department") {
+			if (!input.departmentId) {
+				throw new RoleRequestError(
+					"Select the department this account covers.",
+					400,
+				);
+			}
+			const department = await prisma.department.findUnique({
+				where: { id: input.departmentId },
+				select: { id: true },
+			});
+			if (!department) throw new RoleRequestError("Department not found.", 400);
+			departmentId = department.id;
+		}
+
+		const existing = await prisma.user.findUnique({
+			where: { email },
+			select: { id: true },
+		});
+		if (existing && existing.id !== id) {
+			throw new RoleRequestError(
+				"An account with this email already exists.",
+				409,
+			);
+		}
+
+		// NOTE: the last active system_admin can't be demoted or deactivated,
+		// or the platform would have no administrator.
+		if (
+			target.role === "system_admin" &&
+			(input.role !== "system_admin" || !input.isActive)
+		) {
+			const activeAdmins = await prisma.user.count({
+				where: { role: "system_admin", isActive: true },
+			});
+			if (activeAdmins <= 1) {
+				throw new RoleRequestError(
+					"Cannot demote or deactivate the last system_admin.",
+					409,
+				);
+			}
+		}
+
+		return prisma.user.update({
+			where: { id },
+			data: {
+				name,
+				email,
+				role: input.role as UserRole,
+				programId,
+				departmentId,
+				isActive: input.isActive,
+			},
+			select: userListSelect,
+		});
+	},
+
+	/**
+	 * `DELETE /auth/users/:id` — hard delete. Safe at the FK level: every
+	 * `user` back-relation is `SetNull` or `Cascade` (`02-auth.prisma`), so the
+	 * audit trail keeps its rows with a null `userId`.
+	 */
+	async deleteUser(id: string, actorId: string) {
+		if (id === actorId) {
+			throw new RoleRequestError("You cannot delete your own account.", 409);
+		}
+		const target = await prisma.user.findUnique({
+			where: { id },
+			select: { id: true, role: true, isActive: true },
+		});
+		if (!target) throw new RoleRequestError("User not found.", 404);
+
+		if (target.role === "system_admin" && target.isActive) {
+			const activeAdmins = await prisma.user.count({
+				where: { role: "system_admin", isActive: true },
+			});
+			if (activeAdmins <= 1) {
+				throw new RoleRequestError("Cannot delete the last system_admin.", 409);
+			}
+		}
+
+		await prisma.user.delete({ where: { id } });
+	},
+
+	/**
 	 * `GET /auth/users/role-counts` — platform-wide headcount per role.
 	 *
 	 * Deliberately NOT unit-scoped (an institution-level statistic), and every

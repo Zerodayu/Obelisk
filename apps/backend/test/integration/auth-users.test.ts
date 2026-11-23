@@ -161,3 +161,60 @@ describe.skipIf(!db)("admin-provisioned account creation (integration)", () => {
 		).rejects.toThrow(RoleRequestError);
 	});
 });
+
+describe.skipIf(!db)("admin user update/delete (integration)", () => {
+	it("updates a user's name and keeps its derived scope", async () => {
+		const updated = await userService.updateUser(IDS.scoped, {
+			name: "Renamed Scoped",
+			email: EMAILS[0],
+			role: "faculty",
+			isActive: true,
+			programId: IDS.program,
+		});
+
+		expect(updated.name).toBe("Renamed Scoped");
+		expect(updated.program?.code).toBe("IT-USERS-PROG");
+		expect(updated.department?.name).toBe("Users Test Dept");
+	});
+
+	it("rejects a duplicate email with a 409", async () => {
+		await expect(
+			userService.updateUser(IDS.scoped, {
+				name: "Scoped User",
+				email: EMAILS[1],
+				role: "faculty",
+				isActive: true,
+				programId: IDS.program,
+			}),
+		).rejects.toThrow("already exists");
+	});
+
+	it("rejects updating a missing user (404)", async () => {
+		await expect(
+			userService.updateUser("missing-user", {
+				name: "X",
+				email: "missing@jmcfi.edu.ph",
+				role: "faculty",
+				isActive: true,
+				programId: IDS.program,
+			}),
+		).rejects.toThrow(RoleRequestError);
+	});
+
+	it("deletes a user and blocks self-delete", async () => {
+		const id = crypto.randomUUID();
+		const email = "it-users-throwaway@jmcfi.edu.ph";
+		await prisma.user.create({
+			data: { id, name: "Throwaway", email, role: "aqau", isActive: true },
+		});
+		try {
+			await expect(userService.deleteUser(id, id)).rejects.toThrow(
+				"own account",
+			);
+			await userService.deleteUser(id, IDS.unscoped);
+			expect(await prisma.user.findUnique({ where: { id } })).toBeNull();
+		} finally {
+			await prisma.user.deleteMany({ where: { id } });
+		}
+	});
+});

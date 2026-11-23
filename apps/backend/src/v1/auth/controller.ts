@@ -388,6 +388,88 @@ export const authPlugin = new Elysia({ name: "auth" })
 					},
 				},
 			)
+			.put(
+				"/auth/users/:id",
+				async ({ params, body, user, set }) => {
+					try {
+						requireUserManagement(user);
+						return await userService.updateUser(params.id, body);
+					} catch (error) {
+						if (error instanceof RoleRequestError) {
+							set.status = error.status;
+							return { error: error.message };
+						}
+						if (error instanceof RoleAccessForbiddenError) {
+							set.status = 403;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					params: t.Object({ id: t.String() }),
+					body: t.Object({
+						name: t.String(),
+						email: t.String(),
+						role: t.String(),
+						isActive: t.Boolean(),
+						programId: t.Optional(t.String()),
+						departmentId: t.Optional(t.String()),
+					}),
+					detail: {
+						tags: ["Auth"],
+						summary: "Update a user account",
+						description:
+							"System admin only. Edits name, email, role, scope, and active flag. Scope follows the role; a null-scope role clears it.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Updated user" },
+							400: { description: "Invalid role or scope" },
+							401: { description: "Unauthorized" },
+							403: { description: "System admin only" },
+							404: { description: "User not found" },
+							409: { description: "Email in use / last system_admin" },
+						},
+					},
+				},
+			)
+			.delete(
+				"/auth/users/:id",
+				async ({ params, user, set }) => {
+					try {
+						requireUserManagement(user);
+						await userService.deleteUser(params.id, user.id);
+						return { ok: true };
+					} catch (error) {
+						if (error instanceof RoleRequestError) {
+							set.status = error.status;
+							return { error: error.message };
+						}
+						if (error instanceof RoleAccessForbiddenError) {
+							set.status = 403;
+							return { error: error.message };
+						}
+						throw error;
+					}
+				},
+				{
+					params: t.Object({ id: t.String() }),
+					detail: {
+						tags: ["Auth"],
+						summary: "Delete a user account",
+						description:
+							"System admin only. Hard deletes the account; audit-trail and submission rows are preserved with a null user.",
+						security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+						responses: {
+							200: { description: "Deleted user" },
+							401: { description: "Unauthorized" },
+							403: { description: "System admin only" },
+							404: { description: "User not found" },
+							409: { description: "Self-delete or last system_admin" },
+						},
+					},
+				},
+			)
 			.post(
 				"/auth/role-requests/:userId/approve",
 				async ({ user, params, set }) => {
