@@ -6,18 +6,22 @@ import {
 } from "@lib/role-access";
 import { unitScopeOf } from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 
 import {
 	ClassSectionQuerySchema,
 	CreateClassSectionSchema,
 	CreateDepartmentSchema,
 	CreateProgramSchema,
+	UpdateDepartmentSchema,
+	UpdateProgramSchema,
 } from "./model";
 import {
 	createClassSection,
 	createDepartment,
 	createProgram,
+	deleteDepartment,
+	deleteProgram,
 	listAssessmentTypeCounts,
 	listClassSections,
 	listDepartments,
@@ -25,6 +29,8 @@ import {
 	listStudentYearLevels,
 	listTerms,
 	ReferenceDataError,
+	updateDepartment,
+	updateProgram,
 } from "./service";
 
 const SECURITY = {
@@ -264,6 +270,121 @@ export const academicPlugin = new Elysia({
 					403: { description: "System admin only" },
 					404: { description: "Department not found" },
 					409: { description: "Program code already exists" },
+				},
+			},
+		},
+	)
+	.put(
+		"/departments/:id",
+		async ({ params, body, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				return await updateDepartment(params.id, body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			body: UpdateDepartmentSchema,
+			detail: {
+				summary: "Update a department",
+				description:
+					"System admin only. Renames the department; code stays unique.",
+				...SECURITY,
+				responses: {
+					200: { description: "Updated department" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					409: { description: "Department code already exists" },
+				},
+			},
+		},
+	)
+	.delete(
+		"/departments/:id",
+		async ({ params, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				await deleteDepartment(params.id);
+				return { ok: true };
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			detail: {
+				summary: "Delete a department",
+				description:
+					"System admin only. Blocked (409) while the department has programs or assigned users.",
+				...SECURITY,
+				responses: {
+					200: { description: "Deleted department" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					404: { description: "Department not found" },
+					409: { description: "Department in use" },
+				},
+			},
+		},
+	)
+	.put(
+		"/programs/:id",
+		async ({ params, body, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				return await updateProgram(params.id, body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			body: UpdateProgramSchema,
+			detail: {
+				summary: "Update a program",
+				description:
+					"System admin only. Renames the program or moves it to another department; code stays unique.",
+				...SECURITY,
+				responses: {
+					200: { description: "Updated program" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					404: { description: "Department not found" },
+					409: { description: "Program code already exists" },
+				},
+			},
+		},
+	)
+	.delete(
+		"/programs/:id",
+		async ({ params, user, set }) => {
+			try {
+				assertCanManageReferenceData((user as { role?: string }).role);
+				await deleteProgram(params.id);
+				return { ok: true };
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			detail: {
+				summary: "Delete a program",
+				description:
+					"System admin only. Blocked (409) while the program has any dependent records.",
+				...SECURITY,
+				responses: {
+					200: { description: "Deleted program" },
+					401: { description: "Unauthorized" },
+					403: { description: "System admin only" },
+					404: { description: "Program not found" },
+					409: { description: "Program in use" },
 				},
 			},
 		},

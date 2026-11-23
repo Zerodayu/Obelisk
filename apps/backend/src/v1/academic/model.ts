@@ -27,6 +27,26 @@ export const CreateProgramSchema = t.Object({
 
 export type CreateProgram = typeof CreateProgramSchema.static;
 
+/** Update a department (college) — system admin only. */
+export const UpdateDepartmentSchema = t.Object({
+	code: t.String({ minLength: 1, description: "Unique department code" }),
+	name: t.String({ minLength: 1, description: "Department name" }),
+});
+
+export type UpdateDepartment = typeof UpdateDepartmentSchema.static;
+
+/** Update a program — system admin only. Every program belongs to a department. */
+export const UpdateProgramSchema = t.Object({
+	code: t.String({ minLength: 1, description: "Unique program code" }),
+	name: t.String({ minLength: 1, description: "Program name" }),
+	departmentId: t.String({
+		minLength: 1,
+		description: "Department the program belongs to",
+	}),
+});
+
+export type UpdateProgram = typeof UpdateProgramSchema.static;
+
 /**
  * Create a class section — faculty/chair in their own program, system_admin
  * anywhere. `courseTitle` is only used when the course code is new; `clos`

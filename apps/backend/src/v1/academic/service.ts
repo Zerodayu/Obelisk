@@ -12,6 +12,8 @@ import type {
 	CreateClassSection,
 	CreateDepartment,
 	CreateProgram,
+	UpdateDepartment,
+	UpdateProgram,
 } from "./model";
 
 /**
@@ -196,6 +198,132 @@ export async function createProgram(input: CreateProgram) {
 		},
 		select: { id: true, code: true, name: true, departmentId: true },
 	});
+}
+
+/** Update a department's code/name. Code stays globally unique (excluding self). */
+export async function updateDepartment(id: string, input: UpdateDepartment) {
+	const code = input.code.trim();
+	const name = input.name.trim();
+	if (!code || !name) {
+		throw new ReferenceDataError("Department code and name are required.", 400);
+	}
+
+	const existing = await prisma.department.findUnique({
+		where: { code },
+		select: { id: true },
+	});
+	if (existing && existing.id !== id) {
+		throw new ReferenceDataError(
+			`Department code '${code}' already exists.`,
+			409,
+		);
+	}
+
+	return prisma.department.update({
+		where: { id },
+		data: { code, name },
+		select: { id: true, code: true, name: true },
+	});
+}
+
+/**
+ * Delete a department. Blocked while it has programs or assigned users — a
+ * program delete would cascade (see `03-academic.prisma`), and a user would
+ * otherwise be left scoped to nothing.
+ */
+export async function deleteDepartment(id: string) {
+	const department = await prisma.department.findUnique({
+		where: { id },
+		select: { _count: { select: { programs: true, users: true } } },
+	});
+	if (!department) {
+		throw new ReferenceDataError("Department not found.", 404);
+	}
+	if (department._count.programs > 0) {
+		throw new ReferenceDataError(
+			"Department has programs — move or delete them first.",
+			409,
+		);
+	}
+	if (department._count.users > 0) {
+		throw new ReferenceDataError(
+			"Department has assigned users — reassign them first.",
+			409,
+		);
+	}
+	await prisma.department.delete({ where: { id } });
+}
+
+/** Update a program's code/name/department. Code stays globally unique; department must exist. */
+export async function updateProgram(id: string, input: UpdateProgram) {
+	const code = input.code.trim();
+	const name = input.name.trim();
+	if (!code || !name) {
+		throw new ReferenceDataError("Program code and name are required.", 400);
+	}
+
+	const department = await prisma.department.findUnique({
+		where: { id: input.departmentId },
+		select: { id: true },
+	});
+	if (!department) {
+		throw new ReferenceDataError(
+			`Department '${input.departmentId}' not found.`,
+			404,
+		);
+	}
+
+	const existing = await prisma.program.findUnique({
+		where: { code },
+		select: { id: true },
+	});
+	if (existing && existing.id !== id) {
+		throw new ReferenceDataError(`Program code '${code}' already exists.`, 409);
+	}
+
+	return prisma.program.update({
+		where: { id },
+		data: { code, name, departmentId: input.departmentId },
+		select: { id: true, code: true, name: true, departmentId: true },
+	});
+}
+
+/**
+ * Delete a program. Blocked while anything references it — most relations are
+ * `onDelete: Cascade`, so an unchecked delete would wipe courses, PLOs, forms,
+ * attainments, AI reports and graduation clusters in one statement.
+ */
+export async function deleteProgram(id: string) {
+	const program = await prisma.program.findUnique({
+		where: { id },
+		select: {
+			_count: {
+				select: {
+					courses: true,
+					students: true,
+					users: true,
+					plos: true,
+					peos: true,
+					formSubmissions: true,
+					ploAttainments: true,
+					peoAttainments: true,
+					aiRecommendations: true,
+					graduationClusters: true,
+				},
+			},
+		},
+	});
+	if (!program) {
+		throw new ReferenceDataError("Program not found.", 404);
+	}
+	const inUse = Object.entries(program._count).some(([, count]) => count > 0);
+	if (inUse) {
+		throw new ReferenceDataError(
+			"Program is in use (courses, students, forms, or records) and cannot be deleted.",
+			409,
+		);
+	}
+	await prisma.program.delete({ where: { id } });
 }
 
 // --- Class sections (capture roles, own program) -----------------------------

@@ -3,7 +3,14 @@ import { describe, expect, it } from "bun:test";
 import { prisma } from "@lib/prisma";
 import { UnitScopeError, unitScopeOf } from "@lib/unit-scope";
 import { isDbReachable } from "@test/helpers/db-gate";
-import { createClassSection, ReferenceDataError } from "@v1/academic/service";
+import {
+	createClassSection,
+	deleteDepartment,
+	deleteProgram,
+	ReferenceDataError,
+	updateDepartment,
+	updateProgram,
+} from "@v1/academic/service";
 
 const db = await isDbReachable();
 
@@ -293,6 +300,93 @@ describe.skipIf(!db)("class-section creation (integration)", () => {
 			expect(section.course.programId).toBe(IDS.progB);
 			// NOTE: admin-created sections stay unassigned (program scope governs).
 			expect(section.faculty).toBeNull();
+		} finally {
+			await cleanup();
+		}
+	}, 60000);
+});
+
+describe.skipIf(!db)("reference-data update/delete (integration)", () => {
+	it("renames a department and rejects a duplicate code", async () => {
+		await seed();
+		try {
+			const updated = await updateDepartment(IDS.deptA, {
+				code: "ACAD-A",
+				name: "Renamed Dept A",
+			});
+			expect(updated.name).toBe("Renamed Dept A");
+
+			const duplicate = await failureStatus(() =>
+				updateDepartment(IDS.deptB, { code: "ACAD-A", name: "Clash" }),
+			);
+			expect(duplicate).toBe(409);
+		} finally {
+			await cleanup();
+		}
+	}, 60000);
+
+	it("blocks deleting a department with programs, deletes an empty one", async () => {
+		await seed();
+		try {
+			const inUse = await failureStatus(() => deleteDepartment(IDS.deptA));
+			expect(inUse).toBe(409);
+
+			const emptyId = crypto.randomUUID();
+			await prisma.department.create({
+				data: { id: emptyId, code: "ACAD-EMPTY", name: "Empty Dept" },
+			});
+			await deleteDepartment(emptyId);
+			expect(
+				await prisma.department.findUnique({ where: { id: emptyId } }),
+			).toBeNull();
+		} finally {
+			await cleanup();
+		}
+	}, 60000);
+
+	it("moves a program and rejects a duplicate code", async () => {
+		await seed();
+		try {
+			const moved = await updateProgram(IDS.progB, {
+				code: "ACAD-B1",
+				name: "Moved B",
+				departmentId: IDS.deptA,
+			});
+			expect(moved.departmentId).toBe(IDS.deptA);
+
+			const duplicate = await failureStatus(() =>
+				updateProgram(IDS.progB, {
+					code: "ACAD-A1",
+					name: "Clash",
+					departmentId: IDS.deptB,
+				}),
+			);
+			expect(duplicate).toBe(409);
+		} finally {
+			await cleanup();
+		}
+	}, 60000);
+
+	it("blocks deleting an in-use program, deletes an empty one", async () => {
+		await seed();
+		try {
+			// progA has an assigned faculty user, so it is in use.
+			const inUse = await failureStatus(() => deleteProgram(IDS.progA));
+			expect(inUse).toBe(409);
+
+			const emptyId = crypto.randomUUID();
+			await prisma.program.create({
+				data: {
+					id: emptyId,
+					departmentId: IDS.deptA,
+					code: "ACAD-EMPTY1",
+					name: "Empty Prog",
+				},
+			});
+			await deleteProgram(emptyId);
+			expect(
+				await prisma.program.findUnique({ where: { id: emptyId } }),
+			).toBeNull();
 		} finally {
 			await cleanup();
 		}
