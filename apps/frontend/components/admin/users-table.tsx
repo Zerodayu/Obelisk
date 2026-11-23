@@ -13,8 +13,10 @@ import {
 	FunnelXIcon,
 	GraduationCapIcon,
 	ListFilterIcon,
+	PencilIcon,
 	RefreshCwIcon,
 	ShieldCheckIcon,
+	Trash2Icon,
 	UserIcon,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -49,10 +51,12 @@ import {
 	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { toast, toastError } from "@/components/ui/toast";
 import {
+	ALL_ROLES,
 	roleNeedsDepartment,
 	roleNeedsProgram,
 	ROLE_LABELS,
@@ -69,7 +73,7 @@ import {
 	refreshPlatformUsersAtom,
 } from "@/lib/store/atoms/governance";
 import { listDepartments, listPrograms } from "@/server/actions/academic";
-import { createUser } from "@/server/actions/auth";
+import { createUser, deleteUser, updateUser } from "@/server/actions/auth";
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS) as [UserRole, string][];
 
@@ -160,6 +164,22 @@ export function UsersTable() {
 	const [departments, setDepartments] = useState<AcademicDepartment[]>([]);
 	const [submitting, setSubmitting] = useState(false);
 
+	// Edit/delete dialogs — edit reuses the add-user field set plus an active toggle.
+	const [editOpen, setEditOpen] = useState(false);
+	const [editTarget, setEditTarget] = useState<PlatformUserRecord | null>(null);
+	const [editName, setEditName] = useState("");
+	const [editEmail, setEditEmail] = useState("");
+	const [editRole, setEditRole] = useState<string>();
+	const [editProgramId, setEditProgramId] = useState<string>();
+	const [editDepartmentId, setEditDepartmentId] = useState<string>();
+	const [editActive, setEditActive] = useState(true);
+	const [editSubmitting, setEditSubmitting] = useState(false);
+
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<PlatformUserRecord | null>(
+		null,
+	);
+
 	async function openUserDialog() {
 		setName("");
 		setEmail("");
@@ -216,6 +236,87 @@ export function UsersTable() {
 			});
 		}
 		setSubmitting(false);
+	}
+
+	async function openEditDialog(user: PlatformUserRecord) {
+		setEditTarget(user);
+		setEditName(user.name);
+		setEditEmail(user.email);
+		setEditRole(user.role);
+		setEditProgramId(user.program?.id);
+		setEditDepartmentId(user.department?.id);
+		setEditActive(user.isActive);
+		setEditOpen(true);
+		const [programsResult, departmentsResult] = await Promise.all([
+			listPrograms(),
+			listDepartments(),
+		]);
+		if (programsResult.ok) setPrograms(programsResult.data);
+		if (departmentsResult.ok) setDepartments(departmentsResult.data);
+	}
+
+	async function handleUpdateUser() {
+		if (!editTarget) return;
+		const trimmedName = editName.trim();
+		const trimmedEmail = editEmail.trim();
+		if (!trimmedName || !trimmedEmail || !editRole) {
+			toast.create({
+				title: "Name, email and role are required",
+				type: "error",
+			});
+			return;
+		}
+		if (roleNeedsProgram(editRole) && !editProgramId) {
+			toast.create({ title: "Select the account's program", type: "error" });
+			return;
+		}
+		if (roleNeedsDepartment(editRole) && !editDepartmentId) {
+			toast.create({ title: "Select the account's department", type: "error" });
+			return;
+		}
+
+		setEditSubmitting(true);
+		const result = await updateUser(editTarget.id, {
+			name: trimmedName,
+			email: trimmedEmail,
+			role: editRole,
+			isActive: editActive,
+			programId: editProgramId,
+			departmentId: editDepartmentId,
+		});
+		if (result.ok) {
+			toast.create({ title: "Account updated", type: "success" });
+			refresh();
+			setEditOpen(false);
+		} else {
+			toastError({
+				title: "Could not update user",
+				description: result.error,
+				scope: "admin-users:update",
+			});
+		}
+		setEditSubmitting(false);
+	}
+
+	function openDeleteDialog(user: PlatformUserRecord) {
+		setDeleteTarget(user);
+		setDeleteOpen(true);
+	}
+
+	async function handleDeleteUser() {
+		if (!deleteTarget) return;
+		const result = await deleteUser(deleteTarget.id);
+		if (result.ok) {
+			toast.create({ title: "Account deleted", type: "success" });
+			refresh();
+			setDeleteOpen(false);
+		} else {
+			toastError({
+				title: "Could not delete user",
+				description: result.error,
+				scope: "admin-users:delete",
+			});
+		}
 	}
 
 	const rows = useMemo<UserRow[]>(
@@ -396,6 +497,35 @@ export function UsersTable() {
 				size: 120,
 				enableSorting: true,
 				enableHiding: true,
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => (
+					<div className="flex justify-end gap-1">
+						<Button
+							aria-label={`Edit ${row.original.name}`}
+							onClick={() => openEditDialog(row.original)}
+							size="icon-sm"
+							type="button"
+							variant="ghost"
+						>
+							<PencilIcon />
+						</Button>
+						<Button
+							aria-label={`Delete ${row.original.name}`}
+							onClick={() => openDeleteDialog(row.original)}
+							size="icon-sm"
+							type="button"
+							variant="ghost"
+						>
+							<Trash2Icon />
+						</Button>
+					</div>
+				),
+				size: 80,
+				enableSorting: false,
+				enableHiding: false,
 			},
 		],
 		[],
@@ -587,6 +717,134 @@ export function UsersTable() {
 							onClick={() => void handleCreateUser()}
 						>
 							{submitting ? "Creating…" : "Create"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={editOpen}
+				onOpenChange={(details) => setEditOpen(details.open)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Edit user</AlertDialogTitle>
+						<AlertDialogDescription>
+							Update the account's details. Scope follows the role.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<AlertDialogBody>
+						<div className="space-y-4">
+							<Field>
+								<FieldLabel>Name</FieldLabel>
+								<Input
+									value={editName}
+									onChange={(event) => setEditName(event.target.value)}
+									placeholder="Full name"
+								/>
+							</Field>
+
+							<Field>
+								<FieldLabel>Email</FieldLabel>
+								<Input
+									type="email"
+									value={editEmail}
+									onChange={(event) => setEditEmail(event.target.value)}
+									placeholder="name@jmcfi.edu.ph"
+								/>
+							</Field>
+
+							<Field>
+								<FieldLabel>Role</FieldLabel>
+								<SelectRole
+									className="w-full"
+									onValueChange={(value) => {
+										setEditRole(value);
+										// Scope follows the role — drop stale picks.
+										setEditProgramId(undefined);
+										setEditDepartmentId(undefined);
+									}}
+									roles={ALL_ROLES}
+									value={editRole}
+								/>
+							</Field>
+
+							{roleNeedsProgram(editRole) && (
+								<Field>
+									<FieldLabel>Program</FieldLabel>
+									<SelectProgram
+										className="w-full"
+										onValueChange={setEditProgramId}
+										programs={programs}
+										value={editProgramId}
+									/>
+								</Field>
+							)}
+
+							{roleNeedsDepartment(editRole) && (
+								<Field>
+									<FieldLabel>Department</FieldLabel>
+									<SelectDepartment
+										className="w-full"
+										departments={departments}
+										onValueChange={setEditDepartmentId}
+										value={editDepartmentId}
+									/>
+								</Field>
+							)}
+
+							<Field>
+								<FieldLabel>Account active</FieldLabel>
+								<div className="flex items-center gap-2">
+									<Checkbox
+										checked={editActive}
+										onCheckedChange={(checked) =>
+											setEditActive(Boolean(checked))
+										}
+										aria-label="Account active"
+									/>
+									<span className="text-muted-foreground text-sm">
+										{editActive ? "Active" : "Inactive"}
+									</span>
+								</div>
+							</Field>
+						</div>
+					</AlertDialogBody>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							disabled={editSubmitting}
+							onClick={() => void handleUpdateUser()}
+						>
+							{editSubmitting ? "Saving…" : "Save"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={deleteOpen}
+				onOpenChange={(details) => setDeleteOpen(details.open)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete account?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Permanently remove {deleteTarget?.name ?? "this user"} (
+							{deleteTarget?.email}). Their submissions and audit trail are
+							kept; this cannot be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={() => void handleDeleteUser()}
+						>
+							Delete
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

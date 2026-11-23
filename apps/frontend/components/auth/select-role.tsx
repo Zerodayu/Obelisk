@@ -1,6 +1,7 @@
 "use client";
 
 import { createListCollection } from "@ark-ui/react";
+import { useMemo } from "react";
 
 import {
 	Select,
@@ -20,24 +21,31 @@ const SELF_SELECTABLE_ROLES = [
 	"vpaa",
 ] as const;
 
-const collection = createListCollection({
-	items: SELF_SELECTABLE_ROLES.map((role) => ({
-		label: ROLE_LABELS[role as UserRole],
-		value: role,
-	})),
-});
-
 interface SelectRoleProps {
 	value?: string;
 	onValueChange?: (value: string) => void;
 	className?: string;
+	/** Override the role list (e.g. edit screens that must show every role). */
+	roles?: readonly UserRole[];
 }
 
 export const SelectRole = ({
 	value,
 	onValueChange,
 	className,
+	roles,
 }: SelectRoleProps) => {
+	const collection = useMemo(
+		() =>
+			createListCollection({
+				items: (roles ?? SELF_SELECTABLE_ROLES).map((role) => ({
+					label: ROLE_LABELS[role],
+					value: role as string,
+				})),
+			}),
+		[roles],
+	);
+
 	return (
 		<Select
 			collection={collection}

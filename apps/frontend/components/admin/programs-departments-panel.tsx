@@ -11,7 +11,9 @@ import {
 	FunnelXIcon,
 	HashIcon,
 	ListFilterIcon,
+	PencilIcon,
 	TagIcon,
+	Trash2Icon,
 	TypeIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -53,8 +55,12 @@ import {
 	type AcademicProgram,
 	createDepartment,
 	createProgram,
+	deleteDepartment,
+	deleteProgram,
 	listDepartments,
 	listPrograms,
+	updateDepartment,
+	updateProgram,
 } from "@/server/actions/academic";
 
 /**
@@ -74,6 +80,7 @@ interface ReferenceRow {
 	code: string;
 	name: string;
 	departmentCode: string;
+	departmentId: string;
 }
 
 function matchesFilter(row: ReferenceRow, filter: Filter): boolean {
@@ -117,6 +124,17 @@ export function ProgramsDepartmentsPanel() {
 	const [programCode, setProgramCode] = useState("");
 	const [programName, setProgramName] = useState("");
 	const [programDepartmentId, setProgramDepartmentId] = useState("");
+
+	// Edit/delete — one edit dialog serves both kinds (a program also picks a
+	// department); delete target carries the kind + id for the confirm.
+	const [editOpen, setEditOpen] = useState(false);
+	const [editTarget, setEditTarget] = useState<ReferenceRow | null>(null);
+	const [editCode, setEditCode] = useState("");
+	const [editName, setEditName] = useState("");
+	const [editDepartmentId, setEditDepartmentId] = useState("");
+
+	const [deleteOpen, setDeleteOpen] = useState(false);
+	const [deleteTarget, setDeleteTarget] = useState<ReferenceRow | null>(null);
 
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
@@ -245,6 +263,91 @@ export function ProgramsDepartmentsPanel() {
 		}
 	}
 
+	function openEdit(row: ReferenceRow) {
+		setEditTarget(row);
+		setEditCode(row.code);
+		setEditName(row.name);
+		setEditDepartmentId(row.kind === "program" ? row.departmentId : "");
+		setEditOpen(true);
+	}
+
+	async function handleUpdate() {
+		if (!editTarget) return;
+		const code = editCode.trim();
+		const name = editName.trim();
+		if (!code || !name) {
+			toast.create({ title: "Code and name are required", type: "error" });
+			return;
+		}
+		if (editTarget.kind === "program" && !editDepartmentId) {
+			toast.create({ title: "Select a department", type: "error" });
+			return;
+		}
+
+		const result =
+			editTarget.kind === "department"
+				? await updateDepartment(editTarget.id, { code, name })
+				: await updateProgram(editTarget.id, {
+						code,
+						name,
+						departmentId: editDepartmentId,
+					});
+
+		// NOTE: `isDevMode` mirrors the create handlers — in frontend-only dev
+		// there is no backend to write, so the local row is edited anyway.
+		if (!result.ok && !isDevMode) {
+			toastError({
+				title: "Could not save",
+				description: result.error,
+				scope: "reference-data:edit",
+			});
+			return;
+		}
+		if (editTarget.kind === "department") {
+			setDepartments((prev) =>
+				prev.map((d) => (d.id === editTarget.id ? { ...d, code, name } : d)),
+			);
+		} else {
+			setPrograms((prev) =>
+				prev.map((p) =>
+					p.id === editTarget.id
+						? { ...p, code, name, departmentId: editDepartmentId }
+						: p,
+				),
+			);
+		}
+		toast.create({ title: "Saved", type: "success" });
+		setEditOpen(false);
+	}
+
+	function openDelete(row: ReferenceRow) {
+		setDeleteTarget(row);
+		setDeleteOpen(true);
+	}
+
+	async function handleDelete() {
+		if (!deleteTarget) return;
+		const result =
+			deleteTarget.kind === "department"
+				? await deleteDepartment(deleteTarget.id)
+				: await deleteProgram(deleteTarget.id);
+		if (!result.ok && !isDevMode) {
+			toastError({
+				title: "Could not delete",
+				description: result.error,
+				scope: "reference-data:delete",
+			});
+			return;
+		}
+		if (deleteTarget.kind === "department") {
+			setDepartments((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+		} else {
+			setPrograms((prev) => prev.filter((p) => p.id !== deleteTarget.id));
+		}
+		toast.create({ title: "Deleted", type: "success" });
+		setDeleteOpen(false);
+	}
+
 	const rows = useMemo<ReferenceRow[]>(() => {
 		const departmentCodeFor = (id: string) =>
 			departments.find((department) => department.id === id)?.code ?? "";
@@ -256,6 +359,7 @@ export function ProgramsDepartmentsPanel() {
 				code: department.code,
 				name: department.name,
 				departmentCode: "",
+				departmentId: "",
 			})),
 			...programs.map((program) => ({
 				kind: "program" as const,
@@ -263,6 +367,7 @@ export function ProgramsDepartmentsPanel() {
 				code: program.code,
 				name: program.name,
 				departmentCode: departmentCodeFor(program.departmentId),
+				departmentId: program.departmentId,
 			})),
 		];
 	}, [departments, programs]);
@@ -385,6 +490,35 @@ export function ProgramsDepartmentsPanel() {
 				size: 120,
 				enableSorting: true,
 				enableHiding: true,
+			},
+			{
+				id: "actions",
+				header: "",
+				cell: ({ row }) => (
+					<div className="flex justify-end gap-1">
+						<Button
+							aria-label={`Edit ${row.original.name}`}
+							onClick={() => openEdit(row.original)}
+							size="icon-sm"
+							type="button"
+							variant="ghost"
+						>
+							<PencilIcon />
+						</Button>
+						<Button
+							aria-label={`Delete ${row.original.name}`}
+							onClick={() => openDelete(row.original)}
+							size="icon-sm"
+							type="button"
+							variant="ghost"
+						>
+							<Trash2Icon />
+						</Button>
+					</div>
+				),
+				size: 80,
+				enableSorting: false,
+				enableHiding: false,
 			},
 		],
 		[],
@@ -581,6 +715,94 @@ export function ProgramsDepartmentsPanel() {
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction onClick={() => void handleCreateProgram()}>
 							Create
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={editOpen}
+				onOpenChange={(details) => setEditOpen(details.open)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							{editTarget?.kind === "program"
+								? "Edit program"
+								: "Edit department"}
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							Rename the record. The code must stay unique.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<AlertDialogBody>
+						<div className="space-y-4">
+							{editTarget?.kind === "program" && (
+								<Field>
+									<FieldLabel>Department</FieldLabel>
+									<SelectDepartment
+										departments={departments}
+										onValueChange={setEditDepartmentId}
+										value={editDepartmentId}
+									/>
+								</Field>
+							)}
+
+							<Field>
+								<FieldLabel>Code</FieldLabel>
+								<Input
+									value={editCode}
+									onChange={(event) => setEditCode(event.target.value)}
+									placeholder="BSIT"
+								/>
+							</Field>
+
+							<Field>
+								<FieldLabel>Name</FieldLabel>
+								<Input
+									value={editName}
+									onChange={(event) => setEditName(event.target.value)}
+									placeholder="Name"
+								/>
+							</Field>
+						</div>
+					</AlertDialogBody>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction onClick={() => void handleUpdate()}>
+							Save
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={deleteOpen}
+				onOpenChange={(details) => setDeleteOpen(details.open)}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>
+							Delete{" "}
+							{deleteTarget?.kind === "program" ? "program" : "department"}?
+						</AlertDialogTitle>
+						<AlertDialogDescription>
+							This cannot be undone. A{" "}
+							{deleteTarget?.kind === "program" ? "program" : "department"} that
+							is in use (has programs, users, courses, or students) cannot be
+							deleted.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							onClick={() => void handleDelete()}
+						>
+							Delete
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

@@ -126,6 +126,47 @@ export async function createUser(input: {
 	}
 }
 
+/** Update a user account (`manageUsers` — system_admin only). */
+export async function updateUser(
+	id: string,
+	input: {
+		name: string;
+		email: string;
+		role: string;
+		isActive: boolean;
+		programId?: string;
+		departmentId?: string;
+	},
+): Promise<ActionResult<PlatformUserRecord>> {
+	await requireRole(featureRoles("manageUsers"));
+	try {
+		const data = await actionApi.put<PlatformUserRecord>(
+			`/auth/users/${id}`,
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Could not update the account."),
+		};
+	}
+}
+
+/** Delete a user account (`manageUsers` — system_admin only). */
+export async function deleteUser(id: string): Promise<ActionResult> {
+	await requireRole(featureRoles("manageUsers"));
+	try {
+		await actionApi.delete(`/auth/users/${id}`);
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Could not delete the account."),
+		};
+	}
+}
+
 /** Sign the current user out; clears session cookies and redirects to `/login`. */
 export async function signOut(): Promise<ActionResult> {
 	try {

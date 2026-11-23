@@ -240,6 +240,68 @@ export async function createProgram(input: {
 	}
 }
 
+/** Update a department (`manageReferenceData` — system_admin only). */
+export async function updateDepartment(
+	id: string,
+	input: { code: string; name: string },
+): Promise<ActionResult<AcademicReferenceRecord>> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		const data = await actionApi.put<AcademicReferenceRecord>(
+			`/academic/departments/${id}`,
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to update department."),
+		};
+	}
+}
+
+/** Delete a department (`manageReferenceData` — system_admin only). */
+export async function deleteDepartment(id: string): Promise<ActionResult> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		await actionApi.delete(`/academic/departments/${id}`);
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to delete department."),
+		};
+	}
+}
+
+/** Update a program (`manageReferenceData` — system_admin only). */
+export async function updateProgram(
+	id: string,
+	input: { code: string; name: string; departmentId: string },
+): Promise<ActionResult<AcademicProgram>> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		const data = await actionApi.put<AcademicProgram>(
+			`/academic/programs/${id}`,
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to update program.") };
+	}
+}
+
+/** Delete a program (`manageReferenceData` — system_admin only). */
+export async function deleteProgram(id: string): Promise<ActionResult> {
+	await requireRole(featureRoles("manageReferenceData"));
+	try {
+		await actionApi.delete(`/academic/programs/${id}`);
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to delete program.") };
+	}
+}
+
 /**
  * Create a class section (plus its course/CLOs when new) — capture roles only
  * (`manageClassSections`); the backend narrows faculty/chair to their program.
