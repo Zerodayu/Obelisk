@@ -17,6 +17,7 @@ import {
 	type FormSubmissionRecord,
 } from "@/lib/store/atoms/forms";
 import { userAtom } from "@/lib/store/atoms/user";
+import { timeAgo } from "@/lib/utils";
 
 import { CqiExportButton } from "./cqi-export-button";
 import { SubmissionDetails } from "./submission-details";
@@ -119,7 +120,30 @@ export function SubmissionApprovalScreen({
 					{submission.submittedBy
 						? `Prepared by ${submission.submittedBy.name} · `
 						: ""}
-					Updated {new Date(submission.updatedAt).toLocaleString()}
+					Updated{" "}
+					<time
+						dateTime={submission.updatedAt}
+						suppressHydrationWarning
+						title={new Date(submission.updatedAt).toLocaleString()}
+					>
+						{timeAgo(submission.updatedAt)}
+					</time>
+					{/* NOTE: a distinct submit time (draft later submitted / returned & edited) is worth surfacing. */}
+					{submission.submittedAt &&
+					new Date(submission.submittedAt).getTime() !==
+						new Date(submission.updatedAt).getTime() ? (
+						<>
+							{" "}
+							· Submitted{" "}
+							<time
+								dateTime={submission.submittedAt}
+								suppressHydrationWarning
+								title={new Date(submission.submittedAt).toLocaleString()}
+							>
+								{timeAgo(submission.submittedAt)}
+							</time>
+						</>
+					) : null}
 				</p>
 			</section>
 

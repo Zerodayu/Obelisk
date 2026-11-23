@@ -2,7 +2,13 @@
 
 import type { Atom, WritableAtom } from "jotai";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { ArchiveIcon, ArrowRightIcon, RefreshCwIcon } from "lucide-react";
+import {
+	ArchiveIcon,
+	ArrowRightIcon,
+	InboxIcon,
+	RefreshCwIcon,
+	SearchIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -24,6 +30,11 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupInput,
+} from "@/components/ui/input-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Status } from "@/components/ui/status";
 import { toast, toastError } from "@/components/ui/toast";
@@ -46,6 +57,7 @@ import {
 	refreshPendingApprovalsAtom,
 } from "@/lib/store/atoms/forms";
 import { userAtom } from "@/lib/store/atoms/user";
+import { timeAgo } from "@/lib/utils";
 import { archiveFormAction } from "@/server/actions/forms";
 
 interface InboxAtoms {
@@ -182,6 +194,7 @@ export function SubmissionInbox({
 		scope === "all" ? "approved" : null,
 	);
 	const [archivingId, setArchivingId] = useState<string | null>(null);
+	const [search, setSearch] = useState("");
 
 	// NOTE: Setup/Record-tagged forms file with no approval, so they stay off
 	// the "My Submissions" inbox — only approval-bound forms are listed here.
@@ -199,9 +212,23 @@ export function SubmissionInbox({
 					(s) => s.formType != null && codes.includes(s.formType.code),
 				)
 			: visible;
-	const rows = statusFilter
-		? scoped.filter((submission) => submission.status === statusFilter)
-		: scoped;
+	const query = search.trim().toLowerCase();
+	const rows = (
+		statusFilter
+			? scoped.filter((submission) => submission.status === statusFilter)
+			: scoped
+	).filter((submission) => {
+		if (!query) return true;
+		return [
+			submission.formType?.name,
+			submission.formType?.code,
+			submission.submittedBy?.name,
+		]
+			.filter((value): value is string => value != null)
+			.join(" ")
+			.toLowerCase()
+			.includes(query);
+	});
 	const canArchive = user != null && ARCHIVE_ROLES.includes(user.role);
 
 	async function archive(id: string) {
@@ -244,6 +271,24 @@ export function SubmissionInbox({
 				</Button>
 			</div>
 
+			<div className="mt-4 flex flex-wrap items-center gap-2">
+				<InputGroup className="max-w-xs">
+					<InputGroupAddon align="inline-start">
+						<SearchIcon />
+					</InputGroupAddon>
+					<InputGroupInput
+						aria-label="Search submissions"
+						onChange={(event) => setSearch(event.target.value)}
+						placeholder="Search submissions"
+						type="search"
+						value={search}
+					/>
+				</InputGroup>
+				<span className="text-muted-foreground ml-auto text-xs tabular-nums">
+					{rows.length} {rows.length === 1 ? "submission" : "submissions"}
+				</span>
+			</div>
+
 			{scope === "all" ? (
 				<div className="mt-4 flex flex-wrap items-center gap-2">
 					{STATUS_FILTERS.map((filter) => {
@@ -279,7 +324,10 @@ export function SubmissionInbox({
 					</Button>
 				</div>
 			) : rows.length === 0 ? (
-				<p className="text-muted-foreground mt-6 text-sm">{emptyCopy}</p>
+				<div className="text-muted-foreground mt-6 flex flex-col items-center gap-2 py-8 text-center">
+					<InboxIcon className="size-6" />
+					<p className="text-sm">{emptyCopy}</p>
+				</div>
 			) : (
 				<ul className="divide-border mt-4 divide-y">
 					{rows.map((submission) => {
@@ -296,7 +344,14 @@ export function SubmissionInbox({
 									<p className="text-muted-foreground truncate text-xs">
 										{code ? <span className="font-mono">{code}</span> : null}
 										{code ? " · " : null}
-										Updated {new Date(submission.updatedAt).toLocaleString()}
+										Updated{" "}
+										<time
+											dateTime={submission.updatedAt}
+											suppressHydrationWarning
+											title={new Date(submission.updatedAt).toLocaleString()}
+										>
+											{timeAgo(submission.updatedAt)}
+										</time>
 										{scope !== "mine" && submission.submittedBy
 											? ` · from ${submission.submittedBy.name}`
 											: null}
