@@ -314,23 +314,40 @@ describe.skipIf(!db)("unit scoping (integration)", () => {
 		try {
 			// Program-scoped caller naming another program → 403, not [].
 			await expect(
-				listClassSections(unitScopeOf(CALLER.facultyA), IDS.progB1),
+				listClassSections(
+					unitScopeOf(CALLER.facultyA),
+					CALLER.facultyA.role,
+					IDS.progB1,
+				),
 			).rejects.toThrow(UnitScopeError);
 			await expect(
-				listClassSections(unitScopeOf(CALLER.deanA), IDS.progB1),
+				listClassSections(
+					unitScopeOf(CALLER.deanA),
+					CALLER.deanA.role,
+					IDS.progB1,
+				),
 			).rejects.toThrow(UnitScopeError);
 			// Own unit's program is accepted (dean → its program, chair → its own).
 			const sections = await listClassSections(
 				unitScopeOf(CALLER.deanA),
+				CALLER.deanA.role,
 				IDS.progA2,
 			);
 			expect(sections).toEqual([]);
 			await expect(
-				listClassSections(unitScopeOf(CALLER.chairA), IDS.progA1),
+				listClassSections(
+					unitScopeOf(CALLER.chairA),
+					CALLER.chairA.role,
+					IDS.progA1,
+				),
 			).resolves.toHaveLength(1);
 			// An institution-wide role passes any filter.
 			await expect(
-				listClassSections(unitScopeOf(CALLER.admin), IDS.progB1),
+				listClassSections(
+					unitScopeOf(CALLER.admin),
+					CALLER.admin.role,
+					IDS.progB1,
+				),
 			).resolves.toHaveLength(1);
 		} finally {
 			await cleanup();

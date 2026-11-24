@@ -166,7 +166,12 @@ export const academicPlugin = new Elysia({
 		// NOTE: not cached — capture roles create sections through the UI, and a
 		// cached list would serve the pre-create rows (same as programs).
 		async ({ query, user }) =>
-			listClassSections(unitScopeOf(user), query.programId, query.termId),
+			listClassSections(
+				unitScopeOf(user),
+				(user as { role?: string }).role ?? "user",
+				query.programId,
+				query.termId,
+			),
 		{
 			auth: true,
 			query: ClassSectionQuerySchema,

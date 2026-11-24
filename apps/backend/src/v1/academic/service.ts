@@ -100,8 +100,23 @@ export async function listAssessmentTypeCounts(unit: UnitScope) {
 	return rows.map((row) => ({ type: row.type, itemCount: row._count._all }));
 }
 
+/**
+ * The class sections a caller may pick. Faculty is scoped to its **own
+ * sections** (what it actually teaches); chairs/deans keep their unit scope.
+ */
+function classSectionWhereForPicker(
+	unit: UnitScope,
+	role: string,
+): Prisma.ClassSectionWhereInput {
+	if (role === "faculty") {
+		return { facultyId: unit.userId };
+	}
+	return classSectionUnitWhere(unit);
+}
+
 export async function listClassSections(
 	unit: UnitScope,
+	role: string,
 	programId?: string,
 	termId?: string,
 ) {
@@ -113,7 +128,7 @@ export async function listClassSections(
 	return prisma.classSection.findMany({
 		where: {
 			AND: [
-				classSectionUnitWhere(unit),
+				classSectionWhereForPicker(unit, role),
 				programId ? { course: { programId } } : {},
 				termId ? { termId } : {},
 			],
