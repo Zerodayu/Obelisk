@@ -22,6 +22,10 @@ import {
 } from "@/components/upload/file-upload";
 import { api, isApiError } from "@/lib/api-client";
 import {
+	refreshAtRiskAtom,
+	refreshStudentsVsAtRiskAtom,
+} from "@/lib/store/atoms/governance";
+import {
 	completeIngestAtom,
 	failIngestAtom,
 	ingestJobIdAtom,
@@ -117,6 +121,8 @@ export function ClassRecordUpload() {
 	const setFailIngest = useSetAtom(failIngestAtom);
 	const setResetIngest = useSetAtom(resetIngestAtom);
 	const setRefreshHistory = useSetAtom(refreshUploadHistoryAtom);
+	const setRefreshAtRisk = useSetAtom(refreshAtRiskAtom);
+	const setRefreshStudentsVsAtRisk = useSetAtom(refreshStudentsVsAtRiskAtom);
 
 	useEffect(() => {
 		setIsMounted(true);
@@ -183,6 +189,8 @@ export function ClassRecordUpload() {
 			patchItem({ status: "success", progress: 100 });
 			setCompleteIngest(summary ?? null);
 			setRefreshHistory();
+			setRefreshAtRisk();
+			setRefreshStudentsVsAtRisk();
 			setVerificationResult(verification);
 			setMismatchError(null);
 
@@ -221,7 +229,13 @@ export function ClassRecordUpload() {
 				}
 			}
 		},
-		[patchItem, setCompleteIngest, setRefreshHistory],
+		[
+			patchItem,
+			setCompleteIngest,
+			setRefreshHistory,
+			setRefreshAtRisk,
+			setRefreshStudentsVsAtRisk,
+		],
 	);
 
 	// Shared failure path for upload, poll and save. `mismatches` renders the
