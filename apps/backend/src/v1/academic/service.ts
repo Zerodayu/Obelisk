@@ -8,6 +8,7 @@ import {
 	studentUnitWhere,
 	type UnitScope,
 } from "@lib/unit-scope";
+import type { Prisma } from "@prisma/generated/prisma/client";
 
 import type {
 	CreateClassSection,
@@ -134,34 +135,75 @@ export async function listClassSections(
 
 // --- CLO management ---------------------------------------------------------
 
+/**
+ * The courses a caller may manage CLOs on. Faculty is scoped to the courses of
+ * its **own sections** (what it actually teaches) rather than the whole
+ * program; chairs/deans keep their unit scope.
+ */
+function cloCourseWhere(
+	unit: UnitScope,
+	role: string,
+): Prisma.CourseWhereInput {
+	if (role === "faculty") {
+		return { classSections: { some: { facultyId: unit.userId } } };
+	}
+	return courseUnitWhere(unit);
+}
+
+/** 403/404 guard — is `courseId` one the caller may manage CLOs on? */
+async function assertCourseInCloScope(
+	unit: UnitScope,
+	role: string,
+	courseId: string,
+): Promise<void> {
+	if (role === "faculty") {
+		const section = await prisma.classSection.findFirst({
+			where: { courseId, facultyId: unit.userId },
+			select: { id: true },
+		});
+		if (!section) {
+			throw new ReferenceDataError(
+				"You can only manage CLOs for courses you teach.",
+				403,
+			);
+		}
+		return;
+	}
+	const course = await prisma.course.findUnique({
+		where: { id: courseId },
+		select: { programId: true },
+	});
+	if (!course) {
+		throw new ReferenceDataError(`Course '${courseId}' not found.`, 404);
+	}
+	await assertProgramInScope(unit, course.programId);
+}
+
 /** Courses in the caller's unit — the picker for adding a CLO to a course. */
-export async function listCourses(unit: UnitScope) {
+export async function listCourses(unit: UnitScope, role: string) {
 	return prisma.course.findMany({
-		where: courseUnitWhere(unit),
+		where: cloCourseWhere(unit, role),
 		select: { id: true, code: true, title: true, programId: true },
 		orderBy: { code: "asc" },
 	});
 }
 
 /**
- * CLOs for a course, or every CLO in the caller's unit when no `courseId` is
- * given — unit-scoped so a faculty/chair only sees its own program's courses.
+ * CLOs for a course, or every CLO in the caller's scope when no `courseId` is
+ * given — a faculty sees only its own sections' courses; a chair its program.
  */
-export async function listClos(unit: UnitScope, courseId?: string) {
+export async function listClos(
+	unit: UnitScope,
+	role: string,
+	courseId?: string,
+) {
 	if (courseId) {
-		const course = await prisma.course.findUnique({
-			where: { id: courseId },
-			select: { programId: true },
-		});
-		if (!course) {
-			throw new ReferenceDataError(`Course '${courseId}' not found.`, 404);
-		}
-		await assertProgramInScope(unit, course.programId);
+		await assertCourseInCloScope(unit, role, courseId);
 	}
 
 	return prisma.clo.findMany({
 		where: {
-			course: courseUnitWhere(unit),
+			course: cloCourseWhere(unit, role),
 			...(courseId ? { courseId } : {}),
 		},
 		select: {
@@ -188,8 +230,8 @@ export async function listClos(unit: UnitScope, courseId?: string) {
 	});
 }
 
-/** Load a CLO and 403 when its course's program is outside the caller's unit. */
-async function resolveCloInScope(unit: UnitScope, cloId: string) {
+/** Load a CLO and 403 when its course is outside the caller's CLO scope. */
+async function resolveCloInScope(unit: UnitScope, role: string, cloId: string) {
 	const clo = await prisma.clo.findUnique({
 		where: { id: cloId },
 		select: {
@@ -200,22 +242,19 @@ async function resolveCloInScope(unit: UnitScope, cloId: string) {
 		},
 	});
 	if (!clo) throw new ReferenceDataError(`CLO '${cloId}' not found.`, 404);
-	await assertProgramInScope(unit, clo.course.programId);
+	await assertCourseInCloScope(unit, role, clo.courseId);
 	return clo;
 }
 
-export async function createClo(unit: UnitScope, input: CreateClo) {
+export async function createClo(
+	unit: UnitScope,
+	role: string,
+	input: CreateClo,
+) {
 	const code = input.code.trim();
 	if (!code) throw new ReferenceDataError("CLO code is required.", 400);
 
-	const course = await prisma.course.findUnique({
-		where: { id: input.courseId },
-		select: { programId: true },
-	});
-	if (!course) {
-		throw new ReferenceDataError(`Course '${input.courseId}' not found.`, 404);
-	}
-	await assertProgramInScope(unit, course.programId);
+	await assertCourseInCloScope(unit, role, input.courseId);
 
 	const duplicate = await prisma.clo.findUnique({
 		where: { courseId_code: { courseId: input.courseId, code } },
@@ -241,10 +280,11 @@ export async function createClo(unit: UnitScope, input: CreateClo) {
 
 export async function updateClo(
 	unit: UnitScope,
+	role: string,
 	cloId: string,
 	input: UpdateClo,
 ) {
-	const clo = await resolveCloInScope(unit, cloId);
+	const clo = await resolveCloInScope(unit, role, cloId);
 
 	const data: { code?: string; description?: string } = {};
 	if (input.code !== undefined) {
@@ -271,8 +311,8 @@ export async function updateClo(
 	});
 }
 
-export async function deleteClo(unit: UnitScope, cloId: string) {
-	const clo = await resolveCloInScope(unit, cloId);
+export async function deleteClo(unit: UnitScope, role: string, cloId: string) {
+	const clo = await resolveCloInScope(unit, role, cloId);
 
 	const [maps, attainments] = await Promise.all([
 		prisma.cloToPloMap.count({ where: { cloId } }),

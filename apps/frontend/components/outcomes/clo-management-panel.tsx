@@ -30,9 +30,10 @@ import {
 } from "@/server/actions/academic";
 
 /**
- * Capture-role CLO management. The backend unit-scopes `listCourses`/`listClos`
- * to the caller's program, so no program selector is needed here. CLOs are
- * listed grouped by course; add/edit sets code + statement, delete is blocked
+ * Capture-role CLO management. The backend scopes `listCourses`/`listClos` to
+ * the caller — a faculty sees only the courses of its own sections, a chair
+ * its program — so no program selector is needed here. CLOs are listed grouped
+ * by program and course; add/edit sets code + statement, delete is blocked
  * server-side when the CLO is mapped to a PLO or has attainment history.
  */
 export function CloManagementPanel() {

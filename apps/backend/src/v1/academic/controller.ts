@@ -232,7 +232,11 @@ export const academicPlugin = new Elysia({
 		"/courses",
 		// NOTE: not cached — a course appears as soon as a section or CLO is
 		// created, and a cached list would hide it from the CLO picker.
-		async ({ user }) => listCourses(unitScopeOf(user)),
+		async ({ user }) =>
+			listCourses(
+				unitScopeOf(user),
+				(user as { role?: string }).role ?? "user",
+			),
 		{
 			auth: true,
 			detail: {
@@ -251,7 +255,11 @@ export const academicPlugin = new Elysia({
 		"/clos",
 		async ({ query, user, set }) => {
 			try {
-				return await listClos(unitScopeOf(user), query.courseId);
+				return await listClos(
+					unitScopeOf(user),
+					(user as { role?: string }).role ?? "user",
+					query.courseId,
+				);
 			} catch (error) {
 				return mapAcademicErrors(error, set);
 			}
@@ -279,7 +287,11 @@ export const academicPlugin = new Elysia({
 		async ({ body, user, set }) => {
 			try {
 				assertCanManageClos((user as { role?: string }).role);
-				return await createClo(unitScopeOf(user), body);
+				return await createClo(
+					unitScopeOf(user),
+					(user as { role?: string }).role ?? "user",
+					body,
+				);
 			} catch (error) {
 				return mapAcademicErrors(error, set);
 			}
@@ -307,7 +319,12 @@ export const academicPlugin = new Elysia({
 		async ({ params, body, user, set }) => {
 			try {
 				assertCanManageClos((user as { role?: string }).role);
-				return await updateClo(unitScopeOf(user), params.id, body);
+				return await updateClo(
+					unitScopeOf(user),
+					(user as { role?: string }).role ?? "user",
+					params.id,
+					body,
+				);
 			} catch (error) {
 				return mapAcademicErrors(error, set);
 			}
@@ -335,7 +352,11 @@ export const academicPlugin = new Elysia({
 		async ({ params, user, set }) => {
 			try {
 				assertCanManageClos((user as { role?: string }).role);
-				await deleteClo(unitScopeOf(user), params.id);
+				await deleteClo(
+					unitScopeOf(user),
+					(user as { role?: string }).role ?? "user",
+					params.id,
+				);
 				return { ok: true };
 			} catch (error) {
 				return mapAcademicErrors(error, set);
