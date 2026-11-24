@@ -207,8 +207,8 @@ export const APPROVAL_ROUTES: Record<string, ApprovalRoute> = {
 		chain: ascendToVpaa(["dean", "aqau"]),
 	},
 	cohort_tracking: {
-		// "Program Chair → AQAU"
-		preparerRoles: ["program_chair"],
+		// "Program Chair → AQAU" — faculty co-prepares (scoped to its own program).
+		preparerRoles: ["program_chair", "faculty"],
 		chain: ascendToVpaa(["aqau"]),
 	},
 	student_exit_survey: {

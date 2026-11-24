@@ -243,7 +243,7 @@ export const FORM_ACCESS: Record<string, FormAccessRoute> = {
 		chain: ["dean", "aqau", "vpaa"],
 	},
 	cohort_tracking: {
-		preparers: ["program_chair"],
+		preparers: ["program_chair", "faculty"],
 		chain: ["aqau", "vpaa"],
 	},
 	student_exit_survey: {
