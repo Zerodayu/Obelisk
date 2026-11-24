@@ -352,7 +352,13 @@ export interface CloRecord {
 	code: string;
 	description: string;
 	courseId: string;
-	course: { id: string; code: string; title: string; programId: string };
+	course: {
+		id: string;
+		code: string;
+		title: string;
+		programId: string;
+		program: { id: string; code: string; name: string };
+	};
 }
 
 export type CloMutationResult = {

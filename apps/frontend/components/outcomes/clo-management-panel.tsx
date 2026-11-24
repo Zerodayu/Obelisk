@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
 	AlertDialog,
@@ -166,6 +166,47 @@ export function CloManagementPanel() {
 	const courseLabel = (id: string) =>
 		courses.find((c) => c.id === id)?.code ?? "";
 
+	// CLOs are separated per program, then per course (each course = a section
+	// of the program's CLOs), so every outcome stays under its owning course.
+	const groupedClos = useMemo(() => {
+		const byProgram = new Map<
+			string,
+			{
+				program: { id: string; code: string; name: string };
+				courses: Map<
+					string,
+					{
+						course: { id: string; code: string; title: string };
+						clos: CloRecord[];
+					}
+				>;
+			}
+		>();
+		for (const record of clos) {
+			const program = record.course.program;
+			let p = byProgram.get(program.id);
+			if (!p) {
+				p = { program, courses: new Map() };
+				byProgram.set(program.id, p);
+			}
+			const course = {
+				id: record.course.id,
+				code: record.course.code,
+				title: record.course.title,
+			};
+			let c = p.courses.get(course.id);
+			if (!c) {
+				c = { course, clos: [] };
+				p.courses.set(course.id, c);
+			}
+			c.clos.push(record);
+		}
+		return [...byProgram.values()].map((p) => ({
+			program: p.program,
+			courses: [...p.courses.values()],
+		}));
+	}, [clos]);
+
 	return (
 		<div className="space-y-4">
 			<div className="flex justify-end">
@@ -183,49 +224,65 @@ export function CloManagementPanel() {
 					No CLOs yet. Click "Add CLO" to create the first one.
 				</div>
 			) : (
-				<div className="overflow-x-auto rounded-lg border">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="bg-muted/50 text-muted-foreground border-b text-left">
-								<th className="px-3 py-2 font-medium">Course</th>
-								<th className="px-3 py-2 font-medium">Code</th>
-								<th className="px-3 py-2 font-medium">Statement</th>
-								<th className="px-3 py-2 text-right font-medium">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{clos.map((record) => (
-								<tr
-									key={record.id}
-									className="hover:bg-muted/30 border-b last:border-0"
-								>
-									<td className="text-muted-foreground px-3 py-2">
-										{record.course.code}
-									</td>
-									<td className="px-3 py-2 font-medium">{record.code}</td>
-									<td className="text-muted-foreground px-3 py-2">
-										{record.description}
-									</td>
-									<td className="px-3 py-2 text-right">
-										<Button
-											variant="ghost"
-											className="h-7 px-2"
-											onClick={() => openEditDialog(record)}
-										>
-											Edit
-										</Button>
-										<Button
-											variant="ghost"
-											className="text-destructive h-7 px-2"
-											onClick={() => setDeleteId(record.id)}
-										>
-											Delete
-										</Button>
-									</td>
-								</tr>
+				<div className="space-y-6">
+					{groupedClos.map(({ program, courses }) => (
+						<section key={program.id} className="space-y-3">
+							<h3 className="text-sm font-semibold">
+								{program.code} — {program.name}
+							</h3>
+							{courses.map(({ course, clos: courseClos }) => (
+								<div key={course.id} className="space-y-1">
+									<h4 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+										{course.code} — {course.title}
+									</h4>
+									<div className="overflow-x-auto rounded-lg border">
+										<table className="w-full text-sm">
+											<thead>
+												<tr className="bg-muted/50 text-muted-foreground border-b text-left">
+													<th className="px-3 py-2 font-medium">Code</th>
+													<th className="px-3 py-2 font-medium">Statement</th>
+													<th className="px-3 py-2 text-right font-medium">
+														Actions
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{courseClos.map((record) => (
+													<tr
+														key={record.id}
+														className="hover:bg-muted/30 border-b last:border-0"
+													>
+														<td className="px-3 py-2 font-medium">
+															{record.code}
+														</td>
+														<td className="text-muted-foreground px-3 py-2">
+															{record.description}
+														</td>
+														<td className="px-3 py-2 text-right">
+															<Button
+																variant="ghost"
+																className="h-7 px-2"
+																onClick={() => openEditDialog(record)}
+															>
+																Edit
+															</Button>
+															<Button
+																variant="ghost"
+																className="text-destructive h-7 px-2"
+																onClick={() => setDeleteId(record.id)}
+															>
+																Delete
+															</Button>
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+								</div>
 							))}
-						</tbody>
-					</table>
+						</section>
+					))}
 				</div>
 			)}
 

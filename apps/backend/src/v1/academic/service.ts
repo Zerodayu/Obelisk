@@ -169,10 +169,22 @@ export async function listClos(unit: UnitScope, courseId?: string) {
 			code: true,
 			description: true,
 			course: {
-				select: { id: true, code: true, title: true, programId: true },
+				select: {
+					id: true,
+					code: true,
+					title: true,
+					programId: true,
+					// NOTE: program is surfaced so the client can group CLOs per
+					// program (the chair/dean management lists).
+					program: { select: { id: true, code: true, name: true } },
+				},
 			},
 		},
-		orderBy: [{ course: { code: "asc" } }, { code: "asc" }],
+		orderBy: [
+			{ course: { program: { code: "asc" } } },
+			{ course: { code: "asc" } },
+			{ code: "asc" },
+		],
 	});
 }
 
