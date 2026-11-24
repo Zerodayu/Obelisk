@@ -8,7 +8,13 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils.cell import column_index_from_string
 
-from app.core.exceptions import InvalidTemplate, InvalidWorkbook, MissingWorksheet, UnsupportedCourseType, WorkbookValidationError
+from app.core.exceptions import (
+    InvalidTemplate,
+    InvalidWorkbook,
+    MissingWorksheet,
+    UnsupportedCourseType,
+    WorkbookValidationError,
+)
 from app.core.logging import logger
 from app.etl.abstracts import Extractor
 from app.schemas.class_record import (
@@ -22,7 +28,7 @@ from app.schemas.extracted import StudentRawCloData
 
 from .. import etl_const
 
-SECTION_REGEX = re.compile(r"^\s*([A-Za-z]+)\s*-\s*(\d+)\s*([A-Za-z])\s*$")
+SECTION_REGEX = re.compile(r"^\s*([A-Za-z]+)[\s-]*(\d+)\s*([A-Za-z])\s*$")
 
 
 class ExtractionResult(tuple):
@@ -30,6 +36,7 @@ class ExtractionResult(tuple):
     Backwards-compatible 3-tuple (header, records, clo_plo_mapping) with
     attached section, section_extraction, and setup properties.
     """
+
     def __new__(
         cls,
         header: ClassRecordHeader,
@@ -77,7 +84,9 @@ class ExcelExtractor(Extractor):
         try:
             with warnings.catch_warnings():
                 # Suppress openpyxl's UserWarning regarding unsupported Data Validation extension
-                warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+                warnings.filterwarnings(
+                    "ignore", category=UserWarning, module="openpyxl"
+                )
                 workbook = load_workbook(file_path, data_only=True)
         except Exception as exc:
             raise InvalidWorkbook(file_path=file_path, underlying_error=str(exc))
@@ -86,7 +95,10 @@ class ExcelExtractor(Extractor):
         # Must contain REQUIRED_SHEETS: 'Direct CLO' and 'Indirect CLO'
         for req_sheet in etl_const.TemplateValidation.REQUIRED_SHEETS:
             if req_sheet not in workbook.sheetnames:
-                raise MissingWorksheet(expected_sheet_name=req_sheet, available_sheets=list(workbook.sheetnames))
+                raise MissingWorksheet(
+                    expected_sheet_name=req_sheet,
+                    available_sheets=list(workbook.sheetnames),
+                )
 
         direct_sheet = workbook[etl_const.SheetNames.DIRECT_CLO]
         indirect_sheet = workbook[etl_const.SheetNames.INDIRECT_CLO]
@@ -114,14 +126,27 @@ class ExcelExtractor(Extractor):
         )
 
         # 3. Dynamic Student Roster discovery from Direct CLO sheet
-        students = self._read_direct_roster(direct_sheet, start_row=etl_const.DirectCloSheet.DATA_START_ROW)
-        indirect_students = self._read_indirect_roster(indirect_sheet, start_row=etl_const.IndirectCloSheet.DATA_START_ROW)
-        self._validate_roster_ids(direct_sheet, students, etl_const.DirectCloSheet.STUDENT_ID_COL)
-        self._validate_roster_ids(indirect_sheet, indirect_students, etl_const.IndirectCloSheet.STUDENT_ID_COL)
-        indirect_students_by_id = {s["student_id"]: s for s in indirect_students if s["student_id"]}
+        students = self._read_direct_roster(
+            direct_sheet, start_row=etl_const.DirectCloSheet.DATA_START_ROW
+        )
+        indirect_students = self._read_indirect_roster(
+            indirect_sheet, start_row=etl_const.IndirectCloSheet.DATA_START_ROW
+        )
+        self._validate_roster_ids(
+            direct_sheet, students, etl_const.DirectCloSheet.STUDENT_ID_COL
+        )
+        self._validate_roster_ids(
+            indirect_sheet, indirect_students, etl_const.IndirectCloSheet.STUDENT_ID_COL
+        )
+        indirect_students_by_id = {
+            s["student_id"]: s for s in indirect_students if s["student_id"]
+        }
         indirect_students_by_name: dict[str, list[dict[str, Any]]] = {}
         direct_students_by_name: dict[str, list[dict[str, Any]]] = {}
-        for roster, lookup in ((students, direct_students_by_name), (indirect_students, indirect_students_by_name)):
+        for roster, lookup in (
+            (students, direct_students_by_name),
+            (indirect_students, indirect_students_by_name),
+        ):
             for student in roster:
                 name = self._normalize_name(student["student_name"])
                 if name:
@@ -132,11 +157,15 @@ class ExcelExtractor(Extractor):
             matched = indirect_students_by_id.get(student["student_id"])
             if matched is None:
                 candidates = indirect_students_by_name.get(name, [])
-                if len(candidates) > 1 or (len(direct_students_by_name.get(name, [])) > 1 and (candidates or student["student_id"] is None)):
+                if len(candidates) > 1 or (
+                    len(direct_students_by_name.get(name, [])) > 1
+                    and (candidates or student["student_id"] is None)
+                ):
                     raise WorkbookValidationError(
                         direct_sheet.title,
                         f"{etl_const.DirectCloSheet.STUDENT_NAME_COL}{student['row']}",
-                        "student_name", "Ambiguous name-based identity matching.",
+                        "student_name",
+                        "Ambiguous name-based identity matching.",
                     )
                 matched = candidates[0] if candidates else None
             matched_rows[student["row"]] = matched
@@ -151,12 +180,45 @@ class ExcelExtractor(Extractor):
             s_name = student["student_name"]
 
             for col_idx, clo_code in direct_clos:
-                p_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_SCORE, "prelim_score")
-                p_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_MAX).value)
-                m_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_SCORE, "midterm_score")
-                m_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_MAX).value)
-                f_score = self._read_numeric_cell(direct_sheet, s_row, col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_SCORE, "final_score")
-                f_max = self._as_optional_float(direct_sheet.cell(row=s_row, column=col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_MAX).value)
+                p_score = self._read_numeric_cell(
+                    direct_sheet,
+                    s_row,
+                    col_idx + etl_const.DirectCloSheet.BlockOffsets.PRELIM_SCORE,
+                    "prelim_score",
+                )
+                p_max = self._as_optional_float(
+                    direct_sheet.cell(
+                        row=s_row,
+                        column=col_idx
+                        + etl_const.DirectCloSheet.BlockOffsets.PRELIM_MAX,
+                    ).value
+                )
+                m_score = self._read_numeric_cell(
+                    direct_sheet,
+                    s_row,
+                    col_idx + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_SCORE,
+                    "midterm_score",
+                )
+                m_max = self._as_optional_float(
+                    direct_sheet.cell(
+                        row=s_row,
+                        column=col_idx
+                        + etl_const.DirectCloSheet.BlockOffsets.MIDTERM_MAX,
+                    ).value
+                )
+                f_score = self._read_numeric_cell(
+                    direct_sheet,
+                    s_row,
+                    col_idx + etl_const.DirectCloSheet.BlockOffsets.FINAL_SCORE,
+                    "final_score",
+                )
+                f_max = self._as_optional_float(
+                    direct_sheet.cell(
+                        row=s_row,
+                        column=col_idx
+                        + etl_const.DirectCloSheet.BlockOffsets.FINAL_MAX,
+                    ).value
+                )
 
                 extracted_map[(s_id, s_name, clo_code)] = StudentRawCloData(
                     student_id=s_id,
@@ -176,10 +238,15 @@ class ExcelExtractor(Extractor):
             for student in students:
                 s_id = student["student_id"]
                 s_name = student["student_name"]
-                
+
                 matched = matched_rows[student["row"]]
                 if matched:
-                    rating = self._read_numeric_cell(indirect_sheet, matched["row"], col_idx + etl_const.IndirectCloSheet.BlockOffsets.RATING, "indirect_rating")
+                    rating = self._read_numeric_cell(
+                        indirect_sheet,
+                        matched["row"],
+                        col_idx + etl_const.IndirectCloSheet.BlockOffsets.RATING,
+                        "indirect_rating",
+                    )
                 else:
                     rating = None
 
@@ -231,7 +298,9 @@ class ExcelExtractor(Extractor):
         col = etl_const.DirectCloSheet.FIRST_BLOCK_START_COL
         clos: list[tuple[int, str]] = []
         while col <= sheet.max_column:
-            val = sheet.cell(row=etl_const.DirectCloSheet.CLO_LABEL_ROW, column=col).value
+            val = sheet.cell(
+                row=etl_const.DirectCloSheet.CLO_LABEL_ROW, column=col
+            ).value
             if val is None or str(val).strip() == "":
                 break
             clo_name = str(val).strip()
@@ -249,28 +318,41 @@ class ExcelExtractor(Extractor):
         col = etl_const.IndirectCloSheet.FIRST_BLOCK_START_COL
         clos: list[tuple[int, str]] = []
         while col <= sheet.max_column:
-            val = sheet.cell(row=etl_const.IndirectCloSheet.HEADER_ROW, column=col).value
+            val = sheet.cell(
+                row=etl_const.IndirectCloSheet.HEADER_ROW, column=col
+            ).value
             if val is None or str(val).strip() == "":
                 break
             raw_text = str(val).strip()
-            clo_code = raw_text.split()[0].strip() if raw_text else f"CLO{len(clos) + 1}"
+            clo_code = (
+                raw_text.split()[0].strip() if raw_text else f"CLO{len(clos) + 1}"
+            )
             clos.append((col, clo_code))
             col += etl_const.IndirectCloSheet.BLOCK_WIDTH
         self._validate_clo_codes(sheet, clos, etl_const.IndirectCloSheet.HEADER_ROW)
         return clos
 
     @staticmethod
-    def _validate_clo_codes(sheet: Worksheet, clos: list[tuple[int, str]], row: int) -> None:
+    def _validate_clo_codes(
+        sheet: Worksheet, clos: list[tuple[int, str]], row: int
+    ) -> None:
         seen = {}
         for column, code in clos:
             cell = sheet.cell(row=row, column=column).coordinate
             if code in seen:
-                raise WorkbookValidationError(sheet.title, cell, "clo_code",
-                                              "Duplicate CLO code within worksheet.", seen[code])
+                raise WorkbookValidationError(
+                    sheet.title,
+                    cell,
+                    "clo_code",
+                    "Duplicate CLO code within worksheet.",
+                    seen[code],
+                )
             seen[code] = cell
 
     @staticmethod
-    def _validate_roster_ids(sheet: Worksheet, students: list[dict[str, Any]], id_column: str) -> None:
+    def _validate_roster_ids(
+        sheet: Worksheet, students: list[dict[str, Any]], id_column: str
+    ) -> None:
         seen = {}
         for student in students:
             student_id = student["student_id"]
@@ -278,37 +360,68 @@ class ExcelExtractor(Extractor):
                 continue
             cell = f"{id_column}{student['row']}"
             if student_id in seen:
-                raise WorkbookValidationError(sheet.title, cell, "student_id",
-                                              "Duplicate student ID within worksheet.", seen[student_id])
+                raise WorkbookValidationError(
+                    sheet.title,
+                    cell,
+                    "student_id",
+                    "Duplicate student ID within worksheet.",
+                    seen[student_id],
+                )
             seen[student_id] = cell
 
     @staticmethod
-    def _read_numeric_cell(sheet: Worksheet, row: int, column: int, field: str) -> float | None:
+    def _read_numeric_cell(
+        sheet: Worksheet, row: int, column: int, field: str
+    ) -> float | None:
         cell = sheet.cell(row=row, column=column)
         value = cell.value
-        if cell.data_type != "e" and (value is None or isinstance(value, str) and not value.strip()):
+        if cell.data_type != "e" and (
+            value is None or isinstance(value, str) and not value.strip()
+        ):
             return None
-        if cell.data_type == "e" or isinstance(value, bool) or not isinstance(value, (int, float, str)):
-            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
-                                          "Expected a finite numeric value or a blank cell.")
+        if (
+            cell.data_type == "e"
+            or isinstance(value, bool)
+            or not isinstance(value, (int, float, str))
+        ):
+            raise WorkbookValidationError(
+                sheet.title,
+                cell.coordinate,
+                field,
+                "Expected a finite numeric value or a blank cell.",
+            )
         try:
             number = float(value)
         except (ValueError, TypeError, OverflowError):
-            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
-                                          "Expected a finite numeric value or a blank cell.") from None
+            raise WorkbookValidationError(
+                sheet.title,
+                cell.coordinate,
+                field,
+                "Expected a finite numeric value or a blank cell.",
+            ) from None
         if not math.isfinite(number):
-            raise WorkbookValidationError(sheet.title, cell.coordinate, field,
-                                          "Expected a finite numeric value or a blank cell.")
+            raise WorkbookValidationError(
+                sheet.title,
+                cell.coordinate,
+                field,
+                "Expected a finite numeric value or a blank cell.",
+            )
         return number
 
-    def _read_direct_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, Any]]:
+    def _read_direct_roster(
+        self, sheet: Worksheet, start_row: int
+    ) -> list[dict[str, Any]]:
         """
         Reads student roster from Direct CLO sheet until a blank row or summary row label.
         """
         students: list[dict[str, Any]] = []
         id_col_idx = column_index_from_string(etl_const.DirectCloSheet.STUDENT_ID_COL)
-        name_col_idx = column_index_from_string(etl_const.DirectCloSheet.STUDENT_NAME_COL)
-        summary_col_idx = column_index_from_string(etl_const.DirectCloSheet.SUMMARY_ROW_LABEL_COL)
+        name_col_idx = column_index_from_string(
+            etl_const.DirectCloSheet.STUDENT_NAME_COL
+        )
+        summary_col_idx = column_index_from_string(
+            etl_const.DirectCloSheet.SUMMARY_ROW_LABEL_COL
+        )
         prefix = etl_const.DirectCloSheet.SUMMARY_ROW_LABEL_PREFIX.upper()
 
         row = start_row
@@ -326,29 +439,41 @@ class ExcelExtractor(Extractor):
                 break
 
             # Check stop condition: summary label
-            if (summary_str and summary_str.upper().startswith(prefix)) or \
-               (name_str and name_str.upper().startswith(prefix)) or \
-               (id_str and id_str.upper().startswith(prefix)):
+            if (
+                (summary_str and summary_str.upper().startswith(prefix))
+                or (name_str and name_str.upper().startswith(prefix))
+                or (id_str and id_str.upper().startswith(prefix))
+            ):
                 break
 
-            students.append({
-                "student_id": id_str,
-                "student_name": name_str or "",
-                "row": row,
-            })
+            students.append(
+                {
+                    "student_id": id_str,
+                    "student_name": name_str or "",
+                    "row": row,
+                }
+            )
             row += 1
 
         return students
 
-    def _read_indirect_roster(self, sheet: Worksheet, start_row: int) -> list[dict[str, Any]]:
+    def _read_indirect_roster(
+        self, sheet: Worksheet, start_row: int
+    ) -> list[dict[str, Any]]:
         """
         Reads student roster from Indirect CLO sheet until a blank row or summary row label.
         """
         students: list[dict[str, Any]] = []
         id_col_idx = column_index_from_string(etl_const.IndirectCloSheet.STUDENT_ID_COL)
-        name_col_idx = column_index_from_string(etl_const.IndirectCloSheet.STUDENT_NAME_COL)
-        summary_col_idx = column_index_from_string(etl_const.IndirectCloSheet.SUMMARY_ROW_LABEL_COL)
-        summary_labels = [s.upper() for s in etl_const.IndirectCloSheet.SUMMARY_ROW_LABELS]
+        name_col_idx = column_index_from_string(
+            etl_const.IndirectCloSheet.STUDENT_NAME_COL
+        )
+        summary_col_idx = column_index_from_string(
+            etl_const.IndirectCloSheet.SUMMARY_ROW_LABEL_COL
+        )
+        summary_labels = [
+            s.upper() for s in etl_const.IndirectCloSheet.SUMMARY_ROW_LABELS
+        ]
 
         row = start_row
         while row <= sheet.max_row:
@@ -365,20 +490,25 @@ class ExcelExtractor(Extractor):
                 break
 
             # Check stop condition: summary label
-            if any(lbl in (summary_str or "").upper() for lbl in summary_labels) or \
-               any(lbl in (id_str or "").upper() for lbl in summary_labels):
+            if any(lbl in (summary_str or "").upper() for lbl in summary_labels) or any(
+                lbl in (id_str or "").upper() for lbl in summary_labels
+            ):
                 break
 
-            students.append({
-                "student_id": id_str,
-                "student_name": name_str or "",
-                "row": row,
-            })
+            students.append(
+                {
+                    "student_id": id_str,
+                    "student_name": name_str or "",
+                    "row": row,
+                }
+            )
             row += 1
 
         return students
 
-    def _validate_sheet_marker(self, sheet: Worksheet, cell: str, expected: str) -> None:
+    def _validate_sheet_marker(
+        self, sheet: Worksheet, cell: str, expected: str
+    ) -> None:
         """Validates that a sheet contains the expected marker value at cell."""
         raw_val = sheet[cell].value
         norm_val = self._normalize_text(raw_val)
@@ -399,13 +529,15 @@ class ExcelExtractor(Extractor):
                 return workbook[name]
         return None
 
-    def _extract_section(self, ws_setup: Worksheet | None) -> tuple[ExtractedSection, SectionExtractionStatus]:
+    def _extract_section(
+        self, ws_setup: Worksheet | None
+    ) -> tuple[ExtractedSection, SectionExtractionStatus]:
         """
         Locates the section label on SETUP sheet and parses the program & section code.
         - Check A4 first; if not 'Section' (case-insensitive, trimmed, ignoring a trailing colon),
           scan column A for that label.
         - Read value from the cell immediately to its right (column B, same row).
-        - Format: <PROGRAM>-<YEAR><LETTER> with optional whitespace around the dash.
+        - Format: <PROGRAM>[dash/space]<YEAR><LETTER> (e.g. "BSIT-1A", "BSIT 1A", "BSIT1A").
         - If missing sheet: section_extraction="missing_sheet", section fields null.
         - If missing label or value: section_extraction="missing_field", section fields null.
         - If value present but doesn't match format: section_extraction="unparseable", keep raw, section fields null.
@@ -513,7 +645,9 @@ class ExcelExtractor(Extractor):
                 text = text[:-1].rstrip()
             return text.upper()
 
-        def _find_field_value(default_label_coord: str, default_val_coord: str, target_labels: list[str]) -> str | None:
+        def _find_field_value(
+            default_label_coord: str, default_val_coord: str, target_labels: list[str]
+        ) -> str | None:
             try:
                 # 1. Check default coordinate first
                 if _clean_label(ws_setup[default_label_coord].value) in target_labels:
@@ -526,7 +660,10 @@ class ExcelExtractor(Extractor):
                 max_c = min(10, ws_setup.max_column)
                 for r in range(1, max_r + 1):
                     for c in range(1, max_c + 1):
-                        if _clean_label(ws_setup.cell(row=r, column=c).value) in target_labels:
+                        if (
+                            _clean_label(ws_setup.cell(row=r, column=c).value)
+                            in target_labels
+                        ):
                             v = ws_setup.cell(row=r, column=c + 1).value
                             if v is not None and str(v).strip():
                                 return str(v).strip()
@@ -534,11 +671,40 @@ class ExcelExtractor(Extractor):
                 pass
             return None
 
-        course_title = _find_field_value("A3", "B3", ["COURSE TITLE", "SUBJECT TITLE", "TITLE"])
-        course_code = _find_field_value("C3", "D3", ["COURSE CODE", "SUBJECT CODE", "CODE"])
-        term = _find_field_value("C4", "D4", ["TERM / AY", "TERM/AY", "TERM", "SEMESTER / AY", "SEMESTER/AY", "SEMESTER", "TERM / ACADEMIC YEAR"])
-        faculty_name = _find_field_value("A5", "B5", ["FACULTY NAME", "FACULTY", "INSTRUCTOR NAME", "INSTRUCTOR", "PROFESSOR", "TEACHER"])
-        program = _find_field_value("C5", "D5", ["PROGRAM", "DEGREE PROGRAM", "DEGREE", "COURSE/PROGRAM"])
+        course_title = _find_field_value(
+            "A3", "B3", ["COURSE TITLE", "SUBJECT TITLE", "TITLE"]
+        )
+        course_code = _find_field_value(
+            "C3", "D3", ["COURSE CODE", "SUBJECT CODE", "CODE"]
+        )
+        term = _find_field_value(
+            "C4",
+            "D4",
+            [
+                "TERM / AY",
+                "TERM/AY",
+                "TERM",
+                "SEMESTER / AY",
+                "SEMESTER/AY",
+                "SEMESTER",
+                "TERM / ACADEMIC YEAR",
+            ],
+        )
+        faculty_name = _find_field_value(
+            "A5",
+            "B5",
+            [
+                "FACULTY NAME",
+                "FACULTY",
+                "INSTRUCTOR NAME",
+                "INSTRUCTOR",
+                "PROFESSOR",
+                "TEACHER",
+            ],
+        )
+        program = _find_field_value(
+            "C5", "D5", ["PROGRAM", "DEGREE PROGRAM", "DEGREE", "COURSE/PROGRAM"]
+        )
 
         return SetupMetadata(
             course_code=course_code,
@@ -574,22 +740,36 @@ class ExcelExtractor(Extractor):
         grading_system = None
 
         if ws_setup is not None:
-            course_title = (setup_metadata.course_title if setup_metadata else None) or self._as_optional_string(ws_setup["B3"].value)
-            course_code = (setup_metadata.course_code if setup_metadata else None) or self._as_optional_string(ws_setup["D3"].value)
-            section = (section_info.raw if section_info else None) or self._as_optional_string(ws_setup["B4"].value)
-            sem = (setup_metadata.term if setup_metadata else None) or self._as_optional_string(ws_setup["D4"].value)
+            course_title = (
+                setup_metadata.course_title if setup_metadata else None
+            ) or self._as_optional_string(ws_setup["B3"].value)
+            course_code = (
+                setup_metadata.course_code if setup_metadata else None
+            ) or self._as_optional_string(ws_setup["D3"].value)
+            section = (
+                section_info.raw if section_info else None
+            ) or self._as_optional_string(ws_setup["B4"].value)
+            sem = (
+                setup_metadata.term if setup_metadata else None
+            ) or self._as_optional_string(ws_setup["D4"].value)
             if sem:
                 semester_year = sem
-            instructor_name = (setup_metadata.faculty_name if setup_metadata else None) or self._as_optional_string(ws_setup["B5"].value)
+            instructor_name = (
+                setup_metadata.faculty_name if setup_metadata else None
+            ) or self._as_optional_string(ws_setup["B5"].value)
 
             # Check course type if specified in SETUP (e.g. B6)
             c_type = self._as_optional_string(ws_setup["B6"].value)
             if c_type:
                 course_type = c_type.strip().upper()
                 if course_type != "LECTURE":
-                    raise UnsupportedCourseType(course_type=c_type, supported_types=["LECTURE"])
+                    raise UnsupportedCourseType(
+                        course_type=c_type, supported_types=["LECTURE"]
+                    )
 
-            thresh_val = self._as_optional_float(ws_setup["H9"].value) or self._as_optional_float(ws_setup["E9"].value)
+            thresh_val = self._as_optional_float(
+                ws_setup["H9"].value
+            ) or self._as_optional_float(ws_setup["E9"].value)
             if thresh_val is not None:
                 threshold = thresh_val / 100.0 if thresh_val > 1.0 else thresh_val
 
@@ -623,7 +803,9 @@ class ExcelExtractor(Extractor):
                 return str(path)
         if isinstance(source, (str, Path)):
             return str(source)
-        raise InvalidWorkbook(file_path=str(source), underlying_error="Invalid source type")
+        raise InvalidWorkbook(
+            file_path=str(source), underlying_error="Invalid source type"
+        )
 
     @staticmethod
     def _normalize_name(name: str) -> str:
