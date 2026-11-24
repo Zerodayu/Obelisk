@@ -34,6 +34,14 @@ function normalizeCompact(val: string | null | undefined): string {
 	return val.replace(/\s+/g, "").toUpperCase();
 }
 
+// NOTE: "BSRT 3A"/"BSRT-3A"/"BSRT3A" → "3A" — program is compared separately (rule 2).
+function sectionCodeOnly(sectionCode: string, programCode: string): string {
+	const code = normalizeCompact(sectionCode);
+	const prog = normalizeCompact(programCode);
+	if (!prog || !code.startsWith(prog)) return code;
+	return code.slice(prog.length).replace(/^[^A-Z0-9]+/, "");
+}
+
 /**
  * Normalizes semester names to a standard numerical or label representation:
  * 1 (1st sem / 1st / first), 2 (2nd sem / 2nd / second), or "summer".
@@ -102,7 +110,10 @@ export function compareSectionToWorkbook(
 
 	// 1. Section Code comparison
 	const workbookSection = normalizeCompact(loaded.section?.code);
-	const selectedSection = normalizeCompact(classSection.sectionCode);
+	const selectedSection = sectionCodeOnly(
+		classSection.sectionCode,
+		classSection.course.program.code,
+	);
 
 	if (isOk) {
 		if (!workbookSection) {

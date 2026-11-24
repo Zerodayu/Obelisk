@@ -103,6 +103,52 @@ describe("section-verifier: compareSectionToWorkbook", () => {
 		expect(result.mismatches).toHaveLength(0);
 	});
 
+	it("matches when selected sectionCode embeds the program prefix", () => {
+		const result = compareSectionToWorkbook(
+			{
+				...BASE_CLASS_SECTION,
+				sectionCode: "BSRT 3A", // non-canonical: program baked into code
+				course: { code: "RT 101", program: { code: "BSRT" } },
+			},
+			{
+				section_extraction: "ok",
+				section: {
+					code: "3A",
+					program: "BSRT",
+					year_level: 3,
+					section_letter: "A",
+					raw: "BSRT-3A",
+				},
+			},
+		);
+
+		expect(result.status).toBe("match");
+		expect(result.mismatches).toHaveLength(0);
+	});
+
+	it("still mismatches on program when sectionCode embeds a different program", () => {
+		const result = compareSectionToWorkbook(
+			{
+				...BASE_CLASS_SECTION,
+				sectionCode: "BSRT 3A",
+				course: { code: "IT 101", program: { code: "BSIT" } },
+			},
+			{
+				section_extraction: "ok",
+				section: {
+					code: "3A",
+					program: "BSRT",
+					year_level: 3,
+					section_letter: "A",
+					raw: "BSRT-3A",
+				},
+			},
+		);
+
+		expect(result.status).toBe("mismatch");
+		expect(result.mismatches.some((m) => m.includes("program"))).toBe(true);
+	});
+
 	it("returns mismatch when section code differs", () => {
 		const result = compareSectionToWorkbook(BASE_CLASS_SECTION, {
 			section_extraction: "ok",
