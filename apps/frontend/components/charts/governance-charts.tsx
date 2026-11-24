@@ -247,20 +247,28 @@ export function AtRiskBars({ data: override }: { data?: AtRiskDatum[] }) {
 	}
 	const rows = [...byClo].map(([clo, count]) => ({ clo, count }));
 	if (rows.length === 0) return <ChartEmptyState />;
+	const total = rows.reduce((sum, row) => sum + row.count, 0);
 	return (
-		<EChartsBarChart
-			data={rows}
-			config={atRiskConfig}
-			xDataKey="clo"
-			layout="horizontal"
-			className="h-full w-full"
-		>
-			<EChartsBarChart.Grid />
-			<EChartsBarChart.XAxis label="Flags" />
-			<EChartsBarChart.YAxis dataKey="clo" />
-			<EChartsBarChart.Tooltip />
-			<EChartsBarChart.Bar dataKey="count" />
-		</EChartsBarChart>
+		<div className="flex h-full w-full flex-col">
+			<p className="text-muted-foreground text-xs">
+				Total flags: <span className="font-semibold">{total}</span>
+			</p>
+			<div className="min-h-0 flex-1">
+				<EChartsBarChart
+					data={rows}
+					config={atRiskConfig}
+					xDataKey="clo"
+					layout="horizontal"
+					className="h-full w-full"
+				>
+					<EChartsBarChart.Grid />
+					<EChartsBarChart.XAxis label="Flags" />
+					<EChartsBarChart.YAxis dataKey="clo" />
+					<EChartsBarChart.Tooltip />
+					<EChartsBarChart.Bar dataKey="count" />
+				</EChartsBarChart>
+			</div>
+		</div>
 	);
 }
 
