@@ -24,7 +24,10 @@ import {
 	selectedProgramIdAtom,
 	selectedTermIdAtom,
 } from "@/lib/store/atoms/academic";
-import { refreshCohortTrendsAtom } from "@/lib/store/atoms/attainments";
+import {
+	refreshCohortStudentsAtom,
+	refreshCohortTrendsAtom,
+} from "@/lib/store/atoms/attainments";
 import {
 	generateCohortTracking,
 	saveCohortAnnotations,
@@ -148,6 +151,7 @@ export function CohortTrackingForm() {
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
 	const refreshCohort = useSetAtom(refreshCohortTrendsAtom);
+	const refreshStudents = useSetAtom(refreshCohortStudentsAtom);
 	const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -211,6 +215,7 @@ export function CohortTrackingForm() {
 				// NOTE: fall back to the newest term of the fresh payload.
 				setSelectedTermId(null);
 				refreshCohort();
+				refreshStudents();
 				toast.create({ title: "Cohort tracking generated", type: "success" });
 			} else {
 				toastError({

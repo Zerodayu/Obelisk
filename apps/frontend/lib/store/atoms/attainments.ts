@@ -17,6 +17,10 @@ import type {
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData } from "@/lib/store/async-atom";
+import {
+	selectedProgramIdAtom,
+	selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
 
 const CLO_SUMMARY = "/rollup/clo-attainment-summary";
@@ -53,6 +57,22 @@ interface CohortPayload {
 			semester: string;
 			averagePct: number | null;
 		}[];
+	}[];
+}
+
+/** Payload subset of `GET /rollup/cohort-tracking/students` (`rollup/model.ts`). */
+interface CohortStudentsPayload {
+	termId: string | null;
+	cloCodes: string[];
+	ploCodes: string[];
+	students: {
+		studentId: string;
+		studentName: string;
+		studentNumber: string;
+		yearLevel: number | null;
+		cloScores: Record<string, number>;
+		ploScores: Record<string, number>;
+		status: "MET" | "NOT MET";
 	}[];
 }
 
@@ -144,6 +164,26 @@ export const {
 		return rows;
 	}),
 );
+
+/**
+ * Per-student CLO/PLO attainment for the cohort-tracking table
+ * (`GET /rollup/cohort-tracking/students`). One row per student; columns are
+ * the union of the program's CLO/PLO codes, so the grid builds them
+ * dynamically. Keyed to the dashboard's program/term picker.
+ */
+export const {
+	dataAtom: cohortStudentsDataAtom,
+	stateAtom: cohortStudentsStateAtom,
+	refreshAtom: refreshCohortStudentsAtom,
+} = atomWithAsyncData<CohortStudentsPayload | null>(null, (get, signal) => {
+	const programId = get(selectedProgramIdAtom).trim();
+	const termId = get(selectedTermIdAtom).trim();
+	if (!programId) return Promise.resolve(null);
+	return api.get<CohortStudentsPayload>("/rollup/cohort-tracking/students", {
+		signal,
+		query: { programId, ...(termId ? { termId } : {}) },
+	});
+});
 
 /**
  * 4-tier rubric score bands (`GET /rollup/score-bands`).

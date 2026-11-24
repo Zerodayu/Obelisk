@@ -33,6 +33,8 @@ import type {
 	CloSummaryRow,
 	CohortAnnotations,
 	CohortPayload,
+	CohortStudentRow,
+	CohortStudentsPayload,
 	PloSummaryPayload,
 	PloSummaryRow,
 	RollupSubmissionListItem,
@@ -840,6 +842,135 @@ export class CohortTrackingService {
 		return { id: updated.id, annotations: annotations.annotations };
 	}
 
+	/**
+	 * Per-student CLO/PLO attainment for the cohort-tracking screen. One row
+	 * per student in the program's term (default latest with data): each CLO
+	 * column is the student's mean composite across their courses with that
+	 * code, each PLO column the mean of the CLO composites mapped to it (same
+	 * rule as the aggregate sheet), status NOT MET when any CLO dips under the
+	 * 70% floor.
+	 */
+	async listStudents(
+		programId: string,
+		termId?: string,
+	): Promise<CohortStudentsPayload> {
+		const program = await prisma.program.findUnique({
+			where: { id: programId },
+			select: { code: true, name: true },
+		});
+		if (!program) {
+			throw new RollupSourceNotFoundError(`Program '${programId}' not found`);
+		}
+
+		const reportingTermId =
+			termId ?? (await this.latestTermWithData(programId));
+		const sections = await prisma.classSection.findMany({
+			where: { course: { programId }, termId: reportingTermId },
+			select: { id: true },
+		});
+		const term = await prisma.academicTerm.findUnique({
+			where: { id: reportingTermId },
+			select: { schoolYear: true, semester: true },
+		});
+
+		const attainments = await prisma.cloAttainment.findMany({
+			where: { classSectionId: { in: sections.map((s) => s.id) } },
+			include: {
+				clo: {
+					select: {
+						code: true,
+						cloToPloMaps: { select: { plo: { select: { code: true } } } },
+					},
+				},
+				student: {
+					select: {
+						id: true,
+						firstName: true,
+						lastName: true,
+						studentNumber: true,
+						yearLevel: true,
+					},
+				},
+			},
+		});
+
+		const meta = new Map<
+			string,
+			{ name: string; number: string; yearLevel: number | null }
+		>();
+		const cloValues = new Map<string, Map<string, number[]>>();
+		const ploValues = new Map<string, Map<string, number[]>>();
+		const cloCodes = new Set<string>();
+		const ploCodes = new Set<string>();
+
+		for (const row of attainments) {
+			const pct = toNumber(row.compositeScorePct);
+			const studentId = row.student.id;
+			if (!meta.has(studentId)) {
+				meta.set(studentId, {
+					name: `${row.student.lastName}, ${row.student.firstName}`.trim(),
+					number: row.student.studentNumber,
+					yearLevel: row.student.yearLevel,
+				});
+			}
+			cloCodes.add(row.clo.code);
+			if (pct !== null) {
+				const bucket = cloValues.get(studentId) ?? new Map<string, number[]>();
+				const values = bucket.get(row.clo.code) ?? [];
+				values.push(pct);
+				bucket.set(row.clo.code, values);
+				cloValues.set(studentId, bucket);
+			}
+			for (const mapped of row.clo.cloToPloMaps) {
+				ploCodes.add(mapped.plo.code);
+				if (pct !== null) {
+					const bucket =
+						ploValues.get(studentId) ?? new Map<string, number[]>();
+					const values = bucket.get(mapped.plo.code) ?? [];
+					values.push(pct);
+					bucket.set(mapped.plo.code, values);
+					ploValues.set(studentId, bucket);
+				}
+			}
+		}
+
+		const students: CohortStudentRow[] = [];
+		for (const [studentId, info] of meta) {
+			const cloScores: Record<string, number> = {};
+			for (const [code, values] of cloValues.get(studentId) ?? []) {
+				cloScores[code] = meanPct(values) ?? 0;
+			}
+			const ploScores: Record<string, number> = {};
+			for (const [code, values] of ploValues.get(studentId) ?? []) {
+				ploScores[code] = meanPct(values) ?? 0;
+			}
+			students.push({
+				studentId,
+				studentName: info.name,
+				studentNumber: info.number,
+				yearLevel: info.yearLevel,
+				cloScores,
+				ploScores,
+				status: Object.values(cloScores).some((v) => v < MIN_ATTAINMENT_PCT)
+					? "NOT MET"
+					: "MET",
+			});
+		}
+		students.sort((a, b) => a.studentName.localeCompare(b.studentName));
+
+		return {
+			programId,
+			termId: reportingTermId,
+			program: { code: program.code, name: program.name },
+			term: term
+				? { schoolYear: term.schoolYear, semester: term.semester }
+				: null,
+			cloCodes: [...cloCodes].sort(codeOrder),
+			ploCodes: [...ploCodes].sort(codeOrder),
+			students,
+		};
+	}
+
 	private async latestTermWithData(programId: string): Promise<string> {
 		const term = await prisma.academicTerm.findFirst({
 			where: { classSections: { some: { course: { programId } } } },
@@ -1159,6 +1290,11 @@ function buildCohortPloEntries(
 function toNumber(value: number | null | Prisma.Decimal): number | null {
 	if (value === null || value === undefined) return null;
 	return Number(value);
+}
+
+/** Orders codes numerically so CLO2/PLO2 precede CLO10/PLO10. */
+function codeOrder(a: string, b: string): number {
+	return a.localeCompare(b, undefined, { numeric: true });
 }
 
 /** Converts a python-server 0–1 fraction to the 0–100 percentage scale. */

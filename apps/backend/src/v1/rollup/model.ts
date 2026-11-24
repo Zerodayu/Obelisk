@@ -70,6 +70,20 @@ export const RollupListQuerySchema = t.Object({
 
 export type RollupListQuery = typeof RollupListQuerySchema.static;
 
+export const CohortStudentsQuerySchema = t.Object({
+	programId: t.String({
+		description: "Program whose per-student CLO/PLO attainment to list",
+	}),
+	termId: t.Optional(
+		t.String({
+			description:
+				"Optional term filter; defaults to the latest term with data",
+		}),
+	),
+});
+
+export type CohortStudentsQuery = typeof CohortStudentsQuerySchema.static;
+
 // --- Assembled payload types (returned by generate/get) --------------------
 
 export type CloSummaryRow = {
@@ -151,6 +165,26 @@ export type CohortPayload = {
 		attainmentPct: number;
 		achieved: boolean;
 	}[];
+};
+
+export type CohortStudentRow = {
+	studentId: string;
+	studentName: string;
+	studentNumber: string;
+	yearLevel: number | null;
+	cloScores: Record<string, number>;
+	ploScores: Record<string, number>;
+	status: "MET" | "NOT MET";
+};
+
+export type CohortStudentsPayload = {
+	programId: string;
+	termId: string | null;
+	program: { code: string; name: string };
+	term: { schoolYear: string; semester: string } | null;
+	cloCodes: string[];
+	ploCodes: string[];
+	students: CohortStudentRow[];
 };
 
 export type RollupSubmissionListItem = {

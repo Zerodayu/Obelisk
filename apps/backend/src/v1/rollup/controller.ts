@@ -1,5 +1,9 @@
 import { cached } from "@lib/cache";
-import { assertSubmissionInScope, unitScopeOf } from "@lib/unit-scope";
+import {
+	assertProgramInScope,
+	assertSubmissionInScope,
+	unitScopeOf,
+} from "@lib/unit-scope";
 import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 
@@ -7,6 +11,7 @@ import {
 	CloSummaryParamsSchema,
 	CohortAnnotationsSchema,
 	CohortParamsSchema,
+	CohortStudentsQuerySchema,
 	PloSummaryParamsSchema,
 	RollupListQuerySchema,
 } from "./model";
@@ -295,6 +300,40 @@ export const rollupPlugin = new Elysia({
 				responses: {
 					200: { description: "List of cohort tracking submissions" },
 					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/cohort-tracking/students",
+		cached(60, async ({ query, user, set }) => {
+			await assertProgramInScope(unitScopeOf(user), query.programId);
+			try {
+				return await cohortTrackingService.listStudents(
+					query.programId,
+					query.termId,
+				);
+			} catch (error) {
+				if (error instanceof RollupSourceNotFoundError) {
+					set.status = 404;
+					return { error: error.message };
+				}
+				throw error;
+			}
+		}),
+		{
+			auth: true,
+			query: CohortStudentsQuerySchema,
+			detail: {
+				summary: "List per-student CLO/PLO attainment for a program",
+				description:
+					"One row per student in the program's latest (or given) term: mean CLO composite per code and PLO scores derived through the CLO→PLO map.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Per-student cohort rows" },
+					401: { description: "Unauthorized" },
+					403: { description: "Program outside the caller's unit" },
+					404: { description: "Program or stored attainment not found" },
 				},
 			},
 		},

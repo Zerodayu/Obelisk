@@ -6,16 +6,14 @@ import {
 	type SortingState,
 	useTable,
 } from "@tanstack/react-table";
-import Avatar from "boring-avatars";
+import { useAtomValue } from "jotai";
 import {
-	CalendarClockIcon,
 	CircleAlertIcon,
 	CircleCheckIcon,
 	FunnelXIcon,
 	GraduationCapIcon,
 	ListFilterIcon,
 	TargetIcon,
-	UsersIcon,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -36,32 +34,12 @@ import {
 	Filters,
 } from "@/components/reui/filters";
 import { Button } from "@/components/ui/button";
+import { cohortStudentsDataAtom } from "@/lib/store/atoms/attainments";
 import { cn } from "@/lib/utils";
 
 type YearKey = "Y1" | "Y2" | "Y3" | "Y4";
 
 const YEAR_KEYS: YearKey[] = ["Y1", "Y2", "Y3", "Y4"];
-
-// NOTE: demo column set — one column per CLO/PLO code, matching the seeded
-// workbook CLOs (CLO1–CLO5) and the first five PLOs. Cohort stays a row/filter.
-const CLO_KEYS = ["CLO1", "CLO2", "CLO3", "CLO4", "CLO5"] as const;
-const PLO_KEYS = ["PLO1", "PLO2", "PLO3", "PLO4", "PLO5"] as const;
-
-type CloKey = (typeof CLO_KEYS)[number];
-type PloKey = (typeof PLO_KEYS)[number];
-type CodeKey = CloKey | PloKey;
-
-interface CohortStudent {
-	id: string;
-	name: string;
-	studentId: string;
-	program: string;
-	cohort: YearKey;
-	term: string;
-	cloScores: Record<CloKey, number>;
-	ploScores: Record<PloKey, number>;
-	status: "met" | "not-met";
-}
 
 const COHORT_COLORS: Record<YearKey, string> = {
 	Y1: "bg-violet-500",
@@ -70,100 +48,43 @@ const COHORT_COLORS: Record<YearKey, string> = {
 	Y4: "bg-emerald-500",
 };
 
-const PROGRAMS = ["BSIT", "BSCS", "BSCpE", "BSCE"];
-const TERMS = ["2023-1S", "2023-2S", "2024-1S", "2024-2S"];
-
-const STUDENT_NAMES = [
-	"Alyza Santos",
-	"Miguel Dela Cruz",
-	"Gabrielle Reyes",
-	"Joshua Ramos",
-	"Sofia Mendoza",
-	"Rafael Bautista",
-	"Isabella Aquino",
-	"Lorenzo Garcia",
-	"Kassandra Lim",
-	"Marco Antonio",
-	"Julia Navarro",
-	"Nathaniel Cruz",
-	"Camille Domingo",
-	"Adrian Villanueva",
-	"Bea Soriano",
-	"Christian Pascual",
-	"Nica Fernandez",
-	"Julian Castillo",
-	"Trisha Aguilar",
-	"Ethan Morales",
-];
-
-// Composite score per cohort-term, kept consistent with the `CohortTrendDatum`
-// series the chart above renders — students vary around the mean so the MET/NOT
-// MET badges (≥70% floor, server-derived in prod) spread.
-const COHORT_MEANS: Record<YearKey, Record<string, number>> = {
-	Y1: { "2023-1S": 74.0, "2023-2S": 76.5, "2024-1S": 78.2, "2024-2S": 80.1 },
-	Y2: { "2023-1S": 75.8, "2023-2S": 78.0, "2024-1S": 79.4, "2024-2S": 81.5 },
-	Y3: { "2023-1S": 77.3, "2023-2S": 79.1, "2024-1S": 82.0, "2024-2S": 83.4 },
-	Y4: { "2023-1S": 79.9, "2023-2S": 81.3, "2024-1S": 84.6, "2024-2S": 85.8 },
-};
-
-// NOTE: demo-only per-code offsets around the cohort mean — kept small enough
-// that most cells clear the 70% floor but a few dip under it (NOT MET).
-const CODE_OFFSETS: Record<CodeKey, number> = {
-	CLO1: 3.5,
-	CLO2: -5.5,
-	CLO3: 1.2,
-	CLO4: -2.4,
-	CLO5: 4.8,
-	PLO1: 2.1,
-	PLO2: -4.3,
-	PLO3: 0.7,
-	PLO4: -1.8,
-	PLO5: 3.3,
-};
-
-function scoreFor(code: CodeKey, mean: number, index: number): number {
-	return Math.round(mean + CODE_OFFSETS[code] + ((index % 5) - 2) * 3.7);
+/** One row per student, backed by `GET /rollup/cohort-tracking/students`. */
+interface CohortStudentRow {
+	studentId: string;
+	studentName: string;
+	studentNumber: string;
+	yearLevel: number | null;
+	cloScores: Record<string, number>;
+	ploScores: Record<string, number>;
+	status: "MET" | "NOT MET";
 }
 
-function buildDemoData(): CohortStudent[] {
-	return STUDENT_NAMES.map((name, index) => {
-		const cohort = YEAR_KEYS[index % YEAR_KEYS.length];
-		const term = TERMS[index % TERMS.length];
-		const mean = COHORT_MEANS[cohort][term] ?? COHORT_MEANS[cohort]["2023-1S"];
-
-		const cloScores = Object.fromEntries(
-			CLO_KEYS.map((code) => [code, scoreFor(code, mean, index)]),
-		) as Record<CloKey, number>;
-		const ploScores = Object.fromEntries(
-			PLO_KEYS.map((code) => [code, scoreFor(code, mean, index + 2)]),
-		) as Record<PloKey, number>;
-
-		const all = [...Object.values(cloScores), ...Object.values(ploScores)];
-		const notMet = all.some((score) => score < 70);
-
-		return {
-			id: String(index + 1),
-			name,
-			studentId: `2023-${(1000 + index * 13).toString()}`,
-			program: PROGRAMS[index % PROGRAMS.length],
-			cohort,
-			term,
-			cloScores,
-			ploScores,
-			status: notMet ? "not-met" : "met",
-		};
-	});
+function cohortLabel(yearLevel: number | null): string {
+	return yearLevel === null ? "—" : `Y${yearLevel}`;
 }
 
-const demoData = buildDemoData();
-
-function matchesFilter(student: CohortStudent, filter: Filter): boolean {
+function matchesFilter(student: CohortStudentRow, filter: Filter): boolean {
 	const { field, operator, values } = filter;
-	const value = student[field as keyof CohortStudent];
+
+	if (field === "cohort") {
+		const value = cohortLabel(student.yearLevel);
+		switch (operator) {
+			case "is":
+				return values.length === 0 || values.includes(value);
+			case "is_not":
+				return values.length === 0 || !values.includes(value);
+			case "is_any_of":
+				return values.length === 0 || values.includes(value);
+			case "is_not_any_of":
+				return values.length === 0 || !values.includes(value);
+			default:
+				return true;
+		}
+	}
 
 	if (field === "status") {
 		const match = (v: unknown) =>
-			v === "met" ? "met" === value : "not-met" === value;
+			v === "met" ? "MET" === student.status : "NOT MET" === student.status;
 		switch (operator) {
 			case "is":
 				return values.length === 0 || match(values[0]);
@@ -178,42 +99,26 @@ function matchesFilter(student: CohortStudent, filter: Filter): boolean {
 		}
 	}
 
-	if (typeof value === "string") {
-		switch (operator) {
-			case "is":
-				return values.length === 0 || values.includes(value);
-			case "is_not":
-				return values.length === 0 || !values.includes(value);
-			case "is_any_of":
-				return values.length === 0 || values.includes(value);
-			case "is_not_any_of":
-				return values.length === 0 || !values.includes(value);
-			case "contains":
-				return values.some((v) =>
-					value.toLowerCase().includes(String(v).toLowerCase()),
-				);
-			default:
-				return true;
-		}
-	}
-
 	return true;
 }
 
 function applyFilters(
-	data: CohortStudent[],
+	data: CohortStudentRow[],
 	filters: Filter[],
-): CohortStudent[] {
+): CohortStudentRow[] {
 	if (filters.length === 0) return data;
 	return data.filter((student) =>
 		filters.every((f) => matchesFilter(student, f)),
 	);
 }
 
-function AttainmentCell({ score }: { score: number }) {
+function AttainmentCell({ score }: { score: number | undefined }) {
+	if (score === undefined) {
+		return <span className="text-muted-foreground">—</span>;
+	}
 	const met = score >= 70;
 	return (
-		<div className="flex items-center gap-2">
+		<div className="flex flex-col items-center gap-0.5">
 			<Badge variant={met ? "success-outline" : "warning-outline"}>
 				{met ? "MET" : "NOT MET"}
 			</Badge>
@@ -225,20 +130,25 @@ function AttainmentCell({ score }: { score: number }) {
 }
 
 export function CohortTrackingGrid() {
+	const payload = useAtomValue(cohortStudentsDataAtom);
+	const students = payload?.students ?? [];
+	const cloCodes = payload?.cloCodes ?? [];
+	const ploCodes = payload?.ploCodes ?? [];
+
 	const [pagination, setPagination] = useState<PaginationState>({
 		pageIndex: 0,
 		pageSize: 10,
 	});
 	const [sorting, setSorting] = useState<SortingState>([
-		{ id: "cohort", desc: false },
+		{ id: "name", desc: false },
 	]);
 	const [filters, setFilters] = useState<Filter[]>([
-		createFilter("cohort", "is_any_of", ["Y1", "Y2", "Y3", "Y4"]),
+		createFilter("cohort", "is_any_of", [...YEAR_KEYS]),
 	]);
 
 	const filteredData = useMemo(
-		() => applyFilters(demoData, filters),
-		[filters],
+		() => applyFilters(students, filters),
+		[students, filters],
 	);
 
 	const handleFiltersChange = useCallback((next: Filter[]) => {
@@ -271,34 +181,11 @@ export function CohortTrackingGrid() {
 							),
 						})),
 					},
-					{
-						key: "term",
-						label: "Term",
-						icon: <CalendarClockIcon />,
-						type: "select",
-						searchable: false,
-						className: "w-[180px]",
-						defaultOperator: "is",
-						options: TERMS.map((term) => ({ value: term, label: term })),
-					},
 				],
 			},
 			{
-				group: "Student",
+				group: "Status",
 				fields: [
-					{
-						key: "program",
-						label: "Program",
-						icon: <UsersIcon />,
-						type: "select",
-						searchable: false,
-						className: "w-[180px]",
-						defaultOperator: "is",
-						options: PROGRAMS.map((program) => ({
-							value: program,
-							label: program,
-						})),
-					},
 					{
 						key: "status",
 						label: "Attainment status",
@@ -325,103 +212,93 @@ export function CohortTrackingGrid() {
 		[],
 	);
 
-	const columns = useMemo<ColumnDef<DataGridFeatures, CohortStudent>[]>(
+	const columns = useMemo<ColumnDef<DataGridFeatures, CohortStudentRow>[]>(
 		() => [
 			{
-				accessorKey: "name",
+				accessorKey: "studentName",
 				id: "name",
 				header: "Student",
 				cell: ({ row }) => (
-					<div className="flex items-center gap-3">
-						<Avatar name={row.original.name} variant="beam" size={32} />
-						<div className="space-y-px">
-							<div className="text-foreground font-medium">
-								{row.original.name}
-							</div>
-							<div className="text-muted-foreground font-mono text-xs">
-								{row.original.studentId}
-							</div>
+					<div className="space-y-px">
+						<div className="text-foreground font-medium">
+							{row.original.studentName}
+						</div>
+						<div className="text-muted-foreground font-mono text-xs">
+							{row.original.studentNumber || "—"}
 						</div>
 					</div>
 				),
-				size: 240,
+				size: 220,
 				enableSorting: true,
 				enableHiding: false,
 			},
 			{
-				accessorKey: "cohort",
+				accessorFn: (row) => row.yearLevel ?? 0,
 				id: "cohort",
 				header: "Cohort",
-				cell: ({ row }) => (
-					<div className="flex items-center gap-2">
-						<div
-							className={cn(
-								"size-2.25 shrink-0 rounded-full",
-								COHORT_COLORS[row.original.cohort],
+				cell: ({ row }) => {
+					const label = cohortLabel(row.original.yearLevel);
+					const year = row.original.yearLevel;
+					return (
+						<div className="flex items-center gap-2">
+							{year !== null && (
+								<div
+									className={cn(
+										"size-2.25 shrink-0 rounded-full",
+										COHORT_COLORS[cohortLabel(year) as YearKey],
+									)}
+								/>
 							)}
-						/>
-						<span className="text-foreground font-medium">
-							{row.original.cohort}
-						</span>
-					</div>
-				),
+							<span className="text-foreground font-medium">{label}</span>
+						</div>
+					);
+				},
 				size: 90,
 				enableSorting: true,
 				enableHiding: false,
 			},
-			{
-				accessorKey: "program",
-				id: "program",
-				header: "Program",
-				cell: ({ row }) => (
-					<Badge variant="secondary">{row.original.program}</Badge>
-				),
-				size: 110,
-				enableSorting: true,
-				enableHiding: false,
-			},
-			// NOTE: one column per CLO/PLO code replaces the old Y1–Y4 year columns;
-			// the cohort stays on the row + filter.
-			...CLO_KEYS.map<ColumnDef<DataGridFeatures, CohortStudent>>((code) => ({
-				accessorKey: code,
-				id: code,
-				header: code,
-				cell: ({ row }) => (
-					<AttainmentCell score={row.original.cloScores[code]} />
-				),
-				size: 130,
-				enableSorting: true,
-				enableHiding: true,
-			})),
-			...PLO_KEYS.map<ColumnDef<DataGridFeatures, CohortStudent>>((code) => ({
-				accessorKey: code,
-				id: code,
-				header: code,
-				cell: ({ row }) => (
-					<AttainmentCell score={row.original.ploScores[code]} />
-				),
-				size: 130,
-				enableSorting: true,
-				enableHiding: true,
-			})),
+			...cloCodes.map<ColumnDef<DataGridFeatures, CohortStudentRow>>(
+				(code) => ({
+					id: code,
+					accessorFn: (row) => row.cloScores[code],
+					header: code,
+					cell: ({ row }) => (
+						<AttainmentCell score={row.original.cloScores[code]} />
+					),
+					size: 130,
+					enableSorting: true,
+					enableHiding: true,
+				}),
+			),
+			...ploCodes.map<ColumnDef<DataGridFeatures, CohortStudentRow>>(
+				(code) => ({
+					id: code,
+					accessorFn: (row) => row.ploScores[code],
+					header: code,
+					cell: ({ row }) => (
+						<AttainmentCell score={row.original.ploScores[code]} />
+					),
+					size: 130,
+					enableSorting: true,
+					enableHiding: true,
+				}),
+			),
 			{
 				accessorKey: "status",
 				id: "status",
 				header: "Status",
-				cell: ({ row }) => {
-					const met = row.original.status === "met";
-					return met ? (
+				cell: ({ row }) =>
+					row.original.status === "MET" ? (
 						<Badge variant="success-outline">MET</Badge>
 					) : (
 						<Badge variant="warning-outline">NOT MET</Badge>
-					);
-				},
+					),
 				size: 100,
 				enableSorting: true,
 				enableHiding: false,
 			},
 		],
-		[],
+		[cloCodes, ploCodes],
 	);
 
 	const table = useTable({
@@ -429,7 +306,7 @@ export function CohortTrackingGrid() {
 		columns,
 		data: filteredData,
 		pageCount: Math.ceil((filteredData?.length || 0) / pagination.pageSize),
-		getRowId: (row: CohortStudent) => row.id,
+		getRowId: (row: CohortStudentRow) => row.studentId,
 		state: {
 			pagination,
 			sorting,
@@ -437,6 +314,15 @@ export function CohortTrackingGrid() {
 		onPaginationChange: setPagination,
 		onSortingChange: setSorting,
 	});
+
+	if (!payload || students.length === 0) {
+		return (
+			<p className="text-muted-foreground text-sm">
+				No per-student attainment for this program yet — upload a class record
+				first.
+			</p>
+		);
+	}
 
 	return (
 		<div className="space-y-2.5">
