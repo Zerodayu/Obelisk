@@ -11,6 +11,7 @@ import { ProgramSelect } from "@/components/ui/program-select";
 import { TermSelect } from "@/components/ui/term-select";
 import { canAccess } from "@/lib/role-access";
 import {
+	refreshPrograms,
 	refreshTerms,
 	selectedClassSectionIdAtom,
 	selectedProgramIdAtom,
@@ -44,6 +45,15 @@ export function AcademicContextPicker() {
 	const setClassSectionId = useSetAtom(selectedClassSectionIdAtom);
 	const setSectionContext = useSetAtom(setClassSectionContextAtom);
 	const refreshTermList = useSetAtom(refreshTerms);
+	const refreshProgramList = useSetAtom(refreshPrograms);
+
+	// NOTE: the reference lists are module-scoped and cached, so a soft
+	// navigation (or an earlier failed fetch) leaves them stale/empty. Re-fetch
+	// on every dashboard visit so the picker always reflects the live data.
+	useEffect(() => {
+		refreshProgramList();
+		refreshTermList();
+	}, [refreshProgramList, refreshTermList]);
 
 	const [addSectionOpen, setAddSectionOpen] = useState(false);
 	// NOTE: bumping this key remounts the section select, which is the only way
