@@ -28,7 +28,9 @@ export { ARCHIVE_ROLES };
  *     point* and fills in every canonical role it skips above that point, so
  *     approval always continues up the ladder to `vpaa`
  *     ({@link ascendToVpaa}). The VPAA is the top of the hierarchy and the
- *     final review before archive.
+ *     final review before archive. The **one exception** is `plo_management`:
+ *     PLO entity stewardship is dean-terminated (chair proposes → dean
+ *     approves), not an OBE assessment form that ascends to AQAU/VPAA.
  *  2. **The VPAA never prepares a form.** It holds no `preparerRoles` entry
  *     anywhere (registry or {@link DEFAULT_APPROVAL_ROUTE}); its only verbs on
  *     a submission are reviewing (the final approve/return step), generating
@@ -115,6 +117,13 @@ export function ascendToVpaa(
  */
 export const APPROVAL_ROUTES: Record<string, ApprovalRoute> = {
 	// --- PLAN-phase setup ------------------------------------------------------
+	plo_management: {
+		// PLO entity stewardship (not a paper OBE form): the chair proposes the
+		// outcome, the dean approves it. Dean-terminated — deliberate exception
+		// to rule 1 above; there is no AQAU/VPAA ladder for PLO entities.
+		preparerRoles: ["program_chair", "dean"],
+		chain: ["dean"],
+	},
 	curriculum_map: {
 		// "Program Chair → Curriculum Committee → AQAU" — Faculty co-prepares
 		// (the manual names the Program Chair alone); Curriculum Committee is

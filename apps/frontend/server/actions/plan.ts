@@ -446,3 +446,80 @@ export async function deletePlo(id: string): Promise<ActionResult<void>> {
 		return { ok: false, error: errorMessage(err, "Failed to delete PLO.") };
 	}
 }
+
+// ---------------------------------------------------------------------------
+// PLO Proposals (chair → dean approval via the forms workflow)
+// ---------------------------------------------------------------------------
+
+export interface PloProposal {
+	id: string;
+	programId: string;
+	code: string;
+	description: string;
+	targetAttainmentPct: number;
+	status: string;
+	submittedByUserId: string | null;
+	submittedByName: string | null;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export async function listPloProposals(
+	programId: string,
+): Promise<ActionResult<PloProposal[]>> {
+	try {
+		const data = await actionApi.get<PloProposal[]>("/plan/plos/proposals", {
+			programId,
+		});
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to load PLO proposals."),
+		};
+	}
+}
+
+export async function createPloProposal(body: {
+	programId: string;
+	termId: string;
+	code: string;
+	description: string;
+	targetAttainmentPct?: number;
+}): Promise<ActionResult<PloProposal>> {
+	try {
+		const data = await actionApi.post<PloProposal>(
+			"/plan/plos/proposals",
+			body,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to propose PLO."),
+		};
+	}
+}
+
+export async function updatePloProposal(
+	id: string,
+	body: { code: string; description: string; targetAttainmentPct: number },
+): Promise<ActionResult<void>> {
+	try {
+		// A proposal is a `plo_management` form submission — the chair edits its
+		// formData through the generic submission update endpoint.
+		await actionApi.put(`/forms/${id}`, {
+			formData: {
+				code: body.code,
+				description: body.description,
+				targetAttainmentPct: body.targetAttainmentPct,
+			},
+		});
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return {
+			ok: false,
+			error: errorMessage(err, "Failed to update PLO proposal."),
+		};
+	}
+}

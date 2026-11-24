@@ -12,7 +12,8 @@ import type { UserRole } from "@prisma/generated/prisma/enums";
  *
  * Every list is the **effective** allow-list: `system_admin` is included where
  * it holds a bypass. `managePlos` deliberately has **no** admin bypass — PLO
- * entity mutations are dean-only by institutional rule (SYSTEM-DESIGN §3).
+ * entities are proposed by the program chair and approved by the dean
+ * (SYSTEM-DESIGN §3).
  */
 export const FEATURE_ACCESS = {
 	/** Class-record capture: upload, roster edit/re-import, history, job status. */
@@ -23,8 +24,12 @@ export const FEATURE_ACCESS = {
 	viewArchives: ["aqau", "vpaa", "system_admin"],
 	/** Sit on the approval inbox / decide an approval step. */
 	approveForms: ["program_chair", "dean", "aqau", "vpaa", "system_admin"],
-	/** Create/update/delete PLO entities — dean only, no admin bypass. */
-	managePlos: ["dean"],
+	/**
+	 * Manage PLO entities — the program chair proposes, the dean approves (and
+	 * may author directly). No admin bypass: the screen and both roles' verbs
+	 * are role-checked in the plan service.
+	 */
+	managePlos: ["program_chair", "dean"],
 	/** List/approve/deny role requests. */
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
@@ -88,7 +93,7 @@ export const CLASS_RECORD_ROLES: readonly string[] =
 	FEATURE_ACCESS.captureClassRecords;
 /** Roles allowed to archive an approved submission. */
 export const ARCHIVE_ROLES: readonly string[] = FEATURE_ACCESS.archive;
-/** Roles that may create/edit/delete PLO entities. */
+/** Roles that may open the PLO-management screen (propose or approve PLOs). */
 export const PLO_MANAGEMENT_ROLES: readonly string[] =
 	FEATURE_ACCESS.managePlos;
 /** Roles that may list/approve/deny role requests. */

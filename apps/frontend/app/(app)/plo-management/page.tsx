@@ -4,12 +4,12 @@ import { PLO_MANAGEMENT_ROLES } from "@/lib/roles";
 import { requireRole } from "@/server/auth";
 
 /**
- * `/plo-management` — dean-only Program Learning Outcome management.
+ * `/plo-management` — Program Learning Outcome management.
  *
- * Deans add/edit/remove PLOs per program (codes continue sequentially:
- * PLO1, PLO2, …); faculty then map the resulting PLOs to CLOs in the
- * curriculum map's CLO-PLO connections panel. The sibling
- * `/connections` view shows the resulting mapping as a matrix.
+ * The program chair proposes PLOs and submits them to the dean; the dean
+ * approves them (or authors PLOs directly) — only approved PLOs are active
+ * and map to CLOs. The sibling `/connections` view shows the resulting
+ * CLO × PLO matrix.
  */
 export default async function PloManagementPage() {
 	await requireRole(PLO_MANAGEMENT_ROLES);
@@ -18,9 +18,9 @@ export default async function PloManagementPage() {
 			<div className="space-y-1">
 				<h2 className="text-xl font-semibold tracking-tight">PLO Management</h2>
 				<p className="text-muted-foreground text-sm">
-					Manage Program Learning Outcomes per program. Targets must clear the
-					70% institutional hard floor; the CLO–PLO Connections tab shows which
-					CLOs each PLO maps to.
+					Propose and approve Program Learning Outcomes per program. Targets
+					must clear the 70% institutional hard floor; the CLO–PLO Connections
+					tab shows which CLOs each PLO maps to.
 				</p>
 			</div>
 			<PloManagementNav />

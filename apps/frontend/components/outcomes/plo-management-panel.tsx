@@ -1,6 +1,7 @@
 "use client";
 
 import { useAtomValue } from "jotai";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
@@ -21,13 +22,26 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { isDevMode } from "@/lib/dev-mode";
-import { selectedProgramIdAtom } from "@/lib/store/atoms/academic";
+import {
+	selectedProgramIdAtom,
+	selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
+import { userAtom } from "@/lib/store/atoms/user";
+import {
+	approveFormAction,
+	returnFormAction,
+	submitFormAction,
+} from "@/server/actions/forms";
 import {
 	createPlo,
+	createPloProposal,
 	deletePlo,
+	listPloProposals,
 	listPlos,
-	type PloRecord,
 	updatePlo,
+	updatePloProposal,
+	type PloProposal,
+	type PloRecord,
 } from "@/server/actions/plan";
 
 const SAMPLE_PLO_RECORDS: PloRecord[] = [
@@ -54,12 +68,8 @@ const SAMPLE_PLO_RECORDS: PloRecord[] = [
 	},
 ];
 
-/**
- * Next sequential PLO code from the existing records: keeps the prefix of the
- * highest-numbered code and increments it (PLO1 → PLO2 → PLO3 …); falls back
- * to `PLO1` when there are no numbered codes yet.
- */
-function nextPloCode(records: PloRecord[]): string {
+/** Next sequential PLO code from a list of code-bearing records. */
+function nextPloCode(records: { code: string }[]): string {
 	let found = false;
 	let bestPrefix = "";
 	let bestNum = 0;
@@ -76,62 +86,107 @@ function nextPloCode(records: PloRecord[]): string {
 	return found ? `${bestPrefix}${bestNum + 1}` : "PLO1";
 }
 
+const STATUS_LABELS: Record<string, string> = {
+	draft: "Draft",
+	submitted: "Pending Dean",
+	returned: "Returned",
+	approved: "Approved",
+};
+
 /**
- * Dean-only PLO management: reads the active program from the shared academic
- * context, then add/edit/delete its Program Learning Outcomes. The Add dialog
- * opens with the next sequential code (PLO1, PLO2, …) already filled in — the
- * dean mainly types the statement.
+ * PLO management for both the program chair and the dean.
+ *
+ * - Chair: proposes PLOs (a `plo_management` form submission) and submits them
+ *   to the dean. Active PLOs are read-only for the chair.
+ * - Dean: authors PLOs directly (immediately active), and approves/returns the
+ *   chair's proposals. Approval materializes the active PLO.
  */
 export function PloManagementPanel() {
 	const programId = useAtomValue(selectedProgramIdAtom);
-	const [records, setRecords] = useState<PloRecord[]>([]);
+	const termId = useAtomValue(selectedTermIdAtom);
+	const role = useAtomValue(userAtom)?.role;
+	const isDean = role === "dean";
+	const isChair = role === "program_chair";
+
+	const [plos, setPlos] = useState<PloRecord[]>([]);
+	const [proposals, setProposals] = useState<PloProposal[]>([]);
 	const [loading, setLoading] = useState(false);
+
 	const [dialogOpen, setDialogOpen] = useState(false);
-	const [editing, setEditing] = useState<PloRecord | null>(null);
+	const [editingPlo, setEditingPlo] = useState<PloRecord | null>(null);
+	const [editingProposal, setEditingProposal] = useState<PloProposal | null>(
+		null,
+	);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
+	const [rejecting, setRejecting] = useState<PloProposal | null>(null);
+	const [rejectComment, setRejectComment] = useState("");
 
 	const [code, setCode] = useState("");
 	const [description, setDescription] = useState("");
 	const [target, setTarget] = useState("70");
 
-	const fetchRecords = useCallback(async (selectedProgramId: string) => {
+	const fetchAll = useCallback(async (selectedProgramId: string) => {
 		if (!selectedProgramId) {
-			setRecords([]);
+			setPlos([]);
+			setProposals([]);
 			return;
 		}
 		setLoading(true);
-		const result = await listPlos(selectedProgramId);
-		if (result.ok) {
-			setRecords(result.data);
+		const [ploResult, proposalResult] = await Promise.all([
+			listPlos(selectedProgramId),
+			listPloProposals(selectedProgramId),
+		]);
+		if (ploResult.ok) {
+			setPlos(ploResult.data);
 		} else if (isDevMode) {
-			setRecords(SAMPLE_PLO_RECORDS);
+			setPlos(SAMPLE_PLO_RECORDS);
 		} else {
 			toastError({
 				title: "Failed to load PLOs",
-				description: result.error,
+				description: ploResult.error,
 				scope: "plo:list",
+			});
+		}
+		if (proposalResult.ok) {
+			setProposals(proposalResult.data);
+		} else {
+			toastError({
+				title: "Failed to load PLO proposals",
+				description: proposalResult.error,
+				scope: "plo:proposals",
 			});
 		}
 		setLoading(false);
 	}, []);
 
 	useEffect(() => {
-		fetchRecords(programId);
-	}, [programId, fetchRecords]);
+		void fetchAll(programId);
+	}, [programId, fetchAll]);
 
 	const openCreateDialog = () => {
-		setEditing(null);
-		setCode(nextPloCode(records));
+		setEditingPlo(null);
+		setEditingProposal(null);
+		setCode(nextPloCode([...plos, ...proposals]));
 		setDescription("");
 		setTarget("70");
 		setDialogOpen(true);
 	};
 
 	const openEditDialog = (record: PloRecord) => {
-		setEditing(record);
+		setEditingPlo(record);
+		setEditingProposal(null);
 		setCode(record.code);
 		setDescription(record.description);
 		setTarget(record.targetAttainmentPct.toString());
+		setDialogOpen(true);
+	};
+
+	const openEditProposalDialog = (proposal: PloProposal) => {
+		setEditingPlo(null);
+		setEditingProposal(proposal);
+		setCode(proposal.code);
+		setDescription(proposal.description);
+		setTarget(proposal.targetAttainmentPct.toString());
 		setDialogOpen(true);
 	};
 
@@ -156,8 +211,30 @@ export function PloManagementPanel() {
 			return;
 		}
 
-		if (editing) {
-			const result = await updatePlo(editing.id, {
+		// Chair editing an existing proposal draft/return.
+		if (editingProposal) {
+			const result = await updatePloProposal(editingProposal.id, {
+				code: trimmedCode,
+				description: trimmedDescription,
+				targetAttainmentPct: targetNum,
+			});
+			if (result.ok) {
+				toast.create({ title: "Proposal updated", type: "success" });
+				setDialogOpen(false);
+				void fetchAll(programId);
+			} else {
+				toastError({
+					title: "Update failed",
+					description: result.error,
+					scope: "plo:proposal-update",
+				});
+			}
+			return;
+		}
+
+		// Dean editing an existing active PLO.
+		if (editingPlo) {
+			const result = await updatePlo(editingPlo.id, {
 				code: trimmedCode,
 				description: trimmedDescription,
 				targetAttainmentPct: targetNum,
@@ -165,11 +242,11 @@ export function PloManagementPanel() {
 			if (result.ok) {
 				toast.create({ title: "PLO updated", type: "success" });
 				setDialogOpen(false);
-				fetchRecords(programId);
+				void fetchAll(programId);
 			} else if (isDevMode) {
-				setRecords((prev) =>
+				setPlos((prev) =>
 					prev.map((record) =>
-						record.id === editing.id
+						record.id === editingPlo.id
 							? {
 									...record,
 									code: trimmedCode,
@@ -188,7 +265,11 @@ export function PloManagementPanel() {
 					scope: "plo:update",
 				});
 			}
-		} else {
+			return;
+		}
+
+		// Create: dean authors an active PLO; the chair proposes for approval.
+		if (isDean) {
 			const result = await createPlo({
 				programId,
 				code: trimmedCode,
@@ -198,25 +279,34 @@ export function PloManagementPanel() {
 			if (result.ok) {
 				toast.create({ title: "PLO created", type: "success" });
 				setDialogOpen(false);
-				fetchRecords(programId);
-			} else if (isDevMode) {
-				setRecords((prev) => [
-					...prev,
-					{
-						id: `plo-${Date.now()}`,
-						programId,
-						code: trimmedCode,
-						description: trimmedDescription,
-						targetAttainmentPct: targetNum,
-					},
-				]);
-				toast.create({ title: "PLO created (dev)", type: "success" });
-				setDialogOpen(false);
+				void fetchAll(programId);
 			} else {
 				toastError({
 					title: "Create failed",
 					description: result.error,
 					scope: "plo:create",
+				});
+			}
+		} else {
+			const result = await createPloProposal({
+				programId,
+				termId,
+				code: trimmedCode,
+				description: trimmedDescription,
+				targetAttainmentPct: targetNum,
+			});
+			if (result.ok) {
+				toast.create({
+					title: "PLO proposed — submit it to the dean",
+					type: "success",
+				});
+				setDialogOpen(false);
+				void fetchAll(programId);
+			} else {
+				toastError({
+					title: "Propose failed",
+					description: result.error,
+					scope: "plo:propose",
 				});
 			}
 		}
@@ -227,9 +317,9 @@ export function PloManagementPanel() {
 		if (result.ok) {
 			toast.create({ title: "PLO deleted", type: "success" });
 			setDeleteId(null);
-			fetchRecords(programId);
+			void fetchAll(programId);
 		} else if (isDevMode) {
-			setRecords((prev) => prev.filter((record) => record.id !== id));
+			setPlos((prev) => prev.filter((record) => record.id !== id));
 			toast.create({ title: "PLO deleted (dev)", type: "success" });
 			setDeleteId(null);
 		} else {
@@ -241,70 +331,234 @@ export function PloManagementPanel() {
 		}
 	};
 
-	return (
-		<div className="space-y-4">
-			<div className="flex justify-end">
-				<Button onClick={openCreateDialog} disabled={!programId}>
-					+ Add PLO
-				</Button>
-			</div>
+	const handleSubmit = async (proposal: PloProposal) => {
+		const result = await submitFormAction(proposal.id);
+		if (result.ok) {
+			toast.create({ title: "Submitted to the dean", type: "success" });
+			void fetchAll(programId);
+		} else {
+			toastError({
+				title: "Submit failed",
+				description: result.error,
+				scope: "plo:submit",
+			});
+		}
+	};
 
-			{!programId ? (
-				<ContextRequired scope="program" />
-			) : loading ? (
-				<div className="text-muted-foreground py-4 text-center text-sm">
-					Loading...
+	const handleApprove = async (proposal: PloProposal) => {
+		const result = await approveFormAction(proposal.id, "dean");
+		if (result.ok) {
+			toast.create({ title: "PLO approved — now active", type: "success" });
+			void fetchAll(programId);
+		} else {
+			toastError({
+				title: "Approve failed",
+				description: result.error,
+				scope: "plo:approve",
+			});
+		}
+	};
+
+	const handleReject = async () => {
+		if (!rejecting) return;
+		const result = await returnFormAction(
+			rejecting.id,
+			"dean",
+			rejectComment.trim() || "Returned for revision",
+		);
+		if (result.ok) {
+			toast.create({
+				title: "Proposal returned to the chair",
+				type: "success",
+			});
+			setRejecting(null);
+			setRejectComment("");
+			void fetchAll(programId);
+		} else {
+			toastError({
+				title: "Return failed",
+				description: result.error,
+				scope: "plo:reject",
+			});
+		}
+	};
+
+	const activePlos = plos;
+
+	return (
+		<div className="space-y-8">
+			{/* Active PLOs */}
+			<section className="space-y-4">
+				<div className="flex items-center justify-between">
+					<h2 className="text-base font-semibold">Active PLOs</h2>
+					{isDean && (
+						<Button onClick={openCreateDialog} disabled={!programId}>
+							+ Add PLO
+						</Button>
+					)}
 				</div>
-			) : records.length === 0 ? (
-				<div className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-					No PLOs yet. Click "Add PLO" to create the first one (PLO1).
-				</div>
-			) : (
-				<div className="overflow-x-auto rounded-lg border">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="bg-muted/50 text-muted-foreground border-b text-left">
-								<th className="px-3 py-2 font-medium">Code</th>
-								<th className="px-3 py-2 font-medium">Statement</th>
-								<th className="px-3 py-2 text-center font-medium">Target</th>
-								<th className="px-3 py-2 text-right font-medium">Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{records.map((record) => (
-								<tr
-									key={record.id}
-									className="hover:bg-muted/30 border-b last:border-0"
-								>
-									<td className="px-3 py-2 font-medium">{record.code}</td>
-									<td className="text-muted-foreground px-3 py-2">
-										{record.description}
-									</td>
-									<td className="px-3 py-2 text-center">
-										{record.targetAttainmentPct}%
-									</td>
-									<td className="px-3 py-2 text-right">
-										<Button
-											variant="ghost"
-											className="h-7 px-2"
-											onClick={() => openEditDialog(record)}
-										>
-											Edit
-										</Button>
-										<Button
-											variant="ghost"
-											className="text-destructive h-7 px-2"
-											onClick={() => setDeleteId(record.id)}
-										>
-											Delete
-										</Button>
-									</td>
+
+				{!programId ? (
+					<ContextRequired scope="program" />
+				) : loading ? (
+					<div className="text-muted-foreground py-4 text-center text-sm">
+						Loading...
+					</div>
+				) : activePlos.length === 0 ? (
+					<div className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
+						No active PLOs yet.
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="bg-muted/50 text-muted-foreground border-b text-left">
+									<th className="px-3 py-2 font-medium">Code</th>
+									<th className="px-3 py-2 font-medium">Statement</th>
+									<th className="px-3 py-2 text-center font-medium">Target</th>
+									{isDean && (
+										<th className="px-3 py-2 text-right font-medium">
+											Actions
+										</th>
+									)}
 								</tr>
-							))}
-						</tbody>
-					</table>
+							</thead>
+							<tbody>
+								{activePlos.map((record) => (
+									<tr
+										key={record.id}
+										className="hover:bg-muted/30 border-b last:border-0"
+									>
+										<td className="px-3 py-2 font-medium">{record.code}</td>
+										<td className="text-muted-foreground px-3 py-2">
+											{record.description}
+										</td>
+										<td className="px-3 py-2 text-center">
+											{record.targetAttainmentPct}%
+										</td>
+										{isDean && (
+											<td className="px-3 py-2 text-right">
+												<Button
+													variant="ghost"
+													className="h-7 px-2"
+													onClick={() => openEditDialog(record)}
+												>
+													Edit
+												</Button>
+												<Button
+													variant="ghost"
+													className="text-destructive h-7 px-2"
+													onClick={() => setDeleteId(record.id)}
+												>
+													Delete
+												</Button>
+											</td>
+										)}
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</section>
+
+			{/* Proposals */}
+			<section className="space-y-4">
+				<div className="flex items-center justify-between">
+					<h2 className="text-base font-semibold">PLO Proposals</h2>
+					{isChair && (
+						<Button onClick={openCreateDialog} disabled={!programId || !termId}>
+							+ Propose PLO
+						</Button>
+					)}
 				</div>
-			)}
+
+				{!programId ? (
+					<ContextRequired scope="program" />
+				) : proposals.length === 0 ? (
+					<div className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
+						{isChair
+							? 'No proposals yet. Click "Propose PLO" to draft one, then submit it to the dean.'
+							: "No proposals awaiting review."}
+					</div>
+				) : (
+					<div className="overflow-x-auto rounded-lg border">
+						<table className="w-full text-sm">
+							<thead>
+								<tr className="bg-muted/50 text-muted-foreground border-b text-left">
+									<th className="px-3 py-2 font-medium">Code</th>
+									<th className="px-3 py-2 font-medium">Statement</th>
+									<th className="px-3 py-2 text-center font-medium">Status</th>
+									<th className="px-3 py-2 font-medium">Prepared by</th>
+									<th className="px-3 py-2 text-right font-medium">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{proposals.map((proposal) => (
+									<tr
+										key={proposal.id}
+										className="hover:bg-muted/30 border-b last:border-0"
+									>
+										<td className="px-3 py-2 font-medium">{proposal.code}</td>
+										<td className="text-muted-foreground px-3 py-2">
+											{proposal.description}
+										</td>
+										<td className="px-3 py-2 text-center">
+											{STATUS_LABELS[proposal.status] ?? proposal.status}
+										</td>
+										<td className="text-muted-foreground px-3 py-2">
+											{proposal.submittedByName ?? "—"}
+										</td>
+										<td className="px-3 py-2 text-right">
+											{isChair &&
+												(proposal.status === "draft" ||
+													proposal.status === "returned") && (
+													<>
+														<Button
+															variant="ghost"
+															className="h-7 px-2"
+															onClick={() => openEditProposalDialog(proposal)}
+														>
+															Edit
+														</Button>
+														<Button
+															variant="ghost"
+															className="h-7 px-2"
+															onClick={() => handleSubmit(proposal)}
+														>
+															Submit to Dean
+														</Button>
+													</>
+												)}
+											{isDean && proposal.status === "submitted" && (
+												<>
+													<Button
+														variant="ghost"
+														className="h-7 px-2"
+														onClick={() => handleApprove(proposal)}
+													>
+														Approve
+													</Button>
+													<Button
+														variant="ghost"
+														className="text-destructive h-7 px-2"
+														onClick={() => setRejecting(proposal)}
+													>
+														Reject
+													</Button>
+												</>
+											)}
+											<Button variant="ghost" className="h-7 px-2" asChild>
+												<Link href={`/submissions/${proposal.id}`}>View</Link>
+											</Button>
+										</td>
+									</tr>
+								))}
+							</tbody>
+						</table>
+					</div>
+				)}
+			</section>
 
 			{/* Create/Edit Dialog */}
 			<AlertDialog
@@ -314,12 +568,18 @@ export function PloManagementPanel() {
 				<AlertDialogContent>
 					<AlertDialogHeader>
 						<AlertDialogTitle>
-							{editing ? "Edit PLO" : "Add PLO"}
+							{editingPlo || editingProposal
+								? "Edit PLO"
+								: isDean
+									? "Add PLO"
+									: "Propose PLO"}
 						</AlertDialogTitle>
 						<AlertDialogDescription>
-							{editing
+							{editingPlo || editingProposal
 								? "Update this Program Learning Outcome."
-								: "The code continues the sequence — PLO1, PLO2, … — and can be adjusted if needed."}
+								: isDean
+									? "Add a PLO directly — it is active immediately."
+									: "Draft a PLO proposal; submit it to the dean afterwards."}
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 
@@ -368,7 +628,11 @@ export function PloManagementPanel() {
 					<AlertDialogFooter>
 						<AlertDialogCancel>Cancel</AlertDialogCancel>
 						<AlertDialogAction onClick={handleSave}>
-							{editing ? "Save Changes" : "Create"}
+							{editingPlo || editingProposal
+								? "Save Changes"
+								: isDean
+									? "Create"
+									: "Propose"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -397,6 +661,40 @@ export function PloManagementPanel() {
 							onClick={() => deleteId && handleDelete(deleteId)}
 						>
 							Delete
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			{/* Reject Dialog */}
+			<AlertDialog
+				open={rejecting !== null}
+				onOpenChange={(details) => {
+					if (!details.open) setRejecting(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Return PLO proposal</AlertDialogTitle>
+						<AlertDialogDescription>
+							The proposal is returned to the chair for revision. Add a note so
+							the chair knows what to fix.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogBody>
+						<Field>
+							<FieldLabel>Reviewer note</FieldLabel>
+							<Textarea
+								value={rejectComment}
+								onChange={(e) => setRejectComment(e.target.value)}
+								placeholder="Please revise the statement..."
+							/>
+						</Field>
+					</AlertDialogBody>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction variant="destructive" onClick={handleReject}>
+							Return
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>

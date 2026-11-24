@@ -112,9 +112,9 @@ Purpose, usage, and expected result for each faculty-, Program-Chair-, Dean-, AQ
 
 ### PLO Management (`/plo-management`)
 
-- **Purpose:** The dean-only place to create, edit, and retire Program Learning Outcomes.
-- **How to use:** Pick the program, add or edit PLOs (codes continue sequentially: PLO1, PLO2, …), keep targets at or above 70%, and use the CLO–PLO Connections tab to see mappings.
-- **Expected result:** PLOs are stored per program; retiring a PLO is blocked while it is mapped or carries attainment/gap/CQI history, and faculty map the resulting PLOs to CLOs in the Curriculum Map.
+- **Purpose:** The chair proposes Program Learning Outcomes; the dean approves them (or authors PLOs directly). Only approved PLOs become active.
+- **How to use:** The chair drafts a proposal and submits it to the dean; the dean approves or returns it. The dean can also add PLOs directly. Codes continue sequentially (PLO1, PLO2, …) and targets stay at or above 70%; the CLO–PLO Connections tab shows mappings.
+- **Expected result:** Approved PLOs are stored per program; retiring a PLO is blocked while it is mapped or carries attainment/gap/CQI history, and faculty map the active PLOs to CLOs in the Curriculum Map.
 
 ### Resource Monitoring (`/forms/periodic/resource-monitoring`)
 

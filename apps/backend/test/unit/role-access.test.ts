@@ -17,7 +17,11 @@ import {
 	RoleAccessForbiddenError,
 	USER_MANAGEMENT_ROLES,
 } from "@lib/role-access";
-import { assertCanManagePlos, PloForbiddenError } from "@v1/plan/compute";
+import {
+	assertCanDirectManagePlos,
+	assertCanProposePlos,
+	PloForbiddenError,
+} from "@v1/plan/compute";
 
 describe("feature role gates (lib/role-access)", () => {
 	it("restricts class-record capture to faculty/program_chair/system_admin", () => {
@@ -55,13 +59,18 @@ describe("feature role gates (lib/role-access)", () => {
 		]);
 	});
 
-	it("keeps PLO management dean-only — no system_admin bypass", () => {
-		expect(PLO_MANAGEMENT_ROLES).toEqual(["dean"]);
-		expect(() => assertCanManagePlos("dean")).not.toThrow();
-		expect(() => assertCanManagePlos("system_admin")).toThrow(
+	it("gates PLO management to program_chair and dean — no admin bypass", () => {
+		expect(PLO_MANAGEMENT_ROLES).toEqual(["program_chair", "dean"]);
+		// The chair proposes; the dean authors/approves directly.
+		expect(() => assertCanProposePlos("program_chair")).not.toThrow();
+		expect(() => assertCanProposePlos("dean")).toThrow(PloForbiddenError);
+		expect(() => assertCanDirectManagePlos("dean")).not.toThrow();
+		expect(() => assertCanDirectManagePlos("program_chair")).toThrow(
 			PloForbiddenError,
 		);
-		expect(() => assertCanManagePlos("vpaa")).toThrow(PloForbiddenError);
+		expect(() => assertCanDirectManagePlos("system_admin")).toThrow(
+			PloForbiddenError,
+		);
 	});
 
 	it("restricts role-request management to system_admin", () => {

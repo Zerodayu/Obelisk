@@ -92,7 +92,7 @@ You prepare forms only — you never approve other people's.
 
 1. Approve chairs' calendars and targets; submit the **Assessment Budget** directly to the VPAA.
 2. Work your **Pending Approvals** inbox — your endorsement is the sign-off before anything leaves the college.
-3. Own the PLOs: `/plo-management` — PLO creation, editing, and retirement are **yours alone**, no exceptions for anyone else.
+3. Approve the chairs' PLO proposals and author PLOs directly: `/plo-management` — only approved PLOs become active in the curriculum.
 4. Monitor budget expenditure and CQI implementation through **Resource Monitoring**.
 5. When a PLO-cohort fails **3 consecutive cycles**: file the **Systemic Gap Report**, then formulate the **CAPA Plan** with the VPAA.
 

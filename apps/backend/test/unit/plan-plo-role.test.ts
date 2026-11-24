@@ -1,10 +1,18 @@
 import { describe, expect, it } from "bun:test";
 
-import { assertCanManagePlos, PloForbiddenError } from "@v1/plan/compute";
+import {
+	assertCanDirectManagePlos,
+	assertCanProposePlos,
+	PloForbiddenError,
+} from "@v1/plan/compute";
 
 describe("PLO management role guard", () => {
-	it("lets the dean manage PLOs", () => {
-		expect(() => assertCanManagePlos("dean")).not.toThrow();
+	it("lets the dean author/approve PLOs directly", () => {
+		expect(() => assertCanDirectManagePlos("dean")).not.toThrow();
+	});
+
+	it("lets the program chair propose PLOs", () => {
+		expect(() => assertCanProposePlos("program_chair")).not.toThrow();
 	});
 
 	it("rejects every other role", () => {
@@ -17,7 +25,18 @@ describe("PLO management role guard", () => {
 			"user",
 			undefined,
 		]) {
-			expect(() => assertCanManagePlos(role)).toThrow(PloForbiddenError);
+			expect(() => assertCanDirectManagePlos(role)).toThrow(PloForbiddenError);
+		}
+		for (const role of [
+			"faculty",
+			"dean",
+			"aqau",
+			"vpaa",
+			"system_admin",
+			"user",
+			undefined,
+		]) {
+			expect(() => assertCanProposePlos(role)).toThrow(PloForbiddenError);
 		}
 	});
 });

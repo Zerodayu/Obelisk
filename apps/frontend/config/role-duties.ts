@@ -42,7 +42,6 @@ import {
 import {
 	ARCHIVE_ROLES,
 	FEATURE_ACCESS,
-	PLO_MANAGEMENT_ROLES,
 	screenRoles,
 	type UserRole,
 } from "@/lib/role-access";
@@ -198,6 +197,16 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			label: "Setup",
 			steps: [
 				{
+					id: "chair-plo-propose",
+					title: "Propose Program PLOs",
+					detail:
+						"Draft PLOs and submit them to the dean — only approved PLOs enter the curriculum.",
+					url: "/plo-management",
+					icon: ListChecksIcon,
+					status: { kind: "link" },
+					roles: ["program_chair"],
+				},
+				{
 					id: "chair-curriculum-map",
 					title: "Maintain the CLO-PLO Curriculum Map",
 					detail:
@@ -340,13 +349,13 @@ export const ROLE_DUTIES: Partial<Record<UserRole, DutySection[]>> = {
 			steps: [
 				{
 					id: "dean-plo-management",
-					title: "Manage program PLOs",
+					title: "Review PLO proposals & manage PLOs",
 					detail:
-						"Sole custody of PLO creation, editing, and retirement — targets hold the ≥70% floor.",
+						"Approve the chair's PLO proposals and author PLOs directly — targets hold the ≥70% floor.",
 					url: "/plo-management",
 					icon: ListChecksIcon,
 					status: { kind: "link" },
-					roles: PLO_MANAGEMENT_ROLES,
+					roles: ["dean"],
 				},
 				{
 					id: "dean-plo-attainment",

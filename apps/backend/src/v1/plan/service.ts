@@ -1,3 +1,4 @@
+import { registerApprovalEffect } from "@lib/forms/approval-effects";
 import {
 	curriculumJustification,
 	registerJustification,
@@ -28,10 +29,12 @@ import type {
 	CloToPloMapDto,
 	CloToPloMapInput,
 	CreatePlo,
+	CreatePloProposal,
 	CurriculumMapPayload,
 	PlanSubmissionListItem,
 	PloDto,
 	PloEntityDto,
+	PloProposalDto,
 	PloToPeoMapDto,
 	SaveAssessmentBudget,
 	SaveAssessmentCalendar,
@@ -46,8 +49,13 @@ const CURRICULUM_MAP_CODE = "curriculum_map";
 const CALENDAR_CODE = "assessment_calendar";
 const TARGET_MATRIX_CODE = "target_setting_matrix";
 const BUDGET_CODE = "assessment_budget";
+const PLO_MANAGEMENT_CODE = "plo_management";
 
 const FORM_TYPES = {
+	[PLO_MANAGEMENT_CODE]: {
+		name: "Program Learning Outcome",
+		sequenceNo: 2,
+	},
 	[CURRICULUM_MAP_CODE]: {
 		name: "CLO-PLO Curriculum Map",
 		sequenceNo: 1,
@@ -1174,6 +1182,136 @@ export class PloService {
 			code: existing.code,
 		});
 	}
+
+	/**
+	 * Propose a PLO for dean approval. Creates a `plo_management` form
+	 * submission draft (the chair's proposal); the Plo row is only
+	 * materialized when the dean approves it (see the approval effect
+	 * registered at the bottom of this module).
+	 */
+	async createProposal(
+		input: CreatePloProposal,
+		userId: string,
+	): Promise<PloProposalDto> {
+		await assertProgramInScope(await unitScopeForUser(userId), input.programId);
+		await assertPloProgramExists(input.programId);
+
+		const target = input.targetAttainmentPct ?? DEFAULT_TARGET;
+		if (target < MIN_ATTAINMENT_PCT) {
+			throw new TargetBelowFloorError(input.code, target);
+		}
+
+		const [existingPlo, existingProposal] = await Promise.all([
+			prisma.plo.findFirst({
+				where: { programId: input.programId, code: input.code },
+				select: { id: true },
+			}),
+			this.findProposalByCode(input.programId, input.code),
+		]);
+		if (existingPlo || existingProposal)
+			throw new PloDuplicateError(input.code);
+
+		const formTypeId = await ensurePlanFormType(PLO_MANAGEMENT_CODE);
+		const submission = await submissionService.create(
+			{
+				formTypeId,
+				programId: input.programId,
+				termId: input.termId,
+				formData: {
+					code: input.code,
+					description: input.description,
+					targetAttainmentPct: target,
+				},
+			},
+			userId,
+		);
+		await planAudit(userId, "plo.proposed", {
+			targetRecordId: submission.id,
+			programId: input.programId,
+			code: input.code,
+		});
+		return {
+			id: submission.id,
+			programId: input.programId,
+			code: input.code,
+			description: input.description,
+			targetAttainmentPct: target,
+			status: "draft",
+			submittedByUserId: userId,
+			submittedByName: null,
+			createdAt: submission.createdAt,
+			updatedAt: submission.updatedAt,
+		};
+	}
+
+	/** Duplicate-code guard against a program's live PLO proposals. */
+	private async findProposalByCode(
+		programId: string,
+		code: string,
+	): Promise<{ id: string } | null> {
+		const formTypeId = await ensurePlanFormType(PLO_MANAGEMENT_CODE);
+		return prisma.formSubmission.findFirst({
+			where: {
+				formTypeId,
+				programId,
+				status: { in: ["draft", "submitted", "returned"] },
+				formData: { path: ["code"], equals: code },
+			},
+			select: { id: true },
+		});
+	}
+
+	/**
+	 * List a program's PLO proposals (its `plo_management` submissions) with
+	 * their form payload + submitter. A dean never sees chair drafts (they are
+	 * pre-submission); a chair sees the program's full proposal trail.
+	 */
+	async listProposals(
+		programId: string,
+		unit: UnitScope,
+		role: string,
+	): Promise<PloProposalDto[]> {
+		await assertProgramInScope(unit, programId);
+		await assertPloProgramExists(programId);
+
+		const formTypeId = await ensurePlanFormType(PLO_MANAGEMENT_CODE);
+		const rows = await prisma.formSubmission.findMany({
+			where: {
+				formTypeId,
+				programId,
+				...(role === "dean" ? { status: { not: "draft" } } : {}),
+			},
+			orderBy: { createdAt: "desc" },
+			select: {
+				id: true,
+				status: true,
+				formData: true,
+				createdAt: true,
+				updatedAt: true,
+				submittedBy: { select: { id: true, name: true } },
+			},
+		});
+
+		return rows.map((row) => {
+			const data = (row.formData ?? {}) as {
+				code?: string;
+				description?: string;
+				targetAttainmentPct?: number;
+			};
+			return {
+				id: row.id,
+				programId,
+				code: data.code ?? "",
+				description: data.description ?? "",
+				targetAttainmentPct: data.targetAttainmentPct ?? DEFAULT_TARGET,
+				status: row.status,
+				submittedByUserId: row.submittedBy?.id ?? null,
+				submittedByName: row.submittedBy?.name ?? null,
+				createdAt: row.createdAt,
+				updatedAt: row.updatedAt,
+			};
+		});
+	}
 }
 
 // --- clo_to_plo_map ----------------------------------------------------------------
@@ -1500,4 +1638,52 @@ registerJustification(CURRICULUM_MAP_CODE, async (ctx) => {
 		})),
 		coverageCheck: payload.coverageCheck,
 	});
+});
+
+// --- PLO proposal → active Plo on dean approval ------------------------------
+// The dean's final approval materializes the proposed PLO as an active entity
+// inside the same transaction that flips the submission to `approved` (so a
+// crash can never leave "approved proposal, no PLO").
+registerApprovalEffect(PLO_MANAGEMENT_CODE, async (tx, submission) => {
+	const programId = (
+		await tx.formSubmission.findUnique({
+			where: { id: submission.id },
+			select: { programId: true },
+		})
+	)?.programId;
+	if (!programId) throw new Error("PLO proposal has no program");
+
+	const data = (submission.formData ?? {}) as {
+		code?: string;
+		description?: string;
+		targetAttainmentPct?: number;
+	};
+	const code = (data.code ?? "").trim();
+	const description = (data.description ?? "").trim();
+	if (!code || !description) {
+		throw new Error("PLO proposal is missing its code or statement");
+	}
+	const target = data.targetAttainmentPct ?? DEFAULT_TARGET;
+	if (target < MIN_ATTAINMENT_PCT) {
+		throw new TargetBelowFloorError(code, target);
+	}
+	// shortcut: the duplicate re-check guards a rare race with a concurrent dean
+	// direct-add; a thrown plan error surfaces as a 500 (the forms controller
+	// maps no plan error) — acceptable, proposals are pre-checked on create.
+	const duplicate = await tx.plo.findFirst({
+		where: { programId, code },
+		select: { id: true },
+	});
+	if (duplicate) throw new PloDuplicateError(code);
+
+	const created = await tx.plo.create({
+		data: {
+			id: crypto.randomUUID(),
+			programId,
+			code,
+			description,
+			targetAttainmentPct: target,
+		},
+	});
+	return { ploId: created.id, ploCode: code };
 });

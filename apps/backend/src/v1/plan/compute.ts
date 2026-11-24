@@ -1,4 +1,4 @@
-import { hasRole, PLO_MANAGEMENT_ROLES } from "@lib/role-access";
+import { hasRole } from "@lib/role-access";
 import { MIN_ATTAINMENT_PCT } from "@lib/validators/attainment";
 
 /**
@@ -27,19 +27,37 @@ export class MissingRationaleError extends Error {
 }
 
 export class PloForbiddenError extends Error {
-	constructor() {
-		super("Only the dean may create, update, or delete PLOs");
+	constructor(message: string) {
+		super(message);
 		this.name = "PloForbiddenError";
 	}
 }
 
+/** Roles that author PLO entities directly (create active / edit / delete). */
+const PLO_DIRECT_MANAGE_ROLES: readonly string[] = ["dean"];
+/** Roles that propose PLO entities for dean approval. */
+const PLO_PROPOSE_ROLES: readonly string[] = ["program_chair"];
+
 /**
- * PLO entity mutations are dean-only (faculty map the resulting PLOs; see
- * SYSTEM-DESIGN §3). The allow-list lives in `lib/role-access.ts` and has no
- * system_admin bypass. Read access stays with any authenticated role.
+ * PLO entity mutations are role-split (see SYSTEM-DESIGN §3): the program
+ * chair proposes PLOs through the `plo_management` approval form; the dean
+ * approves them (the final-approval effect materializes the active Plo row)
+ * or authors PLOs directly. Read access stays with any authenticated role.
  */
-export function assertCanManagePlos(role: string | undefined): void {
-	if (!hasRole(role, PLO_MANAGEMENT_ROLES)) throw new PloForbiddenError();
+export function assertCanProposePlos(role: string | undefined): void {
+	if (!hasRole(role, PLO_PROPOSE_ROLES)) {
+		throw new PloForbiddenError(
+			"Only the program chair may propose a PLO for dean approval",
+		);
+	}
+}
+
+export function assertCanDirectManagePlos(role: string | undefined): void {
+	if (!hasRole(role, PLO_DIRECT_MANAGE_ROLES)) {
+		throw new PloForbiddenError(
+			"Only the dean may create, update, or delete PLOs directly",
+		);
+	}
 }
 
 export type CurriculumCellLike = {

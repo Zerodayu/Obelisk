@@ -87,6 +87,12 @@ describe("approval routes registry", () => {
 
 	it("ends every chain at the VPAA (contiguous ladder from its entry role)", () => {
 		for (const [code, route] of Object.entries(APPROVAL_ROUTES)) {
+			// PLO entity stewardship is dean-terminated, not an OBE form that
+			// ascends to AQAU/VPAA — the sole exception to the VPAA-closing rule.
+			if (code === "plo_management") {
+				expect(route.chain).toEqual(["dean"]);
+				continue;
+			}
 			const entry = APPROVAL_CHAIN.indexOf(route.chain[0]);
 			expect(
 				entry,

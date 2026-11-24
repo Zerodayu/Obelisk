@@ -475,3 +475,42 @@ export type PloEntityDto = {
 	description: string;
 	targetAttainmentPct: number;
 };
+
+// --- plo proposal (chair → dean approval via the forms workflow) ------------
+
+export const CreatePloProposalSchema = t.Object({
+	programId: t.String({ description: "Program the proposed PLO belongs to" }),
+	termId: t.String({
+		description:
+			"AcademicTerm anchoring the proposal submission (FormSubmission.termId)",
+	}),
+	code: t.String({
+		minLength: 1,
+		description: "PLO code (unique within the program)",
+	}),
+	description: t.String({ minLength: 1, description: "PLO statement" }),
+	targetAttainmentPct: t.Optional(
+		t.Number({
+			minimum: 0,
+			maximum: 100,
+			default: 70,
+			description:
+				"Target attainment % — the >=70% institutional hard floor is enforced in the service layer",
+		}),
+	),
+});
+
+export type CreatePloProposal = typeof CreatePloProposalSchema.static;
+
+export type PloProposalDto = {
+	id: string;
+	programId: string;
+	code: string;
+	description: string;
+	targetAttainmentPct: number;
+	status: string;
+	submittedByUserId: string | null;
+	submittedByName: string | null;
+	createdAt: Date;
+	updatedAt: Date;
+};

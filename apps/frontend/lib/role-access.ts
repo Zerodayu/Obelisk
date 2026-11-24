@@ -40,8 +40,11 @@ export const FEATURE_ACCESS = {
 	viewArchives: ["aqau", "vpaa", "system_admin"],
 	/** Sit on the approval inbox / decide an approval step. */
 	approveForms: ["program_chair", "dean", "aqau", "vpaa", "system_admin"],
-	/** Create/edit/delete PLO entities (`/plo-management`) — dean only. */
-	managePlos: ["dean"],
+	/**
+	 * Manage PLO entities (`/plo-management`) — program chair proposes, dean
+	 * approves (and may author directly). No admin bypass.
+	 */
+	managePlos: ["program_chair", "dean"],
 	/** List/approve/deny role requests. */
 	manageRoleRequests: ["system_admin"],
 	/** Create the institution's reference data — departments and programs. */
@@ -142,7 +145,7 @@ export const ARCHIVE_VIEW_ROLES: readonly UserRole[] =
  * `ARCHIVE_ROLES`: approvers review a submission long before it is archived.
  */
 export const APPROVER_ROLES: readonly UserRole[] = FEATURE_ACCESS.approveForms;
-/** PLO entity mutations (`/plo-management`) — dean only. */
+/** PLO-management screen (`/plo-management`) — chair proposes, dean approves. */
 export const PLO_MANAGEMENT_ROLES: readonly UserRole[] =
 	FEATURE_ACCESS.managePlos;
 /** CLO entity management (`/clo-management`) — faculty/chair/admin. */
@@ -171,6 +174,10 @@ export interface FormAccessRoute {
  */
 export const FORM_ACCESS: Record<string, FormAccessRoute> = {
 	// --- PLAN-phase setup ---
+	plo_management: {
+		preparers: ["program_chair", "dean"],
+		chain: ["dean"],
+	},
 	curriculum_map: {
 		preparers: ["program_chair", "faculty"],
 		chain: ["aqau", "vpaa"],

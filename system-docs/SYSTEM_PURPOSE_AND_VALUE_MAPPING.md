@@ -90,7 +90,7 @@ graph TD
   * **Frictionless Workflow Governance:** A centralized review queue ([`/approvals`](../apps/frontend/app/(app)/approvals/page.tsx)) allows Program Chairs to review, comment on, and endorse submissions with full audit histories.
   * **Program Health Dashboard:** The [`ProgramChairDashboard`](../apps/frontend/app/(app)/dashboard/program-chair-dashboard.tsx) visualizes target vs. actual PLO attainment, longitudinal cohort trends (F16), and curriculum map coverage gaps across the entire degree program.
 * **Deans:**
-  * **Sole Custody of Academic Standards:** Under institutional policy, only Deans can create, edit, or retire Program Learning Outcomes ([`PLO_MANAGEMENT_ROLES = ["dean"]`](../apps/backend/lib/role-access.ts); there is no administrator bypass).
+  * **Custody of Academic Standards:** Program Chairs propose Program Learning Outcomes; Deans approve them (and may author PLOs directly) ([`PLO_MANAGEMENT_ROLES = ["program_chair", "dean"]`](../apps/backend/lib/role-access.ts); there is no administrator bypass). Only approved PLOs enter the curriculum.
   * **Inter-Program Performance Monitoring:** The [`DeanDashboard`](../apps/frontend/app/(app)/dashboard/dean-dashboard.tsx) displays cross-program comparisons, college-wide cohort trajectories, and assessment budget allocations (F06) against actual execution.
 
 ### 3. AQAU (Academic Quality Assurance Unit)

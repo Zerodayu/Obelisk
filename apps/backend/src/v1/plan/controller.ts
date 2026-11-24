@@ -4,13 +4,15 @@ import { authPlugin } from "@v1/auth/controller";
 import { Elysia, t } from "elysia";
 
 import {
-	assertCanManagePlos,
+	assertCanDirectManagePlos,
+	assertCanProposePlos,
 	MissingRationaleError,
 	PloForbiddenError,
 	TargetBelowFloorError,
 } from "./compute";
 import {
 	CloToPloMapInputSchema,
+	CreatePloProposalSchema,
 	CreatePloSchema,
 	PlanInitSchema,
 	PlanListQuerySchema,
@@ -552,7 +554,7 @@ export const planPlugin = new Elysia({
 		"/plos",
 		async ({ body, user, set }) => {
 			try {
-				assertCanManagePlos((user as { role?: string }).role);
+				assertCanDirectManagePlos((user as { role?: string }).role);
 				return await ploService.create(body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
@@ -582,7 +584,7 @@ export const planPlugin = new Elysia({
 		"/plos/:id",
 		async ({ params, body, user, set }) => {
 			try {
-				assertCanManagePlos((user as { role?: string }).role);
+				assertCanDirectManagePlos((user as { role?: string }).role);
 				return await ploService.update(params.id, body, user.id);
 			} catch (error) {
 				return mapPlanErrors(error, set);
@@ -610,7 +612,7 @@ export const planPlugin = new Elysia({
 		"/plos/:id",
 		async ({ params, user, set }) => {
 			try {
-				assertCanManagePlos((user as { role?: string }).role);
+				assertCanDirectManagePlos((user as { role?: string }).role);
 				await ploService.delete(params.id, user.id);
 				return { ok: true };
 			} catch (error) {
@@ -630,6 +632,70 @@ export const planPlugin = new Elysia({
 					403: { description: "Caller is not the dean" },
 					404: { description: "PLO not found" },
 					409: { description: "PLO is mapped or has assessment history" },
+				},
+			},
+		},
+	)
+	// --- plo proposals (chair → dean approval) ---------------------------------
+	.get(
+		"/plos/proposals",
+		async ({ query, user, set }) => {
+			try {
+				return await ploService.listProposals(
+					query.programId,
+					unitScopeOf(user),
+					(user as { role?: string }).role ?? "user",
+				);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			query: t.Object({
+				programId: t.String({
+					description: "Program to list PLO proposals for",
+				}),
+			}),
+			detail: {
+				summary: "List PLO proposals for a program",
+				description:
+					"Returns the program's `plo_management` submissions (the chair's draft/submitted/returned proposals) with their form payload and submitter. A dean never sees chair drafts.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of PLO proposals" },
+					401: { description: "Unauthorized" },
+					409: { description: "Program not found" },
+				},
+			},
+		},
+	)
+	.post(
+		"/plos/proposals",
+		async ({ body, user, set }) => {
+			try {
+				assertCanProposePlos((user as { role?: string }).role);
+				return await ploService.createProposal(body, user.id);
+			} catch (error) {
+				return mapPlanErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreatePloProposalSchema,
+			detail: {
+				summary: "Propose a PLO for dean approval",
+				description:
+					"Creates a `plo_management` form submission draft; the chair submits it and the dean approves (which materializes the active PLO).",
+				...SECURITY,
+				responses: {
+					200: { description: "Created PLO proposal" },
+					401: { description: "Unauthorized" },
+					403: { description: "Caller is not the program chair" },
+					409: {
+						description:
+							"Program not found, duplicate code, or target below the 70% floor",
+					},
 				},
 			},
 		},

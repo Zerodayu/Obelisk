@@ -32,6 +32,7 @@ export const FORM_TAGS: Record<string, FormTag> = {
 	// --- Submit — full approval chain ---
 	stakeholder_consultation: "submit",
 	assessment_budget: "submit",
+	plo_management: "submit",
 	mid_cycle_attainment: "submit",
 	resource_monitoring: "submit",
 	peer_observation: "submit",
