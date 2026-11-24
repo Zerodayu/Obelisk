@@ -12,7 +12,6 @@ import {
 	HashIcon,
 	ListFilterIcon,
 	PencilIcon,
-	TagIcon,
 	Trash2Icon,
 	TypeIcon,
 } from "lucide-react";
@@ -69,9 +68,8 @@ import {
  * the department list doubles as the program dialog's picker. Reads/writes go
  * through the `manageReferenceData` server actions (system_admin-gated).
  *
- * Both lists render as one filterable table (same pattern as
- * `CohortTrackingGrid`): a Type filter separates departments from programs, so
- * the two-column lists collapse into one grid.
+ * Departments and programs each render as their own filterable table (same
+ * pattern as `CohortTrackingGrid`): the two kinds no longer share one grid.
  */
 
 interface ReferenceRow {
@@ -111,6 +109,255 @@ function applyFilters(rows: ReferenceRow[], filters: Filter[]): ReferenceRow[] {
 	return rows.filter((row) => filters.every((f) => matchesFilter(row, f)));
 }
 
+interface ReferenceTableProps {
+	title: string;
+	description: string;
+	addLabel: string;
+	onAdd: () => void;
+	addDisabled?: boolean;
+	rows: ReferenceRow[];
+	emptyMessage: string;
+	loading: boolean;
+	/** Programs show the parent Department column and filter. */
+	showDepartment?: boolean;
+	departmentCodes?: string[];
+	enableShortcut?: boolean;
+	onEdit: (row: ReferenceRow) => void;
+	onDelete: (row: ReferenceRow) => void;
+}
+
+function ReferenceTable({
+	title,
+	description,
+	addLabel,
+	onAdd,
+	addDisabled = false,
+	rows,
+	emptyMessage,
+	loading,
+	showDepartment = false,
+	departmentCodes = [],
+	enableShortcut = false,
+	onEdit,
+	onDelete,
+}: ReferenceTableProps) {
+	const [pagination, setPagination] = useState<PaginationState>({
+		pageIndex: 0,
+		pageSize: 10,
+	});
+	const [sorting, setSorting] = useState<SortingState>([
+		{ id: "code", desc: false },
+	]);
+	const [filters, setFilters] = useState<Filter[]>([]);
+
+	const filteredData = useMemo(
+		() => applyFilters(rows, filters),
+		[rows, filters],
+	);
+
+	const handleFiltersChange = useCallback((next: Filter[]) => {
+		setFilters(next);
+		setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+	}, []);
+
+	const fields = useMemo<FilterFieldConfig[]>(
+		() => [
+			{
+				group: "Reference data",
+				fields: [
+					{
+						key: "code",
+						label: "Code",
+						icon: <HashIcon />,
+						type: "text",
+						className: "w-[140px]",
+						defaultOperator: "contains",
+					},
+					{
+						key: "name",
+						label: "Name",
+						icon: <TypeIcon />,
+						type: "text",
+						className: "w-[200px]",
+						defaultOperator: "contains",
+					},
+					...(showDepartment
+						? [
+								{
+									key: "departmentCode",
+									label: "Department",
+									icon: <BuildingIcon />,
+									type: "multiselect" as const,
+									searchable: true,
+									className: "w-[180px]",
+									defaultOperator: "is_any_of",
+									options: departmentCodes.map((code) => ({
+										value: code,
+										label: code,
+									})),
+								},
+							]
+						: []),
+				],
+			},
+		],
+		[showDepartment, departmentCodes],
+	);
+
+	const columns = useMemo<ColumnDef<DataGridFeatures, ReferenceRow>[]>(() => {
+		const cols: ColumnDef<DataGridFeatures, ReferenceRow>[] = [
+			{
+				accessorKey: "code",
+				id: "code",
+				header: "Code",
+				cell: ({ row }) => (
+					<span className="text-foreground font-medium">
+						{row.original.code}
+					</span>
+				),
+				size: 110,
+				enableSorting: true,
+				enableHiding: false,
+			},
+			{
+				accessorKey: "name",
+				id: "name",
+				header: "Name",
+				cell: ({ row }) => (
+					<span className="text-muted-foreground truncate">
+						{row.original.name}
+					</span>
+				),
+				size: 240,
+				enableSorting: true,
+				enableHiding: true,
+			},
+		];
+		if (showDepartment) {
+			cols.push({
+				accessorKey: "departmentCode",
+				id: "departmentCode",
+				header: "Department",
+				cell: ({ row }) =>
+					row.original.departmentCode ? (
+						<Badge variant="secondary">{row.original.departmentCode}</Badge>
+					) : (
+						<span className="text-muted-foreground text-xs">—</span>
+					),
+				size: 120,
+				enableSorting: true,
+				enableHiding: true,
+			});
+		}
+		cols.push({
+			id: "actions",
+			header: "",
+			cell: ({ row }) => (
+				<div className="flex justify-end gap-1">
+					<Button
+						aria-label={`Edit ${row.original.name}`}
+						onClick={() => onEdit(row.original)}
+						size="icon-sm"
+						type="button"
+						variant="ghost"
+					>
+						<PencilIcon />
+					</Button>
+					<Button
+						aria-label={`Delete ${row.original.name}`}
+						onClick={() => onDelete(row.original)}
+						size="icon-sm"
+						type="button"
+						variant="ghost"
+					>
+						<Trash2Icon />
+					</Button>
+				</div>
+			),
+			size: 80,
+			enableSorting: false,
+			enableHiding: false,
+		});
+		return cols;
+	}, [showDepartment, onEdit, onDelete]);
+
+	const table = useTable({
+		features: dataGridFeatures,
+		columns,
+		data: filteredData,
+		pageCount: Math.ceil((filteredData?.length || 0) / pagination.pageSize),
+		getRowId: (row: ReferenceRow) => row.id,
+		state: {
+			pagination,
+			sorting,
+		},
+		onPaginationChange: setPagination,
+		onSortingChange: setSorting,
+	});
+
+	return (
+		<section className="bg-card rounded-xl border p-6 shadow-sm">
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<div>
+					<h3 className="text-base font-semibold">{title}</h3>
+					<p className="text-muted-foreground text-xs">{description}</p>
+				</div>
+				<Button disabled={addDisabled} onClick={onAdd} type="button">
+					{addLabel}
+				</Button>
+			</div>
+
+			{loading ? (
+				<p className="text-muted-foreground mt-4 text-sm">Loading…</p>
+			) : (
+				<div className="mt-4 space-y-2.5">
+					<div className="flex items-start gap-2.5">
+						<div className="flex-1">
+							<Filters
+								filters={filters}
+								fields={fields}
+								onChange={handleFiltersChange}
+								shortcutKey="f"
+								shortcutLabel="F"
+								enableShortcut={enableShortcut}
+								trigger={
+									<Button variant="outline">
+										<ListFilterIcon />
+										Add Filter
+									</Button>
+								}
+							/>
+						</div>
+
+						{filters.length > 0 && (
+							<Button variant="outline" onClick={() => handleFiltersChange([])}>
+								<FunnelXIcon />
+								Clear
+							</Button>
+						)}
+					</div>
+
+					<DataGrid
+						table={table}
+						recordCount={filteredData?.length || 0}
+						emptyMessage={emptyMessage}
+						tableLayout={{ headerSticky: true }}
+					>
+						<div className="w-full space-y-2.5">
+							<DataGridContainer>
+								<DataGridScrollArea className="h-96">
+									<DataGridTable />
+								</DataGridScrollArea>
+							</DataGridContainer>
+							<DataGridPagination />
+						</div>
+					</DataGrid>
+				</div>
+			)}
+		</section>
+	);
+}
+
 export function ProgramsDepartmentsPanel() {
 	const [departments, setDepartments] = useState<AcademicDepartment[]>([]);
 	const [programs, setPrograms] = useState<AcademicProgram[]>([]);
@@ -135,15 +382,6 @@ export function ProgramsDepartmentsPanel() {
 
 	const [deleteOpen, setDeleteOpen] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState<ReferenceRow | null>(null);
-
-	const [pagination, setPagination] = useState<PaginationState>({
-		pageIndex: 0,
-		pageSize: 10,
-	});
-	const [sorting, setSorting] = useState<SortingState>([
-		{ id: "code", desc: false },
-	]);
-	const [filters, setFilters] = useState<Filter[]>([]);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -348,12 +586,9 @@ export function ProgramsDepartmentsPanel() {
 		setDeleteOpen(false);
 	}
 
-	const rows = useMemo<ReferenceRow[]>(() => {
-		const departmentCodeFor = (id: string) =>
-			departments.find((department) => department.id === id)?.code ?? "";
-
-		return [
-			...departments.map((department) => ({
+	const departmentRows = useMemo<ReferenceRow[]>(
+		() =>
+			departments.map((department) => ({
 				kind: "department" as const,
 				id: department.id,
 				code: department.code,
@@ -361,260 +596,63 @@ export function ProgramsDepartmentsPanel() {
 				departmentCode: "",
 				departmentId: "",
 			})),
-			...programs.map((program) => ({
-				kind: "program" as const,
-				id: program.id,
-				code: program.code,
-				name: program.name,
-				departmentCode: departmentCodeFor(program.departmentId),
-				departmentId: program.departmentId,
-			})),
-		];
-	}, [departments, programs]);
-
-	const filteredData = useMemo(
-		() => applyFilters(rows, filters),
-		[rows, filters],
+		[departments],
 	);
 
-	const handleFiltersChange = useCallback((next: Filter[]) => {
-		setFilters(next);
-		setPagination((prev) => ({ ...prev, pageIndex: 0 }));
-	}, []);
-
-	const fields: FilterFieldConfig[] = useMemo(() => {
-		const departmentCodes = [...new Set(departments.map((d) => d.code))].sort();
-		return [
-			{
-				group: "Reference data",
-				fields: [
-					{
-						key: "kind",
-						label: "Type",
-						icon: <TagIcon />,
-						type: "multiselect",
-						className: "w-[160px]",
-						defaultOperator: "is_any_of",
-						options: [
-							{ value: "department", label: "Department" },
-							{ value: "program", label: "Program" },
-						],
-					},
-					{
-						key: "code",
-						label: "Code",
-						icon: <HashIcon />,
-						type: "text",
-						className: "w-[140px]",
-						defaultOperator: "contains",
-					},
-					{
-						key: "name",
-						label: "Name",
-						icon: <TypeIcon />,
-						type: "text",
-						className: "w-[200px]",
-						defaultOperator: "contains",
-					},
-					{
-						key: "departmentCode",
-						label: "Department",
-						icon: <BuildingIcon />,
-						type: "multiselect",
-						searchable: true,
-						className: "w-[180px]",
-						defaultOperator: "is_any_of",
-						options: departmentCodes.map((code) => ({
-							value: code,
-							label: code,
-						})),
-					},
-				],
-			},
-		];
-	}, [departments]);
-
-	const columns = useMemo<ColumnDef<DataGridFeatures, ReferenceRow>[]>(
-		() => [
-			{
-				accessorKey: "kind",
-				id: "kind",
-				header: "Type",
-				cell: ({ row }) => (
-					<Badge
-						variant={row.original.kind === "program" ? "secondary" : "outline"}
-					>
-						{row.original.kind === "program" ? "Program" : "Department"}
-					</Badge>
-				),
-				size: 110,
-				enableSorting: true,
-				enableHiding: false,
-			},
-			{
-				accessorKey: "code",
-				id: "code",
-				header: "Code",
-				cell: ({ row }) => (
-					<span className="text-foreground font-medium">
-						{row.original.code}
-					</span>
-				),
-				size: 110,
-				enableSorting: true,
-				enableHiding: false,
-			},
-			{
-				accessorKey: "name",
-				id: "name",
-				header: "Name",
-				cell: ({ row }) => (
-					<span className="text-muted-foreground truncate">
-						{row.original.name}
-					</span>
-				),
-				size: 240,
-				enableSorting: true,
-				enableHiding: true,
-			},
-			{
-				accessorKey: "departmentCode",
-				id: "departmentCode",
-				header: "Department",
-				cell: ({ row }) =>
-					row.original.departmentCode ? (
-						<Badge variant="secondary">{row.original.departmentCode}</Badge>
-					) : (
-						<span className="text-muted-foreground text-xs">—</span>
-					),
-				size: 120,
-				enableSorting: true,
-				enableHiding: true,
-			},
-			{
-				id: "actions",
-				header: "",
-				cell: ({ row }) => (
-					<div className="flex justify-end gap-1">
-						<Button
-							aria-label={`Edit ${row.original.name}`}
-							onClick={() => openEdit(row.original)}
-							size="icon-sm"
-							type="button"
-							variant="ghost"
-						>
-							<PencilIcon />
-						</Button>
-						<Button
-							aria-label={`Delete ${row.original.name}`}
-							onClick={() => openDelete(row.original)}
-							size="icon-sm"
-							type="button"
-							variant="ghost"
-						>
-							<Trash2Icon />
-						</Button>
-					</div>
-				),
-				size: 80,
-				enableSorting: false,
-				enableHiding: false,
-			},
-		],
-		[],
+	const departmentCodes = useMemo(
+		() => [...new Set(departments.map((d) => d.code))].sort(),
+		[departments],
 	);
 
-	const table = useTable({
-		features: dataGridFeatures,
-		columns,
-		data: filteredData,
-		pageCount: Math.ceil((filteredData?.length || 0) / pagination.pageSize),
-		getRowId: (row: ReferenceRow) => row.id,
-		state: {
-			pagination,
-			sorting,
-		},
-		onPaginationChange: setPagination,
-		onSortingChange: setSorting,
-	});
+	const programRows = useMemo<ReferenceRow[]>(
+		() =>
+			programs.map((program) => {
+				const department = departments.find(
+					(d) => d.id === program.departmentId,
+				);
+				return {
+					kind: "program" as const,
+					id: program.id,
+					code: program.code,
+					name: program.name,
+					departmentCode: department?.code ?? "",
+					departmentId: program.departmentId,
+				};
+			}),
+		[programs, departments],
+	);
 
 	return (
-		<section className="bg-card rounded-xl border p-6 shadow-sm">
-			<div className="flex flex-wrap items-center justify-between gap-2">
-				<div>
-					<h3 className="text-base font-semibold">
-						Programs &amp; departments
-					</h3>
-					<p className="text-muted-foreground text-xs">
-						Departments group programs; every program belongs to one.
-					</p>
-				</div>
-				<div className="flex gap-2">
-					<Button
-						disabled={loading}
-						onClick={openDepartmentDialog}
-						type="button"
-						variant="outline"
-					>
-						Add department
-					</Button>
-					<Button
-						disabled={loading || departments.length === 0}
-						onClick={openProgramDialog}
-						type="button"
-					>
-						Add program
-					</Button>
-				</div>
+		<>
+			<div className="space-y-6">
+				<ReferenceTable
+					title="Departments"
+					description="Departments (colleges) group the programs under them."
+					addLabel="Add department"
+					onAdd={openDepartmentDialog}
+					addDisabled={loading}
+					rows={departmentRows}
+					emptyMessage="No departments yet — add one to get started."
+					loading={loading}
+					enableShortcut
+					onEdit={openEdit}
+					onDelete={openDelete}
+				/>
+				<ReferenceTable
+					title="Programs"
+					description="Every program belongs to one department."
+					addLabel="Add program"
+					onAdd={openProgramDialog}
+					addDisabled={loading || departments.length === 0}
+					rows={programRows}
+					emptyMessage="No programs yet — add one to get started."
+					loading={loading}
+					showDepartment
+					departmentCodes={departmentCodes}
+					onEdit={openEdit}
+					onDelete={openDelete}
+				/>
 			</div>
-
-			{loading ? (
-				<p className="text-muted-foreground mt-4 text-sm">Loading…</p>
-			) : (
-				<div className="mt-4 space-y-2.5">
-					<div className="flex items-start gap-2.5">
-						<div className="flex-1">
-							<Filters
-								filters={filters}
-								fields={fields}
-								onChange={handleFiltersChange}
-								shortcutKey="f"
-								shortcutLabel="F"
-								enableShortcut={true}
-								trigger={
-									<Button variant="outline">
-										<ListFilterIcon />
-										Add Filter
-									</Button>
-								}
-							/>
-						</div>
-
-						{filters.length > 0 && (
-							<Button variant="outline" onClick={() => handleFiltersChange([])}>
-								<FunnelXIcon />
-								Clear
-							</Button>
-						)}
-					</div>
-
-					<DataGrid
-						table={table}
-						recordCount={filteredData?.length || 0}
-						emptyMessage="No departments or programs yet — add one to get started."
-						tableLayout={{ headerSticky: true }}
-					>
-						<div className="w-full space-y-2.5">
-							<DataGridContainer>
-								<DataGridScrollArea className="h-96">
-									<DataGridTable />
-								</DataGridScrollArea>
-							</DataGridContainer>
-							<DataGridPagination />
-						</div>
-					</DataGrid>
-				</div>
-			)}
 
 			<AlertDialog
 				open={departmentOpen}
@@ -807,6 +845,6 @@ export function ProgramsDepartmentsPanel() {
 					</AlertDialogFooter>
 				</AlertDialogContent>
 			</AlertDialog>
-		</section>
+		</>
 	);
 }
