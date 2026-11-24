@@ -144,8 +144,8 @@ export function AddClassSectionDialog({
 				<AlertDialogHeader>
 					<AlertDialogTitle>Add class section</AlertDialogTitle>
 					<AlertDialogDescription>
-						Added to the active academic term. A new course needs a title and at
-						least one CLO so uploads can match scores.
+						Added to the active academic term. A new course needs a title. CLOs
+						are optional — uploads create missing ones.
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 
@@ -205,8 +205,8 @@ export function AddClassSectionDialog({
 								</Button>
 							</div>
 							<p className="text-muted-foreground text-xs">
-								Required when the course has no CLOs yet. Existing codes are
-								left unchanged.
+								Optional. Add outcomes for a new course; uploads create missing
+								CLOs. Existing codes are left unchanged.
 							</p>
 
 							{clos.map((clo, index) => (
@@ -260,7 +260,7 @@ export function AddClassSectionDialog({
 							))}
 							{clos.length === 0 && (
 								<p className="text-muted-foreground text-xs">
-									No CLOs — add them if the course is new or has none yet.
+									No CLOs — optional. Add them now or let an upload create them.
 								</p>
 							)}
 						</div>

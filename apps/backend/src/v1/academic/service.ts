@@ -593,15 +593,8 @@ export async function createClassSection(
 			});
 		}
 
-		// NOTE: an upload can only produce attainment for CLOs the course
-		// defines, so a CLO-less course is refused here (no silent empty upload).
-		const existingClos = await tx.clo.count({ where: { courseId: course.id } });
-		if (existingClos === 0 && clos.length === 0) {
-			throw new ReferenceDataError(
-				`Course '${courseCode}' has no CLOs — add at least one.`,
-				400,
-			);
-		}
+		// NOTE: CLOs are optional now — uploads upsert missing codes on save, so a
+		// course can start with none. Any `clos` passed in are seeded below.
 		for (const clo of clos) {
 			const exists = await tx.clo.findFirst({
 				where: { courseId: course.id, code: clo.code },

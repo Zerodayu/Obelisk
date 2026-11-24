@@ -222,7 +222,7 @@ describe.skipIf(!db)("class-section creation (integration)", () => {
 		}
 	}, 60000);
 
-	it("refuses a course with no CLOs", async () => {
+	it("allows a course with no CLOs", async () => {
 		await seed();
 		try {
 			const course = await prisma.course.create({
@@ -234,18 +234,17 @@ describe.skipIf(!db)("class-section creation (integration)", () => {
 				},
 			});
 
-			const status = await failureStatus(() =>
-				createClassSection(
-					unitScopeOf(FACULTY_A),
-					{
-						sectionCode: "1A",
-						courseCode: course.code,
-						termId: IDS.term,
-					},
-					FACULTY_A,
-				),
+			const section = await createClassSection(
+				unitScopeOf(FACULTY_A),
+				{
+					sectionCode: "1A",
+					courseCode: course.code,
+					termId: IDS.term,
+				},
+				FACULTY_A,
 			);
-			expect(status).toBe(400);
+			expect(section).toBeTruthy();
+			expect(section.sectionCode).toBe("1A");
 		} finally {
 			await cleanup();
 		}

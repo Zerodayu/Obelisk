@@ -210,12 +210,13 @@ export const academicPlugin = new Elysia({
 			detail: {
 				summary: "Create a class section",
 				description:
-					"Faculty/program_chair (their own program) and system_admin. Creates the course + CLOs when they don't exist; attaches to the active term unless `termId` is given.",
+					"Faculty/program_chair (their own program) and system_admin. Creates the course when new (`courseTitle` required); seeds any provided CLOs; attaches to the active term unless `termId` is given.",
 				...SECURITY,
 				responses: {
 					200: { description: "Created class section" },
 					400: {
-						description: "Missing program/course title, or a CLO-less course",
+						description:
+							"Missing program/course title, or a new course with a blank CLO",
 					},
 					401: { description: "Unauthorized" },
 					403: {
