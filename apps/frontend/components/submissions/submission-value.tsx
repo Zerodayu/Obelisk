@@ -1,12 +1,12 @@
 "use client";
 
+import { Badge } from "@/components/reui/badge";
+
 /**
  * Shared recursive renderer for a submission's stored data — used by both the
  * "Submitted details" panel (raw `formData`) and the "Form content" panel (the
- * form's own GET-by-id payload). The only opinionated bit: arrays of objects
- * render as a table (columns = union of keys, one row per item) instead of the
- * stacked "Item N" boxes a generic recursion would produce, because most form
- * payloads are homogeneous row lists (CLO/PLO/student/cohort rows).
+ * form's own GET-by-id payload). Arrays of objects render as a table (columns
+ * = union of keys, one row per item) and arrays of primitives render as chips.
  */
 
 export function humanizeKey(key: string): string {
@@ -46,7 +46,7 @@ function PrimitiveValue({ value }: { value: unknown }) {
 	return text.trim() === "" ? (
 		<Empty />
 	) : (
-		<span className="break-words">{text}</span>
+		<span className="break-words whitespace-pre-line">{text}</span>
 	);
 }
 
@@ -90,14 +90,13 @@ export function SubmissionValue({ value }: { value: unknown }) {
 		if (value.length === 0) return <Empty />;
 		if (value.every(isPrimitive)) {
 			return (
-				<span className="break-words">
+				<div className="flex flex-wrap gap-1.5">
 					{value.map((item, i) => (
-						<span key={i}>
-							{i > 0 ? ", " : ""}
+						<Badge key={i} variant="outline">
 							{item === null ? "—" : String(item)}
-						</span>
+						</Badge>
 					))}
-				</span>
+				</div>
 			);
 		}
 		if (value.every(isRecord)) {
@@ -121,13 +120,13 @@ export function SubmissionValue({ value }: { value: unknown }) {
 		const entries = Object.entries(value).filter(([, v]) => v !== undefined);
 		if (entries.length === 0) return <Empty />;
 		return (
-			<dl className="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2">
+			<dl className="divide-y">
 				{entries.map(([key, val]) => (
-					<div className="flex flex-col gap-0.5" key={key}>
-						<dt className="text-muted-foreground text-xs font-medium">
+					<div className="flex items-start gap-4 py-2" key={key}>
+						<dt className="text-muted-foreground w-48 shrink-0 text-sm font-medium">
 							{humanizeKey(key)}
 						</dt>
-						<dd className="text-sm">
+						<dd className="min-w-0 flex-1 text-sm">
 							<SubmissionValue value={val} />
 						</dd>
 					</div>
