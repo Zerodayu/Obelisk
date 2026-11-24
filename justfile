@@ -76,6 +76,11 @@ db-seed-demo:
 db-inject file:
     @just _bun apps/backend "db:inject $(realpath '{{file}}')"
 
+# seed the committed reference data (departments/programs/PLOs) into the dev DB — additive upserts, never deletes, separate from the demo `just db-seed`
+[group('setup')]
+db-seed-program-plos:
+    @just _bun apps/backend db:seed-program-plos
+
 # export the whole dev database to per-table CSVs (header row + rows; one file per
 # table, e.g. exports/user.csv) for later seeding — dev-only, reads DATABASE_URL
 # from .env.local
@@ -327,6 +332,11 @@ docker-migrate:
 db-inject-prod file:
     docker compose exec -T backend sh -c 'cat > /tmp/db-inject.json' < '{{file}}'
     docker compose exec backend bun run db:inject-prod /tmp/db-inject.json
+
+# seed the committed reference data (departments/programs/PLOs) into the deployed DB — additive upserts inside the backend container (needs `just docker-update` first so the seed + JSON are baked into the image)
+[group('deploy')]
+db-seed-program-plos-prod:
+    docker compose exec backend bun run db:seed-program-plos-prod
 
 # NOTE: bunx directly, not a package script — a script wrapper only exists in the image after a rebuild
 # check for pending Prisma migrations without applying them (read-only; no rows from `just db-check` = the DB was never migrated)
