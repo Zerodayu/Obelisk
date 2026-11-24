@@ -222,6 +222,133 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 		}
 	});
 
+	it("captures the workbook section year level onto students (create + backfill)", async () => {
+		await prisma.department.create({
+			data: {
+				id: IDS.department,
+				name: "Integration Test Dept",
+				code: "IT-INGEST",
+			},
+		});
+		await prisma.program.create({
+			data: {
+				id: IDS.program,
+				departmentId: IDS.department,
+				name: "Integration Test Program",
+				code: "IT-INGEST-PROG",
+			},
+		});
+		await prisma.academicTerm.create({
+			data: {
+				id: IDS.term,
+				schoolYear: "2093-2094",
+				semester: "1st",
+				isActive: false,
+			},
+		});
+		await prisma.course.create({
+			data: {
+				id: IDS.course,
+				programId: IDS.program,
+				code: "IT-101",
+				title: "Integration Test Course",
+			},
+		});
+		await prisma.classSection.create({
+			data: {
+				id: IDS.classSection,
+				courseId: IDS.course,
+				termId: IDS.term,
+				sectionCode: "3A",
+			},
+		});
+		await prisma.clo.create({
+			data: {
+				id: "it-ingest-clo-1",
+				courseId: IDS.course,
+				code: "CLO1",
+				description: "CLO 1",
+			},
+		});
+		// NOTE: existing student with no year level — a re-upload should backfill it.
+		await prisma.student.create({
+			data: {
+				id: IDS.existingStudent,
+				studentNumber: IDS.existingStudentNumber,
+				programId: IDS.program,
+				firstName: "John",
+				lastName: "Doe",
+				anonymizedId: "it-ingest-anon-existing",
+			},
+		});
+
+		const etlLoadedData: TypedEtlLoadedData = {
+			header: {},
+			clo_plo_mapping: {},
+			section: {
+				code: "3A",
+				program: "IT-INGEST-PROG",
+				year_level: 3,
+				section_letter: "A",
+				raw: "IT-INGEST-PROG 3A",
+			},
+			attainments: [
+				{
+					student_name: "Doe, John",
+					student_id: IDS.existingStudentNumber,
+					clo_code: "CLO1",
+					direct_clo_attainment_pct: 0.85,
+					met_threshold: true,
+				},
+				{
+					student_name: "Reyes, Maria",
+					student_id: null,
+					clo_code: "CLO1",
+					direct_clo_attainment_pct: 0.8,
+					met_threshold: true,
+				},
+			],
+		};
+
+		let computationRunId = "";
+		try {
+			const summary = await attainmentService.persistAttainment(
+				etlLoadedData,
+				IDS.classSection,
+			);
+			computationRunId = summary.computationRunId;
+
+			const backfilled = await prisma.student.findUniqueOrThrow({
+				where: { id: IDS.existingStudent },
+			});
+			expect(backfilled.yearLevel).toBe(3);
+
+			const created = await prisma.student.findFirstOrThrow({
+				where: {
+					programId: IDS.program,
+					firstName: "Maria",
+					lastName: "Reyes",
+				},
+			});
+			expect(created.yearLevel).toBe(3);
+		} finally {
+			await prisma.atRiskFlag.deleteMany({
+				where: { studentId: IDS.existingStudent },
+			});
+			await prisma.cloAttainment.deleteMany({ where: { computationRunId } });
+			await prisma.computationRun.deleteMany({
+				where: { id: computationRunId },
+			});
+			await prisma.student.deleteMany({ where: { programId: IDS.program } });
+			await prisma.clo.deleteMany({ where: { courseId: IDS.course } });
+			await prisma.classSection.delete({ where: { id: IDS.classSection } });
+			await prisma.course.delete({ where: { id: IDS.course } });
+			await prisma.academicTerm.delete({ where: { id: IDS.term } });
+			await prisma.program.delete({ where: { id: IDS.program } });
+			await prisma.department.delete({ where: { id: IDS.department } });
+		}
+	});
+
 	it("throws ClassSectionNotFoundError if classSectionId does not exist during persistence", async () => {
 		const nonExistentId = "non-existent-section-id-12345";
 		const etlLoadedData: TypedEtlLoadedData = {

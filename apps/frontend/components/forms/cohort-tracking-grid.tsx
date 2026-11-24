@@ -48,6 +48,9 @@ const COHORT_COLORS: Record<YearKey, string> = {
 	Y4: "bg-emerald-500",
 };
 
+// NOTE: students whose year level is missing still show (as "—") instead of being hidden.
+const UNASSIGNED_COHORT = "—";
+
 /** One row per student, backed by `GET /rollup/cohort-tracking/students`. */
 interface CohortStudentRow {
 	studentId: string;
@@ -60,7 +63,7 @@ interface CohortStudentRow {
 }
 
 function cohortLabel(yearLevel: number | null): string {
-	return yearLevel === null ? "—" : `Y${yearLevel}`;
+	return yearLevel === null ? UNASSIGNED_COHORT : `Y${yearLevel}`;
 }
 
 function matchesFilter(student: CohortStudentRow, filter: Filter): boolean {
@@ -143,7 +146,7 @@ export function CohortTrackingGrid() {
 		{ id: "name", desc: false },
 	]);
 	const [filters, setFilters] = useState<Filter[]>([
-		createFilter("cohort", "is_any_of", [...YEAR_KEYS]),
+		createFilter("cohort", "is_any_of", [...YEAR_KEYS, UNASSIGNED_COHORT]),
 	]);
 
 	const filteredData = useMemo(
@@ -168,18 +171,27 @@ export function CohortTrackingGrid() {
 						type: "multiselect",
 						className: "w-[180px]",
 						defaultOperator: "is_any_of",
-						options: YEAR_KEYS.map((year) => ({
-							value: year,
-							label: year,
-							icon: (
-								<div
-									className={cn(
-										"size-2.25 shrink-0 rounded-full",
-										COHORT_COLORS[year],
-									)}
-								/>
-							),
-						})),
+						options: [
+							...YEAR_KEYS.map((year) => ({
+								value: year,
+								label: year,
+								icon: (
+									<div
+										className={cn(
+											"size-2.25 shrink-0 rounded-full",
+											COHORT_COLORS[year],
+										)}
+									/>
+								),
+							})),
+							{
+								value: UNASSIGNED_COHORT,
+								label: "Unassigned",
+								icon: (
+									<div className="bg-muted-foreground size-2.25 shrink-0 rounded-full" />
+								),
+							},
+						],
 					},
 				],
 			},

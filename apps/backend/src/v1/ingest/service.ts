@@ -304,6 +304,8 @@ export class AttainmentService {
 		const studentCache = new Map<string, { id: string }>();
 		// NOTE: students seen this run — enrollment upserted once each so noEnrolled is non-zero (testing_results 6.5)
 		const enrolledCache = new Set<string>();
+		// NOTE: the workbook section code carries the year level (e.g. "BSR 3A" → 3).
+		const sectionYearLevel = etlLoadedData.section?.year_level ?? null;
 
 		for (const record of etlLoadedData.attainments) {
 			summary.studentsProcessed++;
@@ -316,6 +318,7 @@ export class AttainmentService {
 					record.student_name,
 					record.student_id,
 					programId,
+					sectionYearLevel,
 				);
 				if (!resolved) {
 					console.warn(
@@ -846,21 +849,45 @@ export class AttainmentService {
 		studentName: string,
 		studentId: string | null,
 		programId: string | null,
+		yearLevel: number | null = null,
 	): Promise<{
 		id: string;
 		firstName: string;
 		lastName: string;
 		created: boolean;
 	} | null> {
+		// NOTE: only a real year band is persisted — the same 1–4 gate car/service.ts uses.
+		const validYearLevel =
+			yearLevel !== null && yearLevel >= 1 && yearLevel <= 4 ? yearLevel : null;
 		const cleanStudentId = studentId?.trim() || null;
+
+		// NOTE: a re-upload backfills a student that predates year-level capture.
+		const backfill = async (existing: {
+			id: string;
+			firstName: string;
+			lastName: string;
+			yearLevel: number | null;
+		}) => {
+			if (existing.yearLevel === null && validYearLevel !== null) {
+				await prisma.student.update({
+					where: { id: existing.id },
+					data: { yearLevel: validYearLevel },
+				});
+			}
+			return {
+				id: existing.id,
+				firstName: existing.firstName,
+				lastName: existing.lastName,
+				created: false,
+			};
+		};
+
 		if (cleanStudentId) {
 			const existing = await prisma.student.findUnique({
 				where: { studentNumber: cleanStudentId },
-				select: { id: true, firstName: true, lastName: true },
+				select: { id: true, firstName: true, lastName: true, yearLevel: true },
 			});
-			if (existing) {
-				return { ...existing, created: false };
-			}
+			if (existing) return backfill(existing);
 		}
 
 		const { lastName, firstName } = parseStudentName(studentName);
@@ -871,14 +898,14 @@ export class AttainmentService {
 				lastName: { contains: lastName, mode: "insensitive" },
 				...(programId ? { programId } : {}),
 			},
-			select: { id: true, firstName: true, lastName: true },
+			select: { id: true, firstName: true, lastName: true, yearLevel: true },
 		});
 		for (const candidate of potentialMatches) {
 			if (
 				normalizeName(candidate.firstName + candidate.lastName) ===
 				normalizedRecordName
 			) {
-				return { ...candidate, created: false };
+				return backfill(candidate);
 			}
 		}
 
@@ -907,6 +934,7 @@ export class AttainmentService {
 						lastName,
 						studentNumber,
 						anonymizedId: crypto.randomUUID(),
+						yearLevel: validYearLevel,
 						program: { connect: { id: programId } },
 					},
 					select: { id: true, firstName: true, lastName: true },
