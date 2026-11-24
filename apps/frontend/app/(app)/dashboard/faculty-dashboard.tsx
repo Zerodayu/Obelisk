@@ -3,7 +3,7 @@ import {
 	CloAttainmentBars,
 } from "@/components/charts/attainment-charts";
 import {
-	AtRiskDonut,
+	AtRiskBars,
 	FormStatusDonut,
 	StudentsAtRiskDonut,
 } from "@/components/charts/governance-charts";
@@ -64,7 +64,7 @@ export function FacultyDashboard() {
 					</FrameHeader>
 					<FramePanel>
 						<div className="h-72">
-							<AtRiskDonut />
+							<AtRiskBars />
 						</div>
 					</FramePanel>
 				</Frame>

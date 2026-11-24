@@ -73,19 +73,11 @@ const auditConfig = {
 	count: { label: "Events", colors: { light: ["var(--primary)"] } },
 } satisfies ChartConfig;
 
-const riskConfig = {
-	"Below 70% in direct CLO score": {
-		label: "Direct <70%",
-		colors: { light: ["var(--warning)"] },
-	},
-	"Below 70% in indirect CLO score": {
-		label: "Indirect <70%",
-		colors: { light: ["var(--destructive)"] },
-	},
-	"Multiple CLOs under threshold": {
-		label: "Multiple CLOs <70%",
-		colors: { light: ["var(--chart-3)"] },
-	},
+// NOTE: the watchlist is a count-per-CLO distribution of below-70 flags; a solid
+// horizontal bar reads it clearly. The series is keyed by `count`, matching the
+// other category-count bars in this file.
+const atRiskConfig = {
+	count: { label: "Flags", colors: { light: ["var(--destructive)"] } },
 } satisfies ChartConfig;
 
 const studentsAtRiskConfig = {
@@ -236,19 +228,39 @@ export function AuditActivityBars({
 	);
 }
 
-/** Donut of the at-risk watchlist grouped by flag reason. */
-export function AtRiskDonut({ data: override }: { data?: AtRiskDatum[] }) {
+/** "Below 70% on CLO1" / "Below institutional threshold on CLO1: 52.0%" → "CLO1". */
+function cloCodeOf(reason: string): string {
+	const match = reason.match(/CLO\s*\d+/i);
+	return match ? match[0].replace(/\s+/g, "") : reason;
+}
+
+/** Solid horizontal bars of the at-risk watchlist — flags folded onto their CLO code. */
+export function AtRiskBars({ data: override }: { data?: AtRiskDatum[] }) {
 	const atomData = useAtomValue(atRiskDataAtom);
 	const data = override ?? atomData;
-	const rows = data.map((r) => ({ reason: r.reason, count: r.studentCount }));
+	// NOTE: ingest writes one reason per (CLO, score); folding onto the CLO code
+	// keeps the chart at "flags per CLO" instead of a bar per distinct score.
+	const byClo = new Map<string, number>();
+	for (const row of data) {
+		const code = cloCodeOf(row.reason);
+		byClo.set(code, (byClo.get(code) ?? 0) + row.studentCount);
+	}
+	const rows = [...byClo].map(([clo, count]) => ({ clo, count }));
+	if (rows.length === 0) return <ChartEmptyState />;
 	return (
-		<PieDonutLayout
+		<EChartsBarChart
 			data={rows}
-			config={riskConfig}
-			dataKey="count"
-			nameKey="reason"
-			caption="At-risk students"
-		/>
+			config={atRiskConfig}
+			xDataKey="clo"
+			layout="horizontal"
+			className="h-full w-full"
+		>
+			<EChartsBarChart.Grid />
+			<EChartsBarChart.XAxis label="Flags" />
+			<EChartsBarChart.YAxis dataKey="clo" />
+			<EChartsBarChart.Tooltip />
+			<EChartsBarChart.Bar dataKey="count" />
+		</EChartsBarChart>
 	);
 }
 

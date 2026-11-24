@@ -1,5 +1,5 @@
 import { ScoreBandBars } from "@/components/charts/attainment-charts";
-import { AtRiskDonut } from "@/components/charts/governance-charts";
+import { AtRiskBars } from "@/components/charts/governance-charts";
 import { ClassRecordUpload } from "@/components/forms/class-record-upload";
 import { CloRawDataWorkflow } from "@/components/forms/clo-raw-data-workflow";
 import { UploadHistoryTable } from "@/components/forms/upload-history-table";
@@ -62,7 +62,7 @@ export default async function CloRawDataPage() {
 					</FrameHeader>
 					<FramePanel>
 						<div className="h-72">
-							<AtRiskDonut />
+							<AtRiskBars />
 						</div>
 					</FramePanel>
 				</Frame>
