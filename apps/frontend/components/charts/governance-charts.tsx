@@ -2,7 +2,10 @@
 
 import { useAtomValue } from "jotai";
 
-import { ChartEmptyState } from "@/components/charts/chart-empty-state";
+import {
+	ChartEmptyState,
+	ChartLoadingState,
+} from "@/components/charts/chart-empty-state";
 import type {
 	ApprovalFlowDatum,
 	AtRiskDatum,
@@ -23,6 +26,7 @@ import {
 import {
 	approvalFlowDataAtom,
 	atRiskDataAtom,
+	atRiskStateAtom,
 	auditActivityDataAtom,
 	clusterCompositionDataAtom,
 	clusterStatusesDataAtom,
@@ -31,6 +35,7 @@ import {
 	formTypeStagesDataAtom,
 	recommendationsDataAtom,
 	studentsVsAtRiskAtom,
+	studentsVsAtRiskStateAtom,
 	userRolesDataAtom,
 } from "@/lib/store/atoms/governance";
 
@@ -236,7 +241,9 @@ function cloCodeOf(reason: string): string {
 
 /** Solid horizontal bars of the at-risk watchlist — flags folded onto their CLO code. */
 export function AtRiskBars({ data: override }: { data?: AtRiskDatum[] }) {
+	const state = useAtomValue(atRiskStateAtom);
 	const atomData = useAtomValue(atRiskDataAtom);
+	if (state.status === "loading") return <ChartLoadingState />;
 	const data = override ?? atomData;
 	// NOTE: ingest writes one reason per (CLO, score); folding onto the CLO code
 	// keeps the chart at "flags per CLO" instead of a bar per distinct score.
@@ -279,6 +286,8 @@ export function StudentsAtRiskDonut({
 	data?: { total: number; atRisk: number };
 }) {
 	const atomData = useAtomValue(studentsVsAtRiskAtom);
+	const state = useAtomValue(studentsVsAtRiskStateAtom);
+	if (state.status === "loading") return <ChartLoadingState />;
 	const { total, atRisk } = override ?? atomData;
 	const rows = [
 		{ status: "at_risk", count: atRisk },

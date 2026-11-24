@@ -33,7 +33,7 @@ import type {
 } from "@/components/charts/obe-sample-data";
 import { api } from "@/lib/api-client";
 import type { UserRole } from "@/lib/roles";
-import { atomWithAsyncData, atomWithMockData } from "@/lib/store/async-atom";
+import { atomWithAsyncData } from "@/lib/store/async-atom";
 import {
 	formStatusCountsAtom,
 	formSubmissionsDataAtom,
@@ -75,42 +75,39 @@ export const approvalFlowDataAtom = atom<ApprovalFlowDatum[]>((get) => {
 /** Refreshes the underlying `GET /forms` fetch that feeds the derivation. */
 export const refreshApprovalFlowAtom = refreshFormSubmissionsAtom;
 
-/** `AtRiskFlagRow` subset from `GET /atrisk/flags` (`server/actions/at-risk.ts`). */
+/** Full `GET /atrisk/flags` row — reason for the watchlist, student id for a distinct count. */
 interface AtRiskFlagDto {
 	reason: string;
+	student: { id: string };
 }
 
-/**
- * At-risk watchlist grouped by `AtRiskFlag.reason`.
- *
- * `GET /atrisk/flags` returns one row per flag (a student can carry several,
- * one per below-threshold CLO), so the donut counts **flags**, not students.
- * The endpoint is not wrapped in `cached` server-side, so clearing a flag on
- * final approval moves the donut immediately — no refresh race.
- */
-export const { dataAtom: atRiskDataAtom, refreshAtom: refreshAtRiskAtom } =
-	atomWithAsyncData<AtRiskDatum[]>([], (_get, signal) =>
-		api.get<AtRiskFlagDto[]>("/atrisk/flags", { signal }).then((flags) => {
-			const counts = new Map<string, number>();
-			for (const flag of flags) {
-				counts.set(flag.reason, (counts.get(flag.reason) ?? 0) + 1);
-			}
-			return [...counts].map(([reason, count]) => ({
-				reason,
-				studentCount: count,
-			}));
-		}),
-	);
+// NOTE: one shared fetch backs both at-risk charts. The watchlist groups flags
+// by reason; the students-vs-at-risk donut counts distinct students. Fetching
+// the (uncached) flag list twice per load doubled the query for no reason.
+const atRiskFlagsBundle = atomWithAsyncData<AtRiskFlagDto[]>(
+	[],
+	(_get, signal) => api.get<AtRiskFlagDto[]>("/atrisk/flags", { signal }),
+);
+
+/** At-risk watchlist grouped by `AtRiskFlag.reason` (counts flags, not students). */
+export const atRiskDataAtom = atom<AtRiskDatum[]>((get) => {
+	const flags = get(atRiskFlagsBundle.dataAtom);
+	const counts = new Map<string, number>();
+	for (const flag of flags) {
+		counts.set(flag.reason, (counts.get(flag.reason) ?? 0) + 1);
+	}
+	return [...counts].map(([reason, count]) => ({
+		reason,
+		studentCount: count,
+	}));
+});
+export const atRiskStateAtom = atRiskFlagsBundle.stateAtom;
+export const refreshAtRiskAtom = atRiskFlagsBundle.refreshAtom;
 
 /** `GET /academic/students/year-levels` row. */
 interface StudentYearLevelDto {
 	yearLevel: number | null;
 	studentCount: number;
-}
-
-/** `GET /atrisk/flags` row subset — just the student id for a distinct count. */
-interface AtRiskFlagStudentDto {
-	student: { id: string };
 }
 
 /** Total students vs at-risk students, both unit-scoped. */
@@ -120,23 +117,21 @@ export interface StudentsVsAtRisk {
 }
 
 /**
- * Total vs at-risk students. Reads two unit-scoped endpoints in parallel:
- * `GET /academic/students/year-levels` (summed → total) and `GET /atrisk/flags`
- * (distinct `student.id` → at-risk). The existing `atRiskDataAtom` donut groups
- * flags by reason; this one counts distinct students, so it fetches separately.
+ * Total vs at-risk students. Reads the shared flag list (distinct `student.id`
+ * → at-risk) plus `GET /academic/students/year-levels` (summed → total).
  */
 export const {
 	dataAtom: studentsVsAtRiskAtom,
+	stateAtom: studentsVsAtRiskStateAtom,
 	refreshAtom: refreshStudentsVsAtRiskAtom,
 } = atomWithAsyncData<StudentsVsAtRisk>(
 	{ total: 0, atRisk: 0 },
-	async (_get, signal) => {
-		const [yearLevels, flags] = await Promise.all([
-			api.get<StudentYearLevelDto[]>("/academic/students/year-levels", {
-				signal,
-			}),
-			api.get<AtRiskFlagStudentDto[]>("/atrisk/flags", { signal }),
-		]);
+	async (get, signal) => {
+		const flags = get(atRiskFlagsBundle.dataAtom);
+		const yearLevels = await api.get<StudentYearLevelDto[]>(
+			"/academic/students/year-levels",
+			{ signal },
+		);
 		const total = yearLevels.reduce((sum, row) => sum + row.studentCount, 0);
 		const atRisk = new Set(flags.map((f) => f.student.id)).size;
 		return { total, atRisk };

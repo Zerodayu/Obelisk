@@ -2,7 +2,10 @@
 
 import { useAtomValue } from "jotai";
 
-import { ChartEmptyState } from "@/components/charts/chart-empty-state";
+import {
+	ChartEmptyState,
+	ChartLoadingState,
+} from "@/components/charts/chart-empty-state";
 import type {
 	CloAttainmentDatum,
 	CohortTrendDatum,
@@ -19,7 +22,7 @@ import {
 	type ChartConfig as LineConfig,
 } from "@/components/evilcharts/charts/echarts-line-chart";
 import {
-	cloAttainmentsDataAtom,
+	cloAttainmentsStateAtom,
 	cohortTrendsDataAtom,
 	peoAttainmentsDataAtom,
 	ploAttainmentsDataAtom,
@@ -90,8 +93,9 @@ export function CloAttainmentBars({
 }: {
 	data?: CloAttainmentDatum[];
 }) {
-	const atomData = useAtomValue(cloAttainmentsDataAtom);
-	const data = override ?? atomData;
+	const state = useAtomValue(cloAttainmentsStateAtom);
+	if (state.status === "loading") return <ChartLoadingState />;
+	const data = override ?? state.data;
 	const rows = data.map((c) => ({
 		cloCode: c.cloCode,
 		direct: c.directScorePct ?? 0,
@@ -204,7 +208,9 @@ export function PeoAttainmentBars({
  * Data derives from the shared CLO-attainment atom (server-flagged threshold).
  */
 export function AttainmentFloorBars() {
-	const data = useAtomValue(cloAttainmentsDataAtom);
+	const state = useAtomValue(cloAttainmentsStateAtom);
+	if (state.status === "loading") return <ChartLoadingState />;
+	const data = state.data;
 	const rows = data.map((c) => ({
 		label: c.cloCode,
 		met: c.isBelowThreshold ? null : c.compositeScorePct,

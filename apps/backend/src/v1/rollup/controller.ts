@@ -127,10 +127,7 @@ export const rollupPlugin = new Elysia({
 			// is refused (403) before the payload is read or cached.
 			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
-				return await cloSummaryService.generateFromSubmission(
-					params.id,
-					user?.id,
-				);
+				return await cloSummaryService.generateFromSubmission(params.id);
 			} catch (error) {
 				if (
 					error instanceof RollupSubmissionNotFoundError ||
@@ -221,10 +218,7 @@ export const rollupPlugin = new Elysia({
 			// is refused (403) before the payload is read or cached.
 			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
-				return await ploSummaryService.generateFromSubmission(
-					params.id,
-					user?.id,
-				);
+				return await ploSummaryService.generateFromSubmission(params.id);
 			} catch (error) {
 				if (
 					error instanceof RollupSubmissionNotFoundError ||
@@ -312,10 +306,7 @@ export const rollupPlugin = new Elysia({
 			// is refused (403) before the payload is read or cached.
 			await assertSubmissionInScope(unitScopeOf(user), params.id);
 			try {
-				return await cohortTrackingService.generateFromSubmission(
-					params.id,
-					user?.id,
-				);
+				return await cohortTrackingService.generateFromSubmission(params.id);
 			} catch (error) {
 				if (
 					error instanceof RollupSubmissionNotFoundError ||

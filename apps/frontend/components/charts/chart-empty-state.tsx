@@ -1,3 +1,5 @@
+import { Spinner } from "@/components/ui/spinner";
+
 /**
  * Empty-state placeholder rendered inside a chart frame when its dataset has
  * no rows.
@@ -21,6 +23,20 @@ export function ChartEmptyState({
 			<p className="text-muted-foreground/70 text-2xs max-w-56 leading-relaxed">
 				{description}
 			</p>
+		</div>
+	);
+}
+
+/**
+ * Loading placeholder rendered while a chart's dataset atom is still fetching —
+ * distinct from {@link ChartEmptyState} so a slow fetch reads as "loading" and
+ * not "no data".
+ */
+export function ChartLoadingState() {
+	return (
+		<div className="text-muted-foreground flex h-full w-full items-center justify-center gap-2">
+			<Spinner className="size-4" />
+			<span className="text-xs">Loading…</span>
 		</div>
 	);
 }
