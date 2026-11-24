@@ -1,5 +1,6 @@
 "use client";
 
+import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -20,8 +21,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast, toastError } from "@/components/ui/toast";
 import { isDevMode } from "@/lib/dev-mode";
 import {
+	selectedClassSectionIdAtom,
+	selectedProgramIdAtom,
+	selectedTermIdAtom,
+} from "@/lib/store/atoms/academic";
+import {
 	createClo,
 	deleteClo,
+	listClassSections,
 	listClos,
 	listCourses,
 	updateClo,
@@ -37,6 +44,10 @@ import {
  * server-side when the CLO is mapped to a PLO or has attainment history.
  */
 export function CloManagementPanel() {
+	const selectedSectionId = useAtomValue(selectedClassSectionIdAtom);
+	const programId = useAtomValue(selectedProgramIdAtom);
+	const termId = useAtomValue(selectedTermIdAtom);
+
 	const [courses, setCourses] = useState<CourseRecord[]>([]);
 	const [clos, setClos] = useState<CloRecord[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -48,11 +59,34 @@ export function CloManagementPanel() {
 	const [code, setCode] = useState("");
 	const [description, setDescription] = useState("");
 
+	// The selected section's course — when set, CLO management follows it.
+	const [activeCourse, setActiveCourse] = useState<CourseRecord | null>(null);
+
 	const fetchData = useCallback(async () => {
 		setLoading(true);
+		let activeCourseId: string | undefined;
+		if (selectedSectionId) {
+			const sectionsRes = await listClassSections(programId, termId);
+			if (sectionsRes.ok) {
+				const section = sectionsRes.data.find(
+					(s) => s.id === selectedSectionId,
+				);
+				if (section) {
+					activeCourseId = section.course.id;
+					setActiveCourse({
+						id: section.course.id,
+						code: section.course.code,
+						title: section.course.title,
+						programId: section.course.programId,
+					});
+				}
+			}
+		} else {
+			setActiveCourse(null);
+		}
 		const [coursesRes, closRes] = await Promise.all([
 			listCourses(),
-			listClos(),
+			listClos(activeCourseId),
 		]);
 		if (coursesRes.ok) {
 			setCourses(coursesRes.data);
@@ -73,7 +107,7 @@ export function CloManagementPanel() {
 			});
 		}
 		setLoading(false);
-	}, []);
+	}, [selectedSectionId, programId, termId]);
 
 	useEffect(() => {
 		fetchData();
@@ -81,7 +115,7 @@ export function CloManagementPanel() {
 
 	const openCreateDialog = () => {
 		setEditing(null);
-		setCourseId(courses[0]?.id ?? "");
+		setCourseId(activeCourse?.id ?? courses[0]?.id ?? "");
 		setCode("");
 		setDescription("");
 		setDialogOpen(true);
@@ -309,12 +343,23 @@ export function CloManagementPanel() {
 							<Field>
 								<FieldLabel>Course</FieldLabel>
 								<FieldDescription>
-									{editing
-										? "The course this CLO belongs to."
-										: "Pick the course the CLO belongs to."}
+									{activeCourse && !editing
+										? "The selected section's course."
+										: editing
+											? "The course this CLO belongs to."
+											: "Pick the course the CLO belongs to."}
 								</FieldDescription>
-								{editing ? (
-									<Input value={courseLabel(courseId)} disabled />
+								{editing || activeCourse ? (
+									<Input
+										value={
+											editing
+												? courseLabel(courseId)
+												: activeCourse
+													? `${activeCourse.code} — ${activeCourse.title}`
+													: ""
+										}
+										disabled
+									/>
 								) : (
 									<select
 										value={courseId}
