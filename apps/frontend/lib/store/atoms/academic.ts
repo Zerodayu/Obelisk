@@ -247,6 +247,16 @@ export const selectedClassSectionIdAtom = atomWithStorage<string>(
 );
 
 /**
+ * The full picked section (course + term + faculty) — the shared header's
+ * context status reads this so it never re-fetches sections on every page.
+ * Kept in sync with `selectedClassSectionIdAtom` by `setClassSectionContextAtom`.
+ */
+export const selectedClassSectionAtom = atomWithStorage<ClassSection | null>(
+	"obelisk.ctx.classSection",
+	null,
+);
+
+/**
  * Set the whole context from one picked class section — the section implies
  * its program (via course) and term, so the dashboard picker back-fills all
  * three atoms in one write.
@@ -257,5 +267,6 @@ export const setClassSectionContextAtom = atom(
 		set(selectedProgramIdAtom, section.course.programId);
 		set(selectedTermIdAtom, section.term.id);
 		set(selectedClassSectionIdAtom, section.id);
+		set(selectedClassSectionAtom, section);
 	},
 );

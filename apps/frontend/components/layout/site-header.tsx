@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
+import { AcademicContextStatus } from "@/components/layout/academic-context-status";
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { titleForPathname } from "@/config/navigation";
@@ -19,6 +20,7 @@ export function SiteHeader() {
 					className="mx-2 h-4 data-vertical:self-auto"
 				/>
 				<h1 className="text-base font-medium">{title}</h1>
+				<AcademicContextStatus />
 			</div>
 		</header>
 	);
