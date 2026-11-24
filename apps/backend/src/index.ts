@@ -57,7 +57,7 @@ const app = new Elysia()
 			allowedHeaders: ["Content-Type", "Authorization"],
 		}),
 	)
-	.use(rateLimit({ max: 100, duration: 15 * 60 * 1000 })) //100 per 15mins
+	.use(rateLimit({ max: 250, duration: 15 * 60 * 1000 })) //250 per 15mins
 	.get("/", () => "hello elysia", { detail: { hide: true } })
 	.mount(auth.handler)
 	.use(apiRoutesV1);
