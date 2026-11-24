@@ -193,6 +193,7 @@ export type CloOrderByWithRelationInput = {
 
 export type CloWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  courseId_code?: Prisma.CloCourseIdCodeCompoundUniqueInput
   AND?: Prisma.CloWhereInput | Prisma.CloWhereInput[]
   OR?: Prisma.CloWhereInput[]
   NOT?: Prisma.CloWhereInput | Prisma.CloWhereInput[]
@@ -203,7 +204,7 @@ export type CloWhereUniqueInput = Prisma.AtLeast<{
   cloToPloMaps?: Prisma.CloToPloMapListRelationFilter
   assessmentItems?: Prisma.AssessmentItemListRelationFilter
   cloAttainments?: Prisma.CloAttainmentListRelationFilter
-}, "id">
+}, "id" | "courseId_code">
 
 export type CloOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -293,6 +294,11 @@ export type CloListRelationFilter = {
 
 export type CloOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type CloCourseIdCodeCompoundUniqueInput = {
+  courseId: string
+  code: string
 }
 
 export type CloCountOrderByAggregateInput = {

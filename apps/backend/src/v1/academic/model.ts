@@ -82,3 +82,23 @@ export const CreateClassSectionSchema = t.Object({
 });
 
 export type CreateClassSection = typeof CreateClassSectionSchema.static;
+
+/** Create a CLO — capture roles for their own program's courses. */
+export const CreateCloSchema = t.Object({
+	courseId: t.String({
+		minLength: 1,
+		description: "Course the CLO belongs to",
+	}),
+	code: t.String({ minLength: 1, description: "CLO code, e.g. CLO1" }),
+	description: t.String({ description: "CLO statement (may be empty)" }),
+});
+
+export type CreateClo = typeof CreateCloSchema.static;
+
+/** Update a CLO's code and/or description. */
+export const UpdateCloSchema = t.Object({
+	code: t.Optional(t.String({ minLength: 1, description: "CLO code" })),
+	description: t.Optional(t.String({ description: "CLO statement" })),
+});
+
+export type UpdateClo = typeof UpdateCloSchema.static;

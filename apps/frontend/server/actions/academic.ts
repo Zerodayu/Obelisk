@@ -327,3 +327,90 @@ export async function createClassSection(input: {
 		};
 	}
 }
+
+// --- CLO management ---------------------------------------------------------
+
+export interface CourseRecord {
+	id: string;
+	code: string;
+	title: string;
+	programId: string;
+}
+
+/** List the caller's courses (unit-scoped) — the CLO picker's course options. */
+export async function listCourses(): Promise<ActionResult<CourseRecord[]>> {
+	try {
+		const data = await actionApi.get<CourseRecord[]>("/academic/courses");
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to load courses.") };
+	}
+}
+
+export interface CloRecord {
+	id: string;
+	code: string;
+	description: string;
+	courseId: string;
+	course: { id: string; code: string; title: string; programId: string };
+}
+
+export type CloMutationResult = {
+	id: string;
+	code: string;
+	description: string;
+	courseId: string;
+};
+
+/** List CLOs (unit-scoped); `courseId` narrows to one course. */
+export async function listClos(
+	courseId?: string,
+): Promise<ActionResult<CloRecord[]>> {
+	try {
+		const qs = courseId ? `?courseId=${encodeURIComponent(courseId)}` : "";
+		const data = await actionApi.get<CloRecord[]>(`/academic/clos${qs}`);
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to load CLOs.") };
+	}
+}
+
+export async function createClo(input: {
+	courseId: string;
+	code: string;
+	description: string;
+}): Promise<ActionResult<CloMutationResult>> {
+	try {
+		const data = await actionApi.post<CloMutationResult>(
+			"/academic/clos",
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to create CLO.") };
+	}
+}
+
+export async function updateClo(
+	id: string,
+	input: { code?: string; description?: string },
+): Promise<ActionResult<CloMutationResult>> {
+	try {
+		const data = await actionApi.put<CloMutationResult>(
+			`/academic/clos/${id}`,
+			input,
+		);
+		return { ok: true, data };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to update CLO.") };
+	}
+}
+
+export async function deleteClo(id: string): Promise<ActionResult<void>> {
+	try {
+		await actionApi.delete(`/academic/clos/${id}`);
+		return { ok: true, data: undefined };
+	} catch (err) {
+		return { ok: false, error: errorMessage(err, "Failed to delete CLO.") };
+	}
+}

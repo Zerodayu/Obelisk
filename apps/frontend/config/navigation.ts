@@ -45,6 +45,7 @@ import {
 	APPROVER_ROLES,
 	ARCHIVE_ROLES,
 	ARCHIVE_VIEW_ROLES,
+	CLO_MANAGEMENT_ROLES,
 	PLO_MANAGEMENT_ROLES,
 	featureRoles,
 	preparerRoles,
@@ -382,6 +383,12 @@ export function workspaceNav(role: UserRole): NavItem[] {
 	// departments) and role requests — both panels on `/dashboard` — so it gets
 	// no academic workflow nav (submissions, approvals, archives, audit) for now.
 	if (role === "system_admin") return items;
+	if (hasAccess(role, CLO_MANAGEMENT_ROLES))
+		items.push({
+			title: "CLO Management",
+			url: "/clo-management",
+			icon: ListChecksIcon,
+		});
 	if (hasAccess(role, PLO_MANAGEMENT_ROLES))
 		items.push({
 			title: "PLO Management",
@@ -446,6 +453,7 @@ const ALL_LINKS: { title: string; url: string }[] = [
 function workspaceRootLinks() {
 	return [
 		{ title: "Dashboard", url: "/dashboard" },
+		{ title: "CLO Management", url: "/clo-management" },
 		{ title: "PLO Management", url: "/plo-management" },
 		{ title: "My Submissions", url: "/submissions" },
 		{ title: "Submissions", url: "/all-submissions" },

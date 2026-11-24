@@ -576,8 +576,8 @@ export function ClassRecordUpload() {
 						<ReviewStat label="CLO rows" value={preview.rows} />
 						<ReviewStat label="At-risk" value={preview.atRisk} />
 						<ReviewStat
-							label="Skipped rows"
-							value={preview.unmatchedClos.reduce((sum, c) => sum + c.rows, 0)}
+							label="New CLOs"
+							value={preview.newClos.reduce((sum, c) => sum + c.rows, 0)}
 						/>
 					</dl>
 
@@ -615,10 +615,10 @@ export function ClassRecordUpload() {
 						</ul>
 					)}
 
-					{preview.unmatchedClos.length > 0 && (
+					{preview.newClos.length > 0 && (
 						<p className="text-muted-foreground text-xs">
-							Unmatched CLO codes (rows skipped on save):{" "}
-							{preview.unmatchedClos
+							New CLO codes (created on save):{" "}
+							{preview.newClos
 								.map((c) => `${c.cloCode} (${c.rows})`)
 								.join(", ")}
 						</p>

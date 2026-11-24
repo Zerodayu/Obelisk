@@ -2,6 +2,7 @@ import { prisma } from "@lib/prisma";
 import {
 	assertProgramInScope,
 	classSectionUnitWhere,
+	courseUnitWhere,
 	departmentUnitWhere,
 	programUnitWhere,
 	studentUnitWhere,
@@ -10,8 +11,10 @@ import {
 
 import type {
 	CreateClassSection,
+	CreateClo,
 	CreateDepartment,
 	CreateProgram,
+	UpdateClo,
 	UpdateDepartment,
 	UpdateProgram,
 } from "./model";
@@ -127,6 +130,150 @@ export async function listClassSections(
 		},
 		orderBy: [{ sectionCode: "asc" }],
 	});
+}
+
+// --- CLO management ---------------------------------------------------------
+
+/** Courses in the caller's unit — the picker for adding a CLO to a course. */
+export async function listCourses(unit: UnitScope) {
+	return prisma.course.findMany({
+		where: courseUnitWhere(unit),
+		select: { id: true, code: true, title: true, programId: true },
+		orderBy: { code: "asc" },
+	});
+}
+
+/**
+ * CLOs for a course, or every CLO in the caller's unit when no `courseId` is
+ * given — unit-scoped so a faculty/chair only sees its own program's courses.
+ */
+export async function listClos(unit: UnitScope, courseId?: string) {
+	if (courseId) {
+		const course = await prisma.course.findUnique({
+			where: { id: courseId },
+			select: { programId: true },
+		});
+		if (!course) {
+			throw new ReferenceDataError(`Course '${courseId}' not found.`, 404);
+		}
+		await assertProgramInScope(unit, course.programId);
+	}
+
+	return prisma.clo.findMany({
+		where: {
+			course: courseUnitWhere(unit),
+			...(courseId ? { courseId } : {}),
+		},
+		select: {
+			id: true,
+			code: true,
+			description: true,
+			course: {
+				select: { id: true, code: true, title: true, programId: true },
+			},
+		},
+		orderBy: [{ course: { code: "asc" } }, { code: "asc" }],
+	});
+}
+
+/** Load a CLO and 403 when its course's program is outside the caller's unit. */
+async function resolveCloInScope(unit: UnitScope, cloId: string) {
+	const clo = await prisma.clo.findUnique({
+		where: { id: cloId },
+		select: {
+			id: true,
+			code: true,
+			courseId: true,
+			course: { select: { programId: true } },
+		},
+	});
+	if (!clo) throw new ReferenceDataError(`CLO '${cloId}' not found.`, 404);
+	await assertProgramInScope(unit, clo.course.programId);
+	return clo;
+}
+
+export async function createClo(unit: UnitScope, input: CreateClo) {
+	const code = input.code.trim();
+	if (!code) throw new ReferenceDataError("CLO code is required.", 400);
+
+	const course = await prisma.course.findUnique({
+		where: { id: input.courseId },
+		select: { programId: true },
+	});
+	if (!course) {
+		throw new ReferenceDataError(`Course '${input.courseId}' not found.`, 404);
+	}
+	await assertProgramInScope(unit, course.programId);
+
+	const duplicate = await prisma.clo.findUnique({
+		where: { courseId_code: { courseId: input.courseId, code } },
+		select: { id: true },
+	});
+	if (duplicate) {
+		throw new ReferenceDataError(
+			`CLO code '${code}' already exists for this course.`,
+			409,
+		);
+	}
+
+	return prisma.clo.create({
+		data: {
+			id: crypto.randomUUID(),
+			courseId: input.courseId,
+			code,
+			description: input.description,
+		},
+		select: { id: true, code: true, description: true, courseId: true },
+	});
+}
+
+export async function updateClo(
+	unit: UnitScope,
+	cloId: string,
+	input: UpdateClo,
+) {
+	const clo = await resolveCloInScope(unit, cloId);
+
+	const data: { code?: string; description?: string } = {};
+	if (input.code !== undefined) {
+		const code = input.code.trim();
+		if (!code) throw new ReferenceDataError("CLO code is required.", 400);
+		const duplicate = await prisma.clo.findUnique({
+			where: { courseId_code: { courseId: clo.courseId, code } },
+			select: { id: true },
+		});
+		if (duplicate && duplicate.id !== cloId) {
+			throw new ReferenceDataError(
+				`CLO code '${code}' already exists for this course.`,
+				409,
+			);
+		}
+		data.code = code;
+	}
+	if (input.description !== undefined) data.description = input.description;
+
+	return prisma.clo.update({
+		where: { id: cloId },
+		data,
+		select: { id: true, code: true, description: true, courseId: true },
+	});
+}
+
+export async function deleteClo(unit: UnitScope, cloId: string) {
+	const clo = await resolveCloInScope(unit, cloId);
+
+	const [maps, attainments] = await Promise.all([
+		prisma.cloToPloMap.count({ where: { cloId } }),
+		prisma.cloAttainment.count({ where: { cloId } }),
+	]);
+	if (maps > 0 || attainments > 0) {
+		throw new ReferenceDataError(
+			`CLO '${clo.code}' is mapped to a PLO or has attainment history and cannot be deleted.`,
+			409,
+		);
+	}
+
+	await prisma.clo.delete({ where: { id: cloId } });
 }
 
 // --- Reference-data writes (system admin) ----------------------------------

@@ -149,13 +149,16 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 
 			expect(summary.studentsProcessed).toBe(4);
 			expect(summary.studentsCreated).toBe(1);
-			expect(summary.cloAttainmentsCreated).toBe(3);
+			expect(summary.cloAttainmentsCreated).toBe(4);
 			expect(summary.atRiskFlagsCreated).toBe(1);
-			expect(summary.cloMatchFailures).toHaveLength(1);
-			expect(summary.cloMatchFailures[0]).toMatchObject({
-				cloCode: "CLO999",
-				studentName: "Reyes, Maria",
+			// NOTE: an unmatched CLO code is now upserted, not skipped.
+			expect(summary.cloMatchFailures).toHaveLength(0);
+
+			const createdClo = await prisma.clo.findUnique({
+				where: { courseId_code: { courseId: IDS.course, code: "CLO999" } },
 			});
+			expect(createdClo).not.toBeNull();
+			expect(createdClo?.description).toBe("(no description)");
 
 			computationRunId = summary.computationRunId;
 			expect(computationRunId).toBeTruthy();
@@ -1206,7 +1209,7 @@ describe.skipIf(!db)("ingest attainment persistence (integration)", () => {
 			expect(preview.students).toBe(2);
 			expect(preview.rows).toBe(3);
 			expect(preview.atRisk).toBe(1);
-			expect(preview.unmatchedClos).toEqual([{ cloCode: "CLO999", rows: 1 }]);
+			expect(preview.newClos).toEqual([{ cloCode: "CLO999", rows: 1 }]);
 			// NOTE: no section info in the fixture → unverified, never a blocking mismatch.
 			expect(preview.verification.status).toBe("unverified");
 

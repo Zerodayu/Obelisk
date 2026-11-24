@@ -9,6 +9,8 @@ model Clo {
   assessmentItems AssessmentItem[]
   cloAttainments  CloAttainment[]
 
+  // NOTE: a course's CLO codes are unique — the upload upsert keys on this.
+  @@unique([courseId, code])
   @@map("clo")
 }
 

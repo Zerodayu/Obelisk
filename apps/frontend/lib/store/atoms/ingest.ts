@@ -62,8 +62,8 @@ export interface UploadPreview {
 	students: number;
 	rows: number;
 	atRisk: number;
-	/** CLO codes the course does not define — rows a save skips. */
-	unmatchedClos: { cloCode: string; rows: number }[];
+	/** CLO codes the course doesn't define yet — created on save. */
+	newClos: { cloCode: string; rows: number }[];
 	setup: {
 		course_code?: string | null;
 		course_title?: string | null;

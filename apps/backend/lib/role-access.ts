@@ -35,6 +35,12 @@ export const FEATURE_ACCESS = {
 	 * capture roles must be able to bring their own section into existence.
 	 */
 	manageClassSections: ["faculty", "program_chair", "system_admin"],
+	/**
+	 * Create/edit/delete CLO entities (code + description) for their own
+	 * program's courses. Uploads can auto-create CLOs without a description;
+	 * this lets capture roles fill those in afterwards.
+	 */
+	manageClos: ["faculty", "program_chair", "system_admin"],
 	/** Create a user account and grant it a role (admin-provisioned accounts). */
 	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
@@ -94,6 +100,9 @@ export const REFERENCE_DATA_ROLES: readonly string[] =
 /** Roles that may create class sections (scoped to their own program). */
 export const CLASS_SECTION_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageClassSections;
+/** Roles that may create/edit/delete CLO entities (their program's courses). */
+export const CLO_MANAGEMENT_ROLES: readonly string[] =
+	FEATURE_ACCESS.manageClos;
 /** Roles that may create user accounts and grant them a role. */
 export const USER_MANAGEMENT_ROLES: readonly string[] =
 	FEATURE_ACCESS.manageUsers;
@@ -162,6 +171,15 @@ export function assertCanManageClassSections(role: string | undefined): void {
 	if (!hasRole(role, CLASS_SECTION_ROLES)) {
 		throw new RoleAccessForbiddenError(
 			`Your role (${role ?? "unauthenticated"}) may not create class sections — expected one of: ${CLASS_SECTION_ROLES.join(", ")}`,
+		);
+	}
+}
+
+/** May `role` create/edit/delete CLO entities? (program scope is enforced separately) */
+export function assertCanManageClos(role: string | undefined): void {
+	if (!hasRole(role, CLO_MANAGEMENT_ROLES)) {
+		throw new RoleAccessForbiddenError(
+			`Your role (${role ?? "unauthenticated"}) may not manage CLOs — expected one of: ${CLO_MANAGEMENT_ROLES.join(", ")}`,
 		);
 	}
 }

@@ -1,6 +1,7 @@
 import { cached } from "@lib/cache";
 import {
 	assertCanManageClassSections,
+	assertCanManageClos,
 	assertCanManageReferenceData,
 	RoleAccessForbiddenError,
 } from "@lib/role-access";
@@ -11,24 +12,31 @@ import { Elysia, t } from "elysia";
 import {
 	ClassSectionQuerySchema,
 	CreateClassSectionSchema,
+	CreateCloSchema,
 	CreateDepartmentSchema,
 	CreateProgramSchema,
+	UpdateCloSchema,
 	UpdateDepartmentSchema,
 	UpdateProgramSchema,
 } from "./model";
 import {
 	createClassSection,
+	createClo,
 	createDepartment,
 	createProgram,
+	deleteClo,
 	deleteDepartment,
 	deleteProgram,
 	listAssessmentTypeCounts,
 	listClassSections,
+	listClos,
+	listCourses,
 	listDepartments,
 	listPrograms,
 	listStudentYearLevels,
 	listTerms,
 	ReferenceDataError,
+	updateClo,
 	updateDepartment,
 	updateProgram,
 } from "./service";
@@ -215,6 +223,137 @@ export const academicPlugin = new Elysia({
 					},
 					404: { description: "Term not found" },
 					409: { description: "Section already exists for this course + term" },
+				},
+			},
+		},
+	)
+	.get(
+		"/courses",
+		// NOTE: not cached — a course appears as soon as a section or CLO is
+		// created, and a cached list would hide it from the CLO picker.
+		async ({ user }) => listCourses(unitScopeOf(user)),
+		{
+			auth: true,
+			detail: {
+				summary: "List the caller's courses",
+				description:
+					"Unit-scoped list of courses — the picker for adding a CLO to a course.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of courses" },
+					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/clos",
+		async ({ query, user, set }) => {
+			try {
+				return await listClos(unitScopeOf(user), query.courseId);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			query: t.Object({
+				courseId: t.Optional(t.String({ description: "Filter to one course" })),
+			}),
+			detail: {
+				summary: "List the caller's CLOs (unit-scoped)",
+				description:
+					"A faculty/chair lists the CLOs of its own program's courses; a foreign `courseId` is refused with 403.",
+				...SECURITY,
+				responses: {
+					200: { description: "List of CLOs grouped by course" },
+					401: { description: "Unauthorized" },
+					403: { description: "courseId is outside the caller's unit" },
+				},
+			},
+		},
+	)
+	.post(
+		"/clos",
+		async ({ body, user, set }) => {
+			try {
+				assertCanManageClos((user as { role?: string }).role);
+				return await createClo(unitScopeOf(user), body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			body: CreateCloSchema,
+			detail: {
+				summary: "Create a CLO",
+				description:
+					"Faculty/chair for their own program's courses, system_admin anywhere. Rejects a duplicate code within a course.",
+				...SECURITY,
+				responses: {
+					200: { description: "Created CLO" },
+					401: { description: "Unauthorized" },
+					403: { description: "Role may not manage CLOs / foreign course" },
+					404: { description: "Course not found" },
+					409: { description: "CLO code already exists for this course" },
+				},
+			},
+		},
+	)
+	.put(
+		"/clos/:id",
+		async ({ params, body, user, set }) => {
+			try {
+				assertCanManageClos((user as { role?: string }).role);
+				return await updateClo(unitScopeOf(user), params.id, body);
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			body: UpdateCloSchema,
+			detail: {
+				summary: "Update a CLO",
+				description: "Change a CLO's code and/or description.",
+				...SECURITY,
+				responses: {
+					200: { description: "Updated CLO" },
+					401: { description: "Unauthorized" },
+					403: { description: "Role may not manage CLOs / foreign course" },
+					404: { description: "CLO not found" },
+					409: { description: "CLO code already exists for this course" },
+				},
+			},
+		},
+	)
+	.delete(
+		"/clos/:id",
+		async ({ params, user, set }) => {
+			try {
+				assertCanManageClos((user as { role?: string }).role);
+				await deleteClo(unitScopeOf(user), params.id);
+				return { ok: true };
+			} catch (error) {
+				return mapAcademicErrors(error, set);
+			}
+		},
+		{
+			auth: true,
+			params: t.Object({ id: t.String() }),
+			detail: {
+				summary: "Delete a CLO",
+				description:
+					"Blocked (409) when the CLO is mapped to a PLO or has attainment history.",
+				...SECURITY,
+				responses: {
+					200: { description: "Deleted" },
+					401: { description: "Unauthorized" },
+					403: { description: "Role may not manage CLOs / foreign course" },
+					404: { description: "CLO not found" },
+					409: { description: "CLO is mapped or has attainment history" },
 				},
 			},
 		},

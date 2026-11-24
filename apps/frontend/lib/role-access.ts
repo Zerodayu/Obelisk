@@ -51,6 +51,8 @@ export const FEATURE_ACCESS = {
 	 * their own program, system_admin for any. Mirrors the backend gate.
 	 */
 	manageClassSections: ["faculty", "program_chair", "system_admin"],
+	/** Create/edit/delete CLO entities (code + description) — capture roles. */
+	manageClos: ["faculty", "program_chair", "system_admin"],
 	/** Create a user account and grant it a role (admin-provisioned accounts). */
 	manageUsers: ["system_admin"],
 	/** Confirm a graduation cluster for compile. */
@@ -143,6 +145,9 @@ export const APPROVER_ROLES: readonly UserRole[] = FEATURE_ACCESS.approveForms;
 /** PLO entity mutations (`/plo-management`) — dean only. */
 export const PLO_MANAGEMENT_ROLES: readonly UserRole[] =
 	FEATURE_ACCESS.managePlos;
+/** CLO entity management (`/clo-management`) — faculty/chair/admin. */
+export const CLO_MANAGEMENT_ROLES: readonly UserRole[] =
+	FEATURE_ACCESS.manageClos;
 
 export interface FormAccessRoute {
 	/**

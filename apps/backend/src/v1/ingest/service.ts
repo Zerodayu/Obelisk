@@ -106,8 +106,8 @@ export interface UploadPreview {
 	students: number;
 	rows: number;
 	atRisk: number;
-	/** CLO codes the section's course does not define — rows a save skips. */
-	unmatchedClos: { cloCode: string; rows: number }[];
+	/** CLO codes the course doesn't define yet — created (no description) on save. */
+	newClos: { cloCode: string; rows: number }[];
 	setup: EtlSetupInfo | null;
 }
 
@@ -300,7 +300,7 @@ export class AttainmentService {
 		});
 		summary.computationRunId = computationRun.id;
 
-		const cloCache = new Map<string, { id: string } | null>();
+		const cloCache = new Map<string, { id: string }>();
 		const studentCache = new Map<string, { id: string }>();
 		// NOTE: students seen this run — enrollment upserted once each so noEnrolled is non-zero (testing_results 6.5)
 		const enrolledCache = new Set<string>();
@@ -352,33 +352,26 @@ export class AttainmentService {
 				enrolledCache.add(student.id);
 			}
 
-			let clo: { id: string } | null;
+			let clo: { id: string };
 			const cachedClo = cloCache.get(record.clo_code);
 			if (cachedClo !== undefined) {
 				clo = cachedClo;
 			} else {
-				const dbClo = await prisma.clo.findFirst({
-					where: {
-						courseId: courseId,
+				// NOTE: upsert — a workbook CLO code the course doesn't define yet
+				// is created (no description on the sheet) instead of skipping rows.
+				const resolved = await prisma.clo.upsert({
+					where: { courseId_code: { courseId, code: record.clo_code } },
+					create: {
+						id: crypto.randomUUID(),
+						courseId,
 						code: record.clo_code,
+						description: "(no description)",
 					},
+					update: {},
 					select: { id: true },
 				});
-				cloCache.set(record.clo_code, dbClo);
-				clo = dbClo;
-			}
-
-			if (!clo) {
-				const failure = {
-					cloCode: record.clo_code,
-					studentName: record.student_name,
-					reason: `CLO code '${record.clo_code}' not found for the course associated with ClassSection '${classSectionId}'.`,
-				};
-				summary.cloMatchFailures.push(failure);
-				console.warn(
-					`Skipping attainment record for student '${record.student_name}'. Reason: ${failure.reason}`,
-				);
-				continue;
+				cloCache.set(record.clo_code, resolved);
+				clo = resolved;
 			}
 
 			const directScore = record.direct_clo_attainment_pct * 100;
@@ -450,7 +443,7 @@ export class AttainmentService {
 		);
 
 		const students = new Set<string>();
-		const unmatched = new Map<string, number>();
+		const newClos = new Map<string, number>();
 		let atRisk = 0;
 
 		for (const record of etlLoadedData.attainments) {
@@ -460,10 +453,7 @@ export class AttainmentService {
 			if (!record.met_threshold) atRisk++;
 			const code = String(record.clo_code).toUpperCase();
 			if (!knownClos.has(code)) {
-				unmatched.set(
-					record.clo_code,
-					(unmatched.get(record.clo_code) ?? 0) + 1,
-				);
+				newClos.set(record.clo_code, (newClos.get(record.clo_code) ?? 0) + 1);
 			}
 		}
 
@@ -472,7 +462,7 @@ export class AttainmentService {
 			students: students.size,
 			rows: etlLoadedData.attainments.length,
 			atRisk,
-			unmatchedClos: [...unmatched].map(([cloCode, rows]) => ({
+			newClos: [...newClos].map(([cloCode, rows]) => ({
 				cloCode,
 				rows,
 			})),
