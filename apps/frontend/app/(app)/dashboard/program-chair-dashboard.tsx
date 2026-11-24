@@ -6,7 +6,10 @@ import {
 	CqiActionsBars,
 	GapAnalysisBars,
 } from "@/components/charts/cqi-charts";
-import { ApprovalFlowBars } from "@/components/charts/governance-charts";
+import {
+	ApprovalFlowBars,
+	StudentsAtRiskDonut,
+} from "@/components/charts/governance-charts";
 import {
 	AssessmentTypeDonut,
 	CurriculumCoverageBars,
@@ -92,6 +95,19 @@ export function ProgramChairDashboard() {
 					<FramePanel>
 						<div className="h-72">
 							<AssessmentTypeDonut />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Students at risk</FrameTitle>
+						<FrameDescription>
+							Total students vs those with a CLO below 70%.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<StudentsAtRiskDonut />
 						</div>
 					</FramePanel>
 				</Frame>

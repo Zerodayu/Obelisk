@@ -5,6 +5,7 @@ import {
 import {
 	AtRiskDonut,
 	FormStatusDonut,
+	StudentsAtRiskDonut,
 } from "@/components/charts/governance-charts";
 import {
 	ComputationRunBars,
@@ -64,6 +65,19 @@ export function FacultyDashboard() {
 					<FramePanel>
 						<div className="h-72">
 							<AtRiskDonut />
+						</div>
+					</FramePanel>
+				</Frame>
+				<Frame className="w-full">
+					<FrameHeader>
+						<FrameTitle>Students at risk</FrameTitle>
+						<FrameDescription>
+							Total students vs those with a CLO below 70%.
+						</FrameDescription>
+					</FrameHeader>
+					<FramePanel>
+						<div className="h-72">
+							<StudentsAtRiskDonut />
 						</div>
 					</FramePanel>
 				</Frame>

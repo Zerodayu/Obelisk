@@ -102,6 +102,47 @@ export const { dataAtom: atRiskDataAtom, refreshAtom: refreshAtRiskAtom } =
 		}),
 	);
 
+/** `GET /academic/students/year-levels` row. */
+interface StudentYearLevelDto {
+	yearLevel: number | null;
+	studentCount: number;
+}
+
+/** `GET /atrisk/flags` row subset — just the student id for a distinct count. */
+interface AtRiskFlagStudentDto {
+	student: { id: string };
+}
+
+/** Total students vs at-risk students, both unit-scoped. */
+export interface StudentsVsAtRisk {
+	total: number;
+	atRisk: number;
+}
+
+/**
+ * Total vs at-risk students. Reads two unit-scoped endpoints in parallel:
+ * `GET /academic/students/year-levels` (summed → total) and `GET /atrisk/flags`
+ * (distinct `student.id` → at-risk). The existing `atRiskDataAtom` donut groups
+ * flags by reason; this one counts distinct students, so it fetches separately.
+ */
+export const {
+	dataAtom: studentsVsAtRiskAtom,
+	refreshAtom: refreshStudentsVsAtRiskAtom,
+} = atomWithAsyncData<StudentsVsAtRisk>(
+	{ total: 0, atRisk: 0 },
+	async (_get, signal) => {
+		const [yearLevels, flags] = await Promise.all([
+			api.get<StudentYearLevelDto[]>("/academic/students/year-levels", {
+				signal,
+			}),
+			api.get<AtRiskFlagStudentDto[]>("/atrisk/flags", { signal }),
+		]);
+		const total = yearLevels.reduce((sum, row) => sum + row.studentCount, 0);
+		const atRisk = new Set(flags.map((f) => f.student.id)).size;
+		return { total, atRisk };
+	},
+);
+
 /** Actor snapshot joined at read time from `user` (`GET /audit/logs`). */
 export interface AuditActor {
 	id: string;

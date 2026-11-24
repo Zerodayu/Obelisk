@@ -30,6 +30,7 @@ import {
 	formStatusCountsAtom,
 	formTypeStagesDataAtom,
 	recommendationsDataAtom,
+	studentsVsAtRiskAtom,
 	userRolesDataAtom,
 } from "@/lib/store/atoms/governance";
 
@@ -84,6 +85,17 @@ const riskConfig = {
 	"Multiple CLOs under threshold": {
 		label: "Multiple CLOs <70%",
 		colors: { light: ["var(--chart-3)"] },
+	},
+} satisfies ChartConfig;
+
+const studentsAtRiskConfig = {
+	at_risk: {
+		label: "At risk",
+		colors: { light: ["var(--destructive)"] },
+	},
+	not_at_risk: {
+		label: "Not at risk",
+		colors: { light: ["var(--success)"] },
 	},
 } satisfies ChartConfig;
 
@@ -236,6 +248,29 @@ export function AtRiskDonut({ data: override }: { data?: AtRiskDatum[] }) {
 			dataKey="count"
 			nameKey="reason"
 			caption="At-risk students"
+		/>
+	);
+}
+
+/** Donut of total students vs at-risk students (unit-scoped). */
+export function StudentsAtRiskDonut({
+	data: override,
+}: {
+	data?: { total: number; atRisk: number };
+}) {
+	const atomData = useAtomValue(studentsVsAtRiskAtom);
+	const { total, atRisk } = override ?? atomData;
+	const rows = [
+		{ status: "at_risk", count: atRisk },
+		{ status: "not_at_risk", count: Math.max(0, total - atRisk) },
+	];
+	return (
+		<PieDonutLayout
+			data={rows}
+			config={studentsAtRiskConfig}
+			dataKey="count"
+			nameKey="status"
+			caption="Total students"
 		/>
 	);
 }
