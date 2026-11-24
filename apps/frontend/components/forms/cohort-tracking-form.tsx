@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { ArrowDownIcon, ArrowRightIcon, ArrowUpIcon } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
@@ -24,6 +24,7 @@ import {
 	selectedProgramIdAtom,
 	selectedTermIdAtom,
 } from "@/lib/store/atoms/academic";
+import { refreshCohortTrendsAtom } from "@/lib/store/atoms/attainments";
 import {
 	generateCohortTracking,
 	saveCohortAnnotations,
@@ -146,6 +147,7 @@ export function CohortTrackingForm() {
 	// NOTE: academic context comes from the dashboard picker, not local state.
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
+	const refreshCohort = useSetAtom(refreshCohortTrendsAtom);
 	const [selectedTermId, setSelectedTermId] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -208,6 +210,7 @@ export function CohortTrackingForm() {
 				setAnnotations(p.annotations || []);
 				// NOTE: fall back to the newest term of the fresh payload.
 				setSelectedTermId(null);
+				refreshCohort();
 				toast.create({ title: "Cohort tracking generated", type: "success" });
 			} else {
 				toastError({
@@ -219,7 +222,7 @@ export function CohortTrackingForm() {
 		} finally {
 			setLoading(false);
 		}
-	}, [programId, termId]);
+	}, [programId, termId, refreshCohort]);
 
 	// NOTE: term is optional here — the "*"" sentinel keeps the key complete
 	// when no term is picked, so an empty term still auto-generates.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { toast, toastError } from "@/components/ui/toast";
 import { useAutoGenerate } from "@/lib/hooks/use-auto-generate";
 import { selectedClassSectionIdAtom } from "@/lib/store/atoms/academic";
+import { refreshCloAttainmentsAtom } from "@/lib/store/atoms/attainments";
 import { generateCloSummary } from "@/server/actions/rollup";
 
 interface CloSummaryRow {
@@ -62,6 +63,7 @@ export function CloSummaryForm() {
 	// NOTE: target section comes from the dashboard picker, not local state.
 	const classSectionId = useAtomValue(selectedClassSectionIdAtom);
 	const [loading, setLoading] = useState(false);
+	const refreshClo = useSetAtom(refreshCloAttainmentsAtom);
 
 	const handleGenerate = useCallback(async () => {
 		if (!classSectionId.trim()) return;
@@ -72,6 +74,7 @@ export function CloSummaryForm() {
 			});
 			if (result.ok) {
 				setPayload(result.data.payload as unknown as CloSummaryPayload);
+				refreshClo();
 				toast.create({ title: "CLO summary generated", type: "success" });
 			} else {
 				toastError({
@@ -83,7 +86,7 @@ export function CloSummaryForm() {
 		} finally {
 			setLoading(false);
 		}
-	}, [classSectionId]);
+	}, [classSectionId, refreshClo]);
 
 	const auto = useAutoGenerate([classSectionId], handleGenerate);
 

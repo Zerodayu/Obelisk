@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
 import { ContextRequired } from "@/components/forms/context-required";
@@ -21,6 +21,7 @@ import {
 	selectedProgramIdAtom,
 	selectedTermIdAtom,
 } from "@/lib/store/atoms/academic";
+import { refreshPloAttainmentsAtom } from "@/lib/store/atoms/attainments";
 import { generatePloSummary } from "@/server/actions/rollup";
 
 interface PloSummaryRow {
@@ -54,6 +55,7 @@ export function PloSummaryForm() {
 	const programId = useAtomValue(selectedProgramIdAtom);
 	const termId = useAtomValue(selectedTermIdAtom);
 	const [loading, setLoading] = useState(false);
+	const refreshPlo = useSetAtom(refreshPloAttainmentsAtom);
 
 	const handleGenerate = useCallback(async () => {
 		if (!programId.trim() || !termId.trim()) return;
@@ -65,6 +67,7 @@ export function PloSummaryForm() {
 			});
 			if (result.ok) {
 				setPayload(result.data.payload as unknown as PloSummaryPayload);
+				refreshPlo();
 				toast.create({ title: "PLO summary generated", type: "success" });
 			} else {
 				toastError({
@@ -76,7 +79,7 @@ export function PloSummaryForm() {
 		} finally {
 			setLoading(false);
 		}
-	}, [programId, termId]);
+	}, [programId, termId, refreshPlo]);
 
 	const auto = useAutoGenerate([programId, termId], handleGenerate);
 

@@ -38,6 +38,17 @@ import { formNeedsApproval } from "@/lib/form-tags";
 import { ARCHIVE_ROLES, FORM_ACCESS } from "@/lib/role-access";
 import { roleLabel, type UserRole } from "@/lib/roles";
 import {
+	refreshCloAttainmentsAtom,
+	refreshCohortTrendsAtom,
+	refreshPloAttainmentsAtom,
+} from "@/lib/store/atoms/attainments";
+import {
+	refreshCqiActionsAtom,
+	refreshLoopStatusesAtom,
+	refreshPloGapsAtom,
+	refreshRootCausesAtom,
+} from "@/lib/store/atoms/cqi";
+import {
 	type ApprovalStepRecord,
 	FORM_STATUS_LABELS,
 	FORM_STATUS_TONES,
@@ -46,6 +57,13 @@ import {
 	refreshMySubmissionsAtom,
 	refreshPendingApprovalsAtom,
 } from "@/lib/store/atoms/forms";
+import {
+	refreshAssessmentTypesAtom,
+	refreshBudgetLinesAtom,
+	refreshCurriculumCoverageAtom,
+	refreshPloToPeoCoverageAtom,
+	refreshTargetSettingsAtom,
+} from "@/lib/store/atoms/plan";
 import { userAtom } from "@/lib/store/atoms/user";
 import {
 	type ApproverRoleValue,
@@ -119,6 +137,21 @@ export function FormWorkflow({
 	const refreshMine = useSetAtom(refreshMySubmissionsAtom);
 	const refreshPending = useSetAtom(refreshPendingApprovalsAtom);
 	const refreshAll = useSetAtom(refreshFormSubmissionsAtom);
+	// NOTE: every submission-derived dashboard chart re-fetches after a workflow
+	// action, so the dashboards never show stale aggregates (same pattern as the
+	// upload panel's at-risk/score-band refreshes).
+	const refreshClo = useSetAtom(refreshCloAttainmentsAtom);
+	const refreshPlo = useSetAtom(refreshPloAttainmentsAtom);
+	const refreshCohort = useSetAtom(refreshCohortTrendsAtom);
+	const refreshGaps = useSetAtom(refreshPloGapsAtom);
+	const refreshRootCauses = useSetAtom(refreshRootCausesAtom);
+	const refreshCqiActions = useSetAtom(refreshCqiActionsAtom);
+	const refreshLoop = useSetAtom(refreshLoopStatusesAtom);
+	const refreshBudget = useSetAtom(refreshBudgetLinesAtom);
+	const refreshCurriculum = useSetAtom(refreshCurriculumCoverageAtom);
+	const refreshTargets = useSetAtom(refreshTargetSettingsAtom);
+	const refreshPloToPeo = useSetAtom(refreshPloToPeoCoverageAtom);
+	const refreshAssessmentTypes = useSetAtom(refreshAssessmentTypesAtom);
 
 	const [submission, setSubmission] = useState<FormSubmissionRecord | null>(
 		null,
@@ -169,6 +202,18 @@ export function FormWorkflow({
 			refreshMine();
 			refreshPending();
 			refreshAll();
+			refreshClo();
+			refreshPlo();
+			refreshCohort();
+			refreshGaps();
+			refreshRootCauses();
+			refreshCqiActions();
+			refreshLoop();
+			refreshBudget();
+			refreshCurriculum();
+			refreshTargets();
+			refreshPloToPeo();
+			refreshAssessmentTypes();
 			onChanged?.();
 		}
 		setBusy(null);

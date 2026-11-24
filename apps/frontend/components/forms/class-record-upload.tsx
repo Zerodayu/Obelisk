@@ -21,6 +21,7 @@ import {
 	type FileUploadItem,
 } from "@/components/upload/file-upload";
 import { api, isApiError } from "@/lib/api-client";
+import { refreshScoreBandsAtom } from "@/lib/store/atoms/attainments";
 import {
 	refreshAtRiskAtom,
 	refreshStudentsVsAtRiskAtom,
@@ -34,6 +35,7 @@ import {
 	markProcessingAtom,
 	markReviewAtom,
 	markSavingAtom,
+	refreshComputationRunsAtom,
 	refreshUploadHistoryAtom,
 	resetIngestAtom,
 	type SectionComparisonResult,
@@ -123,6 +125,8 @@ export function ClassRecordUpload() {
 	const setRefreshHistory = useSetAtom(refreshUploadHistoryAtom);
 	const setRefreshAtRisk = useSetAtom(refreshAtRiskAtom);
 	const setRefreshStudentsVsAtRisk = useSetAtom(refreshStudentsVsAtRiskAtom);
+	const setRefreshScoreBands = useSetAtom(refreshScoreBandsAtom);
+	const setRefreshComputationRuns = useSetAtom(refreshComputationRunsAtom);
 
 	useEffect(() => {
 		setIsMounted(true);
@@ -191,6 +195,8 @@ export function ClassRecordUpload() {
 			setRefreshHistory();
 			setRefreshAtRisk();
 			setRefreshStudentsVsAtRisk();
+			setRefreshScoreBands();
+			setRefreshComputationRuns();
 			setVerificationResult(verification);
 			setMismatchError(null);
 
@@ -235,6 +241,8 @@ export function ClassRecordUpload() {
 			setRefreshHistory,
 			setRefreshAtRisk,
 			setRefreshStudentsVsAtRisk,
+			setRefreshScoreBands,
+			setRefreshComputationRuns,
 		],
 	);
 
