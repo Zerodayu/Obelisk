@@ -81,6 +81,11 @@ db-inject file:
 db-seed-program-plos:
     @just _bun apps/backend db:seed-program-plos
 
+# seed dummy accounts (`<program>-faculty1..5` / `<program>-progchair1..5` / `<department>-dean` @jmc.edu.test / password123) into the dev DB — additive: existing accounts count toward the cap and existing emails are skipped, programs/PLOs/content untouched
+[group('setup')]
+db-seed-accounts:
+    @just _bun apps/backend db:seed-accounts
+
 # export the whole dev database to per-table CSVs (header row + rows; one file per
 # table, e.g. exports/user.csv) for later seeding — dev-only, reads DATABASE_URL
 # from .env.local
@@ -337,6 +342,11 @@ db-inject-prod file:
 [group('deploy')]
 db-seed-program-plos-prod:
     docker compose exec backend bun run db:seed-program-plos-prod
+
+# seed dummy accounts into the deployed DB — additive only (no deletes/updates to existing rows, no program/PLO/content writes), skips existing emails and fills each program to 5 faculty + 5 chairs and each department to 1 dean; needs `just docker-update` first so the script is baked into the image
+[group('deploy')]
+db-seed-accounts-prod:
+    docker compose exec backend bun run db:seed-accounts-prod
 
 # NOTE: bunx directly, not a package script — a script wrapper only exists in the image after a rebuild
 # check for pending Prisma migrations without applying them (read-only; no rows from `just db-check` = the DB was never migrated)
