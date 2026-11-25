@@ -278,9 +278,29 @@ describe("reference / entity where-builders", () => {
 
 	it("students: unit program/department, own → enrolled in own sections", () => {
 		expect(studentUnitWhere(SCOPES.institution)).toEqual({});
-		expect(studentUnitWhere(SCOPES.program)).toEqual({ programId: PROGRAM });
+		expect(studentUnitWhere(SCOPES.program)).toEqual({
+			OR: [
+				{ programId: PROGRAM },
+				{
+					enrollments: {
+						some: { classSection: { course: { programId: PROGRAM } } },
+					},
+				},
+			],
+		});
 		expect(studentUnitWhere(SCOPES.department)).toEqual({
-			program: { departmentId: DEPARTMENT },
+			OR: [
+				{ program: { departmentId: DEPARTMENT } },
+				{
+					enrollments: {
+						some: {
+							classSection: {
+								course: { program: { departmentId: DEPARTMENT } },
+							},
+						},
+					},
+				},
+			],
 		});
 		expect(studentUnitWhere(SCOPES.own)).toEqual({
 			enrollments: { some: { classSection: { facultyId: USER_ID } } },
@@ -307,12 +327,28 @@ describe("reference / entity where-builders", () => {
 		});
 	});
 
-	it("at-risk flags follow the flagged student's program", () => {
+	it("at-risk flags follow the flagged student's program or the flag's section program", () => {
 		expect(atRiskFlagUnitWhere(SCOPES.program)).toEqual({
-			student: { programId: PROGRAM },
+			OR: [
+				{ student: { programId: PROGRAM } },
+				{
+					cloAttainment: {
+						classSection: { course: { programId: PROGRAM } },
+					},
+				},
+			],
 		});
 		expect(atRiskFlagUnitWhere(SCOPES.department)).toEqual({
-			student: { program: { departmentId: DEPARTMENT } },
+			OR: [
+				{ student: { program: { departmentId: DEPARTMENT } } },
+				{
+					cloAttainment: {
+						classSection: {
+							course: { program: { departmentId: DEPARTMENT } },
+						},
+					},
+				},
+			],
 		});
 		expect(atRiskFlagUnitWhere(SCOPES.own)).toEqual({
 			student: {

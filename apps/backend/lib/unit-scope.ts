@@ -248,15 +248,37 @@ export function courseUnitWhere(unit: UnitScope): Prisma.CourseWhereInput {
 	}
 }
 
-/** Which `student` rows belong to `unit`. */
+/** Which `student` rows belong to `unit` (home program, or enrolled in the unit's sections). */
 export function studentUnitWhere(unit: UnitScope): Prisma.StudentWhereInput {
 	switch (unit.kind) {
 		case "institution":
 			return {};
 		case "program":
-			return { programId: unit.programId };
+			return {
+				OR: [
+					{ programId: unit.programId },
+					{
+						enrollments: {
+							some: { classSection: { course: { programId: unit.programId } } },
+						},
+					},
+				],
+			};
 		case "department":
-			return { program: { departmentId: unit.departmentId } };
+			return {
+				OR: [
+					{ program: { departmentId: unit.departmentId } },
+					{
+						enrollments: {
+							some: {
+								classSection: {
+									course: { program: { departmentId: unit.departmentId } },
+								},
+							},
+						},
+					},
+				],
+			};
 		default:
 			// No program on file → only students in the caller's own sections.
 			return {
@@ -297,7 +319,7 @@ export function cloAttainmentUnitWhere(
 	}
 }
 
-/** Which `at_risk_flag` rows belong to `unit` (the flagged student's program). */
+/** Which `at_risk_flag` rows belong to `unit` (flagged student's program, or the flag's section program). */
 export function atRiskFlagUnitWhere(
 	unit: UnitScope,
 ): Prisma.AtRiskFlagWhereInput {
@@ -305,9 +327,29 @@ export function atRiskFlagUnitWhere(
 		case "institution":
 			return {};
 		case "program":
-			return { student: { programId: unit.programId } };
+			return {
+				OR: [
+					{ student: { programId: unit.programId } },
+					{
+						cloAttainment: {
+							classSection: { course: { programId: unit.programId } },
+						},
+					},
+				],
+			};
 		case "department":
-			return { student: { program: { departmentId: unit.departmentId } } };
+			return {
+				OR: [
+					{ student: { program: { departmentId: unit.departmentId } } },
+					{
+						cloAttainment: {
+							classSection: {
+								course: { program: { departmentId: unit.departmentId } },
+							},
+						},
+					},
+				],
+			};
 		default:
 			return {
 				student: {
