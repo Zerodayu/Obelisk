@@ -18,12 +18,12 @@ import type {
 import { api } from "@/lib/api-client";
 import { atomWithAsyncData } from "@/lib/store/async-atom";
 import {
+	selectedClassSectionIdAtom,
 	selectedProgramIdAtom,
 	selectedTermIdAtom,
 } from "@/lib/store/atoms/academic";
 import { fetchLatestPayload } from "@/lib/store/latest-payload";
 
-const CLO_SUMMARY = "/rollup/clo-attainment-summary";
 const PLO_SUMMARY = "/rollup/plo-attainment-summary";
 const COHORT_TRACKING = "/rollup/cohort-tracking";
 
@@ -84,7 +84,12 @@ function termLabel(schoolYear: string, semester: string): string {
 }
 
 /**
- * Per-CLO attainment for the newest CLO summary submission.
+ * Per-CLO attainment for the active class section.
+ *
+ * Live read of `GET /rollup/clo-attainment` — the section's newest computation
+ * run, so the dashboard needs no generated summary submission. Passing the
+ * picked section keeps the chart on "active class section"; with none picked
+ * the backend falls back to the unit's newest captured section.
  *
  * TODO(direct-indirect): the summary payload carries the CAR component
  * percentages (exam/AT/TLA/output) and the weighted composite, but no
@@ -96,20 +101,22 @@ export const {
 	dataAtom: cloAttainmentsDataAtom,
 	stateAtom: cloAttainmentsStateAtom,
 	refreshAtom: refreshCloAttainmentsAtom,
-} = atomWithAsyncData<CloAttainmentDatum[]>([], (_get, signal) =>
-	fetchLatestPayload<CloSummaryPayload>(
-		CLO_SUMMARY,
-		(id) => `${CLO_SUMMARY}/${id}`,
-		signal,
-	).then((payload) =>
-		(payload?.rows ?? []).map((row) => ({
-			cloCode: row.cloCode,
-			cloDescription: row.cloDescription,
-			compositeScorePct: row.weightedAvgPct,
-			isBelowThreshold: row.status === "NOT MET",
-		})),
-	),
-);
+} = atomWithAsyncData<CloAttainmentDatum[]>([], (get, signal) => {
+	const classSectionId = get(selectedClassSectionIdAtom).trim();
+	return api
+		.get<CloSummaryPayload>("/rollup/clo-attainment", {
+			signal,
+			query: classSectionId ? { classSectionId } : undefined,
+		})
+		.then((payload) =>
+			(payload?.rows ?? []).map((row) => ({
+				cloCode: row.cloCode,
+				cloDescription: row.cloDescription,
+				compositeScorePct: row.weightedAvgPct,
+				isBelowThreshold: row.status === "NOT MET",
+			})),
+		);
+});
 
 /** Per-PLO attainment vs target for the newest PLO summary submission. */
 export const {

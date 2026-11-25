@@ -7,6 +7,7 @@ import type {
 import { ingestClient } from "@lib/ingest/ingest-client";
 import { prisma } from "@lib/prisma";
 import {
+	assertClassSectionInScope,
 	assertProgramInScope,
 	assertTargetInScope,
 	cloAttainmentUnitWhere,
@@ -28,6 +29,7 @@ import {
 	scoreBandOf,
 } from "./compute";
 import type {
+	CloAttainmentPayload,
 	CloSectionSummary,
 	CloSummaryPayload,
 	CloSummaryRow,
@@ -1327,6 +1329,81 @@ export async function listScoreBands(unit: UnitScope) {
 		band,
 		studentCount: counts.get(band) ?? 0,
 	}));
+}
+
+/**
+ * `GET /rollup/clo-attainment` — live per-CLO attainment for a section's newest
+ * computation run, so the dashboard needs no generated summary submission.
+ * Without `classSectionId` it reads the unit's newest captured section.
+ */
+export async function listCloAttainment(
+	unit: UnitScope,
+	classSectionId?: string,
+): Promise<CloAttainmentPayload> {
+	if (classSectionId) await assertClassSectionInScope(unit, classSectionId);
+
+	// NOTE: fallback keeps the dashboard populated before a section is picked.
+	const sectionId =
+		classSectionId ??
+		(
+			await prisma.cloAttainment.findFirst({
+				where: cloAttainmentUnitWhere(unit),
+				orderBy: { computationRun: { runAt: "desc" } },
+				select: { classSectionId: true },
+			})
+		)?.classSectionId;
+	if (!sectionId) {
+		return {
+			classSectionId: null,
+			computationRunId: null,
+			rows: [],
+			summary: null,
+		};
+	}
+
+	const run = await prisma.computationRun.findFirst({
+		where: { scope: sectionId },
+		orderBy: { runAt: "desc" },
+		select: { id: true },
+	});
+	if (!run) {
+		return {
+			classSectionId: sectionId,
+			computationRunId: null,
+			rows: [],
+			summary: null,
+		};
+	}
+
+	const attainments = await prisma.cloAttainment.findMany({
+		where: { classSectionId: sectionId, computationRunId: run.id },
+		include: {
+			clo: {
+				select: {
+					code: true,
+					description: true,
+					cloToPloMaps: {
+						select: { plo: { select: { code: true, description: true } } },
+					},
+				},
+			},
+		},
+		orderBy: { clo: { code: "asc" } },
+	});
+
+	const rows = buildCloRows(attainments);
+	const averagePct = meanPct(rows.map((row) => row.weightedAvgPct));
+	return {
+		classSectionId: sectionId,
+		computationRunId: run.id,
+		rows,
+		summary: {
+			averagePct,
+			level: averagePct === null ? null : cloLevel(averagePct),
+			belowCount: rows.filter((row) => row.status === "NOT MET").length,
+			totalCount: rows.length,
+		},
+	};
 }
 
 /**

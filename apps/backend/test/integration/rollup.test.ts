@@ -11,6 +11,7 @@ import {
 	type AnalyticsSummaryFetcher,
 	cloSummaryService,
 	cohortTrackingService,
+	listCloAttainment,
 	PloSummaryService,
 } from "@v1/rollup/service";
 
@@ -311,6 +312,41 @@ describe.skipIf(!db)("roll-up chain generation (integration)", () => {
 			expect(audit?.moduleAffected).toBe("rollup");
 		} finally {
 			await cleanup(draftId, computationRunId);
+		}
+	}, 60000);
+
+	it("live per-CLO read returns the section's newest run without a summary submission", async () => {
+		await resetRollupData();
+		await seedAcademicChain();
+		await seedStudents();
+		let computationRunId = "";
+		try {
+			const summary = await attainmentService.persistAttainment(
+				classRecord(),
+				IDS.section,
+			);
+			computationRunId = summary.computationRunId;
+
+			const unit = {
+				kind: "program" as const,
+				userId: IDS.user,
+				programId: IDS.program,
+			};
+			const payload = await listCloAttainment(unit, IDS.section);
+			expect(payload.classSectionId).toBe(IDS.section);
+			expect(payload.computationRunId).toBe(computationRunId);
+			expect(payload.rows).toHaveLength(2);
+			expect(payload.rows.find((row) => row.cloCode === "CLO2")).toMatchObject({
+				weightedAvgPct: 65,
+				status: "NOT MET",
+			});
+			expect(payload.summary?.averagePct).toBe(77.5);
+
+			// NOTE: no picked section → the unit's newest captured section.
+			const fallback = await listCloAttainment(unit);
+			expect(fallback.classSectionId).toBe(IDS.section);
+		} finally {
+			await cleanup("", computationRunId);
 		}
 	}, 60000);
 

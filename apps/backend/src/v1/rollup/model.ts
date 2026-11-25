@@ -70,6 +70,18 @@ export const RollupListQuerySchema = t.Object({
 
 export type RollupListQuery = typeof RollupListQuerySchema.static;
 
+/** `GET /rollup/clo-attainment` — live per-CLO read for the dashboard chart. */
+export const CloAttainmentQuerySchema = t.Object({
+	classSectionId: t.Optional(
+		t.String({
+			description:
+				"Class section to read (defaults to the unit's newest section with stored attainment)",
+		}),
+	),
+});
+
+export type CloAttainmentQuery = typeof CloAttainmentQuerySchema.static;
+
 export const CohortStudentsQuerySchema = t.Object({
 	programId: t.String({
 		description: "Program whose per-student CLO/PLO attainment to list",
@@ -107,6 +119,14 @@ export type CloSectionSummary = {
 	level: CloLevel | null;
 	belowCount: number;
 	totalCount: number;
+};
+
+/** Live per-CLO attainment for a section's newest computation run (no submission needed). */
+export type CloAttainmentPayload = {
+	classSectionId: string | null;
+	computationRunId: string | null;
+	rows: CloSummaryRow[];
+	summary: CloSectionSummary | null;
 };
 
 export type CloSummaryPayload = {

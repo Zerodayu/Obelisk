@@ -8,6 +8,7 @@ import { authPlugin } from "@v1/auth/controller";
 import { Elysia } from "elysia";
 
 import {
+	CloAttainmentQuerySchema,
 	CloSummaryParamsSchema,
 	CohortAnnotationsSchema,
 	CohortParamsSchema,
@@ -18,6 +19,7 @@ import {
 import {
 	cloSummaryService,
 	cohortTrackingService,
+	listCloAttainment,
 	listRollupSubmissions,
 	listPeoAttainment,
 	listScoreBands,
@@ -63,6 +65,26 @@ export const rollupPlugin = new Elysia({
 				responses: {
 					200: { description: "Band -> student count" },
 					401: { description: "Unauthorized" },
+				},
+			},
+		},
+	)
+	.get(
+		"/clo-attainment",
+		async ({ query, user }) =>
+			listCloAttainment(unitScopeOf(user), query.classSectionId),
+		{
+			auth: true,
+			query: CloAttainmentQuerySchema,
+			detail: {
+				summary: "Live per-CLO attainment for a class section",
+				description:
+					"Unit-scoped. Reads the section's newest computation run directly — no generated summary submission required. Defaults to the unit's newest captured section. Uncached so an upload is reflected on the next dashboard refresh.",
+				security: [{ bearerAuth: [] }, { apiKeyCookie: [] }],
+				responses: {
+					200: { description: "Per-CLO rows + section summary" },
+					401: { description: "Unauthorized" },
+					403: { description: "Section outside the caller's unit" },
 				},
 			},
 		},
