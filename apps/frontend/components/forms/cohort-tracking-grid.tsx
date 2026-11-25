@@ -6,6 +6,7 @@ import {
 	type SortingState,
 	useTable,
 } from "@tanstack/react-table";
+import Avatar from "boring-avatars";
 import { useAtomValue } from "jotai";
 import {
 	CircleAlertIcon,
@@ -231,16 +232,19 @@ export function CohortTrackingGrid() {
 				id: "name",
 				header: "Student",
 				cell: ({ row }) => (
-					<div className="space-y-px">
-						<div className="text-foreground font-medium">
-							{row.original.studentName}
-						</div>
-						<div className="text-muted-foreground font-mono text-xs">
-							{row.original.studentNumber || "—"}
+					<div className="flex items-center gap-3">
+						<Avatar name={row.original.studentName} variant="beam" size={32} />
+						<div className="space-y-px">
+							<div className="text-foreground font-medium">
+								{row.original.studentName}
+							</div>
+							<div className="text-muted-foreground font-mono text-xs">
+								{row.original.studentNumber || "—"}
+							</div>
 						</div>
 					</div>
 				),
-				size: 220,
+				size: 240,
 				enableSorting: true,
 				enableHiding: false,
 			},
